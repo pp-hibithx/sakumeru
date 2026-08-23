@@ -111,6 +111,22 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 @media(max-width:760px){.scenario-trailer-add{grid-template-columns:1fr 1fr}.scenario-trailer-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.scenario-trailer-add{grid-template-columns:1fr}}
 </style>
+
+<style>
+.friend-status-groups{display:grid;gap:5px;margin-top:7px}
+.friend-status-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px}
+.friend-status-row b{font-size:11px}
+.friend-status-pill{
+ display:inline-flex;
+ align-items:center;
+ padding:2px 6px;
+ border:1px solid var(--line);
+ border-radius:999px;
+ color:var(--muted);
+ font-size:10px;
+ line-height:1.4;
+}
+</style>
 </head>
 <body>
 <header class="site-header"><div class="wrap">
@@ -604,11 +620,54 @@ function scenarioIdentityKey(x){
  if(url)return "url:"+url+"|system:"+system;
  return "fallback:"+author+"|"+system;
 }
+
+function sharedScenarioStatusKeys(x){
+ const keys=new Set();
+
+ if(Array.isArray(x?.statusKeys)){
+   x.statusKeys.forEach(k=>{if(flags[k])keys.add(k)});
+ }
+
+ for(const obj of [x?.flags,x?.classifications]){
+   if(!obj||typeof obj!=="object"||Array.isArray(obj))continue;
+   Object.keys(flags).forEach(k=>{if(obj[k]===true)keys.add(k)});
+ }
+
+ Object.keys(flags).forEach(k=>{if(x?.[k]===true)keys.add(k)});
+
+ const labels=[
+   ...(Array.isArray(x?.statusLabels)?x.statusLabels:[]),
+   ...(Array.isArray(x?.labels)?x.labels:[])
+ ].map(v=>String(v||"").trim());
+
+ labels.forEach(label=>{
+   const hit=Object.entries(flags).find(([,v])=>v===label);
+   if(hit)keys.add(hit[0]);
+ });
+
+ return [...keys];
+}
+function sharedScenarioStatusLabels(x){
+ return sharedScenarioStatusKeys(x).map(k=>flags[k]).filter(Boolean);
+}
+function sourceStatusRows(group){
+ const rows=(group.sources||[]).map(src=>{
+   const labels=sharedScenarioStatusLabels(src.item);
+   return {
+     owner:src.owner||"友人",
+     labels
+   };
+ }).filter(r=>r.labels.length);
+
+ if(!rows.length)return "";
+
+ return `<div class="friend-status-groups">${rows.map(r=>
+   `<div class="friend-status-row"><b>${esc(r.owner)}：</b>${r.labels.map(v=>`<span class="friend-status-pill">${esc(v)}</span>`).join("")}</div>`
+ ).join("")}</div>`;
+}
 function isOwnedScenario(x,source="friend"){
  if(source==="mine")return !!(x.flags&&x.flags.owned);
- // 友人の共有シナリオ一覧に含まれる作品は、その友人のシナリオとして集計する。
- // 旧共有URLや状態ラベル差で友人名が欠落するのを防ぐ。
- return true;
+ return sharedScenarioStatusKeys(x).includes("owned");
 }
 function groupedFriendScenarios(){
  const map=new Map();
@@ -652,7 +711,6 @@ function groupedFriendScenarios(){
    .forEach(x=>add(x,"自分","mine"));
 
  friendItems
-   .filter(x=>isOwnedScenario(x,"friend"))
    .forEach(x=>add(x,x._friend||"友人","friend"));
 
  return [...map.values()];
@@ -753,17 +811,17 @@ function renderFriendResults(){
    }
   }
   const rows=[...people.entries()].sort((a,b)=>a[0].localeCompare(b[0],"ja"));
-  q("friendResults").innerHTML=rows.length?rows.map(([owner,gs])=>`<section class="friend-person-group"><h3>${esc(owner)}</h3><div class="friend-person-items">${gs.sort((a,b)=>String(a.item.title||"").localeCompare(String(b.item.title||""),"ja")).map(g=>{const x=g.item;const ownSrc=g.sources.find(s=>s.owner===owner);const tags=Array.isArray(ownSrc?.item?.tags)?ownSrc.item.tags.filter(Boolean):[];const mine=ownScenarioMatch(g.item);return `<div class="friend-person-item">${x.thumbnailUrl?`<img src="${esc(x.thumbnailUrl)}" alt="" loading="lazy">`:`<div class="friend-person-thumb">🌺</div>`}<div><b>${esc(x.title)}</b>${mine?` <span class="small muted">（自分も所持）</span>`:""}${x.system?`<div class="small">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted">${esc(x.author)}</div>`:""}${(()=>{const p=friendRangeText(ownSrc?.item?.playersMin,ownSrc?.item?.playersMax,"人"),h=friendRangeText(ownSrc?.item?.hoursMin,ownSrc?.item?.hoursMax,"h");return p||h?`<div class="friend-basic-info">${p?`<span class="badge">${esc(p)}</span>`:""}${h?`<span class="badge">${esc(h)}</span>`:""}</div>`:""})()}${tags.length?`<div class="friend-tag-row">${tags.map(t=>`<span class="friend-tag-pill">#${esc(t)}</span>`).join("")}</div>`:""}</div></div>`}).join("")}</div></section>`).join(""):(friendSources.length?'<div class="small muted">条件に合う所持シナリオはありません。</div>':"");
+  q("friendResults").innerHTML=rows.length?rows.map(([owner,gs])=>`<section class="friend-person-group"><h3>${esc(owner)}</h3><div class="friend-person-items">${gs.sort((a,b)=>String(a.item.title||"").localeCompare(String(b.item.title||""),"ja")).map(g=>{const x=g.item;const ownSrc=g.sources.find(s=>s.owner===owner);const tags=Array.isArray(ownSrc?.item?.tags)?ownSrc.item.tags.filter(Boolean):[];const mine=ownScenarioMatch(g.item);const mineLabels=mine?sharedScenarioStatusLabels(mine):[];return `<div class="friend-person-item">${x.thumbnailUrl?`<img src="${esc(x.thumbnailUrl)}" alt="" loading="lazy">`:`<div class="friend-person-thumb">🌺</div>`}<div><b>${esc(x.title)}</b>${mineLabels.length?` <span class="small muted">（自分：${esc(mineLabels.join("・"))}）</span>`:""}${x.system?`<div class="small">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted">${esc(x.author)}</div>`:""}${(()=>{const p=friendRangeText(ownSrc?.item?.playersMin,ownSrc?.item?.playersMax,"人"),h=friendRangeText(ownSrc?.item?.hoursMin,ownSrc?.item?.hoursMax,"h");return p||h?`<div class="friend-basic-info">${p?`<span class="badge">${esc(p)}</span>`:""}${h?`<span class="badge">${esc(h)}</span>`:""}</div>`:""})()}${ownSrc?`<div class="friend-status-row">${sharedScenarioStatusLabels(ownSrc.item).map(v=>`<span class="friend-status-pill">${esc(v)}</span>`).join("")}</div>`:""}${tags.length?`<div class="friend-tag-row">${tags.map(t=>`<span class="friend-tag-pill">#${esc(t)}</span>`).join("")}</div>`:""}</div></div>`}).join("")}</div></section>`).join(""):(friendSources.length?'<div class="small muted">条件に合う共有シナリオはありません。</div>':"");
   return;
  }
 
- q("friendResults").innerHTML=groups.length?groups.sort((a,b)=>String(a.item.title||"").localeCompare(String(b.item.title||""),"ja")).map(g=>{const x=g.item;g.owners.sort((a,b)=>a==="自分"?-1:b==="自分"?1:a.localeCompare(b,"ja"));const friendSource=g.sources.find(s=>s.source==="friend");return `<article class="friend-card">${x.thumbnailUrl?`<img src="${esc(x.thumbnailUrl)}" alt="" loading="lazy">`:""}<b>${esc(x.title)}</b>${x.publicationStatus&&x.publicationStatus!=="public"?` <span class="badge">${esc(publicationLabels[x.publicationStatus]||x.publicationStatus)}</span>`:""}${x.system?`<div class="small">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted">${esc(x.author)}</div>`:""}${(()=>{const bi=mergedBasicInfo(g),p=friendRangeText(bi.playersMin,bi.playersMax,"人"),h=friendRangeText(bi.hoursMin,bi.hoursMax,"h");return p||h?`<div class="friend-basic-info">${p?`<span class="badge">${esc(p)}</span>`:""}${h?`<span class="badge">${esc(h)}</span>`:""}</div>`:""})()}<div class="friend-owner-list">所持：${g.owners.map(esc).join("、")}</div>${ownerTagRows(g)}<div class="friend-actions">${x.url?`<a class="button" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">配布ページ</a>`:""}${friendSource&&!ownScenarioMatch(g.item)?`<button type="button" data-friend-import="${esc(friendSource.item._key)}">自分に追加</button>`:""}</div></article>`}).join(""):(friendSources.length?'<div class="small muted">条件に合う所持シナリオはありません。</div>':"");
+ q("friendResults").innerHTML=groups.length?groups.sort((a,b)=>String(a.item.title||"").localeCompare(String(b.item.title||""),"ja")).map(g=>{const x=g.item;g.owners.sort((a,b)=>a==="自分"?-1:b==="自分"?1:a.localeCompare(b,"ja"));const friendSource=g.sources.find(s=>s.source==="friend");return `<article class="friend-card">${x.thumbnailUrl?`<img src="${esc(x.thumbnailUrl)}" alt="" loading="lazy">`:""}<b>${esc(x.title)}</b>${x.publicationStatus&&x.publicationStatus!=="public"?` <span class="badge">${esc(publicationLabels[x.publicationStatus]||x.publicationStatus)}</span>`:""}${x.system?`<div class="small">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted">${esc(x.author)}</div>`:""}${(()=>{const bi=mergedBasicInfo(g),p=friendRangeText(bi.playersMin,bi.playersMax,"人"),h=friendRangeText(bi.hoursMin,bi.hoursMax,"h");return p||h?`<div class="friend-basic-info">${p?`<span class="badge">${esc(p)}</span>`:""}${h?`<span class="badge">${esc(h)}</span>`:""}</div>`:""})()}${sourceStatusRows(g)}${ownerTagRows(g)}<div class="friend-actions">${x.url?`<a class="button" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">配布ページ</a>`:""}${friendSource&&!ownScenarioMatch(g.item)?`<button type="button" data-friend-import="${esc(friendSource.item._key)}">自分に追加</button>`:""}</div></article>`}).join(""):(friendSources.length?'<div class="small muted">条件に合う共有シナリオはありません。</div>':"");
  document.querySelectorAll("[data-friend-import]").forEach(b=>b.onclick=()=>importFriendScenario(b.dataset.friendImport));
 }
 function importFriendScenario(key){
  const x=friendItems.find(v=>v._key===key);if(!x)return;
  if(ownScenarioMatch(x))return alert("このシナリオはすでに自分のSCENARIOに登録されています。");
- const flagsObj={};(x.labels||[]).forEach(label=>{const hit=Object.entries(flags).find(([,v])=>v===label);if(hit)flagsObj[hit[0]]=true});if(x.owned===true)flagsObj.owned=true;
+ const flagsObj={};sharedScenarioStatusKeys(x).forEach(k=>flagsObj[k]=true);
  data.unshift({id:TRPG39.uuid(),title:x.title||"",shortTitle:x.shortTitle||"",sortKana:x.sortKana||"",system:x.system||"",author:x.author||"",url:x.url||"",thumbnailUrl:x.thumbnailUrl||"",trailerUrls:Array.isArray(x.trailerUrls)?x.trailerUrls:[],playersMin:x.playersMin||null,playersMax:x.playersMax||null,hoursMin:x.hoursMin||null,hoursMax:x.hoursMax||null,publicationStatus:x.publicationStatus||"public",sourceType:x.sourceType||"",summaryText:"",summaryBackup:"",summaryBackupFetchedAt:"",tags:Array.isArray(x.tags)?x.tags:[],privateMemo:"",flags:flagsObj,memo:"",sourceFriend:x._friend,createdAt:new Date().toISOString()});
  persist();render();alert("自分のSCENARIOへ追加しました。");
 }
