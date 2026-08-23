@@ -1153,7 +1153,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
   <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
-</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.18.2-pccache</div></main>
+</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.18.2.1-pccache</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
 <strong>カード画像の位置を調整</strong>
 <div class="lib-cover-help">画像を上下にドラッグして、カードに見せたい位置を合わせます。元画像は変更されません。位置はこのブラウザに保存されます。</div>
@@ -1410,7 +1410,7 @@ const runCoverY=id=>{
  return Number.isFinite(n)?Math.max(0,Math.min(100,n)):50;
 };
 let libraryView=new URLSearchParams(location.search).get("view")||"scenario";
-let pcs=TRPG39.loadPCs(),players=TRPG39.loadPlayers();invalidatePcUsageIndex();
+let pcs=TRPG39.loadPCs(),players=TRPG39.loadPlayers();
 
 const PLAYER_EXTERNAL_PLAYED_KEY="saku_meru_player_external_played_v1";
 function loadPlayerExternalPlayed(){
