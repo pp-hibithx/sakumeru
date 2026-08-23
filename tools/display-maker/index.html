@@ -44,7 +44,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.1：LIBRARYから文字情報を自動取得します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+ <div class="dm-note">v0.3.1：LIBRARYからシナリオ→陣を選んで文字情報を自動取得します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
@@ -79,6 +79,23 @@ const pcs=loadJson([
  "trpg39_pcs",
  "39x2_pcs"
 ]);
+
+
+function discoverAlbumRows(){
+ if(albums.length)return albums;
+ for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);
+   try{
+     const v=JSON.parse(localStorage.getItem(key));
+     if(!Array.isArray(v)||!v.length)continue;
+     const sample=v.find(x=>x&&typeof x==="object");
+     if(sample && ("runId" in sample || "scenarioId" in sample) && ("title" in sample || "scenarioTitle" in sample)){
+       return v;
+     }
+   }catch(e){}
+ }
+ return [];
+}
 
 
 function normTitle(v){return String(v||"").normalize("NFKC").trim().toLowerCase()}
