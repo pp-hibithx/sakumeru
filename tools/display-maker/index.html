@@ -49,6 +49,18 @@
   <div class="dm-field"><label>PC名</label><input id="pcText"></div>
  </div>
  <div class="dm-field"><label>背景</label><input id="bgColor" type="color" value="#151515"></div>
+ <hr><strong>キャンバス</strong>
+ <div class="dm-field"><label>サイズ</label><select id="canvasPreset">
+  <option value="portrait916">縦 9:16（675 × 1200）</option>
+  <option value="portrait45">縦 4:5（800 × 1000）</option>
+  <option value="landscape169">横 16:9（1200 × 675）</option>
+  <option value="square">正方形 1:1（1000 × 1000）</option>
+  <option value="custom">自由サイズ</option>
+ </select></div>
+ <div class="dm-row" id="customCanvasFields" hidden>
+  <div class="dm-field"><label>幅 px</label><input id="canvasWidth" type="number" min="320" max="4000" value="675"></div>
+  <div class="dm-field"><label>高さ px</label><input id="canvasHeight" type="number" min="320" max="4000" value="1200"></div>
+ </div>
  <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
  <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
  <hr>
@@ -70,7 +82,7 @@
  <div id="shapeControls" hidden>
    <div class="dm-field"><label>図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
    <div class="dm-field"><label>図形の透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
-   <div class="dm-field"><label>図形の大きさ</label><input id="shapeScale" type="range" min="10" max="300" value="100"></div>
+   <div class="dm-field"><label>図形の大きさ</label><input id="shapeScale" type="range" min="10" max="500" value="100"></div>
  </div>
  <div id="textLayerControls" hidden>
    <div class="dm-field"><label>文字</label><textarea id="layerText" rows="3"></textarea></div>
@@ -106,10 +118,10 @@
   <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcTextX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="pcTextY" type="range" min="0" max="640" value="410"></div></div>
  </details>
  <hr><strong>PC立ち絵</strong>
- <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="30" max="180" value="100"></div>
+ <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="10" max="500" value="100"></div>
  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcX" type="range" min="-500" max="500" value="0"></div><div class="dm-field"><label>上下</label><input id="pcY" type="range" min="-400" max="400" value="0"></div></div>
  <strong>シナリオ画像</strong>
- <div class="dm-field"><label>大きさ</label><input id="scenarioScale" type="range" min="30" max="220" value="100"></div>
+ <div class="dm-field"><label>大きさ</label><input id="scenarioScale" type="range" min="10" max="500" value="100"></div>
  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="scenarioX" type="range" min="-600" max="600" value="0"></div><div class="dm-field"><label>上下</label><input id="scenarioY" type="range" min="-400" max="400" value="0"></div></div>
  <div class="dm-field"><label>シナリオ画像の濃さ</label><input id="scenarioOpacity" type="range" min="0" max="100" value="32"></div>
  <button type="button" id="layoutReset">配置を初期状態へ戻す</button>
@@ -117,7 +129,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.8.3：全レイヤーの描画順を統合し、↑↓で自動文字・自由文字・画像・図形の前後関係を変更できるようにしました。</div>
+ <div class="dm-note">v0.9：キャンバスを縦9:16／縦4:5／横16:9／正方形／自由サイズから選択できます。画像・図形の拡大上限を500%へ拡張しました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -507,6 +519,23 @@ q("systemPreset").addEventListener("change",()=>{
  if(q("systemPreset").value)q("systemText").value=q("systemPreset").value;
  draw();
 });
+
+const canvasPresets={portrait916:[675,1200],portrait45:[800,1000],landscape169:[1200,675],square:[1000,1000]};
+function setCanvasSize(w,h){
+ w=Math.max(320,Math.min(4000,Number(w)||675));
+ h=Math.max(320,Math.min(4000,Number(h)||1200));
+ canvas.width=w;canvas.height=h;
+ q("canvasWidth").value=w;q("canvasHeight").value=h;
+ draw();
+}
+q("canvasPreset").addEventListener("change",()=>{
+ const key=q("canvasPreset").value;
+ q("customCanvasFields").hidden=key!=="custom";
+ if(canvasPresets[key])setCanvasSize(...canvasPresets[key]);
+});
+["canvasWidth","canvasHeight"].forEach(id=>q(id).addEventListener("change",()=>{
+ if(q("canvasPreset").value==="custom")setCanvasSize(q("canvasWidth").value,q("canvasHeight").value);
+}));
 q("savePng").onclick=()=>{
  const a=document.createElement("a");
  a.download=(q("titleText").value||"display")+".png";
@@ -523,6 +552,6 @@ q("runSelect").onchange=()=>{
  const r=q("runSelect")._runs?.[Number(q("runSelect").value)];
  applyRun(g,r);
 };
-populate();renderLayerList();draw();
+populate();renderLayerList();setCanvasSize(675,1200);
 </script>
 </body></html>
