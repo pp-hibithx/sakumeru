@@ -29,7 +29,8 @@
 <div class="hero"><h2>DISPLAY MAKER</h2><p>卓記録から、卓報告用ディスプレイをサクッと作ります。</p></div>
 <div class="dm-layout">
 <section class="card dm-panel">
- <div class="dm-field"><label>LIBRARYの卓</label><select id="recordSelect"><option value="">卓を選択</option></select></div>
+ <div class="dm-field"><label>シナリオ</label><select id="scenarioSelect"><option value="">シナリオを選択</option></select></div>
+ <div class="dm-field"><label>陣</label><select id="runSelect" disabled><option value="">陣を選択</option></select></div>
  <div class="dm-field"><label>システム</label><input id="systemText"></div>
  <div class="dm-field"><label>シナリオ名</label><input id="titleText"></div>
  <div class="dm-row">
@@ -79,34 +80,106 @@ const pcs=loadJson([
  "39x2_pcs"
 ]);
 
-function recordLabel(r){
- const d=String(r.date||r.start||"").slice(0,10);
- return [r.title||r.scenarioTitle||"無題",r.runLabel||"",d].filter(Boolean).join(" ／ ");
+
+function normTitle(v){return String(v||"").normalize("NFKC").trim().toLowerCase()}
+function scenarioKey(r){
+ return r.scenarioId ? `id:${r.scenarioId}` : `title:${normTitle(r.title||r.scenarioTitle||"")}`;
 }
-function discoverAlbumRows(){
- if(albums.length)return albums;
- for(let i=0;i<localStorage.length;i++){
-   const key=localStorage.key(i);
-   try{
-     const v=JSON.parse(localStorage.getItem(key));
-     if(!Array.isArray(v)||!v.length)continue;
-     const sample=v.find(x=>x&&typeof x==="object");
-     if(sample && ("runId" in sample || "scenarioId" in sample) && ("title" in sample || "scenarioTitle" in sample)){
-       return v;
-     }
-   }catch(e){}
+function runKey(r){
+ return String(r.runId||r.eventId||r.id||"");
+}
+function recordDate(r){return String(r.date||r.start||"").slice(0,10)}
+function runLabelFromItems(items=[]){
+ const explicit=items.find(x=>String(x.runLabel||"").trim())?.runLabel||"";
+ if(explicit)return explicit;
+ const dates=items.map(recordDate).filter(Boolean).sort();
+ if(dates.length){
+   return dates.length>1 && dates[0]!==dates.at(-1)
+     ? `${dates[0]}〜${dates.at(-1)}`
+     : dates[0];
  }
- return [];
+ return "開催記録";
 }
-function populate(){
- const rows=discoverAlbumRows().slice().sort((a,b)=>String(b.date||b.start||"").localeCompare(String(a.date||a.start||"")));
- q("recordSelect").innerHTML='<option value="">卓を選択</option>'+rows.map((r,i)=>`<option value="${i}">${escapeHtml(recordLabel(r))}</option>`).join("");
- q("recordSelect")._rows=rows;
- if(!rows.length){
-   q("recordSelect").innerHTML='<option value="">LIBRARYの卓記録が見つかりません</option>';
+function groupAlbumRows(){
+ const rows=discoverAlbumRows();
+ const map=new Map();
+
+ rows.forEach(r=>{
+   const sk=scenarioKey(r);
+   if(!map.has(sk)){
+     map.set(sk,{
+       key:sk,
+       scenarioId:r.scenarioId||"",
+       title:r.title||r.scenarioTitle||"無題",
+       system:r.system||"",
+       runs:new Map()
+     });
+   }
+   const g=map.get(sk);
+   if(!g.system&&r.system)g.system=r.system;
+   const rk=runKey(r)||`record:${r.id||Math.random()}`;
+   if(!g.runs.has(rk))g.runs.set(rk,{id:rk,items:[]});
+   g.runs.get(rk).items.push(r);
+ });
+
+ return [...map.values()].map(g=>({
+   ...g,
+   runs:[...g.runs.values()].map(run=>{
+     run.items.sort((a,b)=>String(a.start||a.date||"").localeCompare(String(b.start||b.date||"")));
+     return {
+       ...run,
+       label:runLabelFromItems(run.items),
+       firstDate:recordDate(run.items[0]||{}),
+       lastDate:recordDate(run.items.at(-1)||{})
+     };
+   }).sort((a,b)=>String(b.lastDate||"").localeCompare(String(a.lastDate||"")))
+ })).sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja"));
+}
+function populateScenarios(){
+ const groups=groupAlbumRows();
+ q("scenarioSelect")._groups=groups;
+ q("scenarioSelect").innerHTML='<option value="">シナリオを選択</option>'+groups.map((g,i)=>`<option value="${i}">${escapeHtml(g.title)}</option>`).join("");
+ q("runSelect").innerHTML='<option value="">陣を選択</option>';
+ q("runSelect").disabled=true;
+}
+function populateRuns(group){
+ const runs=group?.runs||[];
+ q("runSelect")._runs=runs;
+ q("runSelect").innerHTML='<option value="">陣を選択</option>'+runs.map((r,i)=>`<option value="${i}">${escapeHtml(r.label)}</option>`).join("");
+ q("runSelect").disabled=!runs.length;
+ if(runs.length===1){
+   q("runSelect").value="0";
+   applyRun(group,runs[0]);
  }
 }
-function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function selfRowsFromRecord(r){
+ if(Array.isArray(r.selfPcs)&&r.selfPcs.length)return r.selfPcs;
+ if(Array.isArray(r.participantRows)){
+   const selfish=r.participantRows.filter(x=>x.isSelf||x.self||x.mine);
+   if(selfish.length)return selfish;
+ }
+ return [{pcName:r.pcName||"",ho:r.selfHo||r.ho||"",pcId:r.pcId||""}];
+}
+function pickSelfPcForRun(run){
+ const all=[];
+ (run?.items||[]).forEach(r=>selfRowsFromRecord(r).forEach(x=>all.push(x)));
+ const seen=new Set(),rows=[];
+ all.forEach(x=>{
+   const key=`${String(x.pcId||"")}||${String(x.pcName||"")}||${String(x.ho||x.selfHo||"")}`;
+   if(seen.has(key))return;
+   seen.add(key);rows.push(x);
+ });
+ return rows[0]||{};
+}
+function applyRun(group,run){
+ if(!group||!run)return;
+ const self=pickSelfPcForRun(run);
+ q("systemText").value=group.system||run.items?.find(x=>x.system)?.system||"";
+ q("titleText").value=group.title||run.items?.[0]?.title||"";
+ q("hoText").value=self.ho||self.selfHo||"";
+ q("pcText").value=self.pcName||"";
+ draw();
+}
 function firstSelfPcRow(r){
  if(Array.isArray(r.selfPcs)&&r.selfPcs.length)return r.selfPcs[0];
  if(Array.isArray(r.participants)){
@@ -115,15 +188,7 @@ function firstSelfPcRow(r){
  }
  return {pcName:r.pcName||"",ho:r.selfHo||r.ho||""};
 }
-function applyRecord(r){
- if(!r)return;
- const self=firstSelfPcRow(r);
- q("systemText").value=r.system||"";
- q("titleText").value=r.title||r.scenarioTitle||"";
- q("hoText").value=self.ho||self.selfHo||"";
- q("pcText").value=self.pcName||r.pcName||"";
- draw();
-}
+
 function readImage(input,cb){
  const f=input.files?.[0];if(!f){cb(null);return}
  const im=new Image();im.onload=()=>cb(im);im.src=URL.createObjectURL(f);
@@ -166,7 +231,6 @@ function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
  if(lines.length<maxLines&&line)lines.push(line);
  lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
 }
-q("recordSelect").onchange=()=>applyRecord(q("recordSelect")._rows?.[Number(q("recordSelect").value)]);
 ["systemText","titleText","hoText","pcText","bgColor"].forEach(id=>q(id).addEventListener("input",draw));
 q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
@@ -176,6 +240,20 @@ q("savePng").onclick=()=>{
  a.download=(q("titleText").value||"display")+".png";
  a.href=canvas.toDataURL("image/png");a.click();
 };
-populate();draw();
+q("scenarioSelect").onchange=()=>{
+ const group=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
+ if(!group){
+   q("runSelect").innerHTML='<option value="">陣を選択</option>';
+   q("runSelect").disabled=true;
+   return;
+ }
+ populateRuns(group);
+};
+q("runSelect").onchange=()=>{
+ const group=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
+ const run=q("runSelect")._runs?.[Number(q("runSelect").value)];
+ applyRun(group,run);
+};
+populateScenarios();draw();
 </script>
 </body></html>
