@@ -52,13 +52,72 @@
  <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
  <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
  <hr>
- <div class="dm-note">文字の書体・サイズ・色・太字・位置は、レイヤー一覧から対象を選んで個別編集できます。</div>
+ <div class="dm-field"><label>書体</label><select id="fontFamily"><option value="sans-serif">ゴシック</option><option value="serif">明朝</option><option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option><option value="'Yu Mincho','MS PMincho',serif">游明朝</option><option value="'Meiryo',sans-serif">メイリオ</option></select></div>
+ <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
+ <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
+ <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
+ <hr>
+ <strong>レイヤー</strong>
+ <div class="dm-row dm-actions">
+   <button type="button" id="addImageLayer">＋ 画像</button>
+   <button type="button" id="addTextLayer">＋ 文字</button>
+   <button type="button" id="addRectLayer">＋ 四角</button>
+   <button type="button" id="addDiamondLayer">＋ ひし形</button>
+   <button type="button" id="addTriangleLayer">＋ 三角</button>
+   <button type="button" id="addCircleLayer">＋ 丸</button>
+ </div>
+ <div id="layerList" class="dm-layer-list"></div>
+ <div id="shapeControls" hidden>
+   <div class="dm-field"><label>図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
+   <div class="dm-field"><label>図形の透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
+   <div class="dm-field"><label>図形の大きさ</label><input id="shapeScale" type="range" min="10" max="300" value="100"></div>
+ </div>
+ <div id="textLayerControls" hidden>
+   <div class="dm-field"><label>文字</label><textarea id="layerText" rows="3"></textarea></div>
+   <div class="dm-field"><label>書体</label><select id="layerFont">
+    <option value="sans-serif">ゴシック</option><option value="serif">明朝</option>
+    <option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option>
+    <option value="'Yu Mincho','MS PMincho',serif">游明朝</option>
+    <option value="'Meiryo',sans-serif">メイリオ</option>
+   </select></div>
+   <div class="dm-row"><div class="dm-field"><label>サイズ</label><input id="layerFontSize" type="range" min="12" max="140" value="42"></div><div class="dm-field"><label>文字色</label><input id="layerTextColor" type="color" value="#ffffff"></div></div>
+   <label><input id="layerBold" type="checkbox"> 太字</label>
+ </div>
+ <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
+<option value="pc">PC立ち絵</option>
+<option value="scenario">シナリオ画像</option>
+<option value="system">システム文字</option>
+<option value="title">シナリオ名</option>
+<option value="ho">HO</option>
+<option value="pcText">PC名</option>
+<option value="extra">選択中のレイヤー</option>
+</select></div>
+ <div class="dm-note">プレビュー上をドラッグすると、選択した画像を直接移動できます。</div>
+ <details>
+  <summary>文字位置の微調整</summary>
+  <div class="dm-note">ドラッグでも動かせます。スライダーは細かい調整用です。</div>
+  <strong>システム</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="systemX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="systemY" type="range" min="0" max="620" value="100"></div></div>
+  <strong>シナリオ名</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="titleX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="titleY" type="range" min="0" max="620" value="155"></div></div>
+  <strong>HO</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="hoX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="hoY" type="range" min="0" max="640" value="360"></div></div>
+  <strong>PC名</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcTextX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="pcTextY" type="range" min="0" max="640" value="410"></div></div>
+ </details>
+ <hr><strong>PC立ち絵</strong>
+ <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="30" max="180" value="100"></div>
+ <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcX" type="range" min="-500" max="500" value="0"></div><div class="dm-field"><label>上下</label><input id="pcY" type="range" min="-400" max="400" value="0"></div></div>
+ <strong>シナリオ画像</strong>
+ <div class="dm-field"><label>大きさ</label><input id="scenarioScale" type="range" min="30" max="220" value="100"></div>
+ <div class="dm-row"><div class="dm-field"><label>左右</label><input id="scenarioX" type="range" min="-600" max="600" value="0"></div><div class="dm-field"><label>上下</label><input id="scenarioY" type="range" min="-400" max="400" value="0"></div></div>
+ <div class="dm-field"><label>シナリオ画像の濃さ</label><input id="scenarioOpacity" type="range" min="0" max="100" value="32"></div>
  <button type="button" id="layoutReset">配置を初期状態へ戻す</button>
  <div class="dm-row dm-actions">
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.8：自動入力されるシステム／シナリオ名／HO／PC名も文字レイヤーへ統合しました。自由文字と同じように個別編集・ドラッグ・表示切替できます。</div>
+ <div class="dm-note">v0.8.1：v0.7のシナリオ検索とレイヤー一覧を維持したまま、システム／シナリオ名／HO／PC名を文字レイヤーへ統合しました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -78,9 +137,7 @@ const builtinTextLayers=[
  {id:"builtin_pc",type:"builtinText",name:"PC名",field:"pcText",x:70,y:410,font:"sans-serif",fontSize:42,color:"#ffffff",bold:true,visible:true}
 ];
 function builtinLayerById(id){return builtinTextLayers.find(x=>x.id===id)||null}
-function selectedLayer(){
- return builtinLayerById(selectedExtraLayerId)||extraLayers.find(x=>x.id===selectedExtraLayerId)||null;
-}
+function selectedLayer(){return builtinLayerById(selectedExtraLayerId)||extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
 
 function makeLayer(type,name){
  return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,bold:false};
@@ -265,23 +322,24 @@ function draw(){
  if(lines.length<maxLines&&line)lines.push(line);
  lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
 }
-["systemText","titleText","hoText","pcText","bgColor","scenarioScale","scenarioX","scenarioY","scenarioOpacity","pcScale","pcX","pcY"].forEach(id=>q(id)?.addEventListener("input",draw));
+["systemText","titleText","hoText","pcText","bgColor","fontFamily","titleSize","pcSize","systemSize","hoSize","textColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity","systemX","systemY","titleX","titleY","hoX","hoY","pcTextX","pcTextY"].forEach(id=>q(id)?.addEventListener("input",draw));
 q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
 q("layoutReset").onclick=()=>{
- const defaults=[
+ const defs=[
   ["builtin_system",70,100,28,false],
   ["builtin_title",70,155,58,true],
   ["builtin_ho",70,360,30,false],
   ["builtin_pc",70,410,42,true]
  ];
- defaults.forEach(([id,x,y,size,bold])=>{
-   const l=builtinLayerById(id);if(!l)return;
-   Object.assign(l,{x,y,font:"sans-serif",fontSize:size,color:"#ffffff",bold,visible:true});
+ defs.forEach(([id,x,y,size,bold])=>{
+  const l=builtinLayerById(id);if(!l)return;
+  Object.assign(l,{x,y,font:"sans-serif",fontSize:size,color:"#ffffff",bold,visible:true});
  });
+ extraLayers=[];selectedExtraLayerId=null;
  if(q("pcScale"))q("pcScale").value=100;if(q("pcX"))q("pcX").value=0;if(q("pcY"))q("pcY").value=0;
  if(q("scenarioScale"))q("scenarioScale").value=100;if(q("scenarioX"))q("scenarioX").value=0;if(q("scenarioY"))q("scenarioY").value=0;if(q("scenarioOpacity"))q("scenarioOpacity").value=32;
- extraLayers=[];selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw();
+ renderLayerList();syncShapeControls();draw();
 };
 q("redraw").onclick=draw;
 
@@ -297,11 +355,15 @@ function renderLayerList(){
   name.onclick=()=>selectExtraLayer(layer.id);
   const up=document.createElement("button");up.type="button";up.textContent="↑";
   const down=document.createElement("button");down.type="button";down.textContent="↓";
-  if(layer.type==="builtinText"){up.disabled=true;down.disabled=true}
-  else {up.onclick=()=>moveExtraLayer(layer.id,1);down.onclick=()=>moveExtraLayer(layer.id,-1)}
   const del=document.createElement("button");del.type="button";del.textContent="削除";
-  if(layer.type==="builtinText"){del.disabled=true;del.title="自動入力文字は削除せず、非表示にできます";}
-  else del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
+  if(layer.type==="builtinText"){
+    up.disabled=true;down.disabled=true;del.disabled=true;
+    del.title="自動入力文字は削除せず、非表示にできます";
+  }else{
+    up.onclick=()=>moveExtraLayer(layer.id,1);
+    down.onclick=()=>moveExtraLayer(layer.id,-1);
+    del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
+  }
   row.append(vis,name,up,down,del);box.appendChild(row);
  });
 }
