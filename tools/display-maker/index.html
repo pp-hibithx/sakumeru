@@ -17,6 +17,7 @@
 .dm-row{display:flex;gap:8px;flex-wrap:wrap}.dm-row>*{flex:1}.dm-actions button{width:auto}
 .dm-note{font-size:12px;color:var(--muted);line-height:1.6}
 .dm-control-panel:hover{transform:none;box-shadow:none;border-color:var(--line)}
+.dm-layer-list{display:grid;gap:6px;margin:8px 0 14px}.dm-layer-item{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--line);border-radius:8px}.dm-layer-item.active{outline:2px solid var(--accent)}.dm-layer-item span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dm-layer-item button{padding:5px 8px;min-width:auto}
 @media(max-width:850px){.dm-layout{grid-template-columns:1fr}}
 </style>
 </head>
@@ -48,6 +49,21 @@
  <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
  <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
  <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
+ <hr>
+ <strong>レイヤー</strong>
+ <div class="dm-row dm-actions">
+   <button type="button" id="addImageLayer">＋ 画像</button>
+   <button type="button" id="addRectLayer">＋ 四角</button>
+   <button type="button" id="addDiamondLayer">＋ ひし形</button>
+   <button type="button" id="addTriangleLayer">＋ 三角</button>
+   <button type="button" id="addCircleLayer">＋ 丸</button>
+ </div>
+ <div id="layerList" class="dm-layer-list"></div>
+ <div id="shapeControls" hidden>
+   <div class="dm-field"><label>図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
+   <div class="dm-field"><label>図形の透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
+   <div class="dm-field"><label>図形の大きさ</label><input id="shapeScale" type="range" min="10" max="300" value="100"></div>
+ </div>
  <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
 <option value="pc">PC立ち絵</option>
 <option value="scenario">シナリオ画像</option>
@@ -55,6 +71,7 @@
 <option value="title">シナリオ名</option>
 <option value="ho">HO</option>
 <option value="pcText">PC名</option>
+<option value="extra">選択中のレイヤー</option>
 </select></div>
  <div class="dm-note">プレビュー上をドラッグすると、選択した画像を直接移動できます。</div>
  <details>
@@ -81,7 +98,8 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.5：PC立ち絵・シナリオ画像に加え、システム／シナリオ名／HO／PC名もプレビュー上で直接ドラッグ移動できます。</div>
+ <div class="dm-note">v0.6：画像レイヤーと、色を変更できる四角／ひし形／三角／丸の図形レイヤーを追加しました。レイヤーは表示・非表示、前後移動、削除、ドラッグ移動に対応します。</div>
+<input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
@@ -92,6 +110,12 @@
 const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
 let scenarioImg=null,pcImg=null;
+let extraLayers=[],selectedExtraLayerId=null,layerSeq=1;
+function makeLayer(type,name){
+ return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true};
+}
+function selectedExtraLayer(){return extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
+
 
 function loadJson(keys,fallback=[]){
  for(const k of keys){
@@ -229,6 +253,25 @@ function draw(){
  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
  if(scenarioImg){const sc=num("scenarioScale",100)/100,sw=canvas.width*sc,sh=canvas.height*sc,sx=(canvas.width-sw)/2+num("scenarioX"),sy=(canvas.height-sh)/2+num("scenarioY");ctx.save();ctx.globalAlpha=num("scenarioOpacity",32)/100;fitImage(scenarioImg,sx,sy,sw,sh,false);ctx.restore();const g=ctx.createLinearGradient(0,0,canvas.width,0);g.addColorStop(0,"rgba(0,0,0,.82)");g.addColorStop(.62,"rgba(0,0,0,.45)");g.addColorStop(1,"rgba(0,0,0,.15)");ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height)}
  if(pcImg){const ps=num("pcScale",100)/100,pw=450*ps,ph=620*ps,px=720+(450-pw)/2+num("pcX"),py=30+(620-ph)/2+num("pcY");fitImage(pcImg,px,py,pw,ph,true)}
+ extraLayers.forEach(layer=>{
+  if(!layer.visible)return;
+  ctx.save();
+  ctx.globalAlpha=(layer.opacity??100)/100;
+  if(layer.type==="image"&&layer.img){
+    const sc=(layer.scale||100)/100,w=320*sc,h=320*sc;
+    fitImage(layer.img,layer.x-w/2,layer.y-h/2,w,h,true);
+  }else if(layer.type!=="image"){
+    const size=120*((layer.scale||100)/100);
+    ctx.fillStyle=layer.color||"#ffffff";
+    ctx.beginPath();
+    if(layer.type==="rect"){ctx.rect(layer.x-size/2,layer.y-size/2,size,size)}
+    else if(layer.type==="circle"){ctx.arc(layer.x,layer.y,size/2,0,Math.PI*2)}
+    else if(layer.type==="diamond"){ctx.moveTo(layer.x,layer.y-size/2);ctx.lineTo(layer.x+size/2,layer.y);ctx.lineTo(layer.x,layer.y+size/2);ctx.lineTo(layer.x-size/2,layer.y);ctx.closePath()}
+    else if(layer.type==="triangle"){ctx.moveTo(layer.x,layer.y-size/2);ctx.lineTo(layer.x+size/2,layer.y+size/2);ctx.lineTo(layer.x-size/2,layer.y+size/2);ctx.closePath()}
+    ctx.fill();
+  }
+  ctx.restore();
+ });
  ctx.fillStyle=textColor;ctx.textBaseline="top";ctx.font=`${num("systemSize",28)}px ${font}`;ctx.fillText(q("systemText").value||"",num("systemX",70),num("systemY",100));ctx.font=`bold ${num("titleSize",58)}px ${font}`;wrapText(q("titleText").value||"",num("titleX",70),num("titleY",155),660,num("titleSize",58)*1.24,2);ctx.font=`${num("hoSize",30)}px ${font}`;ctx.fillText(q("hoText").value||"",num("hoX",70),num("hoY",360));ctx.font=`bold ${num("pcSize",42)}px ${font}`;ctx.fillText(q("pcText").value||"",num("pcTextX",70),num("pcTextY",410))
 }
 function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
@@ -247,6 +290,64 @@ q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
 q("layoutReset").onclick=()=>{const d={fontFamily:"sans-serif",titleSize:58,pcSize:42,systemSize:28,hoSize:30,textColor:"#ffffff",pcScale:100,pcX:0,pcY:0,scenarioScale:100,scenarioX:0,scenarioY:0,scenarioOpacity:32,systemX:70,systemY:100,titleX:70,titleY:155,hoX:70,hoY:360,pcTextX:70,pcTextY:410};Object.entries(d).forEach(([id,v])=>{if(q(id))q(id).value=v});draw()};
 q("redraw").onclick=draw;
 
+
+function renderLayerList(){
+ const box=q("layerList");if(!box)return;
+ box.innerHTML="";
+ [...extraLayers].reverse().forEach(layer=>{
+  const row=document.createElement("div");row.className="dm-layer-item"+(layer.id===selectedExtraLayerId?" active":"");
+  const vis=document.createElement("button");vis.type="button";vis.textContent=layer.visible?"👁":"—";
+  vis.onclick=()=>{layer.visible=!layer.visible;renderLayerList();draw()};
+  const name=document.createElement("span");name.textContent=layer.name;
+  name.onclick=()=>selectExtraLayer(layer.id);
+  const up=document.createElement("button");up.type="button";up.textContent="↑";up.onclick=()=>moveExtraLayer(layer.id,1);
+  const down=document.createElement("button");down.type="button";down.textContent="↓";down.onclick=()=>moveExtraLayer(layer.id,-1);
+  const del=document.createElement("button");del.type="button";del.textContent="削除";del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
+  row.append(vis,name,up,down,del);box.appendChild(row);
+ });
+}
+function selectExtraLayer(id){
+ selectedExtraLayerId=id;
+ q("dragTarget").value="extra";
+ renderLayerList();syncShapeControls();
+}
+function moveExtraLayer(id,delta){
+ const i=extraLayers.findIndex(x=>x.id===id),j=i+delta;
+ if(i<0||j<0||j>=extraLayers.length)return;
+ [extraLayers[i],extraLayers[j]]=[extraLayers[j],extraLayers[i]];
+ renderLayerList();draw();
+}
+function syncShapeControls(){
+ const l=selectedExtraLayer(),box=q("shapeControls");
+ if(!box)return;
+ box.hidden=!l;
+ if(!l)return;
+ q("shapeColor").disabled=l.type==="image";
+ q("shapeColor").value=l.color||"#ffffff";
+ q("shapeOpacity").value=l.opacity??100;
+ q("shapeScale").value=l.scale??100;
+}
+function addShape(type,label){
+ const l=makeLayer(type,label);extraLayers.push(l);selectedExtraLayerId=l.id;
+ q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
+}
+q("addRectLayer").onclick=()=>addShape("rect","四角");
+q("addDiamondLayer").onclick=()=>addShape("diamond","ひし形");
+q("addTriangleLayer").onclick=()=>addShape("triangle","三角");
+q("addCircleLayer").onclick=()=>addShape("circle","丸");
+q("addImageLayer").onclick=()=>q("extraImagePicker").click();
+q("extraImagePicker").onchange=e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ const img=new Image();img.onload=()=>{const l=makeLayer("image",f.name||"画像");l.img=img;extraLayers.push(l);selectedExtraLayerId=l.id;q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw()};img.src=URL.createObjectURL(f);e.target.value="";
+};
+["shapeColor","shapeOpacity","shapeScale"].forEach(id=>q(id).addEventListener("input",()=>{
+ const l=selectedExtraLayer();if(!l)return;
+ if(id==="shapeColor")l.color=q(id).value;
+ if(id==="shapeOpacity")l.opacity=Number(q(id).value);
+ if(id==="shapeScale")l.scale=Number(q(id).value);
+ draw();
+}));
+
 let dmDragging=false,dmDragStartX=0,dmDragStartY=0,dmBaseX=0,dmBaseY=0;
 function canvasPoint(e){
  const r=canvas.getBoundingClientRect();
@@ -256,6 +357,10 @@ function canvasPoint(e){
 }
 function dragFields(){
  const target=q("dragTarget")?.value||"pc";
+ if(target==="extra"){
+   const l=selectedExtraLayer();
+   return l?{layer:l}:null;
+ }
  if(target==="scenario")return {x:q("scenarioX"),y:q("scenarioY")};
  if(target==="system")return {x:q("systemX"),y:q("systemY")};
  if(target==="title")return {x:q("titleX"),y:q("titleY")};
@@ -264,20 +369,21 @@ function dragFields(){
  return {x:q("pcX"),y:q("pcY")};
 }
 function startDrag(e){
- const f=dragFields();if(!f.x||!f.y)return;
+ const f=dragFields();if(!f)return;
  const p=canvasPoint(e);
  dmDragging=true;dmDragStartX=p.x;dmDragStartY=p.y;
- dmBaseX=Number(f.x.value)||0;dmBaseY=Number(f.y.value)||0;
+ if(f.layer){dmBaseX=f.layer.x||0;dmBaseY=f.layer.y||0}
+ else {if(!f.x||!f.y)return;dmBaseX=Number(f.x.value)||0;dmBaseY=Number(f.y.value)||0;}
  canvas.classList.add("dragging");
  e.preventDefault();
 }
 function moveDrag(e){
  if(!dmDragging)return;
- const f=dragFields();if(!f.x||!f.y)return;
+ const f=dragFields();if(!f)return;
  const p=canvasPoint(e);
  const nx=dmBaseX+(p.x-dmDragStartX),ny=dmBaseY+(p.y-dmDragStartY);
- f.x.value=Math.max(Number(f.x.min||-9999),Math.min(Number(f.x.max||9999),nx));
- f.y.value=Math.max(Number(f.y.min||-9999),Math.min(Number(f.y.max||9999),ny));
+ if(f.layer){f.layer.x=nx;f.layer.y=ny;renderLayerList();}
+ else {if(!f.x||!f.y)return;f.x.value=Math.max(Number(f.x.min||-9999),Math.min(Number(f.x.max||9999),nx));f.y.value=Math.max(Number(f.y.min||-9999),Math.min(Number(f.y.max||9999),ny));}
  draw();
  e.preventDefault();
 }
