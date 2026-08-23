@@ -16,6 +16,7 @@
 #dmCanvas{display:block;max-width:100%;height:auto;margin:auto;background:#111;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 .dm-row{display:flex;gap:8px;flex-wrap:wrap}.dm-row>*{flex:1}.dm-actions button{width:auto}
 .dm-note{font-size:12px;color:var(--muted);line-height:1.6}
+.dm-control-panel:hover{transform:none;box-shadow:none;border-color:var(--line)}
 @media(max-width:850px){.dm-layout{grid-template-columns:1fr}}
 </style>
 </head>
@@ -28,10 +29,10 @@
 <main><div class="wrap">
 <div class="hero"><h2>DISPLAY MAKER</h2><p>卓記録から、卓報告用ディスプレイをサクッと作ります。</p></div>
 <div class="dm-layout">
-<section class="card dm-panel">
+<section class="card dm-panel dm-control-panel">
  <div class="dm-field"><label>シナリオ</label><select id="scenarioSelect"><option value="">シナリオを選択</option></select></div>
  <div class="dm-field"><label>陣</label><select id="runSelect" disabled><option value="">陣を選択</option></select></div>
- <div id="dataStatus" class="dm-note">LIBRARYデータを確認中…</div>
+ <div id="dataStatus" class="dm-note"></div>
  <div class="dm-field"><label>システム</label><input id="systemText"></div>
  <div class="dm-field"><label>シナリオ名</label><input id="titleText"></div>
  <div class="dm-row">
@@ -45,162 +46,99 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.3.3：LIBRARY保存データを直接読み込み、シナリオ→陣を選択します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+ <div class="dm-note">v0.2.1：v0.2の読込処理を維持し、シナリオ→陣の2段階選択にしています。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
 </div></main>
 <footer class="footer"><div class="wrap">© <span data-year></span> SAKU+MERU</div></footer>
 <script src="../../assets/js/main.js?v=0292"></script>
-<script src="../../assets/js/shared-data.js?v=02304"></script>
 <script>
 const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
 let scenarioImg=null,pcImg=null;
 
-
-
-function readArrayStorage(key){
- try{
-   const raw=localStorage.getItem(key);
-   if(!raw)return [];
+function loadJson(keys,fallback=[]){
+ for(const k of keys){
+  try{
+   const raw=localStorage.getItem(k);
+   if(!raw)continue;
    const v=JSON.parse(raw);
-   return Array.isArray(v)?v:[];
- }catch(e){return []}
-}
-
-// shared-data.js の現行保存キーと完全に同じものを直接読む。
-// 旧キーはフォールバックとしてのみ使用。
-const albums = (()=>{
- const keys=["39x2_album_v2","39x2_album_v3","trpg39_album_v3","trpg39_album","39x2_album"];
- for(const key of keys){
-   const v=readArrayStorage(key);
-   if(v.length)return v;
+   if(Array.isArray(v))return v;
+  }catch(e){}
  }
- return [];
-})();
+ return fallback;
+}
+const albums=loadJson([
+ "39x2_album_v3",
+ "trpg39_album_v3",
+ "trpg39_album",
+ "39x2_album"
+]);
+const pcs=loadJson([
+ "39x2_pcs_v3",
+ "trpg39_pcs_v3",
+ "trpg39_pcs",
+ "39x2_pcs"
+]);
 
-const pcs = (()=>{
- const keys=["trpg39_pcs","39x2_pcs_v3","trpg39_pcs_v3"];
- for(const key of keys){
-   const v=readArrayStorage(key);
-   if(v.length)return v;
- }
- return [];
-})();
 
-const SELF_PC_ROWS_KEY="trpg39_library_self_pc_rows_v1";
-function loadSelfPcRowsMap(){
- try{
-   const v=JSON.parse(localStorage.getItem(SELF_PC_ROWS_KEY)||"{}");
-   return v&&typeof v==="object"?v:{};
- }catch{return {}}
-}
-const selfPcRowsMap=loadSelfPcRowsMap();
+function normTitle(v){return String(v||"").normalize("NFKC").replace(/\s+/g,"").toLowerCase()}
+function scenarioKey(r){return r.scenarioId?`id:${r.scenarioId}`:`title:${normTitle(r.title||r.scenarioTitle||"")}`}
+function runKey(r){return String(r.runId||"").trim()}
 
-function discoverAlbumRows(){
- return albums;
-}
-function normTitle(v){return String(v||"").normalize("NFKC").trim().toLowerCase()}
-function scenarioKey(r){
- return r.scenarioId ? `id:${r.scenarioId}` : `title:${normTitle(r.title||r.scenarioTitle||"")}`;
-}
-function runKey(r){
- return String(r.runId||r.eventId||r.id||"");
-}
-function recordDate(r){return String(r.date||r.start||"").slice(0,10)}
-function runLabelFromItems(items=[]){
- const explicit=items.find(x=>String(x.runLabel||"").trim())?.runLabel||"";
- if(explicit)return explicit;
- const dates=items.map(recordDate).filter(Boolean).sort();
- if(dates.length){
-   return dates.length>1 && dates[0]!==dates.at(-1)
-     ? `${dates[0]}〜${dates.at(-1)}`
-     : dates[0];
- }
- return "開催記録";
-}
-function groupAlbumRows(){
+function groupRows(){
  const rows=discoverAlbumRows();
- const map=new Map();
-
- rows.forEach(r=>{
+ const scenarios=new Map();
+ rows.forEach((r,index)=>{
+   const title=r.title||r.scenarioTitle||"無題";
    const sk=scenarioKey(r);
-   if(!map.has(sk)){
-     map.set(sk,{
-       key:sk,
-       scenarioId:r.scenarioId||"",
-       title:r.title||r.scenarioTitle||"無題",
-       system:r.system||"",
-       runs:new Map()
-     });
-   }
-   const g=map.get(sk);
-   if(!g.system&&r.system)g.system=r.system;
-   const rk=runKey(r)||`record:${r.id||Math.random()}`;
-   if(!g.runs.has(rk))g.runs.set(rk,{id:rk,items:[]});
-   g.runs.get(rk).items.push(r);
- });
+   if(!scenarios.has(sk))scenarios.set(sk,{title,scenarioId:r.scenarioId||"",system:r.system||"",runs:new Map()});
+   const sg=scenarios.get(sk);
+   if(!sg.system&&r.system)sg.system=r.system;
 
- return [...map.values()].map(g=>({
-   ...g,
-   runs:[...g.runs.values()].map(run=>{
+   // LIBRARYのrunIdが同じ開催記録を同一陣としてまとめる。
+   // runIdが無い旧記録だけは1開催=1陣として安全側に倒す。
+   const rk=runKey(r)||`legacy:${r.id||index}`;
+   if(!sg.runs.has(rk))sg.runs.set(rk,{runId:rk,items:[]});
+   sg.runs.get(rk).items.push(r);
+ });
+ return [...scenarios.values()].map(sg=>{
+   const runs=[...sg.runs.values()].map(run=>{
      run.items.sort((a,b)=>String(a.start||a.date||"").localeCompare(String(b.start||b.date||"")));
-     return {
-       ...run,
-       label:runLabelFromItems(run.items),
-       firstDate:recordDate(run.items[0]||{}),
-       lastDate:recordDate(run.items.at(-1)||{})
-     };
-   }).sort((a,b)=>String(b.lastDate||"").localeCompare(String(a.lastDate||"")))
- })).sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja"));
+     const first=run.items[0]||{}, last=run.items.at(-1)||{};
+     const label=String(first.runLabel||first.runName||"").trim()
+       || (run.runId.startsWith("legacy:")
+           ? (String(first.date||first.start||"").slice(0,10)||"開催記録")
+           : `陣 ${String(first.date||first.start||"").slice(0,10)}`.trim());
+     return {...run,label,lastDate:String(last.date||last.start||"").slice(0,10)};
+   }).sort((a,b)=>String(b.lastDate).localeCompare(String(a.lastDate)));
+   return {...sg,runs};
+ }).sort((a,b)=>a.title.localeCompare(b.title,"ja"));
 }
-function populateScenarios(){
- const groups=groupAlbumRows();
+function populate(){
+ const groups=groupRows();
  q("scenarioSelect")._groups=groups;
- q("scenarioSelect").innerHTML=groups.length
-   ? '<option value="">シナリオを選択</option>'+groups.map((g,i)=>`<option value="${i}">${escapeHtml(g.title)}</option>`).join("")
-   : '<option value="">LIBRARYのシナリオ記録が見つかりません</option>';
+ q("scenarioSelect").innerHTML='<option value="">シナリオを選択</option>'+groups.map((g,i)=>`<option value="${i}">${escapeHtml(g.title)}</option>`).join("");
  q("runSelect").innerHTML='<option value="">陣を選択</option>';
  q("runSelect").disabled=true;
- const status=q("dataStatus");
- if(status)status.textContent=`LIBRARY ${albums.length}開催記録 ／ ${groups.length}シナリオ 読込`;
+ q("dataStatus").textContent=`LIBRARY ${discoverAlbumRows().length}開催記録 ／ ${groups.length}シナリオ`;
 }
 function populateRuns(group){
  const runs=group?.runs||[];
  q("runSelect")._runs=runs;
  q("runSelect").innerHTML='<option value="">陣を選択</option>'+runs.map((r,i)=>`<option value="${i}">${escapeHtml(r.label)}</option>`).join("");
  q("runSelect").disabled=!runs.length;
- if(runs.length===1){
-   q("runSelect").value="0";
-   applyRun(group,runs[0]);
- }
-}
-function selfRowsFromRecord(r){
- const saved=Array.isArray(selfPcRowsMap?.[r?.id])?selfPcRowsMap[r.id]:[];
- if(saved.length)return saved;
- if(Array.isArray(r?.selfPcs)&&r.selfPcs.length)return r.selfPcs;
- if(r?.pcName||r?.selfHo)return [{pcName:r.pcName||"",ho:r.selfHo||"",pcId:r.pcId||""}];
- return [];
-}
-function pickSelfPcForRun(run){
- const all=[];
- (run?.items||[]).forEach(r=>selfRowsFromRecord(r).forEach(x=>all.push(x)));
- const seen=new Set(),rows=[];
- all.forEach(x=>{
-   const key=`${String(x.pcId||"")}||${String(x.pcName||"")}||${String(x.ho||x.selfHo||"")}`;
-   if(seen.has(key))return;
-   seen.add(key);rows.push(x);
- });
- return rows[0]||{};
+ if(runs.length===1){q("runSelect").value="0";applyRun(group,runs[0])}
 }
 function applyRun(group,run){
- if(!group||!run)return;
- const self=pickSelfPcForRun(run);
- q("systemText").value=group.system||run.items?.find(x=>x.system)?.system||"";
- q("titleText").value=group.title||run.items?.[0]?.title||"";
- q("hoText").value=self.ho||self.selfHo||"";
- q("pcText").value=self.pcName||"";
+ const r=run?.items?.find(x=>x.pcName||x.selfHo||x.ho)||run?.items?.[0];
+ if(!r)return;
+ const self=firstSelfPcRow(r);
+ q("systemText").value=group.system||r.system||"";
+ q("titleText").value=group.title||r.title||r.scenarioTitle||"";
+ q("hoText").value=self.ho||self.selfHo||r.selfHo||r.ho||"";
+ q("pcText").value=self.pcName||r.pcName||"";
  draw();
 }
 function firstSelfPcRow(r){
@@ -264,19 +202,15 @@ q("savePng").onclick=()=>{
  a.href=canvas.toDataURL("image/png");a.click();
 };
 q("scenarioSelect").onchange=()=>{
- const group=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
- if(!group){
-   q("runSelect").innerHTML='<option value="">陣を選択</option>';
-   q("runSelect").disabled=true;
-   return;
- }
- populateRuns(group);
+ const g=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
+ if(!g){q("runSelect").innerHTML='<option value="">陣を選択</option>';q("runSelect").disabled=true;return}
+ populateRuns(g);
 };
 q("runSelect").onchange=()=>{
- const group=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
- const run=q("runSelect")._runs?.[Number(q("runSelect").value)];
- applyRun(group,run);
+ const g=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
+ const r=q("runSelect")._runs?.[Number(q("runSelect").value)];
+ applyRun(g,r);
 };
-populateScenarios();draw();
+populate();draw();
 </script>
 </body></html>
