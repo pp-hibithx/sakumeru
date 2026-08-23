@@ -31,6 +31,7 @@
 <section class="card dm-panel">
  <div class="dm-field"><label>シナリオ</label><select id="scenarioSelect"><option value="">シナリオを選択</option></select></div>
  <div class="dm-field"><label>陣</label><select id="runSelect" disabled><option value="">陣を選択</option></select></div>
+ <div id="dataStatus" class="dm-note">LIBRARYデータを確認中…</div>
  <div class="dm-field"><label>システム</label><input id="systemText"></div>
  <div class="dm-field"><label>シナリオ名</label><input id="titleText"></div>
  <div class="dm-row">
@@ -44,7 +45,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.3.2：LIBRARYと同じデータ読込方式で、シナリオ→陣を選んで文字情報を自動取得します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+ <div class="dm-note">v0.3.3：LIBRARY保存データを直接読み込み、シナリオ→陣を選択します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
@@ -58,8 +59,35 @@ const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
 let scenarioImg=null,pcImg=null;
 
 
-const albums = window.TRPG39?.loadAlbum ? TRPG39.loadAlbum() : [];
-const pcs = window.TRPG39?.loadPCs ? TRPG39.loadPCs() : [];
+
+function readArrayStorage(key){
+ try{
+   const raw=localStorage.getItem(key);
+   if(!raw)return [];
+   const v=JSON.parse(raw);
+   return Array.isArray(v)?v:[];
+ }catch(e){return []}
+}
+
+// shared-data.js の現行保存キーと完全に同じものを直接読む。
+// 旧キーはフォールバックとしてのみ使用。
+const albums = (()=>{
+ const keys=["39x2_album_v2","39x2_album_v3","trpg39_album_v3","trpg39_album","39x2_album"];
+ for(const key of keys){
+   const v=readArrayStorage(key);
+   if(v.length)return v;
+ }
+ return [];
+})();
+
+const pcs = (()=>{
+ const keys=["trpg39_pcs","39x2_pcs_v3","trpg39_pcs_v3"];
+ for(const key of keys){
+   const v=readArrayStorage(key);
+   if(v.length)return v;
+ }
+ return [];
+})();
 
 const SELF_PC_ROWS_KEY="trpg39_library_self_pc_rows_v1";
 function loadSelfPcRowsMap(){
@@ -71,7 +99,7 @@ function loadSelfPcRowsMap(){
 const selfPcRowsMap=loadSelfPcRowsMap();
 
 function discoverAlbumRows(){
- return Array.isArray(albums)?albums:[];
+ return albums;
 }
 function normTitle(v){return String(v||"").normalize("NFKC").trim().toLowerCase()}
 function scenarioKey(r){
@@ -135,6 +163,8 @@ function populateScenarios(){
    : '<option value="">LIBRARYのシナリオ記録が見つかりません</option>';
  q("runSelect").innerHTML='<option value="">陣を選択</option>';
  q("runSelect").disabled=true;
+ const status=q("dataStatus");
+ if(status)status.textContent=`LIBRARY ${albums.length}開催記録 ／ ${groups.length}シナリオ 読込`;
 }
 function populateRuns(group){
  const runs=group?.runs||[];
