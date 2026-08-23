@@ -1215,7 +1215,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
   <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
-</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.3-cardvertical</div></main>
+</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.4-hoinherit</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
 <strong>カード画像の位置を調整</strong>
 <div class="lib-cover-help">画像を上下にドラッグして、カードに見せたい位置を合わせます。元画像は変更されません。位置はこのブラウザに保存されます。</div>
@@ -1391,7 +1391,19 @@ function setParticipantHoTemplate(scenarioId,title,rows){
 function applyParticipantHoTemplate(scenarioId,title){
  const rows=getParticipantHoTemplate(scenarioId,title);
  if(!rows.length){q("rememberParticipantHo").checked=false;return}
- setParticipantRows(rows.map(r=>({role:r.role,ho:r.ho,plName:"",pcName:"",relation:""})));
+
+ // HO構成は「参加者単位」で継承する。
+ // PL名・PC名は空のまま、HO1 / HO2 ... を別々の参加者枠へ配置する。
+ refreshParticipantPlayerList();
+ q("participantRows").innerHTML="";
+ rows.forEach(r=>{
+   addParticipantRow({
+     role:r.role||"PL",
+     plName:"",
+     pcs:[{ho:String(r.ho||"").trim(),pcName:""}]
+   },{placeholder:false});
+ });
+
  q("rememberParticipantHo").checked=true;
 }
 
