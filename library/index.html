@@ -1153,7 +1153,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
   <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
-</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.18.2.1-pccache</div></main>
+</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.18.2.2-pccache</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
 <strong>カード画像の位置を調整</strong>
 <div class="lib-cover-help">画像を上下にドラッグして、カードに見せたい位置を合わせます。元画像は変更されません。位置はこのブラウザに保存されます。</div>
@@ -1559,16 +1559,36 @@ function librarySystemFamily(value){
 
 let _pcUsageIndexCache=null;
 
+
 function buildPcUsageIndex(){
  if(_pcUsageIndexCache)return _pcUsageIndexCache;
 
  const byId=new Map(),byName=new Map();
 
+ const normPcName=v=>String(v||"").normalize("NFKC").trim().toLowerCase();
+
+ const mergeRows=(a,b)=>{
+   if(!a)return b;
+   if(!b||a===b)return a;
+   b.systems.forEach(x=>a.systems.add(x));
+   b.allRuns.forEach(x=>a.allRuns.add(x));
+   b.runsBySystem.forEach((set,key)=>{
+     if(!a.runsBySystem.has(key))a.runsBySystem.set(key,new Set());
+     set.forEach(x=>a.runsBySystem.get(key).add(x));
+   });
+   for(const [id,row] of byId)if(row===b)byId.set(id,a);
+   for(const [name,row] of byName)if(row===b)byName.set(name,a);
+   return a;
+ };
+
  const ensure=(pcId="",pcName="")=>{
    const id=String(pcId||"").trim();
-   const name=String(pcName||"").normalize("NFKC").trim().toLowerCase();
+   const name=normPcName(pcName);
 
-   let row=(id&&byId.get(id))||(name&&byName.get(name))||null;
+   const idRow=id?byId.get(id):null;
+   const nameRow=name?byName.get(name):null;
+   let row=mergeRows(idRow,nameRow);
+
    if(!row)row={systems:new Set(),runsBySystem:new Map(),allRuns:new Set()};
 
    if(id)byId.set(id,row);
@@ -1580,7 +1600,8 @@ function buildPcUsageIndex(){
    const family=librarySystemFamily(rec.system);
    const runKey=rec.runId?`run:${rec.runId}`:`record:${rec.id}`;
 
-   storedSelfPcRows(rec).forEach(r=>{
+   const rows=storedSelfPcRows(rec);
+   rows.forEach(r=>{
      const row=ensure(r.pcId,r.pcName);
 
      if(family)row.systems.add(family);
@@ -1593,6 +1614,21 @@ function buildPcUsageIndex(){
    });
  });
 
+ // Current PC master data may contain IDs that old LIBRARY records did not have.
+ // Link master IDs to history rows by name so legacy sessions still count.
+ const currentPcs=TRPG39.loadPCs?TRPG39.loadPCs():pcs;
+ currentPcs.forEach(pc=>{
+   const id=String(pc.id||"").trim();
+   const name=normPcName(pc.name);
+   const idRow=id?byId.get(id):null;
+   const nameRow=name?byName.get(name):null;
+   const row=mergeRows(idRow,nameRow);
+   if(row){
+     if(id)byId.set(id,row);
+     if(name)byName.set(name,row);
+   }
+ });
+
  _pcUsageIndexCache={byId,byName};
  return _pcUsageIndexCache;
 }
@@ -1600,6 +1636,7 @@ function buildPcUsageIndex(){
 function invalidatePcUsageIndex(){
  _pcUsageIndexCache=null;
 }
+
 
 function pcUsageRow(pc){
  const idx=buildPcUsageIndex();
@@ -1616,11 +1653,14 @@ function pcMatchesCurrentSystem(pc,systemValue=q("system")?.value||""){
  const target=librarySystemFamily(systemValue);
  if(!target)return true;
 
+ const history=pcHistorySystems(pc);
+ if(history.size)return history.has(target);
+
  const direct=librarySystemFamily(pc?.system||"");
  if(direct)return direct===target;
 
- const history=pcHistorySystems(pc);
- return !history.size||history.has(target);
+ // New/unclassified PCs should remain selectable.
+ return true;
 }
 
 function pcContinuationCount(pc,systemValue=q("system")?.value||""){
