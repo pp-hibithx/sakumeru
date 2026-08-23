@@ -117,7 +117,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.8.1：v0.7のシナリオ検索とレイヤー一覧を維持したまま、システム／シナリオ名／HO／PC名を文字レイヤーへ統合しました。</div>
+ <div class="dm-note">v0.8.2：自動文字レイヤーの描画停止を修正。システム／シナリオ名／HO／PC名をすべて描画します。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -311,18 +311,31 @@ function draw(){
    const text=q(layer.field)?.value||"";
    ctx.fillStyle=layer.color||"#ffffff";
    ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
-   if(layer.id==="builtin_title")wrapText(text,layer.x,layer.y,660,(layer.fontSize||58)*1.24,2);
-   else ctx.fillText(text,layer.x,layer.y);
- });let line="",lines=[];
+   if(layer.id==="builtin_title"){
+     wrapText(text,layer.x,layer.y,660,(layer.fontSize||58)*1.24,2);
+   }else{
+     ctx.fillText(text,layer.x,layer.y);
+   }
+ });
+}
+
+function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
+ const chars=[...String(text||"")];
+ let line="",lines=[];
  for(const ch of chars){
-  const test=line+ch;
-  if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=ch;if(lines.length>=maxLines)break}
-  else line=test;
+   const test=line+ch;
+   if(ctx.measureText(test).width>maxWidth&&line){
+     lines.push(line);
+     line=ch;
+     if(lines.length>=maxLines)break;
+   }else{
+     line=test;
+   }
  }
  if(lines.length<maxLines&&line)lines.push(line);
  lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
 }
-["systemText","titleText","hoText","pcText","bgColor","fontFamily","titleSize","pcSize","systemSize","hoSize","textColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity","systemX","systemY","titleX","titleY","hoX","hoY","pcTextX","pcTextY"].forEach(id=>q(id)?.addEventListener("input",draw));
+["systemText","titleText","hoText","pcText","bgColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity"].forEach(id=>q(id)?.addEventListener("input",draw));
 q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
 q("layoutReset").onclick=()=>{
