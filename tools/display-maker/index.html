@@ -44,60 +44,35 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.3.1：LIBRARYからシナリオ→陣を選んで文字情報を自動取得します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+ <div class="dm-note">v0.3.2：LIBRARYと同じデータ読込方式で、シナリオ→陣を選んで文字情報を自動取得します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
 </div></main>
 <footer class="footer"><div class="wrap">© <span data-year></span> SAKU+MERU</div></footer>
 <script src="../../assets/js/main.js?v=0292"></script>
+<script src="../../assets/js/shared-data.js?v=02304"></script>
 <script>
 const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
 let scenarioImg=null,pcImg=null;
 
-function loadJson(keys,fallback=[]){
- for(const k of keys){
-  try{
-   const raw=localStorage.getItem(k);
-   if(!raw)continue;
-   const v=JSON.parse(raw);
-   if(Array.isArray(v))return v;
-  }catch(e){}
- }
- return fallback;
-}
-const albums=loadJson([
- "39x2_album_v3",
- "trpg39_album_v3",
- "trpg39_album",
- "39x2_album"
-]);
-const pcs=loadJson([
- "39x2_pcs_v3",
- "trpg39_pcs_v3",
- "trpg39_pcs",
- "39x2_pcs"
-]);
 
+const albums = window.TRPG39?.loadAlbum ? TRPG39.loadAlbum() : [];
+const pcs = window.TRPG39?.loadPCs ? TRPG39.loadPCs() : [];
+
+const SELF_PC_ROWS_KEY="trpg39_library_self_pc_rows_v1";
+function loadSelfPcRowsMap(){
+ try{
+   const v=JSON.parse(localStorage.getItem(SELF_PC_ROWS_KEY)||"{}");
+   return v&&typeof v==="object"?v:{};
+ }catch{return {}}
+}
+const selfPcRowsMap=loadSelfPcRowsMap();
 
 function discoverAlbumRows(){
- if(albums.length)return albums;
- for(let i=0;i<localStorage.length;i++){
-   const key=localStorage.key(i);
-   try{
-     const v=JSON.parse(localStorage.getItem(key));
-     if(!Array.isArray(v)||!v.length)continue;
-     const sample=v.find(x=>x&&typeof x==="object");
-     if(sample && ("runId" in sample || "scenarioId" in sample) && ("title" in sample || "scenarioTitle" in sample)){
-       return v;
-     }
-   }catch(e){}
- }
- return [];
+ return Array.isArray(albums)?albums:[];
 }
-
-
 function normTitle(v){return String(v||"").normalize("NFKC").trim().toLowerCase()}
 function scenarioKey(r){
  return r.scenarioId ? `id:${r.scenarioId}` : `title:${normTitle(r.title||r.scenarioTitle||"")}`;
@@ -155,7 +130,9 @@ function groupAlbumRows(){
 function populateScenarios(){
  const groups=groupAlbumRows();
  q("scenarioSelect")._groups=groups;
- q("scenarioSelect").innerHTML='<option value="">シナリオを選択</option>'+groups.map((g,i)=>`<option value="${i}">${escapeHtml(g.title)}</option>`).join("");
+ q("scenarioSelect").innerHTML=groups.length
+   ? '<option value="">シナリオを選択</option>'+groups.map((g,i)=>`<option value="${i}">${escapeHtml(g.title)}</option>`).join("")
+   : '<option value="">LIBRARYのシナリオ記録が見つかりません</option>';
  q("runSelect").innerHTML='<option value="">陣を選択</option>';
  q("runSelect").disabled=true;
 }
@@ -170,12 +147,11 @@ function populateRuns(group){
  }
 }
 function selfRowsFromRecord(r){
- if(Array.isArray(r.selfPcs)&&r.selfPcs.length)return r.selfPcs;
- if(Array.isArray(r.participantRows)){
-   const selfish=r.participantRows.filter(x=>x.isSelf||x.self||x.mine);
-   if(selfish.length)return selfish;
- }
- return [{pcName:r.pcName||"",ho:r.selfHo||r.ho||"",pcId:r.pcId||""}];
+ const saved=Array.isArray(selfPcRowsMap?.[r?.id])?selfPcRowsMap[r.id]:[];
+ if(saved.length)return saved;
+ if(Array.isArray(r?.selfPcs)&&r.selfPcs.length)return r.selfPcs;
+ if(r?.pcName||r?.selfHo)return [{pcName:r.pcName||"",ho:r.selfHo||"",pcId:r.pcId||""}];
+ return [];
 }
 function pickSelfPcForRun(run){
  const all=[];
