@@ -43,11 +43,24 @@
  <div class="dm-field"><label>背景</label><input id="bgColor" type="color" value="#151515"></div>
  <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
  <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
+ <hr>
+ <div class="dm-field"><label>書体</label><select id="fontFamily"><option value="sans-serif">ゴシック</option><option value="serif">明朝</option><option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option><option value="'Yu Mincho','MS PMincho',serif">游明朝</option><option value="'Meiryo',sans-serif">メイリオ</option></select></div>
+ <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
+ <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
+ <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
+ <hr><strong>PC立ち絵</strong>
+ <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="30" max="180" value="100"></div>
+ <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcX" type="range" min="-500" max="500" value="0"></div><div class="dm-field"><label>上下</label><input id="pcY" type="range" min="-400" max="400" value="0"></div></div>
+ <strong>シナリオ画像</strong>
+ <div class="dm-field"><label>大きさ</label><input id="scenarioScale" type="range" min="30" max="220" value="100"></div>
+ <div class="dm-row"><div class="dm-field"><label>左右</label><input id="scenarioX" type="range" min="-600" max="600" value="0"></div><div class="dm-field"><label>上下</label><input id="scenarioY" type="range" min="-400" max="400" value="0"></div></div>
+ <div class="dm-field"><label>シナリオ画像の濃さ</label><input id="scenarioOpacity" type="range" min="0" max="100" value="32"></div>
+ <button type="button" id="layoutReset">配置を初期状態へ戻す</button>
  <div class="dm-row dm-actions">
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.2.3：シナリオ検索 → シナリオ選択 → 陣選択に対応しました。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+ <div class="dm-note">v0.3：書体・文字サイズ・文字色、PC立ち絵とシナリオ画像の大きさ・位置・濃さを調整できます。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
@@ -189,27 +202,13 @@ function fitImage(im,x,y,w,h,contain=false){
  const dw=im.width*scale,dh=im.height*scale;
  ctx.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
 }
+function num(id,fallback=0){const n=Number(q(id)?.value);return Number.isFinite(n)?n:fallback}
 function draw(){
- const bg=q("bgColor").value||"#151515";
- ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
-
- if(scenarioImg){
-   ctx.save();ctx.globalAlpha=.32;fitImage(scenarioImg,0,0,canvas.width,canvas.height,false);
-   ctx.restore();
-   const g=ctx.createLinearGradient(0,0,canvas.width,0);
-   g.addColorStop(0,"rgba(0,0,0,.82)");g.addColorStop(.62,"rgba(0,0,0,.45)");g.addColorStop(1,"rgba(0,0,0,.15)");
-   ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
- }
- if(pcImg)fitImage(pcImg,720,30,450,620,true);
-
- ctx.fillStyle="#fff";
- ctx.textBaseline="top";
- ctx.font='28px sans-serif';ctx.fillText(q("systemText").value||"",70,100);
- ctx.font='bold 58px sans-serif';
- wrapText(q("titleText").value||"",70,155,660,72,2);
- ctx.font='30px sans-serif';ctx.fillText(q("hoText").value||"",70,360);
- ctx.font='bold 42px sans-serif';ctx.fillText(q("pcText").value||"",70,410);
+ const bg=q("bgColor").value||"#151515",font=q("fontFamily")?.value||"sans-serif",textColor=q("textColor")?.value||"#ffffff";
+ ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
+ if(scenarioImg){const sc=num("scenarioScale",100)/100,sw=canvas.width*sc,sh=canvas.height*sc,sx=(canvas.width-sw)/2+num("scenarioX"),sy=(canvas.height-sh)/2+num("scenarioY");ctx.save();ctx.globalAlpha=num("scenarioOpacity",32)/100;fitImage(scenarioImg,sx,sy,sw,sh,false);ctx.restore();const g=ctx.createLinearGradient(0,0,canvas.width,0);g.addColorStop(0,"rgba(0,0,0,.82)");g.addColorStop(.62,"rgba(0,0,0,.45)");g.addColorStop(1,"rgba(0,0,0,.15)");ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height)}
+ if(pcImg){const ps=num("pcScale",100)/100,pw=450*ps,ph=620*ps,px=720+(450-pw)/2+num("pcX"),py=30+(620-ph)/2+num("pcY");fitImage(pcImg,px,py,pw,ph,true)}
+ ctx.fillStyle=textColor;ctx.textBaseline="top";ctx.font=`${num("systemSize",28)}px ${font}`;ctx.fillText(q("systemText").value||"",70,100);ctx.font=`bold ${num("titleSize",58)}px ${font}`;wrapText(q("titleText").value||"",70,155,660,num("titleSize",58)*1.24,2);ctx.font=`${num("hoSize",30)}px ${font}`;ctx.fillText(q("hoText").value||"",70,360);ctx.font=`bold ${num("pcSize",42)}px ${font}`;ctx.fillText(q("pcText").value||"",70,410)
 }
 function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
  const chars=[...String(text||"")];let line="",lines=[];
@@ -221,9 +220,10 @@ function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
  if(lines.length<maxLines&&line)lines.push(line);
  lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
 }
-["systemText","titleText","hoText","pcText","bgColor"].forEach(id=>q(id).addEventListener("input",draw));
+["systemText","titleText","hoText","pcText","bgColor","fontFamily","titleSize","pcSize","systemSize","hoSize","textColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity"].forEach(id=>q(id)?.addEventListener("input",draw));
 q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
+q("layoutReset").onclick=()=>{const d={fontFamily:"sans-serif",titleSize:58,pcSize:42,systemSize:28,hoSize:30,textColor:"#ffffff",pcScale:100,pcX:0,pcY:0,scenarioScale:100,scenarioX:0,scenarioY:0,scenarioOpacity:32};Object.entries(d).forEach(([id,v])=>{if(q(id))q(id).value=v});draw()};
 q("redraw").onclick=draw;
 q("savePng").onclick=()=>{
  const a=document.createElement("a");
