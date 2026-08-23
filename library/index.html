@@ -1179,7 +1179,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
   <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
-</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19-recordsearch</div></main>
+</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.1-recordsearch</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
 <strong>カード画像の位置を調整</strong>
 <div class="lib-cover-help">画像を上下にドラッグして、カードに見せたい位置を合わせます。元画像は変更されません。位置はこのブラウザに保存されます。</div>
@@ -2559,21 +2559,18 @@ function roleCountForGroup(g,roles){
 function libraryGridCard(g){
  const kpRuns=roleCountForGroup(g,["KP","DL","GM","KPGM","SKP"]);
  const plRuns=roleCountForGroup(g,["PL"]);
- const sub=[
+ const roleLine=[
    kpRuns?`進行 ${kpRuns}陣`:"",
-   plRuns?`PL ${plRuns}陣`:"",
-   g.lastDate?`最終 ${g.lastDate}`:""
+   plRuns?`PL ${plRuns}陣`:""
  ].filter(Boolean).join(" ／ ");
+
  return `<article class="lib-grid-card" data-library-focus="${esc(g.key)}" tabindex="0">
-   <div class="lib-grid-thumb-wrap">${g.thumbnailUrl?`<img class="lib-grid-thumb" src="${esc(g.thumbnailUrl)}" alt="" loading="lazy">${g.thumbnailSource==="chosenRun"?`<span class="lib-grid-thumb-source">指定卓SS</span>`:(g.thumbnailSource==="scenarioForced"?`<span class="lib-grid-thumb-source">SCENARIO</span>`:(g.thumbnailSource==="session"?`<span class="lib-grid-thumb-source">卓SS</span>`:""))}`:`<div class="lib-grid-placeholder">🌺</div>`}</div>
+   <div class="lib-grid-thumb-wrap">${g.thumbnailUrl?`<img class="lib-grid-thumb" src="${esc(g.thumbnailUrl)}" alt="" loading="lazy">${g.thumbnailSource==="chosenRun"?`<span class="lib-grid-thumb-source">指定卓SS</span>`:(g.thumbnailSource==="session"?`<span class="lib-grid-thumb-source">卓SS</span>`:"")}`:`<div class="lib-grid-placeholder">🌺</div>`}</div>
    <div class="lib-grid-body">
      <div class="lib-grid-title">${esc(g.title)}</div>
-     <div class="lib-grid-meta">${g.system?`<span class="badge">${esc(g.system)}</span>`:""}<span class="badge">${runCountForGroup(g)}陣</span><span class="badge">${g.items.length}記録</span></div>
-     ${sub?`<div class="lib-grid-sub">${esc(sub)}</div>`:""}
-     <div class="lib-grid-thumb-controls">
-       <button type="button" data-thumb-mode="auto" data-thumb-scenario="${esc(g.scenarioId||"")}" data-thumb-title="${esc(g.title)}" class="${g.thumbnailMode==="auto"?"active":""}">自動</button>
-       <button type="button" data-thumb-mode="scenario" data-thumb-scenario="${esc(g.scenarioId||"")}" data-thumb-title="${esc(g.title)}" class="${g.thumbnailMode==="scenario"?"active":""}">SCENARIO</button>
-     </div>
+     ${g.system?`<div class="lib-grid-meta"><span class="badge">${esc(g.system)}</span></div>`:""}
+     ${roleLine?`<div class="lib-grid-sub">${esc(roleLine)}</div>`:""}
+     ${g.lastDate?`<div class="lib-grid-sub">最終 ${esc(g.lastDate)}</div>`:""}
    </div>
  </article>`;
 }
@@ -4271,6 +4268,7 @@ function recordHasPlayer(rec,player){
  );
 }
 function openLibraryScenarioFilter(params={}){
+ libraryYearFilter="all";
  const u=new URL(location.href);
  u.searchParams.set("view","scenario");
  u.searchParams.delete("pc");
