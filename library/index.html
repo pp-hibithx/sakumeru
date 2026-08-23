@@ -1055,6 +1055,20 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 #clearLibraryPersonFilter{width:auto!important;margin-left:8px}
 @media(max-width:620px){.library-search-choice-grid{grid-template-columns:1fr}}
 </style>
+
+<style>
+.library-search-choice-portrait{
+ width:44px;height:52px;flex:0 0 44px;
+ display:grid;place-items:center;overflow:hidden;
+ border-radius:8px;background:rgba(255,255,255,.025)
+}
+.library-search-choice-portrait img{
+ width:100%!important;height:100%!important;
+ object-fit:contain!important;
+ object-position:center center!important;
+ border-radius:0!important;
+}
+</style>
 </head>
 <body>
 <header class="site-header"><div class="wrap">
@@ -1179,7 +1193,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
   <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
-</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.1-recordsearch</div></main>
+</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.2-pccountportrait</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
 <strong>カード画像の位置を調整</strong>
 <div class="lib-cover-help">画像を上下にドラッグして、カードに見せたい位置を合わせます。元画像は変更されません。位置はこのブラウザに保存されます。</div>
@@ -4284,9 +4298,13 @@ function openLibraryScenarioFilter(params={}){
 }
 function renderPcView(){
  const term=q("search").value.trim().toLowerCase();
- const rows=pcs.map(x=>({x,st:pcStats(x.name)}))
+ const rows=pcs.map(x=>{
+   const matched=data.filter(rec=>recordHasSelfPc(rec,x));
+   const runKeys=new Set(matched.map(rec=>rec.runId?`run:${rec.runId}`:`record:${rec.id}`));
+   return {x,runCount:runKeys.size};
+ })
    .filter(({x})=>!term||[x.name,x.reading,x.system,x.job].filter(Boolean).join(" ").toLowerCase().includes(term))
-   .sort((a,b)=>(b.st.runCount||0)-(a.st.runCount||0)||String(a.x.name||"").localeCompare(String(b.x.name||""),"ja"));
+   .sort((a,b)=>(b.runCount||0)-(a.runCount||0)||String(a.x.name||"").localeCompare(String(b.x.name||""),"ja"));
 
  q("summary").textContent=`PCから卓記録を探す ／ ${rows.length}人`;
  q("list").classList.remove("library-grid");
@@ -4296,11 +4314,11 @@ function renderPcView(){
      <a class="link" href="../pcs/index.html">PCページで詳しく見る</a>
    </div>
    <div class="library-search-choice-grid">
-     ${rows.length?rows.map(({x,st})=>`<button type="button" class="library-search-choice" data-library-pc-filter="${esc(x.id)}">
-       ${x.image?`<img src="${esc(x.image)}" alt="" loading="lazy">`:`<span class="library-search-choice-placeholder">🌺</span>`}
+     ${rows.length?rows.map(({x,runCount})=>`<button type="button" class="library-search-choice" data-library-pc-filter="${esc(x.id)}">
+       ${x.image?`<span class="library-search-choice-portrait"><img src="${esc(x.image)}" alt="" loading="lazy"></span>`:`<span class="library-search-choice-placeholder">🌺</span>`}
        <span class="library-search-choice-main">
          <strong>${esc(x.name)}</strong>
-         <span class="small muted">${[x.system,`${st.runCount||0}卓`].filter(Boolean).map(esc).join(" ／ ")}</span>
+         <span class="small muted">${[x.system,`${runCount||0}卓`].filter(Boolean).map(esc).join(" ／ ")}</span>
        </span>
      </button>`).join(""):'<div class="empty">該当するPCがありません。</div>'}
    </div>
