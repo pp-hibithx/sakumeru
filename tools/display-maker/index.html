@@ -30,6 +30,7 @@
 <div class="hero"><h2>DISPLAY MAKER</h2><p>卓記録から、卓報告用ディスプレイをサクッと作ります。</p></div>
 <div class="dm-layout">
 <section class="card dm-panel dm-control-panel">
+ <div class="dm-field"><label>シナリオ検索</label><input id="scenarioSearch" placeholder="タイトルの一部を入力"></div>
  <div class="dm-field"><label>シナリオ</label><select id="scenarioSelect"><option value="">シナリオを選択</option></select></div>
  <div class="dm-field"><label>陣</label><select id="runSelect" disabled><option value="">陣を選択</option></select></div>
  <div id="dataStatus" class="dm-note"></div>
@@ -46,7 +47,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.2.2：v0.2の読込処理を維持し、シナリオ→陣の2段階選択にしています。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+ <div class="dm-note">v0.2.3：シナリオ検索 → シナリオ選択 → 陣選択に対応しました。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
@@ -137,12 +138,19 @@ function groupRows(){
    return {...sg,runs};
  }).sort((a,b)=>a.title.localeCompare(b.title,"ja"));
 }
-function populate(){
- const groups=groupRows();
- q("scenarioSelect")._groups=groups;
- q("scenarioSelect").innerHTML='<option value="">シナリオを選択</option>'+groups.map((g,i)=>`<option value="${i}">${escapeHtml(g.title)}</option>`).join("");
+function renderScenarioOptions(){
+ const groups=q("scenarioSelect")._allGroups||[];
+ const term=String(q("scenarioSearch")?.value||"").normalize("NFKC").trim().toLowerCase();
+ const rows=term?groups.filter(g=>String(g.title||"").normalize("NFKC").toLowerCase().includes(term)):groups;
+ q("scenarioSelect")._groups=rows;
+ q("scenarioSelect").innerHTML='<option value="">シナリオを選択</option>'+rows.map((g,i)=>`<option value="${i}">${escapeHtml(g.title)}</option>`).join("");
  q("runSelect").innerHTML='<option value="">陣を選択</option>';
  q("runSelect").disabled=true;
+}
+function populate(){
+ const groups=groupRows();
+ q("scenarioSelect")._allGroups=groups;
+ renderScenarioOptions();
  q("dataStatus").textContent=`LIBRARY ${discoverAlbumRows().length}開催記録 ／ ${groups.length}シナリオ`;
 }
 function populateRuns(group){
@@ -222,6 +230,7 @@ q("savePng").onclick=()=>{
  a.download=(q("titleText").value||"display")+".png";
  a.href=canvas.toDataURL("image/png");a.click();
 };
+q("scenarioSearch").addEventListener("input",renderScenarioOptions);
 q("scenarioSelect").onchange=()=>{
  const g=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
  if(!g){q("runSelect").innerHTML='<option value="">陣を選択</option>';q("runSelect").disabled=true;return}
