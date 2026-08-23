@@ -127,6 +127,13 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
  line-height:1.4;
 }
 </style>
+
+<style>
+.friend-status-pill.friend-status-unknown{
+  opacity:.72;
+  border-style:dashed;
+}
+</style>
 </head>
 <body>
 <header class="site-header"><div class="wrap">
@@ -657,12 +664,16 @@ function sourceStatusRows(group){
      owner:src.owner||"友人",
      labels
    };
- }).filter(r=>r.labels.length);
+ });
 
  if(!rows.length)return "";
 
  return `<div class="friend-status-groups">${rows.map(r=>
-   `<div class="friend-status-row"><b>${esc(r.owner)}：</b>${r.labels.map(v=>`<span class="friend-status-pill">${esc(v)}</span>`).join("")}</div>`
+   `<div class="friend-status-row"><b>${esc(r.owner)}：</b>${
+     r.labels.length
+       ? r.labels.map(v=>`<span class="friend-status-pill">${esc(v)}</span>`).join("")
+       : `<span class="friend-status-pill friend-status-unknown">分類未取得</span>`
+   }</div>`
  ).join("")}</div>`;
 }
 function isOwnedScenario(x,source="friend"){
@@ -811,7 +822,12 @@ function renderFriendResults(){
    }
   }
   const rows=[...people.entries()].sort((a,b)=>a[0].localeCompare(b[0],"ja"));
-  q("friendResults").innerHTML=rows.length?rows.map(([owner,gs])=>`<section class="friend-person-group"><h3>${esc(owner)}</h3><div class="friend-person-items">${gs.sort((a,b)=>String(a.item.title||"").localeCompare(String(b.item.title||""),"ja")).map(g=>{const x=g.item;const ownSrc=g.sources.find(s=>s.owner===owner);const tags=Array.isArray(ownSrc?.item?.tags)?ownSrc.item.tags.filter(Boolean):[];const mine=ownScenarioMatch(g.item);const mineLabels=mine?sharedScenarioStatusLabels(mine):[];return `<div class="friend-person-item">${x.thumbnailUrl?`<img src="${esc(x.thumbnailUrl)}" alt="" loading="lazy">`:`<div class="friend-person-thumb">🌺</div>`}<div><b>${esc(x.title)}</b>${mineLabels.length?` <span class="small muted">（自分：${esc(mineLabels.join("・"))}）</span>`:""}${x.system?`<div class="small">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted">${esc(x.author)}</div>`:""}${(()=>{const p=friendRangeText(ownSrc?.item?.playersMin,ownSrc?.item?.playersMax,"人"),h=friendRangeText(ownSrc?.item?.hoursMin,ownSrc?.item?.hoursMax,"h");return p||h?`<div class="friend-basic-info">${p?`<span class="badge">${esc(p)}</span>`:""}${h?`<span class="badge">${esc(h)}</span>`:""}</div>`:""})()}${ownSrc?`<div class="friend-status-row">${sharedScenarioStatusLabels(ownSrc.item).map(v=>`<span class="friend-status-pill">${esc(v)}</span>`).join("")}</div>`:""}${tags.length?`<div class="friend-tag-row">${tags.map(t=>`<span class="friend-tag-pill">#${esc(t)}</span>`).join("")}</div>`:""}</div></div>`}).join("")}</div></section>`).join(""):(friendSources.length?'<div class="small muted">条件に合う共有シナリオはありません。</div>':"");
+  q("friendResults").innerHTML=rows.length?rows.map(([owner,gs])=>`<section class="friend-person-group"><h3>${esc(owner)}</h3><div class="friend-person-items">${gs.sort((a,b)=>String(a.item.title||"").localeCompare(String(b.item.title||""),"ja")).map(g=>{const x=g.item;const ownSrc=g.sources.find(s=>s.owner===owner);const tags=Array.isArray(ownSrc?.item?.tags)?ownSrc.item.tags.filter(Boolean):[];const mine=ownScenarioMatch(g.item);const mineLabels=mine?sharedScenarioStatusLabels(mine):[];return `<div class="friend-person-item">${x.thumbnailUrl?`<img src="${esc(x.thumbnailUrl)}" alt="" loading="lazy">`:`<div class="friend-person-thumb">🌺</div>`}<div><b>${esc(x.title)}</b>${mineLabels.length?` <span class="small muted">（自分：${esc(mineLabels.join("・"))}）</span>`:""}${x.system?`<div class="small">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted">${esc(x.author)}</div>`:""}${(()=>{const p=friendRangeText(ownSrc?.item?.playersMin,ownSrc?.item?.playersMax,"人"),h=friendRangeText(ownSrc?.item?.hoursMin,ownSrc?.item?.hoursMax,"h");return p||h?`<div class="friend-basic-info">${p?`<span class="badge">${esc(p)}</span>`:""}${h?`<span class="badge">${esc(h)}</span>`:""}</div>`:""})()}${ownSrc?`<div class="friend-status-row"><b>${esc(person.name)}：</b>${(()=>{
+  const labels=sharedScenarioStatusLabels(ownSrc.item);
+  return labels.length
+    ? labels.map(v=>`<span class="friend-status-pill">${esc(v)}</span>`).join("")
+    : `<span class="friend-status-pill friend-status-unknown">分類未取得</span>`;
+})()}</div>`:""}${tags.length?`<div class="friend-tag-row">${tags.map(t=>`<span class="friend-tag-pill">#${esc(t)}</span>`).join("")}</div>`:""}</div></div>`}).join("")}</div></section>`).join(""):(friendSources.length?'<div class="small muted">条件に合う共有シナリオはありません。</div>':"");
   return;
  }
 
