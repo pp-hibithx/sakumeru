@@ -13,7 +13,7 @@
 .dm-panel{display:grid;gap:12px}.dm-field{display:grid;gap:5px}.dm-field label{font-weight:700;font-size:13px}
 .dm-field input,.dm-field select{width:100%}
 .dm-canvas-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(0,0,0,.08)}
-#dmCanvas{display:block;max-width:100%;height:auto;margin:auto;background:#111;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+#dmCanvas{display:block;max-width:100%;height:auto;margin:auto;background:#111;box-shadow:0 8px 30px rgba(0,0,0,.25);cursor:grab;touch-action:none}#dmCanvas.dragging{cursor:grabbing}
 .dm-row{display:flex;gap:8px;flex-wrap:wrap}.dm-row>*{flex:1}.dm-actions button{width:auto}
 .dm-note{font-size:12px;color:var(--muted);line-height:1.6}
 .dm-control-panel:hover{transform:none;box-shadow:none;border-color:var(--line)}
@@ -48,6 +48,8 @@
  <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
  <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
  <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
+ <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget"><option value="pc">PC立ち絵</option><option value="scenario">シナリオ画像</option></select></div>
+ <div class="dm-note">プレビュー上をドラッグすると、選択した画像を直接移動できます。</div>
  <hr><strong>PC立ち絵</strong>
  <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="30" max="180" value="100"></div>
  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcX" type="range" min="-500" max="500" value="0"></div><div class="dm-field"><label>上下</label><input id="pcY" type="range" min="-400" max="400" value="0"></div></div>
@@ -60,7 +62,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.3：書体・文字サイズ・文字色、PC立ち絵とシナリオ画像の大きさ・位置・濃さを調整できます。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+ <div class="dm-note">v0.4：書体・文字サイズ・画像調整に加え、プレビュー上でPC立ち絵／シナリオ画像を直接ドラッグ移動できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
@@ -225,6 +227,45 @@ q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
 q("layoutReset").onclick=()=>{const d={fontFamily:"sans-serif",titleSize:58,pcSize:42,systemSize:28,hoSize:30,textColor:"#ffffff",pcScale:100,pcX:0,pcY:0,scenarioScale:100,scenarioX:0,scenarioY:0,scenarioOpacity:32};Object.entries(d).forEach(([id,v])=>{if(q(id))q(id).value=v});draw()};
 q("redraw").onclick=draw;
+
+let dmDragging=false,dmDragStartX=0,dmDragStartY=0,dmBaseX=0,dmBaseY=0;
+function canvasPoint(e){
+ const r=canvas.getBoundingClientRect();
+ const clientX=e.touches?.[0]?.clientX ?? e.clientX;
+ const clientY=e.touches?.[0]?.clientY ?? e.clientY;
+ return {x:(clientX-r.left)*(canvas.width/r.width),y:(clientY-r.top)*(canvas.height/r.height)};
+}
+function dragFields(){
+ return q("dragTarget")?.value==="scenario"
+   ? {x:q("scenarioX"),y:q("scenarioY")}
+   : {x:q("pcX"),y:q("pcY")};
+}
+function startDrag(e){
+ const f=dragFields();if(!f.x||!f.y)return;
+ const p=canvasPoint(e);
+ dmDragging=true;dmDragStartX=p.x;dmDragStartY=p.y;
+ dmBaseX=Number(f.x.value)||0;dmBaseY=Number(f.y.value)||0;
+ canvas.classList.add("dragging");
+ e.preventDefault();
+}
+function moveDrag(e){
+ if(!dmDragging)return;
+ const f=dragFields();if(!f.x||!f.y)return;
+ const p=canvasPoint(e);
+ const nx=dmBaseX+(p.x-dmDragStartX),ny=dmBaseY+(p.y-dmDragStartY);
+ f.x.value=Math.max(Number(f.x.min||-9999),Math.min(Number(f.x.max||9999),nx));
+ f.y.value=Math.max(Number(f.y.min||-9999),Math.min(Number(f.y.max||9999),ny));
+ draw();
+ e.preventDefault();
+}
+function endDrag(){dmDragging=false;canvas.classList.remove("dragging")}
+canvas.addEventListener("mousedown",startDrag);
+window.addEventListener("mousemove",moveDrag);
+window.addEventListener("mouseup",endDrag);
+canvas.addEventListener("touchstart",startDrag,{passive:false});
+window.addEventListener("touchmove",moveDrag,{passive:false});
+window.addEventListener("touchend",endDrag);
+
 q("savePng").onclick=()=>{
  const a=document.createElement("a");
  a.download=(q("titleText").value||"display")+".png";
