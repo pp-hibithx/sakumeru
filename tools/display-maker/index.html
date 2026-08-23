@@ -52,72 +52,13 @@
  <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
  <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
  <hr>
- <div class="dm-field"><label>書体</label><select id="fontFamily"><option value="sans-serif">ゴシック</option><option value="serif">明朝</option><option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option><option value="'Yu Mincho','MS PMincho',serif">游明朝</option><option value="'Meiryo',sans-serif">メイリオ</option></select></div>
- <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
- <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
- <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
- <hr>
- <strong>レイヤー</strong>
- <div class="dm-row dm-actions">
-   <button type="button" id="addImageLayer">＋ 画像</button>
-   <button type="button" id="addTextLayer">＋ 文字</button>
-   <button type="button" id="addRectLayer">＋ 四角</button>
-   <button type="button" id="addDiamondLayer">＋ ひし形</button>
-   <button type="button" id="addTriangleLayer">＋ 三角</button>
-   <button type="button" id="addCircleLayer">＋ 丸</button>
- </div>
- <div id="layerList" class="dm-layer-list"></div>
- <div id="shapeControls" hidden>
-   <div class="dm-field"><label>図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
-   <div class="dm-field"><label>図形の透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
-   <div class="dm-field"><label>図形の大きさ</label><input id="shapeScale" type="range" min="10" max="300" value="100"></div>
- </div>
- <div id="textLayerControls" hidden>
-   <div class="dm-field"><label>文字</label><textarea id="layerText" rows="3"></textarea></div>
-   <div class="dm-field"><label>書体</label><select id="layerFont">
-    <option value="sans-serif">ゴシック</option><option value="serif">明朝</option>
-    <option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option>
-    <option value="'Yu Mincho','MS PMincho',serif">游明朝</option>
-    <option value="'Meiryo',sans-serif">メイリオ</option>
-   </select></div>
-   <div class="dm-row"><div class="dm-field"><label>サイズ</label><input id="layerFontSize" type="range" min="12" max="140" value="42"></div><div class="dm-field"><label>文字色</label><input id="layerTextColor" type="color" value="#ffffff"></div></div>
-   <label><input id="layerBold" type="checkbox"> 太字</label>
- </div>
- <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
-<option value="pc">PC立ち絵</option>
-<option value="scenario">シナリオ画像</option>
-<option value="system">システム文字</option>
-<option value="title">シナリオ名</option>
-<option value="ho">HO</option>
-<option value="pcText">PC名</option>
-<option value="extra">選択中のレイヤー</option>
-</select></div>
- <div class="dm-note">プレビュー上をドラッグすると、選択した画像を直接移動できます。</div>
- <details>
-  <summary>文字位置の微調整</summary>
-  <div class="dm-note">ドラッグでも動かせます。スライダーは細かい調整用です。</div>
-  <strong>システム</strong>
-  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="systemX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="systemY" type="range" min="0" max="620" value="100"></div></div>
-  <strong>シナリオ名</strong>
-  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="titleX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="titleY" type="range" min="0" max="620" value="155"></div></div>
-  <strong>HO</strong>
-  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="hoX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="hoY" type="range" min="0" max="640" value="360"></div></div>
-  <strong>PC名</strong>
-  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcTextX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="pcTextY" type="range" min="0" max="640" value="410"></div></div>
- </details>
- <hr><strong>PC立ち絵</strong>
- <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="30" max="180" value="100"></div>
- <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcX" type="range" min="-500" max="500" value="0"></div><div class="dm-field"><label>上下</label><input id="pcY" type="range" min="-400" max="400" value="0"></div></div>
- <strong>シナリオ画像</strong>
- <div class="dm-field"><label>大きさ</label><input id="scenarioScale" type="range" min="30" max="220" value="100"></div>
- <div class="dm-row"><div class="dm-field"><label>左右</label><input id="scenarioX" type="range" min="-600" max="600" value="0"></div><div class="dm-field"><label>上下</label><input id="scenarioY" type="range" min="-400" max="400" value="0"></div></div>
- <div class="dm-field"><label>シナリオ画像の濃さ</label><input id="scenarioOpacity" type="range" min="0" max="100" value="32"></div>
+ <div class="dm-note">文字の書体・サイズ・色・太字・位置は、レイヤー一覧から対象を選んで個別編集できます。</div>
  <button type="button" id="layoutReset">配置を初期状態へ戻す</button>
  <div class="dm-row dm-actions">
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.7：自由文字レイヤーを複数追加できます。各文字レイヤーは内容・書体・サイズ・色・太字・位置を個別編集できます。クトゥルフ系のシステム表記プリセットも追加しました。</div>
+ <div class="dm-note">v0.8：自動入力されるシステム／シナリオ名／HO／PC名も文字レイヤーへ統合しました。自由文字と同じように個別編集・ドラッグ・表示切替できます。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -130,10 +71,21 @@ const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
 let scenarioImg=null,pcImg=null;
 let extraLayers=[],selectedExtraLayerId=null,layerSeq=1;
+const builtinTextLayers=[
+ {id:"builtin_system",type:"builtinText",name:"システム",field:"systemText",x:70,y:100,font:"sans-serif",fontSize:28,color:"#ffffff",bold:false,visible:true},
+ {id:"builtin_title",type:"builtinText",name:"シナリオ名",field:"titleText",x:70,y:155,font:"sans-serif",fontSize:58,color:"#ffffff",bold:true,visible:true},
+ {id:"builtin_ho",type:"builtinText",name:"HO",field:"hoText",x:70,y:360,font:"sans-serif",fontSize:30,color:"#ffffff",bold:false,visible:true},
+ {id:"builtin_pc",type:"builtinText",name:"PC名",field:"pcText",x:70,y:410,font:"sans-serif",fontSize:42,color:"#ffffff",bold:true,visible:true}
+];
+function builtinLayerById(id){return builtinTextLayers.find(x=>x.id===id)||null}
+function selectedLayer(){
+ return builtinLayerById(selectedExtraLayerId)||extraLayers.find(x=>x.id===selectedExtraLayerId)||null;
+}
+
 function makeLayer(type,name){
  return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,bold:false};
 }
-function selectedExtraLayer(){return extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
+function selectedExtraLayer(){return selectedLayer()}
 
 
 function loadJson(keys,fallback=[]){
@@ -245,7 +197,7 @@ function applyRun(group,run){
  q("titleText").value=group.title||r.title||r.scenarioTitle||"";
  q("hoText").value=self.ho||self.selfHo||r.selfHo||r.ho||"";
  q("pcText").value=self.pcName||r.pcName||"";
- draw();
+ renderLayerList();draw();
 }
 function firstSelfPcRow(r){
  if(Array.isArray(r.selfPcs)&&r.selfPcs.length)return r.selfPcs[0];
@@ -296,10 +248,15 @@ function draw(){
   }
   ctx.restore();
  });
- ctx.fillStyle=textColor;ctx.textBaseline="top";ctx.font=`${num("systemSize",28)}px ${font}`;ctx.fillText(q("systemText").value||"",num("systemX",70),num("systemY",100));ctx.font=`bold ${num("titleSize",58)}px ${font}`;wrapText(q("titleText").value||"",num("titleX",70),num("titleY",155),660,num("titleSize",58)*1.24,2);ctx.font=`${num("hoSize",30)}px ${font}`;ctx.fillText(q("hoText").value||"",num("hoX",70),num("hoY",360));ctx.font=`bold ${num("pcSize",42)}px ${font}`;ctx.fillText(q("pcText").value||"",num("pcTextX",70),num("pcTextY",410))
-}
-function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
- const chars=[...String(text||"")];let line="",lines=[];
+ ctx.textBaseline="top";
+ builtinTextLayers.forEach(layer=>{
+   if(!layer.visible)return;
+   const text=q(layer.field)?.value||"";
+   ctx.fillStyle=layer.color||"#ffffff";
+   ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
+   if(layer.id==="builtin_title")wrapText(text,layer.x,layer.y,660,(layer.fontSize||58)*1.24,2);
+   else ctx.fillText(text,layer.x,layer.y);
+ });let line="",lines=[];
  for(const ch of chars){
   const test=line+ch;
   if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=ch;if(lines.length>=maxLines)break}
@@ -308,25 +265,43 @@ function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
  if(lines.length<maxLines&&line)lines.push(line);
  lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
 }
-["systemText","titleText","hoText","pcText","bgColor","fontFamily","titleSize","pcSize","systemSize","hoSize","textColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity","systemX","systemY","titleX","titleY","hoX","hoY","pcTextX","pcTextY"].forEach(id=>q(id)?.addEventListener("input",draw));
+["systemText","titleText","hoText","pcText","bgColor","scenarioScale","scenarioX","scenarioY","scenarioOpacity","pcScale","pcX","pcY"].forEach(id=>q(id)?.addEventListener("input",draw));
 q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
-q("layoutReset").onclick=()=>{const d={fontFamily:"sans-serif",titleSize:58,pcSize:42,systemSize:28,hoSize:30,textColor:"#ffffff",pcScale:100,pcX:0,pcY:0,scenarioScale:100,scenarioX:0,scenarioY:0,scenarioOpacity:32,systemX:70,systemY:100,titleX:70,titleY:155,hoX:70,hoY:360,pcTextX:70,pcTextY:410};Object.entries(d).forEach(([id,v])=>{if(q(id))q(id).value=v});draw()};
+q("layoutReset").onclick=()=>{
+ const defaults=[
+  ["builtin_system",70,100,28,false],
+  ["builtin_title",70,155,58,true],
+  ["builtin_ho",70,360,30,false],
+  ["builtin_pc",70,410,42,true]
+ ];
+ defaults.forEach(([id,x,y,size,bold])=>{
+   const l=builtinLayerById(id);if(!l)return;
+   Object.assign(l,{x,y,font:"sans-serif",fontSize:size,color:"#ffffff",bold,visible:true});
+ });
+ if(q("pcScale"))q("pcScale").value=100;if(q("pcX"))q("pcX").value=0;if(q("pcY"))q("pcY").value=0;
+ if(q("scenarioScale"))q("scenarioScale").value=100;if(q("scenarioX"))q("scenarioX").value=0;if(q("scenarioY"))q("scenarioY").value=0;if(q("scenarioOpacity"))q("scenarioOpacity").value=32;
+ extraLayers=[];selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw();
+};
 q("redraw").onclick=draw;
 
 
 function renderLayerList(){
  const box=q("layerList");if(!box)return;
  box.innerHTML="";
- [...extraLayers].reverse().forEach(layer=>{
+ [...extraLayers,...builtinTextLayers].reverse().forEach(layer=>{
   const row=document.createElement("div");row.className="dm-layer-item"+(layer.id===selectedExtraLayerId?" active":"");
   const vis=document.createElement("button");vis.type="button";vis.textContent=layer.visible?"👁":"—";
   vis.onclick=()=>{layer.visible=!layer.visible;renderLayerList();draw()};
   const name=document.createElement("span");name.textContent=layer.name;
   name.onclick=()=>selectExtraLayer(layer.id);
-  const up=document.createElement("button");up.type="button";up.textContent="↑";up.onclick=()=>moveExtraLayer(layer.id,1);
-  const down=document.createElement("button");down.type="button";down.textContent="↓";down.onclick=()=>moveExtraLayer(layer.id,-1);
-  const del=document.createElement("button");del.type="button";del.textContent="削除";del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
+  const up=document.createElement("button");up.type="button";up.textContent="↑";
+  const down=document.createElement("button");down.type="button";down.textContent="↓";
+  if(layer.type==="builtinText"){up.disabled=true;down.disabled=true}
+  else {up.onclick=()=>moveExtraLayer(layer.id,1);down.onclick=()=>moveExtraLayer(layer.id,-1)}
+  const del=document.createElement("button");del.type="button";del.textContent="削除";
+  if(layer.type==="builtinText"){del.disabled=true;del.title="自動入力文字は削除せず、非表示にできます";}
+  else del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
   row.append(vis,name,up,down,del);box.appendChild(row);
  });
 }
@@ -346,11 +321,11 @@ function syncShapeControls(){
  if(!box)return;
  if(!l){box.hidden=true;q("textLayerControls").hidden=true;return;}
  box.hidden=false;
- const isText=l.type==="text";
+ const isText=l.type==="text"||l.type==="builtinText";
  box.hidden=isText;
  q("textLayerControls").hidden=!isText;
  if(isText){
-   q("layerText").value=l.text||"";
+   q("layerText").value=l.type==="builtinText"?(q(l.field)?.value||""):(l.text||"");
    q("layerFont").value=l.font||"sans-serif";
    q("layerFontSize").value=l.fontSize||42;
    q("layerTextColor").value=l.color||"#ffffff";
@@ -371,9 +346,17 @@ q("addTextLayer").onclick=()=>{
  q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
 };
 ["layerText","layerFont","layerFontSize","layerTextColor","layerBold"].forEach(id=>q(id).addEventListener(id==="layerBold"?"change":"input",()=>{
- const l=selectedExtraLayer();if(!l||l.type!=="text")return;
- l.text=q("layerText").value;l.font=q("layerFont").value;l.fontSize=Number(q("layerFontSize").value);
- l.color=q("layerTextColor").value;l.bold=q("layerBold").checked;l.name=(l.text.split("\n")[0]||"文字").slice(0,18);
+ const l=selectedLayer();if(!l||(l.type!=="text"&&l.type!=="builtinText"))return;
+ if(l.type==="builtinText"){
+   if(q(l.field))q(l.field).value=q("layerText").value;
+ }else{
+   l.text=q("layerText").value;
+   l.name=(l.text.split("\n")[0]||"文字").slice(0,18);
+ }
+ l.font=q("layerFont").value;
+ l.fontSize=Number(q("layerFontSize").value);
+ l.color=q("layerTextColor").value;
+ l.bold=q("layerBold").checked;
  renderLayerList();draw();
 }));
 q("addRectLayer").onclick=()=>addShape("rect","四角");
@@ -403,14 +386,14 @@ function canvasPoint(e){
 function dragFields(){
  const target=q("dragTarget")?.value||"pc";
  if(target==="extra"){
-   const l=selectedExtraLayer();
+   const l=selectedLayer();
    return l?{layer:l}:null;
  }
  if(target==="scenario")return {x:q("scenarioX"),y:q("scenarioY")};
- if(target==="system")return {x:q("systemX"),y:q("systemY")};
- if(target==="title")return {x:q("titleX"),y:q("titleY")};
- if(target==="ho")return {x:q("hoX"),y:q("hoY")};
- if(target==="pcText")return {x:q("pcTextX"),y:q("pcTextY")};
+ if(target==="system")return {layer:builtinLayerById("builtin_system")};
+ if(target==="title")return {layer:builtinLayerById("builtin_title")};
+ if(target==="ho")return {layer:builtinLayerById("builtin_ho")};
+ if(target==="pcText")return {layer:builtinLayerById("builtin_pc")};
  return {x:q("pcX"),y:q("pcY")};
 }
 function startDrag(e){
@@ -460,6 +443,6 @@ q("runSelect").onchange=()=>{
  const r=q("runSelect")._runs?.[Number(q("runSelect").value)];
  applyRun(g,r);
 };
-populate();draw();
+populate();renderLayerList();draw();
 </script>
 </body></html>
