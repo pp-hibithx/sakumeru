@@ -48,8 +48,27 @@
  <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
  <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
  <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
- <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget"><option value="pc">PC立ち絵</option><option value="scenario">シナリオ画像</option></select></div>
+ <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
+<option value="pc">PC立ち絵</option>
+<option value="scenario">シナリオ画像</option>
+<option value="system">システム文字</option>
+<option value="title">シナリオ名</option>
+<option value="ho">HO</option>
+<option value="pcText">PC名</option>
+</select></div>
  <div class="dm-note">プレビュー上をドラッグすると、選択した画像を直接移動できます。</div>
+ <details>
+  <summary>文字位置の微調整</summary>
+  <div class="dm-note">ドラッグでも動かせます。スライダーは細かい調整用です。</div>
+  <strong>システム</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="systemX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="systemY" type="range" min="0" max="620" value="100"></div></div>
+  <strong>シナリオ名</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="titleX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="titleY" type="range" min="0" max="620" value="155"></div></div>
+  <strong>HO</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="hoX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="hoY" type="range" min="0" max="640" value="360"></div></div>
+  <strong>PC名</strong>
+  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcTextX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="pcTextY" type="range" min="0" max="640" value="410"></div></div>
+ </details>
  <hr><strong>PC立ち絵</strong>
  <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="30" max="180" value="100"></div>
  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcX" type="range" min="-500" max="500" value="0"></div><div class="dm-field"><label>上下</label><input id="pcY" type="range" min="-400" max="400" value="0"></div></div>
@@ -62,7 +81,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.4：書体・文字サイズ・画像調整に加え、プレビュー上でPC立ち絵／シナリオ画像を直接ドラッグ移動できます。</div>
+ <div class="dm-note">v0.5：PC立ち絵・シナリオ画像に加え、システム／シナリオ名／HO／PC名もプレビュー上で直接ドラッグ移動できます。</div>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
@@ -210,7 +229,7 @@ function draw(){
  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
  if(scenarioImg){const sc=num("scenarioScale",100)/100,sw=canvas.width*sc,sh=canvas.height*sc,sx=(canvas.width-sw)/2+num("scenarioX"),sy=(canvas.height-sh)/2+num("scenarioY");ctx.save();ctx.globalAlpha=num("scenarioOpacity",32)/100;fitImage(scenarioImg,sx,sy,sw,sh,false);ctx.restore();const g=ctx.createLinearGradient(0,0,canvas.width,0);g.addColorStop(0,"rgba(0,0,0,.82)");g.addColorStop(.62,"rgba(0,0,0,.45)");g.addColorStop(1,"rgba(0,0,0,.15)");ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height)}
  if(pcImg){const ps=num("pcScale",100)/100,pw=450*ps,ph=620*ps,px=720+(450-pw)/2+num("pcX"),py=30+(620-ph)/2+num("pcY");fitImage(pcImg,px,py,pw,ph,true)}
- ctx.fillStyle=textColor;ctx.textBaseline="top";ctx.font=`${num("systemSize",28)}px ${font}`;ctx.fillText(q("systemText").value||"",70,100);ctx.font=`bold ${num("titleSize",58)}px ${font}`;wrapText(q("titleText").value||"",70,155,660,num("titleSize",58)*1.24,2);ctx.font=`${num("hoSize",30)}px ${font}`;ctx.fillText(q("hoText").value||"",70,360);ctx.font=`bold ${num("pcSize",42)}px ${font}`;ctx.fillText(q("pcText").value||"",70,410)
+ ctx.fillStyle=textColor;ctx.textBaseline="top";ctx.font=`${num("systemSize",28)}px ${font}`;ctx.fillText(q("systemText").value||"",num("systemX",70),num("systemY",100));ctx.font=`bold ${num("titleSize",58)}px ${font}`;wrapText(q("titleText").value||"",num("titleX",70),num("titleY",155),660,num("titleSize",58)*1.24,2);ctx.font=`${num("hoSize",30)}px ${font}`;ctx.fillText(q("hoText").value||"",num("hoX",70),num("hoY",360));ctx.font=`bold ${num("pcSize",42)}px ${font}`;ctx.fillText(q("pcText").value||"",num("pcTextX",70),num("pcTextY",410))
 }
 function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
  const chars=[...String(text||"")];let line="",lines=[];
@@ -222,10 +241,10 @@ function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
  if(lines.length<maxLines&&line)lines.push(line);
  lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
 }
-["systemText","titleText","hoText","pcText","bgColor","fontFamily","titleSize","pcSize","systemSize","hoSize","textColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity"].forEach(id=>q(id)?.addEventListener("input",draw));
+["systemText","titleText","hoText","pcText","bgColor","fontFamily","titleSize","pcSize","systemSize","hoSize","textColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity","systemX","systemY","titleX","titleY","hoX","hoY","pcTextX","pcTextY"].forEach(id=>q(id)?.addEventListener("input",draw));
 q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
-q("layoutReset").onclick=()=>{const d={fontFamily:"sans-serif",titleSize:58,pcSize:42,systemSize:28,hoSize:30,textColor:"#ffffff",pcScale:100,pcX:0,pcY:0,scenarioScale:100,scenarioX:0,scenarioY:0,scenarioOpacity:32};Object.entries(d).forEach(([id,v])=>{if(q(id))q(id).value=v});draw()};
+q("layoutReset").onclick=()=>{const d={fontFamily:"sans-serif",titleSize:58,pcSize:42,systemSize:28,hoSize:30,textColor:"#ffffff",pcScale:100,pcX:0,pcY:0,scenarioScale:100,scenarioX:0,scenarioY:0,scenarioOpacity:32,systemX:70,systemY:100,titleX:70,titleY:155,hoX:70,hoY:360,pcTextX:70,pcTextY:410};Object.entries(d).forEach(([id,v])=>{if(q(id))q(id).value=v});draw()};
 q("redraw").onclick=draw;
 
 let dmDragging=false,dmDragStartX=0,dmDragStartY=0,dmBaseX=0,dmBaseY=0;
@@ -236,9 +255,13 @@ function canvasPoint(e){
  return {x:(clientX-r.left)*(canvas.width/r.width),y:(clientY-r.top)*(canvas.height/r.height)};
 }
 function dragFields(){
- return q("dragTarget")?.value==="scenario"
-   ? {x:q("scenarioX"),y:q("scenarioY")}
-   : {x:q("pcX"),y:q("pcY")};
+ const target=q("dragTarget")?.value||"pc";
+ if(target==="scenario")return {x:q("scenarioX"),y:q("scenarioY")};
+ if(target==="system")return {x:q("systemX"),y:q("systemY")};
+ if(target==="title")return {x:q("titleX"),y:q("titleY")};
+ if(target==="ho")return {x:q("hoX"),y:q("hoY")};
+ if(target==="pcText")return {x:q("pcTextX"),y:q("pcTextY")};
+ return {x:q("pcX"),y:q("pcY")};
 }
 function startDrag(e){
  const f=dragFields();if(!f.x||!f.y)return;
