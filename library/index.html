@@ -1029,6 +1029,32 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
   width:140px;
 }
 </style>
+
+<style>
+.library-search-directory{display:grid;gap:12px}
+.library-search-directory-head{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap}
+.library-search-directory-links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.library-search-directory-links button{width:auto}
+.library-search-choice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px}
+.library-search-choice{
+ width:100%!important;
+ min-height:66px;
+ display:flex!important;
+ align-items:center;
+ gap:10px;
+ padding:9px 11px!important;
+ text-align:left;
+ border:1px solid var(--line)!important;
+ border-radius:10px!important;
+ background:var(--panel)!important
+}
+.library-search-choice:hover{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 5%,var(--panel))!important}
+.library-search-choice>img,.library-search-choice-placeholder{width:44px;height:44px;flex:0 0 44px;border-radius:8px;object-fit:cover;display:grid;place-items:center;background:rgba(255,255,255,.025)}
+.library-search-choice-main{display:grid;gap:3px;min-width:0}
+.library-search-choice-main strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#clearLibraryPersonFilter{width:auto!important;margin-left:8px}
+@media(max-width:620px){.library-search-choice-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <header class="site-header"><div class="wrap">
@@ -1153,7 +1179,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
   <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
-</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.18.2.2-pccache</div></main>
+</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19-recordsearch</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
 <strong>カード画像の位置を調整</strong>
 <div class="lib-cover-help">画像を上下にドラッグして、カードに見せたい位置を合わせます。元画像は変更されません。位置はこのブラウザに保存されます。</div>
@@ -4222,60 +4248,69 @@ function wirePcTimeline(card,pcId){
  });
 }
 
+
+function normDirectoryName(v){return String(v||"").normalize("NFKC").trim().toLowerCase()}
+function recordHasSelfPc(rec,pc){
+ const id=String(pc?.id||"");
+ const name=normDirectoryName(pc?.name);
+ return storedSelfPcRows(rec).some(r=>
+   (id&&r.pcId&&String(r.pcId)===id) ||
+   (name&&normDirectoryName(r.pcName)===name)
+ );
+}
+function playerNameSet(player){
+ return new Set([player?.name,player?.publicName,player?.socialName]
+   .map(normDirectoryName).filter(Boolean));
+}
+function recordHasPlayer(rec,player){
+ const id=String(player?.id||"");
+ const names=playerNameSet(player);
+ return rowsFromRecord(rec).some(r=>
+   (id&&r.playerId&&String(r.playerId)===id) ||
+   names.has(normDirectoryName(r.plName))
+ );
+}
+function openLibraryScenarioFilter(params={}){
+ const u=new URL(location.href);
+ u.searchParams.set("view","scenario");
+ u.searchParams.delete("pc");
+ u.searchParams.delete("pcId");
+ u.searchParams.delete("player");
+ u.searchParams.delete("playerId");
+ Object.entries(params).forEach(([k,v])=>{if(v)u.searchParams.set(k,String(v))});
+ history.replaceState(null,"",u.href);
+ libraryView="scenario";
+ focusedScenarioKey="";
+ focusedRunId="";
+ render();
+}
 function renderPcView(){
- const term=q("search").value.trim().toLowerCase(),
- rows=pcs.map(x=>({x,st:pcStats(x.name)}))
+ const term=q("search").value.trim().toLowerCase();
+ const rows=pcs.map(x=>({x,st:pcStats(x.name)}))
    .filter(({x})=>!term||[x.name,x.reading,x.system,x.job].filter(Boolean).join(" ").toLowerCase().includes(term))
-   .sort((a,b)=>String(a.x.name).localeCompare(String(b.x.name),"ja"));
+   .sort((a,b)=>(b.st.runCount||0)-(a.st.runCount||0)||String(a.x.name||"").localeCompare(String(b.x.name||""),"ja"));
 
- q("summary").textContent=`PC ${rows.length}人`;
+ q("summary").textContent=`PCから卓記録を探す ／ ${rows.length}人`;
  q("list").classList.remove("library-grid");
- q("list").innerHTML=`<div class="library-directory-grid">${
-   rows.length?rows.map(({x,st})=>{
-     const timelineScenarios=orderedPcScenarios(x.id,st.history);
-     return `<article class="library-dir-card" data-pc-card="${esc(x.id)}">
-       ${x.image?`<img class="library-dir-thumb pc-fullbody-thumb" src="${esc(x.image)}" alt="">`:""}
-       <div class="library-dir-title">${esc(x.name)}</div>
-       <div class="library-dir-meta">${esc(x.system||"")}${x.job?` ／ ${esc(x.job)}`:""}</div>
-       <div class="library-dir-meta">参加 ${st.count}シナリオ ／ ${st.runCount}卓${st.first?` ／ 初卓 ${esc(st.first)}`:""}</div>
+ q("list").innerHTML=`<section class="library-search-directory">
+   <div class="library-search-directory-head">
+     <div><strong>自PCを選ぶ</strong><div class="small muted">選んだPCで参加したシナリオ・開催記録だけを表示します。</div></div>
+     <a class="link" href="../pcs/index.html">PCページで詳しく見る</a>
+   </div>
+   <div class="library-search-choice-grid">
+     ${rows.length?rows.map(({x,st})=>`<button type="button" class="library-search-choice" data-library-pc-filter="${esc(x.id)}">
+       ${x.image?`<img src="${esc(x.image)}" alt="" loading="lazy">`:`<span class="library-search-choice-placeholder">🌺</span>`}
+       <span class="library-search-choice-main">
+         <strong>${esc(x.name)}</strong>
+         <span class="small muted">${[x.system,`${st.runCount||0}卓`].filter(Boolean).map(esc).join(" ／ ")}</span>
+       </span>
+     </button>`).join(""):'<div class="empty">該当するPCがありません。</div>'}
+   </div>
+ </section>`;
 
-       <details class="pc-scenario-toggle">
-         <summary>参加履歴 ${timelineScenarios.length}件</summary>
-         <div class="pc-timeline-help">☰ をドラッグしてPC本人の時系列順に並べ替え。同じシナリオの別陣も別々に表示されます。</div>
-         <div class="pc-scenario-list">
-           ${timelineScenarios.length?timelineScenarios.map(sc=>{
-             const tid=pcScenarioTimelineId(sc),label=pcTimelineLabel(x.id,sc);
-             return `<div class="pc-timeline-row" draggable="true" data-timeline-id="${esc(tid)}">
-               <span class="pc-timeline-handle" title="ドラッグして並べ替え">☰</span>
-               <div class="pc-timeline-title"><a class="link" href="?view=scenario${sc.scenarioId?`&scenario=${encodeURIComponent(sc.scenarioId)}`:""}&pc=${encodeURIComponent(x.name)}">${esc(sc.title)}</a>${[sc.runLabel,sc.role?`役割：${sc.role}`:"",sc.selfHo?`HO：${sc.selfHo}`:"",sc.first?(sc.last&&sc.last!==sc.first?`${sc.first}〜${sc.last}`:sc.first):""].filter(Boolean).length?`<div class="small muted">${esc([sc.runLabel,sc.role?`役割：${sc.role}`:"",sc.selfHo?`HO：${sc.selfHo}`:"",sc.first?(sc.last&&sc.last!==sc.first?`${sc.first}〜${sc.last}`:sc.first):""].filter(Boolean).join(" ／ "))}</div>`:""}</div>
-               <input class="pc-timeline-label" value="${esc(label)}" placeholder="時系列メモ">
-             </div>`;
-           }).join(""):'<div class="small muted">参加記録はまだありません。</div>'}
-         </div>
-       </details>
-
-       <div class="lib-parent-actions">
-         <button type="button" data-pc-detail="${esc(x.id)}">PC詳細</button>
-         <button type="button" class="pc-rel-button" data-pc-relation="${esc(x.id)}">同卓関係図</button>
-         <button type="button" data-pc-edit-inline="${esc(x.id)}">編集</button>
-       </div>
-       ${pcLibraryDetailHtml(x,st)}
-     </article>`;
-   }).join(""):'<div class="empty">該当するPCがありません。</div>'
- }</div>`;
-
- document.querySelectorAll("[data-pc-card]").forEach(card=>wirePcTimeline(card,card.dataset.pcCard));
- document.querySelectorAll("[data-pc-detail]").forEach(b=>{
-   b.onclick=()=>{
-     const el=document.getElementById(`pc-library-detail-${b.dataset.pcDetail}`);
-     if(el)el.hidden=!el.hidden;
-   };
- });
- document.querySelectorAll("[data-pc-relation]").forEach(b=>{
-   b.onclick=()=>openPcRelationshipGraph(b.dataset.pcRelation);
- });
- document.querySelectorAll("[data-pc-edit-inline]").forEach(b=>{
-   b.onclick=()=>openPcLibraryEditor(b.dataset.pcEditInline);
+ document.querySelectorAll("[data-library-pc-filter]").forEach(b=>b.onclick=()=>{
+   const pc=pcs.find(x=>String(x.id)===String(b.dataset.libraryPcFilter));
+   if(pc)openLibraryScenarioFilter({pcId:pc.id,pc:pc.name});
  });
 }
 
@@ -5005,41 +5040,40 @@ function playerHasSystem(player,system){
  return playerAvailableSystems(player).includes(system);
 }
 function renderPlayerView(){
- if(focusedPlayerId){
-   const player=playerById(focusedPlayerId);
-   if(player){renderPlayerDetail(player);return}
-   focusedPlayerId="";
- }
  const term=q("search").value.trim().toLowerCase();
- let rows=players.filter(x=>!x.excluded).map(x=>({x,st:playerStats(x.name),systems:playerAvailableSystems(x)}))
+ let rows=players.filter(x=>!x.excluded).map(x=>({x,st:playerStats(x.name)}))
    .filter(({x})=>!term||[x.name,x.publicName,x.socialName].filter(Boolean).join(" ").toLowerCase().includes(term))
    .filter(({x})=>playerArchiveFilter==="all"||(playerArchiveFilter==="archived"?!!x.archived:!x.archived));
 
  rows.sort((a,b)=>{
-   if(playerListSort==="count")return (b.st.count||0)-(a.st.count||0)||String(a.x.name||"").localeCompare(String(b.x.name||""),"ja");
    if(playerListSort==="recent")return String(b.st.last||"").localeCompare(String(a.st.last||""))||String(a.x.name||"").localeCompare(String(b.x.name||""),"ja");
-   return String(a.x.name||"").localeCompare(String(b.x.name||""),"ja");
+   if(playerListSort==="name")return String(a.x.name||"").localeCompare(String(b.x.name||""),"ja");
+   return (b.st.count||0)-(a.st.count||0)||String(a.x.name||"").localeCompare(String(b.x.name||""),"ja");
  });
 
- q("summary").textContent=`同卓者 ${rows.length}人`;
+ q("summary").textContent=`同卓者から卓記録を探す ／ ${rows.length}人`;
  q("list").classList.remove("library-grid");
- q("list").innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button type="button" id="openPlayerRelationSelf" class="player-rel-open">自分を中心に同卓者関係図を見る</button><a class="link" href="../players/index.html">PLAYERSで同卓者を見る</a></div><div class="library-directory-grid">${rows.length?rows.map(({x,st,systems})=>`<article class="library-dir-card">
-   <div class="player-dir-card-main" data-player-focus="${esc(x.id)}" tabindex="0">
-     <div class="library-dir-title">${esc(x.name)}</div>
-     <div class="library-dir-meta">公開名：${esc(x.publicName||x.name)}</div>
-     ${systems.length?`<div class="library-dir-meta">${systems.map(s=>`<span class="badge">${esc(s)}</span>`).join(" ")}</div>`:""}
-     <div class="library-dir-meta">同卓 ${st.count}シナリオ${st.first?` ／ 初同卓 ${esc(st.first)}`:""}${st.last?` ／ 最終 ${esc(st.last)}`:""}</div>
-     ${x.archived?`<div class="player-archived-mark">アーカイブ済み</div>`:""}
+ q("list").innerHTML=`<section class="library-search-directory">
+   <div class="library-search-directory-head">
+     <div><strong>同卓者を選ぶ</strong><div class="small muted">選んだ人と一緒に遊んだシナリオ・開催記録だけを表示します。</div></div>
+     <div class="library-search-directory-links"><button type="button" id="openPlayerRelationSelf">同卓関係図</button><a class="link" href="../players/index.html">PLAYERSで詳しく見る</a></div>
    </div>
-   <div class="player-dir-actions">
-     <button type="button" data-player-archive="${esc(x.id)}" data-archived="${x.archived?"1":"0"}">${x.archived?"アーカイブから戻す":"アーカイブ"}</button>
-     <button type="button" class="danger" data-player-delete="${esc(x.id)}">削除</button>
+   <div class="library-search-choice-grid">
+     ${rows.length?rows.map(({x,st})=>`<button type="button" class="library-search-choice library-player-choice" data-library-player-filter="${esc(x.id)}">
+       <span class="library-search-choice-placeholder">👤</span>
+       <span class="library-search-choice-main">
+         <strong>${esc(x.name)}</strong>
+         <span class="small muted">${st.count||0}シナリオ${st.last?` ／ 最終 ${esc(st.last)}`:""}</span>
+       </span>
+     </button>`).join(""):'<div class="empty">該当する同卓者がいません。</div>'}
    </div>
- </article>`).join(""):'<div class="empty">該当する同卓者がいません。</div>'}</div>`;
- q("openPlayerRelationSelf").onclick=()=>openPlayerRelationshipGraph(PLAYER_REL_SELF_ID);
- document.querySelectorAll("[data-player-focus]").forEach(card=>{const open=()=>{const u=new URL("../players/index.html",location.href);u.searchParams.set("focus",card.dataset.playerFocus);location.href=u.href};card.onclick=open;card.onkeydown=e=>{if(e.key==="Enter")open()}});
- document.querySelectorAll("[data-player-archive]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();setPlayerArchived(b.dataset.playerArchive,b.dataset.archived!=="1")});
- document.querySelectorAll("[data-player-delete]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();deletePlayerFromDirectory(b.dataset.playerDelete)});
+ </section>`;
+
+ q("openPlayerRelationSelf")?.addEventListener("click",()=>openPlayerRelationshipGraph(PLAYER_REL_SELF_ID));
+ document.querySelectorAll("[data-library-player-filter]").forEach(b=>b.onclick=()=>{
+   const player=players.find(x=>String(x.id)===String(b.dataset.libraryPlayerFilter));
+   if(player)openLibraryScenarioFilter({playerId:player.id,player:player.name});
+ });
 }
 function syncLibraryView(){
  document.querySelectorAll("[data-library-view]").forEach(b=>b.classList.toggle("active",b.dataset.libraryView===libraryView));
@@ -5174,12 +5208,27 @@ function render(){
  if(libraryView==="pc"){renderPcView();return}
  if(libraryView==="player"){renderPlayerView();return}
  const term=q("search").value.trim().toLowerCase(),role=q("filter").value,params=new URLSearchParams(location.search);
- const player=params.get("player")||"",pc=params.get("pc")||"";
- let xs=data.filter(x=>(!role||x.role===role)&&(!player||(x.participants||[]).some(n=>n===player))&&(!pc||(x.pcName||"")===pc)&&(!term||[x.title,x.system,x.pcName,(x.participants||[]).join(" ")].join(" ").toLowerCase().includes(term)));
+ const player=params.get("player")||"",playerId=params.get("playerId")||"",pc=params.get("pc")||"",pcId=params.get("pcId")||"";
+ const filterPlayer=playerId?players.find(p=>String(p.id)===String(playerId)):players.find(p=>playerNameSet(p).has(normDirectoryName(player)));
+ const filterPc=pcId?pcs.find(p=>String(p.id)===String(pcId)):pcs.find(p=>normDirectoryName(p.name)===normDirectoryName(pc));
+ let xs=data.filter(x=>
+   (!role||x.role===role) &&
+   (!filterPlayer||recordHasPlayer(x,filterPlayer)) &&
+   (!filterPc||recordHasSelfPc(x,filterPc)) &&
+   (!term||[x.title,x.system,x.pcName,(x.participants||[]).join(" ")].join(" ").toLowerCase().includes(term))
+ );
  const archiveMode=q("archiveFilter")?.value||"active";
  xs=xs.filter(x=>archiveMode==="all"||(archiveMode==="archived"?!!x.archived:!x.archived));
  const groups=groupData(xs);
- q("summary").textContent=(player?`${player}との同卓：`:pc?`${pc}の参加記録：`:"")+`シナリオ ${groups.length}件 ／ 開催記録 ${xs.length}件`;
+ q("summary").innerHTML=(filterPlayer||filterPc)
+   ? `<span>${esc(filterPlayer?`${filterPlayer.name}との同卓`: `${filterPc.name}の参加記録`)}：シナリオ ${groups.length}件 ／ 開催記録 ${xs.length}件</span> <button type="button" id="clearLibraryPersonFilter" class="text-action">絞り込み解除</button>`
+   : `シナリオ ${groups.length}件 ／ 開催記録 ${xs.length}件`;
+ q("clearLibraryPersonFilter")?.addEventListener("click",()=>{
+   const u=new URL(location.href);
+   ["player","playerId","pc","pcId"].forEach(k=>u.searchParams.delete(k));
+   history.replaceState(null,"",u.href);
+   render();
+ });
  const targetScenario=params.get("scenario")||"";
  if(targetScenario&&!focusedScenarioKey){
    const match=groups.find(g=>g.scenarioId===targetScenario);
