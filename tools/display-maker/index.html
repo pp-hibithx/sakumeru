@@ -36,6 +36,13 @@
  <div class="dm-field"><label>陣</label><select id="runSelect" disabled><option value="">陣を選択</option></select></div>
  <div id="dataStatus" class="dm-note"></div>
  <div class="dm-field"><label>システム</label><input id="systemText"></div>
+ <div class="dm-field"><label>システム表記</label><select id="systemPreset">
+  <option value="">LIBRARYの表記</option>
+  <option value="CoC6">CoC6</option>
+  <option value="Call of Cthulhu">Call of Cthulhu</option>
+  <option value="クトゥルフ神話TRPG">クトゥルフ神話TRPG</option>
+  <option value="新クトゥルフ神話TRPG">新クトゥルフ神話TRPG</option>
+ </select></div>
  <div class="dm-field"><label>シナリオ名</label><input id="titleText"></div>
  <div class="dm-row">
   <div class="dm-field"><label>HO</label><input id="hoText"></div>
@@ -53,6 +60,7 @@
  <strong>レイヤー</strong>
  <div class="dm-row dm-actions">
    <button type="button" id="addImageLayer">＋ 画像</button>
+   <button type="button" id="addTextLayer">＋ 文字</button>
    <button type="button" id="addRectLayer">＋ 四角</button>
    <button type="button" id="addDiamondLayer">＋ ひし形</button>
    <button type="button" id="addTriangleLayer">＋ 三角</button>
@@ -63,6 +71,17 @@
    <div class="dm-field"><label>図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
    <div class="dm-field"><label>図形の透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
    <div class="dm-field"><label>図形の大きさ</label><input id="shapeScale" type="range" min="10" max="300" value="100"></div>
+ </div>
+ <div id="textLayerControls" hidden>
+   <div class="dm-field"><label>文字</label><textarea id="layerText" rows="3"></textarea></div>
+   <div class="dm-field"><label>書体</label><select id="layerFont">
+    <option value="sans-serif">ゴシック</option><option value="serif">明朝</option>
+    <option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option>
+    <option value="'Yu Mincho','MS PMincho',serif">游明朝</option>
+    <option value="'Meiryo',sans-serif">メイリオ</option>
+   </select></div>
+   <div class="dm-row"><div class="dm-field"><label>サイズ</label><input id="layerFontSize" type="range" min="12" max="140" value="42"></div><div class="dm-field"><label>文字色</label><input id="layerTextColor" type="color" value="#ffffff"></div></div>
+   <label><input id="layerBold" type="checkbox"> 太字</label>
  </div>
  <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
 <option value="pc">PC立ち絵</option>
@@ -98,7 +117,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.6：画像レイヤーと、色を変更できる四角／ひし形／三角／丸の図形レイヤーを追加しました。レイヤーは表示・非表示、前後移動、削除、ドラッグ移動に対応します。</div>
+ <div class="dm-note">v0.7：自由文字レイヤーを複数追加できます。各文字レイヤーは内容・書体・サイズ・色・太字・位置を個別編集できます。クトゥルフ系のシステム表記プリセットも追加しました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -112,7 +131,7 @@ const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
 let scenarioImg=null,pcImg=null;
 let extraLayers=[],selectedExtraLayerId=null,layerSeq=1;
 function makeLayer(type,name){
- return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true};
+ return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,bold:false};
 }
 function selectedExtraLayer(){return extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
 
@@ -257,7 +276,12 @@ function draw(){
   if(!layer.visible)return;
   ctx.save();
   ctx.globalAlpha=(layer.opacity??100)/100;
-  if(layer.type==="image"&&layer.img){
+  if(layer.type==="text"){
+    ctx.fillStyle=layer.color||"#ffffff";
+    ctx.textBaseline="top";
+    ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
+    String(layer.text||"").split("\n").forEach((line,i)=>ctx.fillText(line,layer.x,layer.y+i*(layer.fontSize||42)*1.2));
+  }else if(layer.type==="image"&&layer.img){
     const sc=(layer.scale||100)/100,w=320*sc,h=320*sc;
     fitImage(layer.img,layer.x-w/2,layer.y-h/2,w,h,true);
   }else if(layer.type!=="image"){
@@ -320,17 +344,38 @@ function moveExtraLayer(id,delta){
 function syncShapeControls(){
  const l=selectedExtraLayer(),box=q("shapeControls");
  if(!box)return;
- box.hidden=!l;
- if(!l)return;
- q("shapeColor").disabled=l.type==="image";
- q("shapeColor").value=l.color||"#ffffff";
- q("shapeOpacity").value=l.opacity??100;
- q("shapeScale").value=l.scale??100;
+ if(!l){box.hidden=true;q("textLayerControls").hidden=true;return;}
+ box.hidden=false;
+ const isText=l.type==="text";
+ box.hidden=isText;
+ q("textLayerControls").hidden=!isText;
+ if(isText){
+   q("layerText").value=l.text||"";
+   q("layerFont").value=l.font||"sans-serif";
+   q("layerFontSize").value=l.fontSize||42;
+   q("layerTextColor").value=l.color||"#ffffff";
+   q("layerBold").checked=!!l.bold;
+ }else{
+   q("shapeColor").disabled=l.type==="image";
+   q("shapeColor").value=l.color||"#ffffff";
+   q("shapeOpacity").value=l.opacity??100;
+   q("shapeScale").value=l.scale??100;
+ }
 }
 function addShape(type,label){
  const l=makeLayer(type,label);extraLayers.push(l);selectedExtraLayerId=l.id;
  q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
 }
+q("addTextLayer").onclick=()=>{
+ const l=makeLayer("text","文字");l.text="文字";extraLayers.push(l);selectedExtraLayerId=l.id;
+ q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
+};
+["layerText","layerFont","layerFontSize","layerTextColor","layerBold"].forEach(id=>q(id).addEventListener(id==="layerBold"?"change":"input",()=>{
+ const l=selectedExtraLayer();if(!l||l.type!=="text")return;
+ l.text=q("layerText").value;l.font=q("layerFont").value;l.fontSize=Number(q("layerFontSize").value);
+ l.color=q("layerTextColor").value;l.bold=q("layerBold").checked;l.name=(l.text.split("\n")[0]||"文字").slice(0,18);
+ renderLayerList();draw();
+}));
 q("addRectLayer").onclick=()=>addShape("rect","四角");
 q("addDiamondLayer").onclick=()=>addShape("diamond","ひし形");
 q("addTriangleLayer").onclick=()=>addShape("triangle","三角");
@@ -395,6 +440,10 @@ canvas.addEventListener("touchstart",startDrag,{passive:false});
 window.addEventListener("touchmove",moveDrag,{passive:false});
 window.addEventListener("touchend",endDrag);
 
+q("systemPreset").addEventListener("change",()=>{
+ if(q("systemPreset").value)q("systemText").value=q("systemPreset").value;
+ draw();
+});
 q("savePng").onclick=()=>{
  const a=document.createElement("a");
  a.download=(q("titleText").value||"display")+".png";
