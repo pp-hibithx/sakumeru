@@ -117,7 +117,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.8.2：自動文字レイヤーの描画停止を修正。システム／シナリオ名／HO／PC名をすべて描画します。</div>
+ <div class="dm-note">v0.8.3：全レイヤーの描画順を統合し、↑↓で自動文字・自由文字・画像・図形の前後関係を変更できるようにしました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -136,6 +136,14 @@ const builtinTextLayers=[
  {id:"builtin_ho",type:"builtinText",name:"HO",field:"hoText",x:70,y:360,font:"sans-serif",fontSize:30,color:"#ffffff",bold:false,visible:true},
  {id:"builtin_pc",type:"builtinText",name:"PC名",field:"pcText",x:70,y:410,font:"sans-serif",fontSize:42,color:"#ffffff",bold:true,visible:true}
 ];
+let layerOrder=[];
+function allManagedLayers(){
+ const byId=new Map([...extraLayers,...builtinTextLayers].map(l=>[l.id,l]));
+ const ids=layerOrder.filter(id=>byId.has(id));
+ for(const l of [...extraLayers,...builtinTextLayers])if(!ids.includes(l.id))ids.push(l.id);
+ layerOrder=ids;
+ return ids.map(id=>byId.get(id));
+}
 function builtinLayerById(id){return builtinTextLayers.find(x=>x.id===id)||null}
 function selectedLayer(){return builtinLayerById(selectedExtraLayerId)||extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
 
@@ -281,7 +289,8 @@ function draw(){
  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
  if(scenarioImg){const sc=num("scenarioScale",100)/100,sw=canvas.width*sc,sh=canvas.height*sc,sx=(canvas.width-sw)/2+num("scenarioX"),sy=(canvas.height-sh)/2+num("scenarioY");ctx.save();ctx.globalAlpha=num("scenarioOpacity",32)/100;fitImage(scenarioImg,sx,sy,sw,sh,false);ctx.restore();const g=ctx.createLinearGradient(0,0,canvas.width,0);g.addColorStop(0,"rgba(0,0,0,.82)");g.addColorStop(.62,"rgba(0,0,0,.45)");g.addColorStop(1,"rgba(0,0,0,.15)");ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height)}
  if(pcImg){const ps=num("pcScale",100)/100,pw=450*ps,ph=620*ps,px=720+(450-pw)/2+num("pcX"),py=30+(620-ph)/2+num("pcY");fitImage(pcImg,px,py,pw,ph,true)}
- extraLayers.forEach(layer=>{
+ const renderLayers=allManagedLayers();
+ renderLayers.forEach(layer=>{
   if(!layer.visible)return;
   ctx.save();
   ctx.globalAlpha=(layer.opacity??100)/100;
@@ -290,6 +299,13 @@ function draw(){
     ctx.textBaseline="top";
     ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
     String(layer.text||"").split("\n").forEach((line,i)=>ctx.fillText(line,layer.x,layer.y+i*(layer.fontSize||42)*1.2));
+  }else if(layer.type==="builtinText"){
+    const text=q(layer.field)?.value||"";
+    ctx.fillStyle=layer.color||"#ffffff";
+    ctx.textBaseline="top";
+    ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
+    if(layer.id==="builtin_title")wrapText(text,layer.x,layer.y,660,(layer.fontSize||58)*1.24,2);
+    else ctx.fillText(text,layer.x,layer.y);
   }else if(layer.type==="image"&&layer.img){
     const sc=(layer.scale||100)/100,w=320*sc,h=320*sc;
     fitImage(layer.img,layer.x-w/2,layer.y-h/2,w,h,true);
@@ -304,18 +320,6 @@ function draw(){
     ctx.fill();
   }
   ctx.restore();
- });
- ctx.textBaseline="top";
- builtinTextLayers.forEach(layer=>{
-   if(!layer.visible)return;
-   const text=q(layer.field)?.value||"";
-   ctx.fillStyle=layer.color||"#ffffff";
-   ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
-   if(layer.id==="builtin_title"){
-     wrapText(text,layer.x,layer.y,660,(layer.fontSize||58)*1.24,2);
-   }else{
-     ctx.fillText(text,layer.x,layer.y);
-   }
  });
 }
 
@@ -349,7 +353,7 @@ q("layoutReset").onclick=()=>{
   const l=builtinLayerById(id);if(!l)return;
   Object.assign(l,{x,y,font:"sans-serif",fontSize:size,color:"#ffffff",bold,visible:true});
  });
- extraLayers=[];selectedExtraLayerId=null;
+ extraLayers=[];layerOrder=[];selectedExtraLayerId=null;
  if(q("pcScale"))q("pcScale").value=100;if(q("pcX"))q("pcX").value=0;if(q("pcY"))q("pcY").value=0;
  if(q("scenarioScale"))q("scenarioScale").value=100;if(q("scenarioX"))q("scenarioX").value=0;if(q("scenarioY"))q("scenarioY").value=0;if(q("scenarioOpacity"))q("scenarioOpacity").value=32;
  renderLayerList();syncShapeControls();draw();
@@ -360,7 +364,7 @@ q("redraw").onclick=draw;
 function renderLayerList(){
  const box=q("layerList");if(!box)return;
  box.innerHTML="";
- [...extraLayers,...builtinTextLayers].reverse().forEach(layer=>{
+ [...allManagedLayers()].reverse().forEach(layer=>{
   const row=document.createElement("div");row.className="dm-layer-item"+(layer.id===selectedExtraLayerId?" active":"");
   const vis=document.createElement("button");vis.type="button";vis.textContent=layer.visible?"👁":"—";
   vis.onclick=()=>{layer.visible=!layer.visible;renderLayerList();draw()};
@@ -369,13 +373,13 @@ function renderLayerList(){
   const up=document.createElement("button");up.type="button";up.textContent="↑";
   const down=document.createElement("button");down.type="button";down.textContent="↓";
   const del=document.createElement("button");del.type="button";del.textContent="削除";
+  up.onclick=()=>moveManagedLayer(layer.id,1);
+  down.onclick=()=>moveManagedLayer(layer.id,-1);
   if(layer.type==="builtinText"){
-    up.disabled=true;down.disabled=true;del.disabled=true;
+    del.disabled=true;
     del.title="自動入力文字は削除せず、非表示にできます";
   }else{
-    up.onclick=()=>moveExtraLayer(layer.id,1);
-    down.onclick=()=>moveExtraLayer(layer.id,-1);
-    del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
+    del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);layerOrder=layerOrder.filter(id=>id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
   }
   row.append(vis,name,up,down,del);box.appendChild(row);
  });
@@ -385,10 +389,11 @@ function selectExtraLayer(id){
  q("dragTarget").value="extra";
  renderLayerList();syncShapeControls();
 }
-function moveExtraLayer(id,delta){
- const i=extraLayers.findIndex(x=>x.id===id),j=i+delta;
- if(i<0||j<0||j>=extraLayers.length)return;
- [extraLayers[i],extraLayers[j]]=[extraLayers[j],extraLayers[i]];
+function moveManagedLayer(id,delta){
+ allManagedLayers();
+ const i=layerOrder.indexOf(id),j=i+delta;
+ if(i<0||j<0||j>=layerOrder.length)return;
+ [layerOrder[i],layerOrder[j]]=[layerOrder[j],layerOrder[i]];
  renderLayerList();draw();
 }
 function syncShapeControls(){
@@ -413,11 +418,11 @@ function syncShapeControls(){
  }
 }
 function addShape(type,label){
- const l=makeLayer(type,label);extraLayers.push(l);selectedExtraLayerId=l.id;
+ const l=makeLayer(type,label);extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;
  q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
 }
 q("addTextLayer").onclick=()=>{
- const l=makeLayer("text","文字");l.text="文字";extraLayers.push(l);selectedExtraLayerId=l.id;
+ const l=makeLayer("text","文字");l.text="文字";extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;
  q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
 };
 ["layerText","layerFont","layerFontSize","layerTextColor","layerBold"].forEach(id=>q(id).addEventListener(id==="layerBold"?"change":"input",()=>{
@@ -441,7 +446,7 @@ q("addCircleLayer").onclick=()=>addShape("circle","丸");
 q("addImageLayer").onclick=()=>q("extraImagePicker").click();
 q("extraImagePicker").onchange=e=>{
  const f=e.target.files?.[0];if(!f)return;
- const img=new Image();img.onload=()=>{const l=makeLayer("image",f.name||"画像");l.img=img;extraLayers.push(l);selectedExtraLayerId=l.id;q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw()};img.src=URL.createObjectURL(f);e.target.value="";
+ const img=new Image();img.onload=()=>{const l=makeLayer("image",f.name||"画像");l.img=img;extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw()};img.src=URL.createObjectURL(f);e.target.value="";
 };
 ["shapeColor","shapeOpacity","shapeScale"].forEach(id=>q(id).addEventListener("input",()=>{
  const l=selectedExtraLayer();if(!l)return;
