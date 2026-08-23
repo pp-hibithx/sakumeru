@@ -66,17 +66,45 @@ function loadJson(keys,fallback=[]){
  }
  return fallback;
 }
-const albums=loadJson(["trpg39_album_v3","trpg39_album","39x2_album_v3","39x2_album"]);
-const pcs=loadJson(["trpg39_pcs_v3","trpg39_pcs","39x2_pcs_v3","39x2_pcs"]);
+const albums=loadJson([
+ "39x2_album_v3",
+ "trpg39_album_v3",
+ "trpg39_album",
+ "39x2_album"
+]);
+const pcs=loadJson([
+ "39x2_pcs_v3",
+ "trpg39_pcs_v3",
+ "trpg39_pcs",
+ "39x2_pcs"
+]);
 
 function recordLabel(r){
  const d=String(r.date||r.start||"").slice(0,10);
  return [r.title||r.scenarioTitle||"無題",r.runLabel||"",d].filter(Boolean).join(" ／ ");
 }
+function discoverAlbumRows(){
+ if(albums.length)return albums;
+ for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);
+   try{
+     const v=JSON.parse(localStorage.getItem(key));
+     if(!Array.isArray(v)||!v.length)continue;
+     const sample=v.find(x=>x&&typeof x==="object");
+     if(sample && ("runId" in sample || "scenarioId" in sample) && ("title" in sample || "scenarioTitle" in sample)){
+       return v;
+     }
+   }catch(e){}
+ }
+ return [];
+}
 function populate(){
- const rows=albums.slice().sort((a,b)=>String(b.date||b.start||"").localeCompare(String(a.date||a.start||"")));
+ const rows=discoverAlbumRows().slice().sort((a,b)=>String(b.date||b.start||"").localeCompare(String(a.date||a.start||"")));
  q("recordSelect").innerHTML='<option value="">卓を選択</option>'+rows.map((r,i)=>`<option value="${i}">${escapeHtml(recordLabel(r))}</option>`).join("");
  q("recordSelect")._rows=rows;
+ if(!rows.length){
+   q("recordSelect").innerHTML='<option value="">LIBRARYの卓記録が見つかりません</option>';
+ }
 }
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function firstSelfPcRow(r){
