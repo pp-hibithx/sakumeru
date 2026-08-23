@@ -499,13 +499,58 @@ const saveFriendSources=()=>localStorage.setItem(FRIEND_KEY,JSON.stringify(frien
 function sharedIdFromUrl(raw){
  try{const u=new URL(raw,location.href);return u.searchParams.get("id")||u.hash.replace(/^#/,"")}catch{return ""}
 }
+
+async function resolveSharedScenarioListById(id){
+ const payload=await TRPG39Cloud.getSharedPage(id);
+ if(!payload)throw new Error("共有データが見つかりません");
+
+ // 最古形式：配列そのもの
+ if(Array.isArray(payload))return {kind:"scenario-list",items:payload};
+
+ // 従来形式：scenario-list
+ if(payload?.kind==="scenario-list"){
+   return {...payload,items:Array.isArray(payload.items)?payload.items:[]};
+ }
+
+ // 新形式：固定URLの親manifest → chunkを全部集める
+ if(payload?.kind==="scenario-list-manifest"){
+   const ids=Array.isArray(payload.chunkIds)?payload.chunkIds.filter(Boolean):[];
+   if(!ids.length){
+     return {
+       kind:"scenario-list",
+       title:payload.title||"シナリオ一覧",
+       updatedAt:payload.updatedAt||"",
+       items:[]
+     };
+   }
+
+   const parts=await Promise.all(ids.map(async cid=>{
+     const part=await TRPG39Cloud.getSharedPage(cid);
+     if(!part)return [];
+     if(part.kind==="scenario-list-chunk"&&Array.isArray(part.items))return part.items;
+     // 念のため旧形式chunkや配列にも対応
+     if(part.kind==="scenario-list"&&Array.isArray(part.items))return part.items;
+     if(Array.isArray(part))return part;
+     return [];
+   }));
+
+   return {
+     kind:"scenario-list",
+     version:payload.version||1,
+     title:payload.title||"シナリオ一覧",
+     updatedAt:payload.updatedAt||"",
+     items:parts.flat()
+   };
+ }
+
+ throw new Error("シナリオ一覧ではありません");
+}
 async function loadFriendSources(){
  friendItems=[];
  for(const src of friendSources){
   try{
    const id=sharedIdFromUrl(src.url);if(!id)throw new Error("共有IDなし");
-   const payload=await TRPG39Cloud.getSharedPage(id),p=Array.isArray(payload)?{kind:"scenario-list",items:payload}:payload;
-   if(p?.kind!=="scenario-list")throw new Error("シナリオ一覧ではありません");
+   const p=await resolveSharedScenarioListById(id);
    (p.items||[]).forEach((x,i)=>friendItems.push({...x,_friend:src.name||"友人",_sourceUrl:src.url,_key:id+":"+i}));
    src.error="";
   }catch(e){src.error=e.message||"読み込み失敗"}
