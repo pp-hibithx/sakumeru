@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DISPLAY MAKER｜SAKU+MERU</title>
+<link rel="stylesheet" href="../../assets/css/style-v0296.css">
+<script>
+(()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-theme",m)}catch(e){}})();
+</script>
+<style>
+.dm-layout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:18px;align-items:start}
+.dm-panel{display:grid;gap:12px}.dm-field{display:grid;gap:5px}.dm-field label{font-weight:700;font-size:13px}
+.dm-field input,.dm-field select{width:100%}
+.dm-canvas-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(0,0,0,.08)}
+#dmCanvas{display:block;max-width:100%;height:auto;margin:auto;background:#111;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.dm-row{display:flex;gap:8px;flex-wrap:wrap}.dm-row>*{flex:1}.dm-actions button{width:auto}
+.dm-note{font-size:12px;color:var(--muted);line-height:1.6}
+@media(max-width:850px){.dm-layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+<h1 class="brand brand-392">SAKU+MERU <span class="hibiscus-logo">🌺</span></h1>
+<div class="tagline">探す・遊ぶ・記録・共有<br>TRPG Scenario &amp; Tools</div>
+<nav class="nav"><a href="../../index.html">HOME</a><a href="../../scenario/index.html?v=0292">SCENARIO</a><a href="../../calendar/index.html?v=0292">CALENDAR</a><a href="../../library/index.html?v=0292">LIBRARY</a><a href="../../pcs/index.html?v=0292">PC</a><a href="../../players/index.html?v=0292">PLAYERS</a><a href="../index.html" aria-current="page">TOOLS</a></nav>
+</div></header>
+<main><div class="wrap">
+<div class="hero"><h2>DISPLAY MAKER</h2><p>卓記録から、卓報告用ディスプレイをサクッと作ります。</p></div>
+<div class="dm-layout">
+<section class="card dm-panel">
+ <div class="dm-field"><label>LIBRARYの卓</label><select id="recordSelect"><option value="">卓を選択</option></select></div>
+ <div class="dm-field"><label>システム</label><input id="systemText"></div>
+ <div class="dm-field"><label>シナリオ名</label><input id="titleText"></div>
+ <div class="dm-row">
+  <div class="dm-field"><label>HO</label><input id="hoText"></div>
+  <div class="dm-field"><label>PC名</label><input id="pcText"></div>
+ </div>
+ <div class="dm-field"><label>背景</label><input id="bgColor" type="color" value="#151515"></div>
+ <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
+ <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
+ <div class="dm-row dm-actions">
+   <button type="button" id="redraw">プレビュー更新</button>
+   <button type="button" id="savePng">PNG保存</button>
+ </div>
+ <div class="dm-note">v0.1：LIBRARYから文字情報を自動取得します。画像はまず手動選択です。次段階でSCENARIO画像・PC立ち絵の自動候補とドラッグ配置を追加できます。</div>
+</section>
+<section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
+</div>
+</div></main>
+<footer class="footer"><div class="wrap">© <span data-year></span> SAKU+MERU</div></footer>
+<script src="../../assets/js/main.js?v=0292"></script>
+<script>
+const q=id=>document.getElementById(id);
+const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
+let scenarioImg=null,pcImg=null;
+
+function loadJson(keys,fallback=[]){
+ for(const k of keys){
+  try{
+   const raw=localStorage.getItem(k);
+   if(!raw)continue;
+   const v=JSON.parse(raw);
+   if(Array.isArray(v))return v;
+  }catch(e){}
+ }
+ return fallback;
+}
+const albums=loadJson(["trpg39_album_v3","trpg39_album","39x2_album_v3","39x2_album"]);
+const pcs=loadJson(["trpg39_pcs_v3","trpg39_pcs","39x2_pcs_v3","39x2_pcs"]);
+
+function recordLabel(r){
+ const d=String(r.date||r.start||"").slice(0,10);
+ return [r.title||r.scenarioTitle||"無題",r.runLabel||"",d].filter(Boolean).join(" ／ ");
+}
+function populate(){
+ const rows=albums.slice().sort((a,b)=>String(b.date||b.start||"").localeCompare(String(a.date||a.start||"")));
+ q("recordSelect").innerHTML='<option value="">卓を選択</option>'+rows.map((r,i)=>`<option value="${i}">${escapeHtml(recordLabel(r))}</option>`).join("");
+ q("recordSelect")._rows=rows;
+}
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function firstSelfPcRow(r){
+ if(Array.isArray(r.selfPcs)&&r.selfPcs.length)return r.selfPcs[0];
+ if(Array.isArray(r.participants)){
+   const hit=r.participants.find(x=>x.isSelf||x.self||x.mine);
+   if(hit)return hit;
+ }
+ return {pcName:r.pcName||"",ho:r.selfHo||r.ho||""};
+}
+function applyRecord(r){
+ if(!r)return;
+ const self=firstSelfPcRow(r);
+ q("systemText").value=r.system||"";
+ q("titleText").value=r.title||r.scenarioTitle||"";
+ q("hoText").value=self.ho||self.selfHo||"";
+ q("pcText").value=self.pcName||r.pcName||"";
+ draw();
+}
+function readImage(input,cb){
+ const f=input.files?.[0];if(!f){cb(null);return}
+ const im=new Image();im.onload=()=>cb(im);im.src=URL.createObjectURL(f);
+}
+function fitImage(im,x,y,w,h,contain=false){
+ if(!im)return;
+ const scale=contain?Math.min(w/im.width,h/im.height):Math.max(w/im.width,h/im.height);
+ const dw=im.width*scale,dh=im.height*scale;
+ ctx.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+}
+function draw(){
+ const bg=q("bgColor").value||"#151515";
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ if(scenarioImg){
+   ctx.save();ctx.globalAlpha=.32;fitImage(scenarioImg,0,0,canvas.width,canvas.height,false);
+   ctx.restore();
+   const g=ctx.createLinearGradient(0,0,canvas.width,0);
+   g.addColorStop(0,"rgba(0,0,0,.82)");g.addColorStop(.62,"rgba(0,0,0,.45)");g.addColorStop(1,"rgba(0,0,0,.15)");
+   ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+ }
+ if(pcImg)fitImage(pcImg,720,30,450,620,true);
+
+ ctx.fillStyle="#fff";
+ ctx.textBaseline="top";
+ ctx.font='28px sans-serif';ctx.fillText(q("systemText").value||"",70,100);
+ ctx.font='bold 58px sans-serif';
+ wrapText(q("titleText").value||"",70,155,660,72,2);
+ ctx.font='30px sans-serif';ctx.fillText(q("hoText").value||"",70,360);
+ ctx.font='bold 42px sans-serif';ctx.fillText(q("pcText").value||"",70,410);
+}
+function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
+ const chars=[...String(text||"")];let line="",lines=[];
+ for(const ch of chars){
+  const test=line+ch;
+  if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=ch;if(lines.length>=maxLines)break}
+  else line=test;
+ }
+ if(lines.length<maxLines&&line)lines.push(line);
+ lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
+}
+q("recordSelect").onchange=()=>applyRecord(q("recordSelect")._rows?.[Number(q("recordSelect").value)]);
+["systemText","titleText","hoText","pcText","bgColor"].forEach(id=>q(id).addEventListener("input",draw));
+q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
+q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
+q("redraw").onclick=draw;
+q("savePng").onclick=()=>{
+ const a=document.createElement("a");
+ a.download=(q("titleText").value||"display")+".png";
+ a.href=canvas.toDataURL("image/png");a.click();
+};
+populate();draw();
+</script>
+</body></html>
