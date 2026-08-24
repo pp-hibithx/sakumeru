@@ -18,6 +18,9 @@
 .dm-note{font-size:12px;color:var(--muted);line-height:1.6}
 .dm-control-panel:hover{transform:none;box-shadow:none;border-color:var(--line)}
 .dm-layer-list{display:grid;gap:6px;margin:8px 0 14px}.dm-layer-item{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--line);border-radius:8px}.dm-layer-item.active{outline:2px solid var(--accent)}.dm-layer-item span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dm-layer-item button{padding:5px 8px;min-width:auto}
+.dm-control-group{margin:10px 0;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:rgba(255,255,255,.02)}
+.dm-control-group>summary{cursor:pointer;font-weight:700;padding:11px 4px;user-select:none}
+.dm-control-group[open]>summary{border-bottom:1px solid var(--line);margin-bottom:10px}
 @media(max-width:850px){.dm-layout{grid-template-columns:1fr}}
 </style>
 </head>
@@ -49,7 +52,7 @@
   <div class="dm-field"><label>PC名</label><input id="pcText"></div>
  </div>
  <div class="dm-field"><label>背景</label><input id="bgColor" type="color" value="#151515"></div>
- <hr><strong>キャンバス</strong>
+<details class="dm-control-group" open><summary>キャンバス</summary>
  <div class="dm-field"><label>サイズ</label><select id="canvasPreset">
   <option value="portrait916">縦 9:16（675 × 1200）</option>
   <option value="portrait45">縦 4:5（800 × 1000）</option>
@@ -61,15 +64,18 @@
   <div class="dm-field"><label>幅 px</label><input id="canvasWidth" type="number" min="320" max="4000" value="675"></div>
   <div class="dm-field"><label>高さ px</label><input id="canvasHeight" type="number" min="320" max="4000" value="1200"></div>
  </div>
+</details>
+<details class="dm-control-group"><summary>基本画像</summary>
  <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
  <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
- <hr>
+</details>
+<details class="dm-control-group"><summary>文字・配置</summary>
  <div class="dm-field"><label>書体</label><select id="fontFamily"><option value="sans-serif">ゴシック</option><option value="serif">明朝</option><option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option><option value="'Yu Mincho','MS PMincho',serif">游明朝</option><option value="'Meiryo',sans-serif">メイリオ</option></select></div>
  <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
  <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
  <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
- <hr>
- <strong>レイヤー</strong>
+</details>
+<details class="dm-control-group" open><summary>レイヤー</summary>
  <div class="dm-row dm-actions">
    <button type="button" id="addImageLayer">＋ 画像</button>
    <button type="button" id="addTextLayer">＋ 文字</button>
@@ -125,11 +131,12 @@
  <div class="dm-row"><div class="dm-field"><label>左右</label><input id="scenarioX" type="range" min="-600" max="600" value="0"></div><div class="dm-field"><label>上下</label><input id="scenarioY" type="range" min="-400" max="400" value="0"></div></div>
  <div class="dm-field"><label>シナリオ画像の濃さ</label><input id="scenarioOpacity" type="range" min="0" max="100" value="32"></div>
  <button type="button" id="layoutReset">配置を初期状態へ戻す</button>
+</details>
  <div class="dm-row dm-actions">
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.9：キャンバスを縦9:16／縦4:5／横16:9／正方形／自由サイズから選択できます。画像・図形の拡大上限を500%へ拡張しました。</div>
+ <div class="dm-note">v0.9.1：操作項目をキャンバス／基本画像／文字・配置／レイヤーのトグルに整理しました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
