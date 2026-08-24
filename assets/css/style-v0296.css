@@ -1028,23 +1028,76 @@ html.theme-light .site-brand-logo .brand-type{color:#202226}
 }
 
 
-/* Test: keep SAKU+MERU brand mark identical in light mode using a dark brand plate */
-html.theme-light .site-brand-logo{
-  position:relative;
-  padding:14px 20px 12px 14px;
-  border-radius:18px;
-  background:linear-gradient(135deg, rgba(9,15,21,.98), rgba(16,24,31,.96));
-  box-shadow:0 10px 28px rgba(18,24,30,.12);
+/* SAKU+MERU brand frame — header/footer always black + white + gold */
+:root{
+  --sm-brand-black:#080d12;
+  --sm-brand-black-2:#0d141b;
+  --sm-brand-white:#f5f5f2;
+  --sm-brand-gold:#c99525;
 }
-html.theme-light .site-brand-logo .brand-symbol .symbol-light{display:none !important}
-html.theme-light .site-brand-logo .brand-symbol .symbol-dark{display:block !important}
-html.theme-light .site-brand-logo .brand-type{color:#f4f3ef !important}
-html.theme-light .site-brand-logo .brand-tagline{color:#c99525 !important}
-html.theme-light .site-brand-logo .brand-plus{color:#c99525 !important}
 
-@media(max-width:560px){
-  html.theme-light .site-brand-logo{
-    padding:10px 14px 9px 10px;
-    border-radius:14px;
-  }
+/* Header is a fixed brand area in both themes */
+.site-header{
+  background:linear-gradient(180deg,var(--sm-brand-black),var(--sm-brand-black-2)) !important;
+  color:var(--sm-brand-white) !important;
+  border-bottom:1px solid rgba(201,149,37,.34) !important;
+}
+.site-header .site-brand-logo{
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+}
+.site-header .site-brand-logo .brand-symbol .symbol-light{
+  display:none !important;
+}
+.site-header .site-brand-logo .brand-symbol .symbol-dark{
+  display:block !important;
+}
+.site-header .site-brand-logo .brand-type,
+.site-header .site-brand-logo .brand-word{
+  color:var(--sm-brand-white) !important;
+}
+.site-header .site-brand-logo .brand-plus,
+.site-header .site-brand-logo .brand-tagline{
+  color:var(--sm-brand-gold) !important;
+}
+
+/* Navigation stays readable on the black header */
+.site-header .nav,
+.site-header nav{
+  color:var(--sm-brand-white);
+}
+.site-header .nav a,
+.site-header nav a{
+  color:rgba(245,245,242,.82) !important;
+}
+.site-header .nav a:hover,
+.site-header nav a:hover,
+.site-header .nav a[aria-current="page"],
+.site-header nav a[aria-current="page"]{
+  color:var(--sm-brand-white) !important;
+}
+.site-header .nav a[aria-current="page"],
+.site-header nav a[aria-current="page"]{
+  border-color:var(--sm-brand-gold) !important;
+}
+
+/* Theme controls live inside the brand header, so keep them on-palette too */
+.site-header button,
+.site-header select{
+  border-color:rgba(201,149,37,.45) !important;
+}
+
+/* Footer is the matching lower brand frame */
+.site-footer,
+footer.site-footer,
+body > footer{
+  background:linear-gradient(180deg,var(--sm-brand-black-2),var(--sm-brand-black)) !important;
+  color:rgba(245,245,242,.76) !important;
+  border-top:1px solid rgba(201,149,37,.34) !important;
+}
+.site-footer a,
+footer.site-footer a,
+body > footer a{
+  color:var(--sm-brand-gold) !important;
 }
