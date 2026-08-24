@@ -932,15 +932,15 @@ html.theme-dark,html[data-theme="dark"]{color-scheme:dark !important}
 
 
 /* v0.2.97 — SAKU+MERU official header logo */
-.site-brand-logo{display:inline-block;text-decoration:none;line-height:0;max-width:min(100%,560px)}
-.site-brand-logo img{display:block;width:clamp(270px,48vw,500px);height:auto;object-fit:contain;object-position:left center}
+.site-brand-logo{display:inline-block;text-decoration:none;line-height:0;max-width:min(100%,390px)}
+.site-brand-logo img{display:block;width:clamp(230px,34vw,340px);height:auto;object-fit:contain;object-position:left center}
 .site-brand-logo .logo-light{display:none}
 html.theme-light .site-brand-logo .logo-dark{display:none}
 html.theme-light .site-brand-logo .logo-light{display:block}
 html.theme-dark .site-brand-logo .logo-dark{display:block}
 html.theme-dark .site-brand-logo .logo-light{display:none}
-.site-header .brand-logo-row{display:flex;align-items:center;min-height:150px}
+.site-header .brand-logo-row{display:flex;align-items:center;min-height:108px}
 @media(max-width:560px){
-  .site-brand-logo img{width:min(88vw,390px)}
-  .site-header .brand-logo-row{min-height:112px}
+  .site-brand-logo img{width:min(82vw,290px)}
+  .site-header .brand-logo-row{min-height:92px}
 }
