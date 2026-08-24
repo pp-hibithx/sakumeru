@@ -94,10 +94,6 @@
   <div class="dm-field"><label>高さ px</label><input id="canvasHeight" type="number" min="320" max="4000" value="1200"></div>
  </div>
 </details>
-<details class="dm-control-group"><summary>基本画像</summary>
- <div class="dm-field"><label>シナリオ画像</label><div class="dm-row dm-actions"><input id="scenarioImage" type="file" accept="image/*"><button type="button" id="clearScenarioImage">削除</button></div></div>
- <div class="dm-field"><label>PC立ち絵</label><div class="dm-row dm-actions"><input id="pcImage" type="file" accept="image/*"><button type="button" id="clearPcImage">削除</button></div></div>
-</details>
 <details class="dm-control-group" open><summary>レイヤー</summary>
  <div class="dm-row dm-actions">
    <button type="button" id="addImageLayer">＋ 画像</button>
@@ -127,8 +123,6 @@
    <label><input id="layerBold" type="checkbox"> 太字</label>
  </div>
  <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
-<option value="pc">PC立ち絵</option>
-<option value="scenario">シナリオ画像</option>
 <option value="system">システム文字</option>
 <option value="title">シナリオ名</option>
 <option value="ho">HO</option>
@@ -148,13 +142,6 @@
   <strong>PC名</strong>
   <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcTextX" type="range" min="-500" max="900" value="70"></div><div class="dm-field"><label>上下</label><input id="pcTextY" type="range" min="0" max="640" value="410"></div></div>
  </details>
- <hr><strong>PC立ち絵</strong>
- <div class="dm-field"><label>大きさ</label><input id="pcScale" type="range" min="10" max="500" value="100"></div>
- <div class="dm-row"><div class="dm-field"><label>左右</label><input id="pcX" type="range" min="-500" max="500" value="0"></div><div class="dm-field"><label>上下</label><input id="pcY" type="range" min="-400" max="400" value="0"></div></div>
- <strong>シナリオ画像</strong>
- <div class="dm-field"><label>大きさ</label><input id="scenarioScale" type="range" min="10" max="500" value="100"></div>
- <div class="dm-row"><div class="dm-field"><label>左右</label><input id="scenarioX" type="range" min="-600" max="600" value="0"></div><div class="dm-field"><label>上下</label><input id="scenarioY" type="range" min="-400" max="400" value="0"></div></div>
- <div class="dm-field"><label>シナリオ画像の濃さ</label><input id="scenarioOpacity" type="range" min="0" max="100" value="32"></div>
  <button type="button" id="layoutReset">配置を初期状態へ戻す</button>
 </details>
  <div class="dm-row dm-actions">
@@ -169,7 +156,7 @@
    </div>
    <div class="dm-note" id="draftStatus">このブラウザ内に1件だけ作業状態を保存できます。PNGを書き出す前の途中作業向けです。</div>
  </details>
- <div class="dm-note">v1.2.0：基本画像の削除と、作業状態の一時保存・復元に対応しました。</div>
+ <div class="dm-note">v1.2.1：画像追加をレイヤーの「＋ 画像」に一本化しました。画像はすべて同じレイヤー操作で移動・拡大・複製・透明度調整・シルエット化・削除できます。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -180,7 +167,6 @@
 <script>
 const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
-let scenarioImg=null,pcImg=null;
 let extraLayers=[],selectedExtraLayerId=null,layerSeq=1;
 const builtinTextLayers=[
  {id:"builtin_system",type:"builtinText",name:"システム",field:"systemText",x:70,y:100,font:"sans-serif",fontSize:28,color:"#ffffff",bold:false,visible:true},
@@ -357,8 +343,6 @@ function draw(){
  const bg=q("bgColor").value||"#151515";
  ctx.clearRect(0,0,canvas.width,canvas.height);
  if(!q("transparentBg")?.checked){ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);}
- if(scenarioImg){const sc=num("scenarioScale",100)/100,sw=canvas.width*sc,sh=canvas.height*sc,sx=(canvas.width-sw)/2+num("scenarioX"),sy=(canvas.height-sh)/2+num("scenarioY");ctx.save();ctx.globalAlpha=num("scenarioOpacity",32)/100;fitImage(scenarioImg,sx,sy,sw,sh,false);ctx.restore();const g=ctx.createLinearGradient(0,0,canvas.width,0);g.addColorStop(0,"rgba(0,0,0,.82)");g.addColorStop(.62,"rgba(0,0,0,.45)");g.addColorStop(1,"rgba(0,0,0,.15)");ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height)}
- if(pcImg){const ps=num("pcScale",100)/100,pw=450*ps,ph=620*ps,px=720+(450-pw)/2+num("pcX"),py=30+(620-ph)/2+num("pcY");fitImage(pcImg,px,py,pw,ph,true)}
  const renderLayers=allManagedLayers();
  renderLayers.forEach(layer=>{
   if(!layer.visible)return;
@@ -420,11 +404,7 @@ function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
  if(lines.length<maxLines&&line)lines.push(line);
  lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));
 }
-["systemText","titleText","hoText","pcText","bgColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity"].forEach(id=>q(id)?.addEventListener("input",draw));
-q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
-q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
-q("clearScenarioImage").onclick=()=>{scenarioImg=null;q("scenarioImage").value="";draw();};
-q("clearPcImage").onclick=()=>{pcImg=null;q("pcImage").value="";draw();};
+["systemText","titleText","hoText","pcText","bgColor"].forEach(id=>q(id)?.addEventListener("input",draw));
 q("layoutReset").onclick=()=>{
  const defs=[
   ["builtin_system",70,100,28,false],
@@ -437,8 +417,6 @@ q("layoutReset").onclick=()=>{
   Object.assign(l,{x,y,font:"sans-serif",fontSize:size,color:"#ffffff",bold,visible:true});
  });
  extraLayers=[];layerOrder=[];selectedExtraLayerId=null;
- if(q("pcScale"))q("pcScale").value=100;if(q("pcX"))q("pcX").value=0;if(q("pcY"))q("pcY").value=0;
- if(q("scenarioScale"))q("scenarioScale").value=100;if(q("scenarioX"))q("scenarioX").value=0;if(q("scenarioY"))q("scenarioY").value=0;if(q("scenarioOpacity"))q("scenarioOpacity").value=32;
  renderLayerList();syncShapeControls();draw();
 };
 q("redraw").onclick=draw;
@@ -591,17 +569,16 @@ function canvasPoint(e){
  return {x:(clientX-r.left)*(canvas.width/r.width),y:(clientY-r.top)*(canvas.height/r.height)};
 }
 function dragFields(){
- const target=q("dragTarget")?.value||"pc";
+ const target=q("dragTarget")?.value||"extra";
  if(target==="extra"){
    const l=selectedLayer();
    return l?{layer:l}:null;
  }
- if(target==="scenario")return {x:q("scenarioX"),y:q("scenarioY")};
  if(target==="system")return {layer:builtinLayerById("builtin_system")};
  if(target==="title")return {layer:builtinLayerById("builtin_title")};
  if(target==="ho")return {layer:builtinLayerById("builtin_ho")};
  if(target==="pcText")return {layer:builtinLayerById("builtin_pc")};
- return {x:q("pcX"),y:q("pcY")};
+ return null;
 }
 function startDrag(e){
  const f=dragFields();if(!f)return;
@@ -784,7 +761,7 @@ function layerForSave(l){
  return copy;
 }
 function collectDraftState(){
- const inputIds=["systemText","titleText","hoText","pcText","bgColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity","canvasPreset","canvasWidth","canvasHeight","dragTarget"];
+ const inputIds=["systemText","titleText","hoText","pcText","bgColor","canvasPreset","canvasWidth","canvasHeight","dragTarget"];
  const inputs={};
  inputIds.forEach(id=>{if(q(id))inputs[id]=q(id).value;});
  inputs.transparentBg=!!q("transparentBg")?.checked;
@@ -792,8 +769,6 @@ function collectDraftState(){
   savedAt:new Date().toISOString(),
   canvas:{width:canvas.width,height:canvas.height},
   inputs,
-  scenarioImgSrc:scenarioImg?.src||null,
-  pcImgSrc:pcImg?.src||null,
   builtinTextLayers:builtinTextLayers.map(layerForSave),
   extraLayers:extraLayers.map(layerForSave),
   layerOrder:[...layerOrder],
@@ -811,8 +786,6 @@ async function restoreDraftState(state){
  if(q("customCanvasFields"))q("customCanvasFields").hidden=q("canvasPreset")?.value!=="custom";
  canvas.width=state.canvas?.width||Number(inputs.canvasWidth)||675;
  canvas.height=state.canvas?.height||Number(inputs.canvasHeight)||1200;
- scenarioImg=await imageFromSrc(state.scenarioImgSrc||null);
- pcImg=await imageFromSrc(state.pcImgSrc||null);
  for(const saved of state.builtinTextLayers||[]){
   const target=builtinLayerById(saved.id);
   if(target)Object.assign(target,saved,{img:null});
@@ -824,8 +797,18 @@ async function restoreDraftState(state){
   delete layer.imgSrc;
   extraLayers.push(layer);
  }
+ // v1.2.0以前の「基本画像」入り一時保存は、通常の画像レイヤーへ自動移行する。
+ if(state.scenarioImgSrc){
+  const img=await imageFromSrc(state.scenarioImgSrc);
+  if(img){const l=makeLayer("image","シナリオ画像（旧一時保存）");l.img=img;l.x=canvas.width/2;l.y=canvas.height/2;l.scale=200;l.opacity=Number(inputs.scenarioOpacity)||32;extraLayers.unshift(l);}
+ }
+ if(state.pcImgSrc){
+  const img=await imageFromSrc(state.pcImgSrc);
+  if(img){const l=makeLayer("image","PC立ち絵（旧一時保存）");l.img=img;l.x=canvas.width*0.72;l.y=canvas.height/2;l.scale=160;extraLayers.push(l);}
+ }
  layerOrder=Array.isArray(state.layerOrder)?[...state.layerOrder]:[];
  selectedExtraLayerId=state.selectedExtraLayerId||null;
+ if(q("dragTarget") && !["system","title","ho","pcText","extra"].includes(q("dragTarget").value))q("dragTarget").value="extra";
  layerSeq=Math.max(Number(state.layerSeq)||1,...extraLayers.map(l=>Number(String(l.id||"").match(/(\d+)$/)?.[1])||0))+1;
  renderLayerList();syncShapeControls();draw();
  return true;
