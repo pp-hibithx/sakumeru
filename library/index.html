@@ -276,6 +276,12 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .article-block-actions{display:flex;gap:5px;flex-wrap:wrap}.article-block-actions button{width:auto;padding:5px 8px;font-size:11px}
 .article-block textarea{min-height:120px}
 .article-image-inputs{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.55fr);gap:8px;align-items:end}
+.article-image-source-grid{align-items:start}
+.article-image-source-grid>div{min-width:0}
+.article-image-source-grid label{display:block;margin-bottom:5px}
+.article-image-file-row{display:flex;gap:7px;align-items:center;min-height:38px}
+.article-image-file-row .articleBlockImageFile{min-width:0;flex:1;margin:0}
+.article-image-file-row button{width:auto;flex:0 0 auto;white-space:nowrap;margin:0}
 .article-block-preview{margin-top:8px}.article-block-preview img{max-width:260px;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid var(--line)}
 .article-youtube-preview{margin-top:8px;max-width:480px}
 .article-upload-status{font-size:11px;color:var(--muted);margin-top:4px}
@@ -2828,7 +2834,7 @@ function articleBlocksHtml(page){
 function articleEditorBlockHtml(b,index,total){
  const id=esc(b.id||TRPG39.uuid());
  const actions=`<div class="article-block-actions"><button type="button" data-block-up="${id}" ${index===0?"disabled":""}>↑</button><button type="button" data-block-down="${id}" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
- if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div><div class="article-image-inputs"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><label class="article-ogp-pick"><input class="articleBlockOgp" type="checkbox" ${b.ogp?"checked":""}><span><strong>SNSカードに使う</strong> <span class="muted">（通常共有時のみ・1枚だけ選択）</span></span></label><div class="article-image-placeholder-note" ${b.url?"hidden":""}>画像はあとから設定できます。この枠は保存しても残ります。</div><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
+ if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div><div class="article-image-inputs article-image-source-grid"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><div class="article-image-file-row"><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button></div><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><label class="article-ogp-pick"><input class="articleBlockOgp" type="checkbox" ${b.ogp?"checked":""}><span><strong>SNSカードに使う</strong> <span class="muted">（通常共有時のみ・1枚だけ選択）</span></span></label><div class="article-image-placeholder-note" ${b.url?"hidden":""}>画像はあとから設定できます。この枠は保存しても残ります。</div><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
  if(b.type==="bgm")return `<div class="article-block" data-block-id="${id}" data-block-type="bgm"><div class="article-block-head"><span class="article-block-label">🎵 BGM</span>${actions}</div><input class="articleBgmLibraryId" type="hidden" value="${esc(b.libraryId||"")}"><div class="bgm-lib-actions"><button type="button" data-bgm-lib-open="${id}">BGM LIBRARYから選ぶ</button><button type="button" data-bgm-lib-save="${id}">BGM LIBRARYに登録／更新</button></div><div class="article-bgm-grid"><div><label>曲名</label><input class="articleBgmTitle" value="${esc(b.title||"")}" placeholder="曲名"></div><div><label>作者・アーティスト</label><input class="articleBgmArtist" value="${esc(b.artist||"")}" placeholder="作者名"></div><div><label>使用シーン</label><input class="articleBgmScene" value="${esc(b.scene||"")}" placeholder="例：Scene 3／終盤"></div><div><label>タグ <span class="small muted">（、区切り）</span></label><input class="articleBgmTags" value="${esc(Array.isArray(b.tags)?b.tags.join("、"):(b.tags||""))}" placeholder="不穏、戦闘、エンディング"></div><div><label>配布元名</label><input class="articleBgmSourceLabel" value="${esc(b.sourceLabel||"")}" placeholder="DOVA-SYNDROME など"></div><div><label>配布元URL</label><input class="articleBgmSourceUrl" type="url" value="${esc(b.sourceUrl||"")}" placeholder="https://..."></div><div><label>音源URL <span class="small muted">（任意）</span></label><input class="articleBgmAudioUrl" type="url" value="${esc(b.audioUrl||"")}" placeholder="直接再生できるMP3 URL"></div></div><label>手元のMP3 <span class="small muted">（自分用・このブラウザに保存）</span></label><div class="article-image-inputs"><div><input class="articleBgmFile" type="file" accept="audio/mpeg,audio/mp3,.mp3"><input class="articleBgmLocalId" type="hidden" value="${esc(b.localAudioId||"")}"><input class="articleBgmLocalName" type="hidden" value="${esc(b.localFileName||"")}"><div class="article-local-audio">${b.localFileName?`保存済み：${esc(b.localFileName)}`:"MP3本体は共有記事には含まれません。"}</div></div><div><button type="button" data-bgm-local-save="${id}">この端末に保存</button><div class="article-upload-status"></div></div></div><label>メモ <span class="small muted">（任意）</span></label><textarea class="articleBgmMemo" placeholder="この場面で流した、イントロから使用など">${esc(b.memo||"")}</textarea></div>`;
  if(b.type==="conversation")return `<div class="article-block" data-block-id="${id}" data-block-type="conversation"><div class="article-block-head"><span class="article-block-label">💬 会話ログ</span>${actions}</div><label>見出し <span class="small muted">（任意）</span></label><input class="articleConversationCaption" value="${esc(b.caption||"")}" placeholder="例：終盤／この場面好き"><label>会話</label><textarea class="articleConversationRaw" placeholder="1行ごとに「発言者｜発言」の形で入力します。&#10;A｜こんにちは。&#10;B｜確認しました。">${esc(conversationRaw(normalizeConversationLines(b)))}</textarea><div class="article-conversation-tools"><button type="button" data-conversation-import-open="${id}">ログを読み込む</button></div><div class="conversation-importer" data-conversation-importer="${id}" hidden><div class="conversation-importer-head"><strong>会話ログを読み込む</strong><button type="button" data-conversation-import-close="${id}">閉じる</button></div><label>ログを貼り付け</label><textarea class="conversationImportText" placeholder="A：こんにちは&#10;B：確認しました"></textarea><div class="conversation-import-file-row"><input class="conversationImportFile" type="file" accept=".txt,.json,text/plain,application/json"><button type="button" data-conversation-file-load="${id}">TXT / JSONを読み込む</button><button type="button" data-conversation-parse="${id}">発言を抽出</button></div><div class="small muted conversation-txt-note">YouTube Summaryなどで保存した全文TXTをそのまま読み込めます。タイムスタンプは自動で除外して発言を抽出します。</div><div class="conversation-import-results" data-conversation-results="${id}"></div><div class="conversation-import-footer" hidden><button type="button" data-conversation-select-all="${id}">すべて選択</button><button type="button" data-conversation-select-none="${id}">選択解除</button><button type="button" data-conversation-insert="${id}">選択した発言を追加</button></div></div><div class="small muted">「｜」「:」「：」で発言者と台詞を分けられます。TXT / JSONはファイル選択だけでも自動解析します。</div></div>`;
  if(b.type==="youtube")return `<div class="article-block" data-block-id="${id}" data-block-type="youtube"><div class="article-block-head"><span class="article-block-label">▶ YouTube</span>${actions}</div><label>YouTube URL</label><input class="articleBlockYoutubeUrl" type="url" value="${esc(b.url||"")}" placeholder="https://www.youtube.com/watch?v=..."><label>見出し <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="セッション録画 など"><div class="article-youtube-preview"></div></div>`;
@@ -2841,7 +2847,7 @@ function articlePagesHtml(r){
    <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page" ${i===0?"open":""}>
      <summary><div><div class="lib-article-page-title">${esc(p.title||`ページ ${i+1}`)} <span class="lib-article-share-badge">${esc(articleShareLabel(p))}</span></div><div class="lib-article-page-meta">${esc(p.updatedAt||p.createdAt||"")}</div></div><span>▼</span></summary>
      ${articleBlocksHtml(p)}
-     <div class="lib-article-page-actions">${p.shareEnabled?`<button type="button" data-article-share="${esc(p.id)}" data-run-id="${esc(r.id)}">共有URL</button>`:""}<button type="button" data-article-edit="${esc(p.id)}" data-run-id="${esc(r.id)}">編集</button><button type="button" class="danger" data-article-delete="${esc(p.id)}" data-run-id="${esc(r.id)}">削除</button></div>
+     <div class="lib-article-page-actions">${p.shareEnabled?`<button type="button" data-article-share="${esc(p.id)}" data-run-id="${esc(r.id)}">共有URL</button><button type="button" data-article-x="${esc(p.id)}" data-run-id="${esc(r.id)}">Xに投稿</button>`:""}<button type="button" data-article-edit="${esc(p.id)}" data-run-id="${esc(r.id)}">編集</button><button type="button" class="danger" data-article-delete="${esc(p.id)}" data-run-id="${esc(r.id)}">削除</button></div>
    </details>`).join(""):'<div class="small muted">卓記事ページはまだありません。</div>'}</div>
    <div class="lib-article-editor" id="articleEditor-${esc(r.id)}" hidden>
      <input type="hidden" class="articleEditId">
@@ -3391,7 +3397,7 @@ async function uploadArticleOgpImage(blob,pageId=""){
  if(!body.publicUrl)throw new Error("記事サムネイルの公開URLを取得できませんでした。");
  return body.publicUrl;
 }
-async function shareArticlePage(runId,pageId){
+async function shareArticlePage(runId,pageId,options={}){
  const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId);if(!page)return alert("記事ページが見つかりません。");
  if(!page.shareEnabled)return alert("この記事は「自分のみ」です。編集から共有設定を「リンク限定」にしてください。");
  if(!(TRPG39Cloud&&TRPG39Cloud.configured()))return alert("共有機能の設定がありません。");
@@ -3418,14 +3424,52 @@ async function shareArticlePage(runId,pageId){
    saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));
    const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
    previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");
-   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。金色のタイトルOGPをSNSカードに使用します。");showShareUrl(previewUrl.href,shareMsg);
- }catch(e){console.error(e);alert(e.message||e)}
+   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。金色のタイトルOGPをSNSカードに使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
+   return previewUrl.href;
+ }catch(e){console.error(e);alert(e.message||e);return ""}
+}
+function articleTextForX(page){
+ const blocks=normalizedArticleBlocks(page);
+ return blocks.filter(b=>b.type==="text").map(b=>String(b.text||"").trim()).filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function trimArticleExcerpt(text,maxChars=96){
+ const chars=[...String(text||"").trim()];
+ if(chars.length<=maxChars)return chars.join("");
+ let cut=chars.slice(0,maxChars).join("");
+ const floor=Math.floor(maxChars*.58);
+ const marks=["\n","。","！","？","!","?","、","，",","," "];
+ let best=-1;
+ for(const mark of marks){const i=cut.lastIndexOf(mark);if(i>=floor&&i>best)best=i+(mark==="\n"?0:mark.length)}
+ if(best>0)cut=cut.slice(0,best);
+ return cut.replace(/[\s、，,]+$/u,"")+"…";
+}
+function articleXPostText(page){
+ if(page.passwordProtected)return "SAKU+MERUで記事を共有しました。\n#SAKUMERU";
+ const title=String(page.title||"卓記事").trim();
+ const body=articleTextForX(page);
+ if(!body)return `${title}\n#SAKUMERU`;
+ const isLong=[...body].length>140;
+ const shown=isLong?trimArticleExcerpt(body,96):body;
+ return `${title}\n\n${shown}${isLong?"\n\n詳細はこちら":""}\n\n#SAKUMERU`;
+}
+async function postArticlePageToX(runId,pageId){
+ const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId);
+ if(!page)return alert("記事ページが見つかりません。");
+ if(!page.shareEnabled)return alert("この記事は「自分のみ」です。編集から共有設定を「リンク限定」にしてください。");
+ const url=await shareArticlePage(runId,pageId,{quiet:true});
+ if(!url)return;
+ const intent=new URL("https://x.com/intent/tweet");
+ intent.searchParams.set("text",articleXPostText(page));
+ intent.searchParams.set("url",url);
+ intent.searchParams.set("lang","ja");
+ window.open(intent.href,"_blank","noopener,noreferrer");
 }
 function bindArticlePageButtons(){
  document.querySelectorAll('[data-article-new]').forEach(b=>b.onclick=()=>openArticleEditor(b.dataset.articleNew));
  document.querySelectorAll('[data-article-edit]').forEach(b=>b.onclick=()=>openArticleEditor(b.dataset.runId,b.dataset.articleEdit));
  document.querySelectorAll('[data-article-delete]').forEach(b=>b.onclick=()=>deleteArticlePage(b.dataset.runId,b.dataset.articleDelete));
  document.querySelectorAll('[data-article-share]').forEach(b=>b.onclick=()=>shareArticlePage(b.dataset.runId,b.dataset.articleShare));
+ document.querySelectorAll('[data-article-x]').forEach(b=>b.onclick=()=>postArticlePageToX(b.dataset.runId,b.dataset.articleX));
  document.querySelectorAll('[data-article-save]').forEach(b=>b.onclick=()=>saveArticlePage(b.dataset.articleSave));
  document.querySelectorAll('[data-article-cancel]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.articleCancel}`);if(ed)ed.hidden=true});
  document.querySelectorAll('[data-block-add-text]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddText}`);if(ed)addEditorBlock(ed,"text")});
