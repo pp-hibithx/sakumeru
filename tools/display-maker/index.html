@@ -109,6 +109,11 @@
    <div class="dm-field" id="layerColorField"><label id="layerColorLabel">図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
    <div class="dm-field"><label id="layerOpacityLabel">透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
    <div class="dm-field"><label id="layerScaleLabel">大きさ</label><input id="shapeScale" type="range" min="10" max="800" value="100"></div>
+   <div class="dm-row" id="rectSizeControls" hidden>
+     <div class="dm-field"><label>横幅</label><input id="rectWidth" type="number" min="4" max="4000" step="1" value="216"></div>
+     <div class="dm-field"><label>高さ</label><input id="rectHeight" type="number" min="4" max="4000" step="1" value="120"></div>
+   </div>
+   <div class="dm-note" id="rectSizeNote" hidden>横幅と高さを別々に変えられます。細い帯や太いパネルにもできます。</div>
    <div class="dm-row dm-actions" id="imageLayerActions" hidden><button type="button" id="silhouetteLayer">シルエット化</button><button type="button" id="restoreImageLayer">元画像に戻す</button></div>
  </div>
  <div id="textLayerControls" hidden>
@@ -376,7 +381,7 @@ function draw(){
     ctx.beginPath();
     if(layer.type==="rect"){ctx.rect(layer.x-size/2,layer.y-size/2,size,size)}
     else if(layer.type==="wideRect"){
-      const w=size*1.8,h=size;
+      const w=Number(layer.width)||size*1.8,h=Number(layer.height)||size;
       ctx.rect(layer.x-w/2,layer.y-h/2,w,h);
     }
     else if(layer.type==="circle"){ctx.arc(layer.x,layer.y,size/2,0,Math.PI*2)}
@@ -487,7 +492,7 @@ function moveManagedLayer(id,delta){
 function syncShapeControls(){
  const l=selectedExtraLayer(),box=q("shapeControls");
  if(!box)return;
- if(!l){box.hidden=true;q("textLayerControls").hidden=true;return;}
+ if(!l){box.hidden=true;q("textLayerControls").hidden=true;if(q("rectSizeControls"))q("rectSizeControls").hidden=true;if(q("rectSizeNote"))q("rectSizeNote").hidden=true;return;}
  box.hidden=false;
  const isText=l.type==="text"||l.type==="builtinText";
  box.hidden=isText;
@@ -506,6 +511,16 @@ function syncShapeControls(){
    q("layerOpacityLabel").textContent="透明度";
    q("layerScaleLabel").textContent="大きさ";
    q("imageLayerActions").hidden=!isImage;
+   const isWideRect=l.type==="wideRect";
+   q("rectSizeControls").hidden=!isWideRect;
+   q("rectSizeNote").hidden=!isWideRect;
+   if(isWideRect){
+     const base=120*((l.scale||100)/100);
+     if(!Number(l.width))l.width=base*1.8;
+     if(!Number(l.height))l.height=base;
+     q("rectWidth").value=Math.round(l.width);
+     q("rectHeight").value=Math.round(l.height);
+   }
    q("restoreImageLayer").disabled=!isImage||!l.silhouette;
    q("silhouetteLayer").disabled=!isImage||!!l.silhouette;
    q("shapeColor").value=l.color||(isImage?"#000000":"#ffffff");
@@ -514,7 +529,9 @@ function syncShapeControls(){
  }
 }
 function addShape(type,label){
- const l=makeLayer(type,label);extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;
+ const l=makeLayer(type,label);
+ if(type==="wideRect"){l.width=216;l.height=120;}
+ extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;
  q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
 }
 q("addTextLayer").onclick=()=>{
@@ -557,7 +574,23 @@ q("restoreImageLayer").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=
  const l=selectedExtraLayer();if(!l)return;
  if(id==="shapeColor")l.color=q(id).value;
  if(id==="shapeOpacity")l.opacity=Number(q(id).value);
- if(id==="shapeScale")l.scale=Number(q(id).value);
+ if(id==="shapeScale"){
+   const oldScale=Number(l.scale)||100,newScale=Number(q(id).value);
+   if(l.type==="wideRect"&&oldScale>0){
+     const ratio=newScale/oldScale;
+     l.width=(Number(l.width)||216)*ratio;
+     l.height=(Number(l.height)||120)*ratio;
+     q("rectWidth").value=Math.round(l.width);
+     q("rectHeight").value=Math.round(l.height);
+   }
+   l.scale=newScale;
+ }
+ draw();
+}));
+["rectWidth","rectHeight"].forEach(id=>q(id).addEventListener("input",()=>{
+ const l=selectedExtraLayer();if(!l||l.type!=="wideRect")return;
+ const v=Math.max(4,Math.min(4000,Number(q(id).value)||4));
+ if(id==="rectWidth")l.width=v;else l.height=v;
  draw();
 }));
 
