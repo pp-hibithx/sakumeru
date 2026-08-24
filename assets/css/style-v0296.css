@@ -1026,3 +1026,25 @@ html.theme-light .site-brand-logo .brand-type{color:#202226}
   .site-brand-logo .brand-tagline{font-size:10px;margin-top:9px}
   .site-header .brand-logo-row{min-height:155px}
 }
+
+
+/* Test: keep SAKU+MERU brand mark identical in light mode using a dark brand plate */
+html.theme-light .site-brand-logo{
+  position:relative;
+  padding:14px 20px 12px 14px;
+  border-radius:18px;
+  background:linear-gradient(135deg, rgba(9,15,21,.98), rgba(16,24,31,.96));
+  box-shadow:0 10px 28px rgba(18,24,30,.12);
+}
+html.theme-light .site-brand-logo .brand-symbol .symbol-light{display:none !important}
+html.theme-light .site-brand-logo .brand-symbol .symbol-dark{display:block !important}
+html.theme-light .site-brand-logo .brand-type{color:#f4f3ef !important}
+html.theme-light .site-brand-logo .brand-tagline{color:#c99525 !important}
+html.theme-light .site-brand-logo .brand-plus{color:#c99525 !important}
+
+@media(max-width:560px){
+  html.theme-light .site-brand-logo{
+    padding:10px 14px 9px 10px;
+    border-radius:14px;
+  }
+}
