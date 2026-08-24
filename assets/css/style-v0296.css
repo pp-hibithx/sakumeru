@@ -932,15 +932,97 @@ html.theme-dark,html[data-theme="dark"]{color-scheme:dark !important}
 
 
 /* v0.2.97 — SAKU+MERU official header logo */
-.site-brand-logo{display:inline-block;text-decoration:none;line-height:0;max-width:min(100%,390px)}
-.site-brand-logo img{display:block;width:clamp(230px,34vw,340px);height:auto;object-fit:contain;object-position:left center}
+.site-brand-logo{display:inline-block;text-decoration:none;line-height:0;max-width:min(100%,560px)}
+.site-brand-logo img{display:block;width:clamp(270px,48vw,500px);height:auto;object-fit:contain;object-position:left center}
 .site-brand-logo .logo-light{display:none}
 html.theme-light .site-brand-logo .logo-dark{display:none}
 html.theme-light .site-brand-logo .logo-light{display:block}
 html.theme-dark .site-brand-logo .logo-dark{display:block}
 html.theme-dark .site-brand-logo .logo-light{display:none}
-.site-header .brand-logo-row{display:flex;align-items:center;min-height:108px}
+.site-header .brand-logo-row{display:flex;align-items:center;min-height:150px}
 @media(max-width:560px){
-  .site-brand-logo img{width:min(82vw,290px)}
-  .site-header .brand-logo-row{min-height:92px}
+  .site-brand-logo img{width:min(88vw,390px)}
+  .site-header .brand-logo-row{min-height:112px}
+}
+
+
+/* v0.2.97.3 — crisp split header logo: symbol image + live text */
+.site-brand-logo{
+  display:inline-flex !important;
+  align-items:flex-end;
+  gap:22px;
+  max-width:none !important;
+  line-height:1;
+  text-decoration:none;
+}
+.site-brand-logo .brand-symbol{
+  position:relative;
+  width:190px;
+  height:195px;
+  flex:0 0 auto;
+}
+.site-brand-logo .brand-symbol img{
+  position:absolute;
+  inset:0;
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain;
+  object-position:left bottom;
+}
+.site-brand-logo .brand-symbol .symbol-light{display:none}
+html.theme-light .site-brand-logo .brand-symbol .symbol-dark{display:none}
+html.theme-light .site-brand-logo .brand-symbol .symbol-light{display:block}
+html.theme-dark .site-brand-logo .brand-symbol .symbol-dark{display:block}
+html.theme-dark .site-brand-logo .brand-symbol .symbol-light{display:none}
+
+.site-brand-logo .brand-type{
+  width:205px;
+  padding-bottom:1px;
+  text-align:center;
+  color:#f4f3ef;
+  font-family:"Montserrat","Avenir Next","Segoe UI",sans-serif;
+  font-weight:300;
+}
+html.theme-light .site-brand-logo .brand-type{color:#202226}
+.site-brand-logo .brand-word{
+  display:block;
+  font-size:34px;
+  line-height:1;
+  letter-spacing:.34em;
+  padding-left:.34em;
+  white-space:nowrap;
+}
+.site-brand-logo .brand-plus{
+  display:block;
+  margin:8px 0 7px;
+  color:#c99525;
+  font-size:37px;
+  line-height:.9;
+  font-weight:200;
+}
+.site-brand-logo .brand-tagline{
+  display:block;
+  margin-top:12px;
+  color:#c99525;
+  font-family:"Noto Sans JP","Yu Gothic UI","Yu Gothic",sans-serif;
+  font-size:13px;
+  font-weight:500;
+  line-height:1.4;
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
+.site-header .brand-logo-row{
+  display:flex;
+  align-items:flex-start;
+  min-height:205px;
+}
+
+@media(max-width:560px){
+  .site-brand-logo{gap:12px;transform-origin:left top}
+  .site-brand-logo .brand-symbol{width:135px;height:145px}
+  .site-brand-logo .brand-type{width:155px}
+  .site-brand-logo .brand-word{font-size:25px}
+  .site-brand-logo .brand-plus{font-size:29px;margin:6px 0}
+  .site-brand-logo .brand-tagline{font-size:10px;margin-top:9px}
+  .site-header .brand-logo-row{min-height:155px}
 }
