@@ -137,7 +137,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.9.2：LIBRARYから自動入力された文字レイヤーの色変更を修正し、図形に長方形を追加しました。</div>
+ <div class="dm-note">v0.9.3：レイヤー複製を追加しました。文字・画像・図形・自動入力文字を、位置や見た目を保ったまま複製できます。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -396,6 +396,8 @@ function renderLayerList(){
   name.onclick=()=>selectExtraLayer(layer.id);
   const up=document.createElement("button");up.type="button";up.textContent="↑";
   const down=document.createElement("button");down.type="button";down.textContent="↓";
+  const dup=document.createElement("button");dup.type="button";dup.textContent="複製";
+  dup.onclick=()=>duplicateManagedLayer(layer.id);
   const del=document.createElement("button");del.type="button";del.textContent="削除";
   up.onclick=()=>moveManagedLayer(layer.id,1);
   down.onclick=()=>moveManagedLayer(layer.id,-1);
@@ -405,13 +407,38 @@ function renderLayerList(){
   }else{
     del.onclick=()=>{extraLayers=extraLayers.filter(x=>x.id!==layer.id);layerOrder=layerOrder.filter(id=>id!==layer.id);if(selectedExtraLayerId===layer.id)selectedExtraLayerId=null;renderLayerList();syncShapeControls();draw()};
   }
-  row.append(vis,name,up,down,del);box.appendChild(row);
+  row.append(vis,name,up,down,dup,del);box.appendChild(row);
  });
 }
 function selectExtraLayer(id){
  selectedExtraLayerId=id;
  q("dragTarget").value="extra";
  renderLayerList();syncShapeControls();
+}
+function duplicateManagedLayer(id){
+ const src=builtinLayerById(id)||extraLayers.find(x=>x.id===id);
+ if(!src)return;
+ const copy={...src};
+ copy.id="layer_"+(layerSeq++);
+ copy.type=src.type==="builtinText"?"text":src.type;
+ copy.name=(src.name||"レイヤー")+" コピー";
+ copy.x=(Number(src.x)||0)+24;
+ copy.y=(Number(src.y)||0)+24;
+ if(src.type==="builtinText"){
+   copy.text=q(src.field)?.value||src.name||"文字";
+   delete copy.field;
+ }else if(src.type==="text"){
+   copy.text=src.text||"";
+ }
+ // Image objects can be shared safely; transforms remain independent.
+ extraLayers.push(copy);
+ allManagedLayers();
+ const srcIndex=layerOrder.indexOf(id);
+ layerOrder=layerOrder.filter(x=>x!==copy.id);
+ layerOrder.splice(srcIndex+1,0,copy.id);
+ selectedExtraLayerId=copy.id;
+ if(q("dragTarget"))q("dragTarget").value="extra";
+ renderLayerList();syncShapeControls();draw();
 }
 function moveManagedLayer(id,delta){
  allManagedLayers();
