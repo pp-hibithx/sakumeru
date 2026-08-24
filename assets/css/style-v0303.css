@@ -1429,5 +1429,123 @@ body:has(#betaAccessKey)::after{
   }
 }
 
-/* v0.3.03 — beta gate regression fix
-   Keep the v0.3.01 access-gate layout. Header/footer are now managed by common-layout.js. */
+
+/* v0.3.03 — beta gate isolation / restore compact access screen */
+body:has(#betaAccessKey){
+  min-height:100vh !important;
+  margin:0 !important;
+  display:grid !important;
+  grid-template-rows:auto 1fr auto !important;
+  background:var(--bg) !important;
+  color:var(--text) !important;
+}
+body:has(#betaAccessKey)::before{
+  content:"SAKU   ＋   MERU\A遊んで、記して、本になる。" !important;
+  white-space:pre !important;
+  display:block !important;
+  box-sizing:border-box !important;
+  width:100% !important;
+  min-height:0 !important;
+  padding:28px max(24px,calc((100vw - 1040px)/2)) 24px !important;
+  background:#080d12 url("../img/sakumeru-symbol-dark.png") no-repeat max(24px,calc((100vw - 1040px)/2)) center / 112px auto !important;
+  color:#f5f5f2 !important;
+  border-bottom:1px solid rgba(201,149,37,.42) !important;
+  font-family:"Montserrat","Avenir Next","Segoe UI",sans-serif !important;
+  font-size:24px !important;
+  font-weight:300 !important;
+  line-height:1.65 !important;
+  letter-spacing:.18em !important;
+  text-indent:136px !important;
+}
+body:has(#betaAccessKey) > main{
+  box-sizing:border-box !important;
+  width:min(680px,calc(100% - 36px)) !important;
+  min-height:0 !important;
+  max-width:680px !important;
+  margin:56px auto !important;
+  padding:30px !important;
+  font-family:"Noto Sans JP","Yu Gothic UI","Yu Gothic",system-ui,sans-serif !important;
+  font-size:16px !important;
+  line-height:1.75 !important;
+  background:var(--panel) !important;
+  color:var(--text) !important;
+  border:1px solid var(--line) !important;
+  border-radius:16px !important;
+  box-shadow:0 16px 42px rgba(0,0,0,.12) !important;
+  align-self:auto !important;
+  flex:none !important;
+}
+body:has(#betaAccessKey) > main > h1{display:none !important;}
+body:has(#betaAccessKey) > main > h2{
+  margin:0 0 12px !important;
+  color:var(--text) !important;
+  font-size:24px !important;
+  line-height:1.4 !important;
+}
+body:has(#betaAccessKey) > main p{
+  font-size:16px !important;
+  line-height:1.75 !important;
+}
+body:has(#betaAccessKey) #betaAccessKey{
+  box-sizing:border-box !important;
+  width:auto !important;
+  min-width:240px !important;
+  max-width:100% !important;
+  height:auto !important;
+  min-height:0 !important;
+  padding:8px 10px !important;
+  font-size:16px !important;
+  line-height:1.4 !important;
+  background:var(--panel2) !important;
+  color:var(--text) !important;
+  border:1px solid var(--line) !important;
+  border-radius:8px !important;
+}
+body:has(#betaAccessKey) #betaAccessButton{
+  box-sizing:border-box !important;
+  width:auto !important;
+  height:auto !important;
+  min-height:0 !important;
+  padding:8px 14px !important;
+  font-size:16px !important;
+  line-height:1.4 !important;
+  background:#c99525 !important;
+  color:#080d12 !important;
+  border:1px solid #c99525 !important;
+  border-radius:8px !important;
+  font-weight:700 !important;
+}
+body:has(#betaAccessKey)::after{
+  content:"© 2026 SAKU+MERU" !important;
+  display:block !important;
+  box-sizing:border-box !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:22px 24px 28px !important;
+  text-align:center !important;
+  background:#080d12 !important;
+  color:rgba(245,245,242,.78) !important;
+  border-top:1px solid rgba(201,149,37,.42) !important;
+  font:12px/1.5 "Noto Sans JP","Yu Gothic UI",system-ui,sans-serif !important;
+  letter-spacing:.04em !important;
+}
+@media(max-width:560px){
+  body:has(#betaAccessKey)::before{
+    padding:20px 18px 18px !important;
+    background-position:18px center !important;
+    background-size:82px auto !important;
+    font-size:18px !important;
+    line-height:1.55 !important;
+    text-indent:102px !important;
+    letter-spacing:.12em !important;
+  }
+  body:has(#betaAccessKey) > main{
+    width:calc(100% - 28px) !important;
+    margin:30px auto !important;
+    padding:22px !important;
+  }
+  body:has(#betaAccessKey) #betaAccessKey{
+    min-width:0 !important;
+    width:min(240px,100%) !important;
+  }
+}
