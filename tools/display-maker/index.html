@@ -34,6 +34,8 @@
 <div class="hero"><h2>DISPLAY MAKER</h2><p>卓記録から、卓報告用ディスプレイをサクッと作ります。</p></div>
 <div class="dm-layout">
 <section class="card dm-panel dm-control-panel">
+ <details class="dm-control-group" open>
+  <summary>卓情報</summary>
  <div class="dm-field"><label>シナリオ検索</label><input id="scenarioSearch" placeholder="タイトルの一部を入力"></div>
  <div class="dm-field"><label>シナリオ</label><select id="scenarioSelect"><option value="">シナリオを選択</option></select></div>
  <div class="dm-field"><label>陣</label><select id="runSelect" disabled><option value="">陣を選択</option></select></div>
@@ -51,6 +53,7 @@
   <div class="dm-field"><label>HO</label><input id="hoText"></div>
   <div class="dm-field"><label>PC名</label><input id="pcText"></div>
  </div>
+ </details>
  <div class="dm-field"><label>背景</label><input id="bgColor" type="color" value="#151515"></div>
 <details class="dm-control-group" open><summary>キャンバス</summary>
  <div class="dm-field"><label>サイズ</label><select id="canvasPreset">
@@ -131,7 +134,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.9.4：旧「文字・配置」パネルを廃止し、文字編集をレイヤーへ統一しました。PC名・HO・シナリオ名・システムもレイヤー選択後に編集できます。</div>
+ <div class="dm-note">v0.9.5：シナリオ検索・シナリオ選択・陣選択・自動入力項目を「卓情報」トグルにまとめました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
