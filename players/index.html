@@ -14,8 +14,7 @@
 <script>
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
-<link rel="stylesheet" href="../assets/css/style-v0306.css">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<link rel="stylesheet" href="../assets/css/style-v0302.css">
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .album-grid{display:grid;grid-template-columns:1fr;gap:28px;align-items:start}
@@ -241,7 +240,6 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 }
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
-<script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 
 <style>
 .lib-article-pages{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
@@ -260,6 +258,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-article-editor textarea{min-height:180px}
 .lib-article-share-row{display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px;align-items:end;margin-top:10px}
 .lib-article-share-note{font-size:11px;color:var(--muted);margin-top:5px}
+.article-ogp-pick{display:flex;align-items:center;gap:7px;margin-top:9px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.018);font-size:12px}.article-ogp-pick input{width:auto;margin:0}.article-ogp-pick strong{color:var(--text)}
 .lib-article-share-badge{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted)}
 @media(max-width:760px){.lib-article-share-row{grid-template-columns:1fr}}
 .lib-article-render{padding:0 12px 12px;display:grid;gap:14px}
@@ -752,7 +751,26 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 </style>
 </head>
 <body>
-<div data-site-header data-active="players"></div>
+<header class="site-header"><div class="wrap">
+<div class="brand-logo-row"><a class="site-brand-logo" href="../index.html" aria-label="SAKU+MERU HOME">
+  <span class="brand-symbol" aria-hidden="true">
+    <img class="symbol-dark" src="../assets/img/sakumeru-symbol-dark.png" alt="">
+    <img class="symbol-light" src="../assets/img/sakumeru-symbol-light.png" alt="">
+  </span>
+  <span class="brand-type" aria-hidden="true">
+    <span class="brand-word">SAKU</span>
+    <span class="brand-plus">＋</span>
+    <span class="brand-word">MERU</span>
+    <span class="brand-tagline">遊んで、記して、本になる。</span>
+  </span>
+</a></div>
+<nav class="nav"><a href="../index.html">HOME</a><a href="../scenario/index.html?v=0292">SCENARIO</a><a href="../calendar/index.html?v=0292">CALENDAR</a><a href="../library/index.html?v=0292">LIBRARY</a><a href="../pcs/index.html?v=0292">PC</a><a href="../players/index.html?v=0292" aria-current="page">PLAYERS</a><a href="../profile/index.html">PROFILE</a><a href="../tools/index.html">TOOLS</a><a href="../backup/index.html">BACKUP</a><a href="../help/index.html">HELP</a><a href="../about/index.html">ABOUT</a><a href="../settings/index.html">SETTINGS</a></nav>
+<div class="theme-switcher" aria-label="テーマ">
+  <button type="button" data-theme-choice="system">端末</button><span>·</span>
+  <button type="button" data-theme-choice="dark">ダーク</button><span>·</span>
+  <button type="button" data-theme-choice="light">ライト</button>
+</div>
+</div></header>
 
 <main><div class="wrap library-page">
 <div class="hero"><h2>PLAYERS</h2><p>一緒に遊んだ人と、同卓履歴・関係図を確認できます。</p></div>
@@ -986,7 +1004,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
   </div>
 </div>
 
-<div data-site-footer></div>
+<footer class="footer"><div class="wrap">© <span data-year></span> SAKU+MERU</div></footer>
 
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
@@ -2036,7 +2054,7 @@ function articleBlocksHtml(page){
 function articleEditorBlockHtml(b,index,total){
  const id=esc(b.id||TRPG39.uuid());
  const actions=`<div class="article-block-actions"><button type="button" data-block-up="${id}" ${index===0?"disabled":""}>↑</button><button type="button" data-block-down="${id}" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
- if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div><div class="article-image-inputs"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
+ if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div><div class="article-image-inputs"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><label class="article-ogp-pick"><input class="articleBlockOgp" type="checkbox" ${b.ogp?"checked":""}><span><strong>SNSカードに使う</strong> <span class="muted">（通常共有時のみ・1枚だけ選択）</span></span></label><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
  if(b.type==="bgm")return `<div class="article-block" data-block-id="${id}" data-block-type="bgm"><div class="article-block-head"><span class="article-block-label">🎵 BGM</span>${actions}</div><input class="articleBgmLibraryId" type="hidden" value="${esc(b.libraryId||"")}"><div class="bgm-lib-actions"><button type="button" data-bgm-lib-open="${id}">BGM LIBRARYから選ぶ</button><button type="button" data-bgm-lib-save="${id}">BGM LIBRARYに登録／更新</button></div><div class="article-bgm-grid"><div><label>曲名</label><input class="articleBgmTitle" value="${esc(b.title||"")}" placeholder="曲名"></div><div><label>作者・アーティスト</label><input class="articleBgmArtist" value="${esc(b.artist||"")}" placeholder="作者名"></div><div><label>使用シーン</label><input class="articleBgmScene" value="${esc(b.scene||"")}" placeholder="例：Scene 3／終盤"></div><div><label>タグ <span class="small muted">（、区切り）</span></label><input class="articleBgmTags" value="${esc(Array.isArray(b.tags)?b.tags.join("、"):(b.tags||""))}" placeholder="不穏、戦闘、エンディング"></div><div><label>配布元名</label><input class="articleBgmSourceLabel" value="${esc(b.sourceLabel||"")}" placeholder="DOVA-SYNDROME など"></div><div><label>配布元URL</label><input class="articleBgmSourceUrl" type="url" value="${esc(b.sourceUrl||"")}" placeholder="https://..."></div><div><label>音源URL <span class="small muted">（任意）</span></label><input class="articleBgmAudioUrl" type="url" value="${esc(b.audioUrl||"")}" placeholder="直接再生できるMP3 URL"></div></div><label>手元のMP3 <span class="small muted">（自分用・このブラウザに保存）</span></label><div class="article-image-inputs"><div><input class="articleBgmFile" type="file" accept="audio/mpeg,audio/mp3,.mp3"><input class="articleBgmLocalId" type="hidden" value="${esc(b.localAudioId||"")}"><input class="articleBgmLocalName" type="hidden" value="${esc(b.localFileName||"")}"><div class="article-local-audio">${b.localFileName?`保存済み：${esc(b.localFileName)}`:"MP3本体は共有記事には含まれません。"}</div></div><div><button type="button" data-bgm-local-save="${id}">この端末に保存</button><div class="article-upload-status"></div></div></div><label>メモ <span class="small muted">（任意）</span></label><textarea class="articleBgmMemo" placeholder="この場面で流した、イントロから使用など">${esc(b.memo||"")}</textarea></div>`;
  if(b.type==="youtube")return `<div class="article-block" data-block-id="${id}" data-block-type="youtube"><div class="article-block-head"><span class="article-block-label">▶ YouTube</span>${actions}</div><label>YouTube URL</label><input class="articleBlockYoutubeUrl" type="url" value="${esc(b.url||"")}" placeholder="https://www.youtube.com/watch?v=..."><label>見出し <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="セッション録画 など"><div class="article-youtube-preview"></div></div>`;
  return `<div class="article-block" data-block-id="${id}" data-block-type="text"><div class="article-block-head"><span class="article-block-label">✎ 文章</span>${actions}</div><textarea class="articleBlockText" placeholder="書きたいことを自由に残せます。">${esc(b.text||"")}</textarea></div>`;
@@ -2059,7 +2077,7 @@ function articlePagesHtml(r){
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
        <div><label>共有パスワード <span class="small muted">（任意）</span></label><input class="articlePassword" type="password" autocomplete="new-password" placeholder="設定する場合のみ入力"></div>
      </div>
-     <div class="lib-article-share-note">共有は次の工程でブロック表示に対応します。今は記事作成を先に完成させています。</div>
+     <div class="lib-article-share-note">通常共有では画像の「SNSカードに使う」を1枚選べます。未選択なら金色のタイトルOGP。パスワード付き共有では内容を伏せ、SAKU+MERU公式OGPを自動使用します。</div>
      <div class="album-actions"><button type="button" data-article-save="${esc(r.id)}">保存</button><button type="button" data-article-cancel="${esc(r.id)}">キャンセル</button></div>
    </div>
  </section>`;
@@ -2067,7 +2085,7 @@ function articlePagesHtml(r){
 function editorBlocks(ed){
  return [...ed.querySelectorAll('.article-block')].map(row=>{
    const type=row.dataset.blockType,id=row.dataset.blockId||TRPG39.uuid();
-   if(type==="image")return {id,type,url:row.querySelector('.articleBlockImageUrl')?.value.trim()||"",caption:row.querySelector('.articleBlockCaption')?.value.trim()||""};
+   if(type==="image")return {id,type,url:row.querySelector('.articleBlockImageUrl')?.value.trim()||"",caption:row.querySelector('.articleBlockCaption')?.value.trim()||"",ogp:!!row.querySelector('.articleBlockOgp')?.checked};
    if(type==="youtube")return {id,type,url:row.querySelector('.articleBlockYoutubeUrl')?.value.trim()||"",caption:row.querySelector('.articleBlockCaption')?.value.trim()||""};
    if(type==="bgm")return {id,type,libraryId:row.querySelector('.articleBgmLibraryId')?.value||"",title:row.querySelector('.articleBgmTitle')?.value.trim()||"",artist:row.querySelector('.articleBgmArtist')?.value.trim()||"",scene:row.querySelector('.articleBgmScene')?.value.trim()||"",tags:normalizeBgmTags(row.querySelector('.articleBgmTags')?.value||""),sourceLabel:row.querySelector('.articleBgmSourceLabel')?.value.trim()||"",sourceUrl:row.querySelector('.articleBgmSourceUrl')?.value.trim()||"",audioUrl:row.querySelector('.articleBgmAudioUrl')?.value.trim()||"",localAudioId:row.querySelector('.articleBgmLocalId')?.value||"",localFileName:row.querySelector('.articleBgmLocalName')?.value||"",memo:row.querySelector('.articleBgmMemo')?.value||""};
    return {id,type:"text",text:row.querySelector('.articleBlockText')?.value||""};
@@ -2112,6 +2130,7 @@ function bindArticleEditorBlockControls(ed){
    const row=b.closest('.article-block'),file=row?.querySelector('.articleBgmFile')?.files?.[0],status=row?.querySelector('.article-upload-status');
    try{b.disabled=true;if(status)status.textContent="保存中…";const oldId=row.querySelector('.articleBgmLocalId')?.value||"",saved=await saveLocalArticleAudio(file,oldId);row.querySelector('.articleBgmLocalId').value=saved.id;row.querySelector('.articleBgmLocalName').value=saved.name;row.querySelector('.article-local-audio').textContent=`保存済み：${saved.name}`;if(status)status.textContent="この端末に保存しました。"}catch(e){console.error(e);if(status)status.textContent="";alert(e.message||e)}finally{b.disabled=false}
  });
+ ed.querySelectorAll('.articleBlockOgp').forEach(inp=>inp.onchange=()=>{if(!inp.checked)return;ed.querySelectorAll('.articleBlockOgp').forEach(other=>{if(other!==inp)other.checked=false})});
  ed.querySelectorAll('.articleBlockImageUrl').forEach(inp=>inp.oninput=()=>{const row=inp.closest('.article-block'),pv=row.querySelector('.article-block-preview'),u=inp.value.trim();pv.hidden=!u;pv.innerHTML=u?`<img src="${esc(u)}" alt="">`:""});
  ed.querySelectorAll('.articleBlockYoutubeUrl').forEach(inp=>{const row=inp.closest('.article-block');inp.oninput=()=>updateYoutubeEditorPreview(row);updateYoutubeEditorPreview(row)});
 }
@@ -2143,13 +2162,38 @@ async function saveArticlePage(runId){
 }
 function deleteArticlePage(runId,pageId){if(!confirm("この卓記事ページを削除しますか？"))return;saveArticlePagesForRun(runId,articlePagesForRun(runId).filter(p=>p.id!==pageId));render()}
 function articleContextForRun(runId){const groups=groupData(data),g=groups.find(x=>(x.runs||[]).some(r=>r.id===runId)),r=g?.runs?.find(x=>x.id===runId);return {group:g,run:r}}
+function articleOgpWrapLines(ctx,text,maxWidth,maxLines=2){
+ const chars=[...String(text||"").trim()];if(!chars.length)return [""];const lines=[];let line="";
+ for(const ch of chars){const test=line+ch;if(line&&ctx.measureText(test).width>maxWidth){lines.push(line);line=ch;if(lines.length>=maxLines)break}else line=test}
+ if(lines.length<maxLines&&line)lines.push(line);if(lines.length>maxLines)lines.length=maxLines;const used=lines.join("").length;
+ if(used<chars.length&&lines.length){let last=lines[lines.length-1];while(last&&ctx.measureText(last+"…").width>maxWidth)last=last.slice(0,-1);lines[lines.length-1]=last+"…"}return lines;
+}
+async function createArticleOgpPng(scenarioTitle,articleTitle){
+ const canvas=document.createElement("canvas");canvas.width=1200;canvas.height=630;const ctx=canvas.getContext("2d");ctx.fillStyle="#111318";ctx.fillRect(0,0,1200,630);
+ const grd=ctx.createLinearGradient(0,0,1200,630);grd.addColorStop(0,"rgba(223,184,92,.12)");grd.addColorStop(.55,"rgba(255,255,255,.018)");grd.addColorStop(1,"rgba(223,184,92,.05)");ctx.fillStyle=grd;ctx.fillRect(0,0,1200,630);
+ ctx.fillStyle="#d9b85b";ctx.fillRect(72,68,8,494);ctx.fillRect(72,68,220,3);ctx.fillStyle="rgba(255,255,255,.62)";ctx.font='600 26px system-ui, "Yu Gothic", "Meiryo", sans-serif';ctx.fillText("SAKU+MERU  🌺  卓記事",110,108);
+ ctx.fillStyle="#f2e6bd";ctx.font='700 38px system-ui, "Yu Gothic", "Meiryo", sans-serif';const sl=articleOgpWrapLines(ctx,`『${scenarioTitle||"シナリオ"}』`,1000,2);sl.forEach((line,i)=>ctx.fillText(line,110,176+i*48));
+ const wy=sl.length>1?280:236;ctx.font='700 28px system-ui, "Yu Gothic", "Meiryo", sans-serif';const warning="⚠ ネタバレ注意",ww=ctx.measureText(warning).width;ctx.fillStyle="rgba(217,184,91,.14)";ctx.beginPath();if(ctx.roundRect)ctx.roundRect(110,wy-35,ww+42,54,27);else ctx.rect(110,wy-35,ww+42,54);ctx.fill();ctx.strokeStyle="rgba(217,184,91,.58)";ctx.lineWidth=2;ctx.stroke();ctx.fillStyle="#f0cf78";ctx.fillText(warning,131,wy+2);
+ const ty=wy+110;ctx.fillStyle="#fff";ctx.font='800 58px system-ui, "Yu Gothic", "Meiryo", sans-serif';articleOgpWrapLines(ctx,articleTitle||"卓記事",990,3).forEach((line,i)=>ctx.fillText(line,110,ty+i*72));ctx.fillStyle="rgba(255,255,255,.42)";ctx.font='500 22px system-ui, "Yu Gothic", "Meiryo", sans-serif';ctx.fillText("TRPG Session Article",110,570);
+ return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("記事サムネイルを生成できませんでした。")),"image/png",.92));
+}
+async function uploadArticleOgpImage(blob,pageId=""){
+ const cfg=window.SUPABASE_CONFIG||{},base=String(cfg.projectUrl||"").trim(),key=String(cfg.publishableKey||"").trim();if(!base||!key)throw new Error("Supabase設定がありません。");
+ const syncId=window.TRPG39Sync?.getSyncId?.()||localStorage.getItem("39x2_cloud_sync_id_v1")||"";if(!syncId)throw new Error("同期コードが見つかりません。先にBACKUPでクラウド同期を設定してください。");
+ const fd=new FormData();fd.append("file",new File([blob],`article-ogp-${pageId||Date.now()}.png`,{type:"image/png"}));fd.append("sync_id",syncId);
+ const r=await fetch(base.replace(/\/$/,"")+"/functions/v1/image-upload",{method:"POST",headers:{apikey:key},body:fd}),body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.error||("記事サムネイルのアップロードに失敗しました（"+r.status+"）"));if(!body.publicUrl)throw new Error("記事サムネイルの公開URLを取得できませんでした。");return body.publicUrl;
+}
 async function shareArticlePage(runId,pageId){
  const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId);if(!page)return alert("記事ページが見つかりません。");
  if(!page.shareEnabled)return alert("この記事は「自分のみ」です。編集から共有設定を「リンク限定」にしてください。");
  if(!(TRPG39Cloud&&TRPG39Cloud.configured()))return alert("共有機能の設定がありません。");
- const {group,run}=articleContextForRun(runId),cover=(run?.items||[]).flatMap(x=>x.imageUrls||[]).find(Boolean)||group?.thumbnailUrl||"";
- const payload={kind:"library-article",version:2,title:page.title||"卓記事",body:page.body||"",blocks:normalizedArticleBlocks(page),scenarioTitle:group?.title||"",runLabel:run?.label||"",image:cover,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",updatedAt:page.updatedAt||""};
- try{let shareId=page.shareId||"";if(shareId)await TRPG39Cloud.updateSharedPage(shareId,payload);else shareId=await TRPG39Cloud.createSharedPage(payload);saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId}:p));const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");showShareUrl(previewUrl.href,page.passwordProtected?"この記事の共有URLです。パスワード保護情報も共有データに含めました。":"この記事の共有URLです。") }catch(e){console.error(e);alert(e.message||e)}
+ const {group,run}=articleContextForRun(runId);const blocks=normalizedArticleBlocks(page).map(b=>b.type==="image"?{...b,url:String(b.url||"").trim(),caption:String(b.caption||"").trim(),ogp:!!b.ogp}:{...b});
+ try{
+   let articleOgpImage="",ogpSource="official";
+   if(!page.passwordProtected){const picked=blocks.find(b=>b.type==="image"&&b.ogp&&b.url);if(picked){articleOgpImage=picked.url;ogpSource="image"}else{const blob=await createArticleOgpPng(group?.title||"シナリオ",page.title||"卓記事");articleOgpImage=await uploadArticleOgpImage(blob,page.id);ogpSource="title"}}
+   const payload={kind:"library-article",version:10,title:page.title||"卓記事",body:page.body||"",blocks,scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",updatedAt:page.updatedAt||""};
+   let shareId=page.shareId||"";if(shareId)await TRPG39Cloud.updateSharedPage(shareId,payload);else shareId=await TRPG39Cloud.createSharedPage(payload);saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");const msg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。金色のタイトルOGPをSNSカードに使用します。");showShareUrl(previewUrl.href,msg)
+ }catch(e){console.error(e);alert(e.message||e)}
 }
 function bindArticlePageButtons(){
  document.querySelectorAll('[data-article-new]').forEach(b=>b.onclick=()=>openArticleEditor(b.dataset.articleNew));
