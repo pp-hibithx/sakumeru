@@ -808,15 +808,12 @@ async function uploadDisplayShareImage(id,blob){
  return body.publicUrl;
 }
 async function createSharePreview(id){
- const cfg=window.SUPABASE_CONFIG||{};
  const version=Date.now().toString(36);
- const res=await fetch(String(cfg.projectUrl).replace(/\/$/,"")+"/functions/v1/share-preview",{
-  method:"POST",headers:{"Content-Type":"application/json",apikey:cfg.publishableKey},body:JSON.stringify({id,version})
- });
- let body={};try{body=await res.json()}catch{}
- if(!res.ok)throw new Error(body.error||"SNS用URLの作成に失敗しました。");
- if(!body.url)throw new Error("SNS用URLを取得できませんでした。");
- return body.url;
+ const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
+ previewUrl.searchParams.set("id",id);
+ previewUrl.searchParams.set("type","display");
+ previewUrl.searchParams.set("v",version);
+ return previewUrl.href;
 }
 q("createSocialShare")?.addEventListener("click",async()=>{
  const btn=q("createSocialShare");
@@ -835,7 +832,7 @@ q("createSocialShare")?.addEventListener("click",async()=>{
   shareStatus("共有画像を保存しています…");
   const image=await uploadDisplayShareImage(id,blob);
   await TRPG39Cloud.updateSharedPage(id,{...payload,image});
-  shareStatus("SNS用OGPを作成しています…");
+  shareStatus("SNS共有URLを作成しています…");
   const url=await createSharePreview(id);
   q("socialShareUrl").value=url;
   q("socialShareResult").hidden=false;
