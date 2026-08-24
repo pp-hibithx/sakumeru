@@ -95,8 +95,8 @@
  </div>
 </details>
 <details class="dm-control-group"><summary>基本画像</summary>
- <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
- <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
+ <div class="dm-field"><label>シナリオ画像</label><div class="dm-row dm-actions"><input id="scenarioImage" type="file" accept="image/*"><button type="button" id="clearScenarioImage">削除</button></div></div>
+ <div class="dm-field"><label>PC立ち絵</label><div class="dm-row dm-actions"><input id="pcImage" type="file" accept="image/*"><button type="button" id="clearPcImage">削除</button></div></div>
 </details>
 <details class="dm-control-group" open><summary>レイヤー</summary>
  <div class="dm-row dm-actions">
@@ -161,7 +161,15 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v1.1.0：画像レイヤーの複製・重なり順・透明度・最大800%拡大・シルエット化に対応しました。</div>
+ <details class="dm-control-group"><summary>作業の一時保存</summary>
+   <div class="dm-row dm-actions">
+     <button type="button" id="saveDraft">一時保存</button>
+     <button type="button" id="loadDraft">一時保存を開く</button>
+     <button type="button" id="deleteDraft">一時保存を削除</button>
+   </div>
+   <div class="dm-note" id="draftStatus">このブラウザ内に1件だけ作業状態を保存できます。PNGを書き出す前の途中作業向けです。</div>
+ </details>
+ <div class="dm-note">v1.2.0：基本画像の削除と、作業状態の一時保存・復元に対応しました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -317,9 +325,26 @@ function firstSelfPcRow(r){
  return {pcName:r.pcName||"",ho:r.selfHo||r.ho||""};
 }
 
+function fileToDataUrl(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(String(reader.result||""));
+  reader.onerror=()=>reject(reader.error||new Error("画像の読み込みに失敗しました"));
+  reader.readAsDataURL(file);
+ });
+}
+function imageFromSrc(src){
+ return new Promise((resolve,reject)=>{
+  if(!src){resolve(null);return;}
+  const im=new Image();
+  im.onload=()=>resolve(im);
+  im.onerror=()=>reject(new Error("保存画像の復元に失敗しました"));
+  im.src=src;
+ });
+}
 function readImage(input,cb){
  const f=input.files?.[0];if(!f){cb(null);return}
- const im=new Image();im.onload=()=>cb(im);im.src=URL.createObjectURL(f);
+ fileToDataUrl(f).then(src=>imageFromSrc(src)).then(cb).catch(err=>{console.error(err);cb(null)});
 }
 function fitImage(im,x,y,w,h,contain=false){
  if(!im)return;
@@ -398,6 +423,8 @@ function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
 ["systemText","titleText","hoText","pcText","bgColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity"].forEach(id=>q(id)?.addEventListener("input",draw));
 q("scenarioImage").onchange=()=>readImage(q("scenarioImage"),im=>{scenarioImg=im;draw()});
 q("pcImage").onchange=()=>readImage(q("pcImage"),im=>{pcImg=im;draw()});
+q("clearScenarioImage").onclick=()=>{scenarioImg=null;q("scenarioImage").value="";draw();};
+q("clearPcImage").onclick=()=>{pcImg=null;q("pcImage").value="";draw();};
 q("layoutReset").onclick=()=>{
  const defs=[
   ["builtin_system",70,100,28,false],
@@ -537,9 +564,14 @@ q("addDiamondLayer").onclick=()=>addShape("diamond","ひし形");
 q("addTriangleLayer").onclick=()=>addShape("triangle","三角");
 q("addCircleLayer").onclick=()=>addShape("circle","丸");
 q("addImageLayer").onclick=()=>q("extraImagePicker").click();
-q("extraImagePicker").onchange=e=>{
+q("extraImagePicker").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
- const img=new Image();img.onload=()=>{const l=makeLayer("image",f.name||"画像");l.img=img;extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw()};img.src=URL.createObjectURL(f);e.target.value="";
+ try{
+  const src=await fileToDataUrl(f);
+  const img=await imageFromSrc(src);
+  const l=makeLayer("image",f.name||"画像");l.img=img;extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
+ }catch(err){console.error(err)}
+ e.target.value="";
 };
 q("silhouetteLayer").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=="image")return;l.silhouette=true;if(!l.color||l.color==="#ffffff")l.color="#000000";syncShapeControls();draw();};
 q("restoreImageLayer").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=="image")return;l.silhouette=false;syncShapeControls();draw();};
@@ -705,6 +737,113 @@ q("savePng").onclick=()=>{
  a.download=(q("titleText").value||"display")+".png";
  a.href=canvas.toDataURL("image/png");a.click();
 };
+
+const DRAFT_DB_NAME="sakumeru_display_maker";
+const DRAFT_DB_VERSION=1;
+const DRAFT_STORE="drafts";
+const DRAFT_KEY="current";
+function openDraftDb(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(DRAFT_DB_NAME,DRAFT_DB_VERSION);
+  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(DRAFT_STORE))db.createObjectStore(DRAFT_STORE);};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error);
+ });
+}
+async function draftPut(value){
+ const db=await openDraftDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(DRAFT_STORE,"readwrite");
+  tx.objectStore(DRAFT_STORE).put(value,DRAFT_KEY);
+  tx.oncomplete=()=>{db.close();resolve();};
+  tx.onerror=()=>{db.close();reject(tx.error);};
+ });
+}
+async function draftGet(){
+ const db=await openDraftDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(DRAFT_STORE,"readonly");
+  const req=tx.objectStore(DRAFT_STORE).get(DRAFT_KEY);
+  req.onsuccess=()=>{db.close();resolve(req.result||null);};
+  req.onerror=()=>{db.close();reject(req.error);};
+ });
+}
+async function draftDelete(){
+ const db=await openDraftDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(DRAFT_STORE,"readwrite");
+  tx.objectStore(DRAFT_STORE).delete(DRAFT_KEY);
+  tx.oncomplete=()=>{db.close();resolve();};
+  tx.onerror=()=>{db.close();reject(tx.error);};
+ });
+}
+function layerForSave(l){
+ const copy={...l};
+ copy.imgSrc=l.img?.src||null;
+ delete copy.img;
+ return copy;
+}
+function collectDraftState(){
+ const inputIds=["systemText","titleText","hoText","pcText","bgColor","pcScale","pcX","pcY","scenarioScale","scenarioX","scenarioY","scenarioOpacity","canvasPreset","canvasWidth","canvasHeight","dragTarget"];
+ const inputs={};
+ inputIds.forEach(id=>{if(q(id))inputs[id]=q(id).value;});
+ inputs.transparentBg=!!q("transparentBg")?.checked;
+ return {
+  savedAt:new Date().toISOString(),
+  canvas:{width:canvas.width,height:canvas.height},
+  inputs,
+  scenarioImgSrc:scenarioImg?.src||null,
+  pcImgSrc:pcImg?.src||null,
+  builtinTextLayers:builtinTextLayers.map(layerForSave),
+  extraLayers:extraLayers.map(layerForSave),
+  layerOrder:[...layerOrder],
+  selectedExtraLayerId,
+  layerSeq
+ };
+}
+async function restoreDraftState(state){
+ if(!state)return false;
+ const inputs=state.inputs||{};
+ Object.entries(inputs).forEach(([id,value])=>{
+  if(id==="transparentBg"){if(q(id))q(id).checked=!!value;return;}
+  if(q(id))q(id).value=value;
+ });
+ if(q("customCanvasFields"))q("customCanvasFields").hidden=q("canvasPreset")?.value!=="custom";
+ canvas.width=state.canvas?.width||Number(inputs.canvasWidth)||675;
+ canvas.height=state.canvas?.height||Number(inputs.canvasHeight)||1200;
+ scenarioImg=await imageFromSrc(state.scenarioImgSrc||null);
+ pcImg=await imageFromSrc(state.pcImgSrc||null);
+ for(const saved of state.builtinTextLayers||[]){
+  const target=builtinLayerById(saved.id);
+  if(target)Object.assign(target,saved,{img:null});
+ }
+ extraLayers=[];
+ for(const saved of state.extraLayers||[]){
+  const layer={...saved,img:null};
+  if(saved.imgSrc)layer.img=await imageFromSrc(saved.imgSrc);
+  delete layer.imgSrc;
+  extraLayers.push(layer);
+ }
+ layerOrder=Array.isArray(state.layerOrder)?[...state.layerOrder]:[];
+ selectedExtraLayerId=state.selectedExtraLayerId||null;
+ layerSeq=Math.max(Number(state.layerSeq)||1,...extraLayers.map(l=>Number(String(l.id||"").match(/(\d+)$/)?.[1])||0))+1;
+ renderLayerList();syncShapeControls();draw();
+ return true;
+}
+function draftStatus(text){if(q("draftStatus"))q("draftStatus").textContent=text;}
+q("saveDraft")?.addEventListener("click",async()=>{
+ try{await draftPut(collectDraftState());draftStatus("一時保存しました。次回このブラウザで復元できます。");}
+ catch(err){console.error(err);draftStatus("一時保存に失敗しました。ブラウザの保存領域をご確認ください。");}
+});
+q("loadDraft")?.addEventListener("click",async()=>{
+ try{const state=await draftGet();if(!state){draftStatus("一時保存された作業はありません。");return;}await restoreDraftState(state);const d=state.savedAt?new Date(state.savedAt):null;draftStatus("一時保存を復元しました"+(d?`（${d.toLocaleString()}）`:"。"));}
+ catch(err){console.error(err);draftStatus("一時保存の復元に失敗しました。");}
+});
+q("deleteDraft")?.addEventListener("click",async()=>{
+ try{await draftDelete();draftStatus("一時保存を削除しました。");}
+ catch(err){console.error(err);draftStatus("一時保存の削除に失敗しました。");}
+});
+
 q("scenarioSearch").addEventListener("input",renderScenarioOptions);
 q("scenarioSelect").onchange=()=>{
  const g=q("scenarioSelect")._groups?.[Number(q("scenarioSelect").value)];
