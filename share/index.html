@@ -462,6 +462,11 @@
     }
   }
   if(p.kind==="library-article"){unlockArticle(p);return}
+  if(p.kind==="display-maker"){
+    const meta=[p.system,p.ho,p.pc].filter(Boolean);
+    box.innerHTML=`<h2>${esc(p.title||"卓ディスプレイ")}</h2>${meta.length?`<div class="share-meta">${meta.map(x=>`<span class="badge">${esc(x)}</span>`).join("")}</div>`:""}${p.image?`<img src="${esc(p.image)}" alt="${esc(p.title||"卓ディスプレイ")}" style="display:block;max-width:min(100%,900px);max-height:80vh;width:auto;height:auto;object-fit:contain;margin:14px auto;border-radius:10px;border:1px solid var(--line)">`:"<p>共有画像を読み込めませんでした。</p>"}<p class="muted" style="text-align:center">SAKU+MERU DISPLAY MAKER</p>`;
+    return;
+  }
   if(p.kind==="library-session"){box.innerHTML=`<h2>${esc(p.title||"LIBRARY")}</h2><div class="share-meta">${p.system?`<span class="badge">${esc(p.system)}</span>`:""}${p.date?`<span class="badge">${esc(p.date)}</span>`:""}</div>${p.image?`<img src="${esc(p.image)}" alt="" style="max-width:420px;width:100%;border-radius:8px;border:1px solid var(--line);margin-bottom:10px">`:""}${reportHtml(p)}${p.comment?`<div class="share-report-block"><strong>ひとこと</strong><p style="white-space:pre-wrap">${esc(p.comment)}</p></div>`:""}${p.spoiler?`<details class="share-spoiler"><summary>⚠ ネタバレ</summary><div class="spoiler-body">${esc(p.spoiler)}</div></details>`:""}`;return}
   if(p.kind==="calendar-schedule-match"){
     const submissions=Array.isArray(p.submissions)?p.submissions:[];

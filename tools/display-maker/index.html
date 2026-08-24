@@ -17,6 +17,7 @@
 #dmCanvas{display:block;max-width:100%;height:auto;margin:auto;background:#111;box-shadow:0 8px 30px rgba(0,0,0,.25);cursor:grab;touch-action:none}#dmCanvas.dragging{cursor:grabbing}
 .dm-row{display:flex;gap:8px;flex-wrap:wrap}.dm-row>*{flex:1}.dm-actions button{width:auto}
 .dm-note{font-size:12px;color:var(--muted);line-height:1.6}
+.dm-share-url{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin-top:8px}.dm-share-url input{min-width:0;width:100%}@media(max-width:620px){.dm-share-url{grid-template-columns:1fr}.dm-share-url button{width:100%}}
 .dm-control-panel:hover{transform:none;box-shadow:none;border-color:var(--line)}
 .dm-layer-list{display:grid;gap:6px;margin:8px 0 14px}.dm-layer-item{display:flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid var(--line);border-radius:8px}.dm-layer-item.active{outline:2px solid var(--accent)}.dm-layer-item span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dm-layer-item button{padding:5px 8px;min-width:auto}
 .dm-control-group{margin:10px 0;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:rgba(255,255,255,.02)}
@@ -155,6 +156,18 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
+ <details class="dm-control-group"><summary>SNS共有</summary>
+   <div class="dm-note">完成したディスプレイを共有用PNGとして保存し、SNSに貼れるOGP対応URLを発行します。画像にネタバレが含まれる場合はご注意ください。</div>
+   <div class="dm-row dm-actions" style="margin-top:8px">
+     <button type="button" id="createSocialShare">SNS投稿用URLを作る</button>
+   </div>
+   <div class="dm-note" id="socialShareStatus">URLは発行するまで公開されません。</div>
+   <div class="dm-share-url" id="socialShareResult" hidden>
+     <input id="socialShareUrl" type="url" readonly aria-label="SNS投稿用URL">
+     <button type="button" id="copySocialShare">URLコピー</button>
+     <button type="button" id="postToX">Xで投稿</button>
+   </div>
+ </details>
  <details class="dm-control-group"><summary>作業の一時保存</summary>
    <div class="dm-row dm-actions">
      <button type="button" id="saveDraft">一時保存</button>
@@ -171,6 +184,8 @@
 </div></main>
 <footer class="footer"><div class="wrap">© <span data-year></span> SAKU+MERU</div></footer>
 <script src="../../assets/js/main.js?v=0292"></script>
+<script src="../../assets/js/supabase-config.js?v=0292"></script>
+<script src="../../assets/js/supabase-share.js?v=0315"></script>
 <script>
 const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
@@ -772,6 +787,73 @@ q("savePng").onclick=()=>{
  a.download=(q("titleText").value||"display")+".png";
  a.href=canvas.toDataURL("image/png");a.click();
 };
+
+function canvasPngBlob(){
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("PNGの作成に失敗しました。")),"image/png"));
+}
+function shareStatus(msg,isError=false){
+ const el=q("socialShareStatus");if(!el)return;el.textContent=msg;el.style.color=isError?"#d85b5b":"";
+}
+async function uploadDisplayShareImage(id,blob){
+ const cfg=window.SUPABASE_CONFIG||{};
+ if(!cfg.projectUrl||!cfg.publishableKey)throw new Error("Supabase設定がありません。");
+ const form=new FormData();
+ form.append("id",id);
+ form.append("file",new File([blob],"display.png",{type:"image/png"}));
+ const res=await fetch(String(cfg.projectUrl).replace(/\/$/,"")+"/functions/v1/display-share-upload",{
+  method:"POST",headers:{apikey:cfg.publishableKey},body:form
+ });
+ let body={};try{body=await res.json()}catch{}
+ if(!res.ok)throw new Error(body.error||"共有画像の保存に失敗しました。");
+ return body.publicUrl;
+}
+async function createSharePreview(id){
+ const cfg=window.SUPABASE_CONFIG||{};
+ const version=Date.now().toString(36);
+ const res=await fetch(String(cfg.projectUrl).replace(/\/$/,"")+"/functions/v1/share-preview",{
+  method:"POST",headers:{"Content-Type":"application/json",apikey:cfg.publishableKey},body:JSON.stringify({id,version})
+ });
+ let body={};try{body=await res.json()}catch{}
+ if(!res.ok)throw new Error(body.error||"SNS用URLの作成に失敗しました。");
+ if(!body.url)throw new Error("SNS用URLを取得できませんでした。");
+ return body.url;
+}
+q("createSocialShare")?.addEventListener("click",async()=>{
+ const btn=q("createSocialShare");
+ try{
+  if(!window.TRPG39Cloud?.configured?.())throw new Error("共有機能の設定がありません。");
+  btn.disabled=true;shareStatus("共有画像を作成しています…");
+  draw();
+  const blob=await canvasPngBlob();
+  if(blob.size>8*1024*1024)throw new Error("共有用PNGが8MBを超えています。キャンバスサイズを小さくしてください。");
+  const payload={
+   kind:"display-maker",version:1,title:(q("titleText")?.value||"卓ディスプレイ").trim()||"卓ディスプレイ",
+   system:(q("systemText")?.value||"").trim(),ho:(q("hoText")?.value||"").trim(),pc:(q("pcText")?.value||"").trim(),
+   image:"",createdAt:new Date().toISOString()
+  };
+  const id=await TRPG39Cloud.createSharedPage(payload);
+  shareStatus("共有画像を保存しています…");
+  const image=await uploadDisplayShareImage(id,blob);
+  await TRPG39Cloud.updateSharedPage(id,{...payload,image});
+  shareStatus("SNS用OGPを作成しています…");
+  const url=await createSharePreview(id);
+  q("socialShareUrl").value=url;
+  q("socialShareResult").hidden=false;
+  shareStatus("SNS投稿用URLを作成しました。URLを貼ると完成画像がOGP表示されます。");
+ }catch(err){console.error(err);shareStatus(err?.message||"SNS投稿用URLの作成に失敗しました。",true)}
+ finally{btn.disabled=false}
+});
+q("copySocialShare")?.addEventListener("click",async()=>{
+ const url=q("socialShareUrl")?.value||"";if(!url)return;
+ try{await navigator.clipboard.writeText(url);shareStatus("URLをコピーしました。");}
+ catch{q("socialShareUrl").select();document.execCommand("copy");shareStatus("URLをコピーしました。");}
+});
+q("postToX")?.addEventListener("click",()=>{
+ const url=q("socialShareUrl")?.value||"";if(!url)return;
+ const title=(q("titleText")?.value||"卓ディスプレイ").trim();
+ const text=[title,"#SAKUMERU"].filter(Boolean).join(" ");
+ window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(url),"_blank","noopener,noreferrer");
+});
 
 const DRAFT_DB_NAME="sakumeru_display_maker";
 const DRAFT_DB_VERSION=1;
