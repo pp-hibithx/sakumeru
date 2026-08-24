@@ -64,7 +64,7 @@
   </select>
  </div>
  <button type="button" id="applyTemplate">テンプレートを反映</button>
- <div class="dm-note">テンプレート反映後も、文字・図形は通常のレイヤーとして自由に編集できます。</div>
+ <div id="templateStatus" class="dm-note">テンプレート反映後も、文字・図形は通常のレイヤーとして自由に編集できます。</div>
 </details>
 <details class="dm-control-group" open><summary>キャンバス</summary>
  <div class="dm-field"><label>サイズ</label><select id="canvasPreset">
@@ -145,7 +145,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v1.0：SAKU+MERU共通OGPテンプレートを追加しました。1200×630のカードをレイヤーとして生成し、そのまま自由編集できます。</div>
+ <div class="dm-note">v1.0.1：SAKU+MERU共通OGPテンプレートの反映処理を修正しました。レイヤーを明示的に登録してから描画します。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -583,32 +583,70 @@ function addTemplateShape(type,name,x,y,scale,color,opacity=100){
  extraLayers.push(l);return l;
 }
 function applySakumeruOgpTemplate(){
- // OGP recommended working canvas: 1200 x 630.
- canvas.width=1200;canvas.height=630;
- q("canvasPreset").value="custom";
- q("customCanvasFields").hidden=false;
- q("canvasWidth").value=1200;q("canvasHeight").value=630;
- q("bgColor").value="#11151b";
- if(q("transparentBg"))q("transparentBg").checked=false;
+ const status=q("templateStatus");
+ try{
+   canvas.width=1200;
+   canvas.height=630;
+   q("canvasPreset").value="custom";
+   q("customCanvasFields").hidden=false;
+   q("canvasWidth").value=1200;
+   q("canvasHeight").value=630;
+   q("bgColor").value="#11151b";
+   if(q("transparentBg"))q("transparentBg").checked=false;
 
- // Keep loaded PC/scenario assets, but start the design layers clean.
- extraLayers=[];
- layerOrder=[];
- builtinTextLayers.forEach(l=>l.visible=false);
+   // テンプレートは既存の追加レイヤーを置き換える。
+   extraLayers=[];
+   layerOrder=[];
+   builtinTextLayers.forEach(l=>l.visible=false);
 
- // Subtle framing / brand accents.
- addTemplateShape("wideRect","上部アクセント",600,26,500,"#c89b3c",100);
- addTemplateShape("wideRect","情報帯",600,530,500,"#1b212a",100);
- addTemplateShape("rect","アクセント",94,174,55,"#c89b3c",100);
+   const layers=[];
 
- addTemplateText("ブランド","SAKU+MERU",155,105,72,"#ffffff",true);
- addTemplateText("キャッチコピー","探す・遊ぶ・残す・共有する。",155,205,40,"#e7c56d",true);
- addTemplateText("説明","TRPGのシナリオ・卓・PCを、ひとつの場所に。",155,290,30,"#d9dee7",false);
- addTemplateText("カテゴリ","TRPG ARCHIVE & PLAY TOOL",155,455,22,"#aeb7c4",false);
+   // 細い金ライン。巨大図形で画面を覆わないよう専用サイズで作る。
+   const topLine=makeLayer("wideRect","上部アクセント");
+   Object.assign(topLine,{x:600,y:18,scale:12,color:"#c89b3c",opacity:100});
+   layers.push(topLine);
 
- allManagedLayers();
- selectedExtraLayerId=extraLayers.at(-1)?.id||null;
- renderLayerList();syncShapeControls();draw();
+   const accent=makeLayer("rect","アクセント");
+   Object.assign(accent,{x:95,y:185,scale:42,color:"#c89b3c",opacity:100});
+   layers.push(accent);
+
+   const band=makeLayer("wideRect","下部情報帯");
+   Object.assign(band,{x:600,y:548,scale:60,color:"#1b212a",opacity:100});
+   layers.push(band);
+
+   const brand=makeLayer("text","SAKU+MERU");
+   Object.assign(brand,{text:"SAKU+MERU",x:155,y:100,fontSize:72,color:"#ffffff",bold:true,font:"sans-serif"});
+   layers.push(brand);
+
+   const catchcopy=makeLayer("text","キャッチコピー");
+   Object.assign(catchcopy,{text:"探す・遊ぶ・残す・共有する。",x:155,y:205,fontSize:40,color:"#e7c56d",bold:true,font:"sans-serif"});
+   layers.push(catchcopy);
+
+   const desc=makeLayer("text","説明");
+   Object.assign(desc,{text:"TRPGのシナリオ・卓・PCを、ひとつの場所に。",x:155,y:292,fontSize:30,color:"#d9dee7",bold:false,font:"sans-serif"});
+   layers.push(desc);
+
+   const category=makeLayer("text","カテゴリ");
+   Object.assign(category,{text:"TRPG ARCHIVE & PLAY TOOL",x:155,y:518,fontSize:22,color:"#aeb7c4",bold:false,font:"sans-serif"});
+   layers.push(category);
+
+   extraLayers.push(...layers);
+   layerOrder=[...layers.map(l=>l.id),...builtinTextLayers.map(l=>l.id)];
+
+   selectedExtraLayerId=brand.id;
+   if(q("dragTarget"))q("dragTarget").value="extra";
+
+   // まずキャンバスへ描画。UI一覧の問題でテンプレートまで消えないようにする。
+   draw();
+   renderLayerList();
+   syncShapeControls();
+
+   if(status)status.textContent="SAKU+MERU 共通OGPを反映しました。各レイヤーは自由に編集できます。";
+ }catch(err){
+   console.error("SAKU+MERU OGP template error",err);
+   if(status)status.textContent="テンプレート反映でエラー：" + (err?.message||String(err));
+   draw();
+ }
 }
 q("applyTemplate")?.addEventListener("click",()=>{
  if(q("designTemplate").value==="sakumeruOgp")applySakumeruOgpTemplate();
