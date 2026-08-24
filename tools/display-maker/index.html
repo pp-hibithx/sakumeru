@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DISPLAY MAKER｜SAKU+MERU</title>
-<link rel="stylesheet" href="../../assets/css/style-v0303.css">
+<link rel="stylesheet" href="../../assets/css/style-v0302.css">
 <script>
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-theme",m)}catch(e){}})();
 </script>
@@ -23,11 +23,28 @@
 .dm-control-group[open]>summary{border-bottom:1px solid var(--line);margin-bottom:10px}
 @media(max-width:850px){.dm-layout{grid-template-columns:1fr}}
 </style>
-<script defer src="../../assets/js/common-layout.js?v=0303"></script>
-<script defer src="../../assets/js/theme-v0296.js"></script>
 </head>
 <body>
-<div data-site-header data-active="tools"></div>
+<header class="site-header"><div class="wrap">
+<div class="brand-logo-row"><a class="site-brand-logo" href="../../index.html" aria-label="SAKU+MERU HOME">
+  <span class="brand-symbol" aria-hidden="true">
+    <img class="symbol-dark" src="../../assets/img/sakumeru-symbol-dark.png" alt="">
+    <img class="symbol-light" src="../../assets/img/sakumeru-symbol-light.png" alt="">
+  </span>
+  <span class="brand-type" aria-hidden="true">
+    <span class="brand-word">SAKU</span>
+    <span class="brand-plus">＋</span>
+    <span class="brand-word">MERU</span>
+    <span class="brand-tagline">遊んで、記して、本になる。</span>
+  </span>
+</a></div>
+<nav class="nav"><a href="../../index.html">HOME</a><a href="../../scenario/index.html?v=0292">SCENARIO</a><a href="../../calendar/index.html?v=0292">CALENDAR</a><a href="../../library/index.html?v=0292">LIBRARY</a><a href="../../pcs/index.html?v=0292">PC</a><a href="../../players/index.html?v=0292">PLAYERS</a><a href="../../profile/index.html">PROFILE</a><a href="../../tools/index.html" aria-current="page">TOOLS</a><a href="../../backup/index.html">BACKUP</a><a href="../../help/index.html">HELP</a><a href="../../about/index.html">ABOUT</a><a href="../../settings/index.html">SETTINGS</a></nav>
+<div class="theme-switcher" aria-label="テーマ">
+  <button type="button" data-theme-choice="system">端末</button><span>·</span>
+  <button type="button" data-theme-choice="dark">ダーク</button><span>·</span>
+  <button type="button" data-theme-choice="light">ライト</button>
+</div>
+</div></header>
 <main><div class="wrap">
 <div class="hero"><h2>DISPLAY MAKER</h2><p>卓記録から、卓報告用ディスプレイをサクッと作ります。</p></div>
 <div class="dm-layout">
@@ -93,9 +110,10 @@
  </div>
  <div id="layerList" class="dm-layer-list"></div>
  <div id="shapeControls" hidden>
-   <div class="dm-field"><label>図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
-   <div class="dm-field"><label>図形の透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
-   <div class="dm-field"><label>図形の大きさ</label><input id="shapeScale" type="range" min="10" max="500" value="100"></div>
+   <div class="dm-field" id="layerColorField"><label id="layerColorLabel">図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
+   <div class="dm-field"><label id="layerOpacityLabel">透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
+   <div class="dm-field"><label id="layerScaleLabel">大きさ</label><input id="shapeScale" type="range" min="10" max="800" value="100"></div>
+   <div class="dm-row dm-actions" id="imageLayerActions" hidden><button type="button" id="silhouetteLayer">シルエット化</button><button type="button" id="restoreImageLayer">元画像に戻す</button></div>
  </div>
  <div id="textLayerControls" hidden>
    <div class="dm-field"><label>文字</label><textarea id="layerText" rows="3"></textarea></div>
@@ -143,13 +161,13 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v1.0.1：SAKU+MERU共通OGPテンプレートの反映処理を修正しました。レイヤーを明示的に登録してから描画します。</div>
+ <div class="dm-note">v1.1.0：画像レイヤーの複製・重なり順・透明度・最大800%拡大・シルエット化に対応しました。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
 </div>
 </div></main>
-<div data-site-footer></div>
+<footer class="footer"><div class="wrap">© <span data-year></span> SAKU+MERU</div></footer>
 <script src="../../assets/js/main.js?v=0292"></script>
 <script>
 const q=id=>document.getElementById(id);
@@ -174,7 +192,7 @@ function builtinLayerById(id){return builtinTextLayers.find(x=>x.id===id)||null}
 function selectedLayer(){return builtinLayerById(selectedExtraLayerId)||extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
 
 function makeLayer(type,name){
- return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,bold:false,aspectX:1,aspectY:1};
+ return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,bold:false,aspectX:1,aspectY:1,silhouette:false};
 }
 function selectedExtraLayer(){return selectedLayer()}
 
@@ -335,7 +353,14 @@ function draw(){
     else ctx.fillText(text,layer.x,layer.y);
   }else if(layer.type==="image"&&layer.img){
     const sc=(layer.scale||100)/100,w=320*sc,h=320*sc;
-    fitImage(layer.img,layer.x-w/2,layer.y-h/2,w,h,true);
+    if(layer.silhouette){
+      const off=document.createElement("canvas");off.width=Math.max(1,Math.round(w));off.height=Math.max(1,Math.round(h));
+      const oc=off.getContext("2d");
+      const iw=layer.img.width,ih=layer.img.height,fs=Math.min(off.width/iw,off.height/ih),dw=iw*fs,dh=ih*fs;
+      oc.drawImage(layer.img,(off.width-dw)/2,(off.height-dh)/2,dw,dh);
+      oc.globalCompositeOperation="source-in";oc.fillStyle=layer.color||"#000000";oc.fillRect(0,0,off.width,off.height);
+      ctx.drawImage(off,layer.x-w/2,layer.y-h/2,w,h);
+    }else fitImage(layer.img,layer.x-w/2,layer.y-h/2,w,h,true);
   }else if(layer.type!=="image"){
     const size=120*((layer.scale||100)/100);
     ctx.fillStyle=layer.color||"#ffffff";
@@ -469,8 +494,16 @@ function syncShapeControls(){
    q("layerTextColor").value=String(l.color||"#ffffff");
    q("layerBold").checked=!!l.bold;
  }else{
-   q("shapeColor").disabled=l.type==="image";
-   q("shapeColor").value=l.color||"#ffffff";
+   const isImage=l.type==="image";
+   q("shapeColor").disabled=false;
+   q("layerColorField").hidden=isImage&&!l.silhouette;
+   q("layerColorLabel").textContent=isImage?"シルエット色":"図形の色";
+   q("layerOpacityLabel").textContent="透明度";
+   q("layerScaleLabel").textContent="大きさ";
+   q("imageLayerActions").hidden=!isImage;
+   q("restoreImageLayer").disabled=!isImage||!l.silhouette;
+   q("silhouetteLayer").disabled=!isImage||!!l.silhouette;
+   q("shapeColor").value=l.color||(isImage?"#000000":"#ffffff");
    q("shapeOpacity").value=l.opacity??100;
    q("shapeScale").value=l.scale??100;
  }
@@ -508,6 +541,8 @@ q("extraImagePicker").onchange=e=>{
  const f=e.target.files?.[0];if(!f)return;
  const img=new Image();img.onload=()=>{const l=makeLayer("image",f.name||"画像");l.img=img;extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw()};img.src=URL.createObjectURL(f);e.target.value="";
 };
+q("silhouetteLayer").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=="image")return;l.silhouette=true;if(!l.color||l.color==="#ffffff")l.color="#000000";syncShapeControls();draw();};
+q("restoreImageLayer").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=="image")return;l.silhouette=false;syncShapeControls();draw();};
 ["shapeColor","shapeOpacity","shapeScale"].forEach(id=>q(id).addEventListener("input",()=>{
  const l=selectedExtraLayer();if(!l)return;
  if(id==="shapeColor")l.color=q(id).value;
