@@ -8,6 +8,7 @@
 <script>
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-theme",m)}catch(e){}})();
 </script>
+<!-- v0.3.14: text layers auto-wrap within adjustable width -->
 <style>
 .dm-layout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:18px;align-items:start}
 .dm-panel{display:grid;gap:12px}.dm-field{display:grid;gap:5px}.dm-field label{font-weight:700;font-size:13px}
@@ -125,6 +126,7 @@
     <option value="'Meiryo',sans-serif">メイリオ</option>
    </select></div>
    <div class="dm-row"><div class="dm-field"><label>サイズ</label><input id="layerFontSize" type="range" min="12" max="140" value="42"></div><div class="dm-field"><label>文字色</label><input id="layerTextColor" type="color" value="#ffffff"></div></div>
+   <div class="dm-field"><label>文字幅（ここで自動改行）</label><input id="layerTextWidth" type="range" min="100" max="1100" step="10" value="600"><div class="dm-note"><span id="layerTextWidthValue">600</span>px。Enterで手動改行もできます。</div></div>
    <label><input id="layerBold" type="checkbox"> 太字</label>
  </div>
  <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
@@ -191,7 +193,7 @@ function builtinLayerById(id){return builtinTextLayers.find(x=>x.id===id)||null}
 function selectedLayer(){return builtinLayerById(selectedExtraLayerId)||extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
 
 function makeLayer(type,name){
- return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,bold:false,aspectX:1,aspectY:1,silhouette:false};
+ return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,textWidth:600,bold:false,aspectX:1,aspectY:1,silhouette:false};
 }
 function selectedExtraLayer(){return selectedLayer()}
 
@@ -357,7 +359,7 @@ function draw(){
     ctx.fillStyle=layer.color||"#ffffff";
     ctx.textBaseline="top";
     ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
-    String(layer.text||"").split("\n").forEach((line,i)=>ctx.fillText(line,layer.x,layer.y+i*(layer.fontSize||42)*1.2));
+    drawWrappedText(String(layer.text||""),layer.x,layer.y,Number(layer.textWidth)||600,(layer.fontSize||42)*1.2);
   }else if(layer.type==="builtinText"){
     const text=q(layer.field)?.value||"";
     ctx.fillStyle=layer.color||"#ffffff";
@@ -391,6 +393,24 @@ function draw(){
   }
   ctx.restore();
  });
+}
+
+function drawWrappedText(text,x,y,maxWidth,lineHeight){
+ const paragraphs=String(text||"").split("\n");
+ let lineNo=0;
+ for(const paragraph of paragraphs){
+   if(paragraph===""){lineNo++;continue;}
+   let line="";
+   for(const ch of [...paragraph]){
+     const test=line+ch;
+     if(line && ctx.measureText(test).width>maxWidth){
+       ctx.fillText(line,x,y+lineNo*lineHeight);
+       lineNo++;
+       line=ch;
+     }else line=test;
+   }
+   if(line){ctx.fillText(line,x,y+lineNo*lineHeight);lineNo++;}
+ }
 }
 
 function wrapText(text,x,y,maxWidth,lineHeight,maxLines=2){
@@ -468,6 +488,7 @@ function duplicateManagedLayer(id){
  copy.y=(Number(src.y)||0)+24;
  if(src.type==="builtinText"){
    copy.text=q(src.field)?.value||src.name||"文字";
+   copy.textWidth=Number(src.textWidth)||660;
    delete copy.field;
  }else if(src.type==="text"){
    copy.text=src.text||"";
@@ -502,6 +523,8 @@ function syncShapeControls(){
    q("layerFont").value=l.font||"sans-serif";
    q("layerFontSize").value=l.fontSize||42;
    q("layerTextColor").value=String(l.color||"#ffffff");
+   q("layerTextWidth").value=Number(l.textWidth)||600;
+   q("layerTextWidthValue").textContent=String(Number(l.textWidth)||600);
    q("layerBold").checked=!!l.bold;
  }else{
    const isImage=l.type==="image";
@@ -538,7 +561,7 @@ q("addTextLayer").onclick=()=>{
  const l=makeLayer("text","文字");l.text="文字";extraLayers.push(l);allManagedLayers();selectedExtraLayerId=l.id;
  q("dragTarget").value="extra";renderLayerList();syncShapeControls();draw();
 };
-["layerText","layerFont","layerFontSize","layerTextColor","layerBold"].forEach(id=>q(id).addEventListener(id==="layerBold"?"change":"input",()=>{
+["layerText","layerFont","layerFontSize","layerTextColor","layerTextWidth","layerBold"].forEach(id=>q(id).addEventListener(id==="layerBold"?"change":"input",()=>{
  const l=selectedLayer();if(!l||(l.type!=="text"&&l.type!=="builtinText"))return;
  if(l.type==="builtinText"){
    if(q(l.field))q(l.field).value=q("layerText").value;
@@ -549,6 +572,8 @@ q("addTextLayer").onclick=()=>{
  l.font=q("layerFont").value;
  l.fontSize=Number(q("layerFontSize").value);
  l.color=q("layerTextColor").value;
+ l.textWidth=Number(q("layerTextWidth").value)||600;
+ q("layerTextWidthValue").textContent=String(l.textWidth);
  l.bold=q("layerBold").checked;
  renderLayerList();
  draw();
