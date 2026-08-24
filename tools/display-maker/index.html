@@ -69,12 +69,6 @@
  <div class="dm-field"><label>シナリオ画像</label><input id="scenarioImage" type="file" accept="image/*"></div>
  <div class="dm-field"><label>PC立ち絵</label><input id="pcImage" type="file" accept="image/*"></div>
 </details>
-<details class="dm-control-group"><summary>文字・配置</summary>
- <div class="dm-field"><label>書体</label><select id="fontFamily"><option value="sans-serif">ゴシック</option><option value="serif">明朝</option><option value="'Yu Gothic','Meiryo',sans-serif">游ゴシック</option><option value="'Yu Mincho','MS PMincho',serif">游明朝</option><option value="'Meiryo',sans-serif">メイリオ</option></select></div>
- <div class="dm-row"><div class="dm-field"><label>シナリオ名サイズ</label><input id="titleSize" type="range" min="28" max="100" value="58"></div><div class="dm-field"><label>PC名サイズ</label><input id="pcSize" type="range" min="20" max="80" value="42"></div></div>
- <div class="dm-row"><div class="dm-field"><label>システムサイズ</label><input id="systemSize" type="range" min="16" max="60" value="28"></div><div class="dm-field"><label>HOサイズ</label><input id="hoSize" type="range" min="16" max="60" value="30"></div></div>
- <div class="dm-field"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
-</details>
 <details class="dm-control-group" open><summary>レイヤー</summary>
  <div class="dm-row dm-actions">
    <button type="button" id="addImageLayer">＋ 画像</button>
@@ -137,7 +131,7 @@
    <button type="button" id="redraw">プレビュー更新</button>
    <button type="button" id="savePng">PNG保存</button>
  </div>
- <div class="dm-note">v0.9.3：レイヤー複製を追加しました。文字・画像・図形・自動入力文字を、位置や見た目を保ったまま複製できます。</div>
+ <div class="dm-note">v0.9.4：旧「文字・配置」パネルを廃止し、文字編集をレイヤーへ統一しました。PC名・HO・シナリオ名・システムもレイヤー選択後に編集できます。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
