@@ -36,7 +36,7 @@
     document.body.insertAdjacentHTML("beforeend",gateFooterHtml());
 
     const style=document.createElement("style");
-    style.id="beta-gate-real-header-fix";
+    style.id="beta-gate-real-header-fix-0306";
     style.textContent=`
 body.beta-gate-active:before,
 body.beta-gate-active:after{
