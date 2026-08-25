@@ -288,7 +288,7 @@
      <h2>${esc(p.title||"卓記事")}</h2>
      ${p.updatedAt?`<div class="small muted">更新 ${esc(p.updatedAt)}</div>`:""}
    </div>
-   ${p.body?`<div class="share-article-text">${esc(p.body)}</div>`:""}
+   ${p.body&&!blocks.some(b=>String(b?.type||"").toLowerCase()==="text"&&String(b?.text||"").trim())?`<div class="share-article-text">${esc(p.body)}</div>`:""}
    <div class="shared-article-blocks">${blocksHtml}</div>`;
  };
  const unlockArticle=p=>{

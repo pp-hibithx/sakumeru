@@ -3445,12 +3445,11 @@ function trimArticleExcerpt(text,maxChars=96){
 }
 function articleXPostText(page){
  if(page.passwordProtected)return "SAKU+MERUで記事を共有しました。\n#SAKUMERU";
- const title=String(page.title||"卓記事").trim();
  const body=articleTextForX(page);
- if(!body)return `${title}\n#SAKUMERU`;
+ if(!body)return `#SAKUMERU`;
  const isLong=[...body].length>140;
  const shown=isLong?trimArticleExcerpt(body,96):body;
- return `${title}\n\n${shown}${isLong?"\n\n詳細はこちら":""}\n\n#SAKUMERU`;
+ return `${shown}${isLong?"\n\n詳細はこちら":""}\n\n#SAKUMERU`;
 }
 async function postArticlePageToX(runId,pageId){
  const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId);
