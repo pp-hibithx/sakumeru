@@ -679,7 +679,22 @@
     });
     return
   }
-  if(p.kind==="calendar-availability"){const days=p.days||[];box.innerHTML=`<h2>${esc(p.label||"空き日カレンダー")}</h2><div class="share-cal">${days.map(d=>`<div class="share-day"><div class="num">${esc(d.date)}</div><div class="${d.state==="free"?"free":"busy"}">${d.state==="free"?"○ 空き":"予定あり"}</div></div>`).join("")}</div>`;return}
+  if(p.kind==="calendar-availability"){
+    const freeDays=(p.days||[]).filter(d=>d&&d.state==="free"&&/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||"")));
+    const months=new Map();
+    freeDays.forEach(d=>{
+      const [y,m,day]=String(d.date).split("-").map(Number);
+      const key=`${y}-${String(m).padStart(2,"0")}`;
+      if(!months.has(key))months.set(key,{year:y,month:m,days:[]});
+      months.get(key).days.push(day);
+    });
+    const monthHtml=[...months.values()].map((m,i)=>{
+      const label=(i===0||[...months.values()][i-1]?.year!==m.year)?`${m.year}年${m.month}月`:`${m.month}月`;
+      return `<section class="card" style="margin:12px 0;padding:16px"><h3 style="margin:0 0 10px">${esc(label)}</h3><div style="font-size:1.05rem;line-height:1.9">${m.days.map(n=>`${esc(n)}日`).join("・")}</div></section>`;
+    }).join("");
+    box.innerHTML=`<h2>${esc(p.label||((p.ownerName?String(p.ownerName)+"の":"")+"空き日共有"))}</h2>${monthHtml||'<p class="muted">この期間に共有できる空き日はありません。</p>'}`;
+    return
+  }
   if(p.kind==="scenario-list"||p.kind==="scenarios"||Array.isArray(p.scenarios)||Array.isArray(p.items)){const items=Array.isArray(p.scenarios)?p.scenarios:(p.items||[]);renderScenarioShelf(p,items);return}
   if(p.kind==="scenario"||p.scenario){const x=p.scenario||p;box.innerHTML=`<h2>${esc(x.title||x.name||"SCENARIO")}</h2>${x.thumbnailUrl||x.image||x.imageUrl?`<img src="${esc(x.thumbnailUrl||x.image||x.imageUrl)}" alt="" style="max-width:520px;width:100%;border-radius:8px;border:1px solid var(--line)">`:""}${x.author?`<p><strong>作者</strong> ${esc(x.author)}</p>`:""}${x.description||x.memo?`<p style="white-space:pre-wrap">${esc(x.description||x.memo)}</p>`:""}`;return}
   box.innerHTML="<p>この共有データ形式には対応していません。</p>";

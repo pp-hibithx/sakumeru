@@ -1949,6 +1949,12 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
 
  function loadStored(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||"null")}catch(_){return null}}
  function saveStored(v){localStorage.setItem(STORE_KEY,JSON.stringify(v))}
+ function profileDisplayName(){
+   try{
+     const p=JSON.parse(localStorage.getItem("39x2_profile_v1")||"{}");
+     return String(p?.displayName||"").trim();
+   }catch(_){return ""}
+ }
 
  function buildPayload(){
    const events=(window.TRPG39&&TRPG39.loadEvents)?TRPG39.loadEvents():[];
@@ -1966,10 +1972,12 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
      days.push({date,state:busy?"busy":"free"});
    }
 
+   const ownerName=profileDisplayName();
    return {
      kind:"calendar-availability",
-     version:3,
-     label:"空き日共有",
+     version:4,
+     ownerName,
+     label:ownerName?`${ownerName}の空き日共有`:"空き日共有",
      startDate:fmt(start),
      endDate:fmt(end),
      days,
