@@ -21,6 +21,10 @@
 .backup-warning{border-left:3px solid var(--accent);padding:10px 12px;background:rgba(255,255,255,.018);font-size:12px;line-height:1.7;margin-top:12px}
 #fullBackupStatus{min-height:1.5em;margin-top:12px}#fullBackupStatus[data-type="ok"]{color:#79d79a}#fullBackupStatus[data-type="error"]{color:#ff8f8f}
 .backup-actions{display:flex;gap:8px;flex-wrap:wrap}.backup-actions button{min-width:140px}
+.backup-targets{margin:0 0 14px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:rgba(255,255,255,.012)}
+.backup-targets summary{cursor:pointer;padding:11px 0;font-weight:700}
+.backup-targets ul{margin:0 0 12px;padding-left:22px;columns:2;column-gap:28px}.backup-targets li{margin:4px 0;break-inside:avoid}
+@media(max-width:640px){.backup-targets ul{columns:1}}
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
@@ -29,8 +33,7 @@
 <main><div class="wrap">
 <div class="hero"><h2>BACKUP</h2><p>SAKU+MERUのブラウザ保存データを、まとめてバックアップ・復元します。</p></div>
 <section class="panel">
-<h2>SAKU+MERU 完全バックアップ</h2>
-<p>SCENARIO・CALENDAR・LIBRARY・PC・PLAYERS・プロフィール・卓準備・記事・KPバインダー・各種設定に加え、ブラウザ内に保存した画像・音声・DISPLAY MAKERの一時保存などを、1つのファイルへまとめます。</p>
+<details class="backup-targets"><summary>バックアップ対象一覧</summary><ul><li>SCENARIO</li><li>CALENDAR</li><li>LIBRARY</li><li>PC</li><li>PLAYERS</li><li>プロフィール</li><li>卓準備</li><li>記事</li><li>KPバインダー</li><li>各種設定</li><li>ブラウザ内に保存した画像・音声</li><li>DISPLAY MAKERの一時保存</li></ul></details>
 <div id="backupSummary" class="backup-summary" aria-live="polite"></div>
 <div class="backup-actions"><button id="exportFull" type="button">SAKU+MERUをバックアップ</button><button id="importFull" type="button">バックアップから復元</button></div>
 <input id="fullBackupFile" type="file" accept=".sakumeru,.json,application/json,application/octet-stream" hidden>
@@ -48,14 +51,13 @@
 <p id="cloudStatus" class="small" style="margin-top:12px"></p>
 <p class="small">同期コードを知っている端末だけがデータを読み込めます。公開しないでください。</p>
 </section>
-<div class="backup-note small muted">完全バックアップは「サイトデータを消してしまった」「別ブラウザへ移したい」ときの復旧用です。本番データを消して試験する必要はありません。</div>
 </div></main><div data-site-footer></div>
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
 <script src="../assets/js/shared-data.js?v=0292"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
-<script src="../assets/js/full-backup.js?v=0330"></script>
+<script src="../assets/js/full-backup.js?v=03301"></script>
 <script>
 (()=>{const q=id=>document.getElementById(id);
 const sync=q("syncId"), status=q("cloudStatus"), auto=q("autoSync");
