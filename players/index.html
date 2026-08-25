@@ -2219,11 +2219,17 @@ function trimArticleExcerpt(text,maxChars=96){
 }
 function articleXPostText(page){
  if(page.passwordProtected)return "SAKU+MERUで記事を共有しました。\n#SAKUMERU";
+ const title=String(page.title||"").trim();
  const body=articleTextForX(page);
- if(!body)return `#SAKUMERU`;
- const isLong=[...body].length>140;
- const shown=isLong?trimArticleExcerpt(body,96):body;
- return `${shown}${isLong?"\n\n詳細はこちら":""}\n\n#SAKUMERU`;
+ const main=[title,body].filter(Boolean).join("\n\n");
+ if(!main)return `#SAKUMERU`;
+ const isLong=[...main].length>140;
+ if(!isLong)return `${main}\n\n#SAKUMERU`;
+ const titleChars=[...title].length;
+ const bodyBudget=Math.max(28,140-titleChars-(title&&body?2:0));
+ const shownBody=body?trimArticleExcerpt(body,bodyBudget):"";
+ const shown=[title,shownBody].filter(Boolean).join("\n\n");
+ return `${shown}\n\n詳細はこちら\n\n#SAKUMERU`;
 }
 async function postArticlePageToX(runId,pageId){
  const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId);
