@@ -1180,7 +1180,10 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
        id=await TRPG39Cloud.createSharedPage(p);
      }
      upsertCase({id,payload:p});
-     const url=new URL("../share/index.html",location.href);url.searchParams.set("id",id);
+     const url=new URL("https://sakumeru-share.sakumeru.workers.dev/");
+     url.searchParams.set("id",id);
+     url.searchParams.set("type","calendar");
+     url.searchParams.set("v",Date.now().toString(36));
      if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(url.href);
      $("scheduleMatchShareState").textContent="同じURLを更新して使えます";
      prompt("日程すり合わせ用URLを作成しました。参加者へ送ってください。",url.href);
@@ -1988,8 +1991,10 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
      }
 
      saveStored({id,updatedAt:new Date().toISOString()});
-     const url=new URL("../share/index.html",location.href);
+     const url=new URL("https://sakumeru-share.sakumeru.workers.dev/");
      url.searchParams.set("id",id);
+     url.searchParams.set("type","availability");
+     url.searchParams.set("v",Date.now().toString(36));
 
      if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(url.href);
      prompt("空き日共有URLです。今後は同じURLを更新して使えます。",url.href);
