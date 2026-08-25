@@ -62,6 +62,8 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .player-external-row:first-child{border-top:0}
 .player-external-list{margin-top:8px}
 @media(max-width:760px){.player-external-row{grid-template-columns:1fr}}
+
+.run-roster-bulk{margin:12px 0}.run-roster-bulk-card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px}.run-roster-bulk-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.run-roster-bulk-head button,.run-roster-bulk-actions button,.run-roster-bulk-row button{width:auto}.run-roster-bulk-labels,.run-roster-bulk-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(100px,.65fr) minmax(140px,1fr) auto;gap:8px;align-items:center}.run-roster-bulk-labels{font-size:12px;color:var(--muted);margin-top:12px;padding:0 2px}.run-roster-bulk-row{padding:7px 0;border-top:1px solid var(--line)}.run-roster-bulk-row input{margin:0}.run-roster-bulk-actions{display:flex;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}@media(max-width:720px){.run-roster-bulk-labels{display:none}.run-roster-bulk-row{grid-template-columns:1fr 1fr}.run-roster-bulk-row [data-roster-pc]{grid-column:1/-1}.run-roster-bulk-row button{justify-self:end;grid-column:2}}
 </style>
 
 <style>
@@ -3504,6 +3506,59 @@ function sessionGroupHtml(items,kind,label){
    <div class="lib-session-group-body">${items.map((x,i)=>sessionRecordHtml(x,i)).join("")}</div>
  </details>`;
 }
+
+function runRosterBulkRows(runId){
+ const roster=ensureRunRosterFromData(runId)||{participants:[]};
+ const rows=Array.isArray(roster.participants)?roster.participants:[];
+ if(rows.length)return rows.map(r=>({...r}));
+ const first=data.find(x=>x.runId===runId);
+ return first?rowsFromRecord(first).map(r=>({...r})):[];
+}
+function renderRunRosterBulk(runId){
+ const box=document.getElementById(`runRosterBulk-${runId}`);if(!box)return;
+ const rows=runRosterBulkRows(runId);
+ const body=rows.map((r,i)=>`<div class="run-roster-bulk-row" data-roster-row>
+   <input data-roster-pl value="${esc(r.plName||"")}" placeholder="PL名">
+   <input data-roster-ho value="${esc(r.ho||"")}" placeholder="HO1 など">
+   <input data-roster-pc value="${esc(r.pcName||"")}" placeholder="PC名">
+   <button type="button" class="danger" data-roster-remove="${i}">削除</button>
+ </div>`).join("");
+ box.innerHTML=`<div class="run-roster-bulk-card">
+   <div class="run-roster-bulk-head"><strong>この陣のPL・HO・PCを一括設定</strong><button type="button" data-roster-close>閉じる</button></div>
+   <p class="small muted">ここで設定した参加者情報を、この陣に登録されている全日程へまとめて反映します。</p>
+   <div class="run-roster-bulk-labels"><span>PL</span><span>HO</span><span>PC</span><span></span></div>
+   <div data-roster-rows>${body}</div>
+   <div class="run-roster-bulk-actions"><button type="button" data-roster-add>＋ PLを追加</button><button type="button" data-roster-apply>全日程に反映</button></div>
+ </div>`;
+ const rowsBox=box.querySelector('[data-roster-rows]');
+ const addRow=(v={})=>{const d=document.createElement('div');d.className='run-roster-bulk-row';d.dataset.rosterRow='';d.innerHTML=`<input data-roster-pl value="${esc(v.plName||"")}" placeholder="PL名"><input data-roster-ho value="${esc(v.ho||"")}" placeholder="HO1 など"><input data-roster-pc value="${esc(v.pcName||"")}" placeholder="PC名"><button type="button" class="danger" data-roster-remove>削除</button>`;d.querySelector('[data-roster-remove]').onclick=()=>d.remove();rowsBox.appendChild(d)};
+ box.querySelectorAll('[data-roster-remove]').forEach(b=>b.onclick=()=>b.closest('[data-roster-row]')?.remove());
+ box.querySelector('[data-roster-add]').onclick=()=>addRow({});
+ box.querySelector('[data-roster-close]').onclick=()=>{box.hidden=true};
+ box.querySelector('[data-roster-apply]').onclick=()=>applyRunRosterBulk(runId,box);
+ box.hidden=false;
+}
+function applyRunRosterBulk(runId,box){
+ const rows=[...box.querySelectorAll('[data-roster-row]')].map(r=>({
+   role:'PL',ho:r.querySelector('[data-roster-ho]').value.trim(),plName:r.querySelector('[data-roster-pl]').value.trim(),pcName:r.querySelector('[data-roster-pc]').value.trim(),relation:''
+ })).filter(r=>r.plName||r.ho||r.pcName).map(r=>{
+   let playerId='';
+   if(TRPG39.playersEnabled?.()&&r.plName){const p=TRPG39.ensurePlayer?TRPG39.ensurePlayer(r.plName):null;playerId=p?.id||''}
+   return {...r,playerId};
+ });
+ const participants=rows.map(r=>r.plName).filter(Boolean),participantIds=rows.filter(r=>r.plName).map(r=>r.playerId||'');
+ const count=data.filter(x=>x.runId===runId).length;
+ if(!count)return alert('この陣の記録が見つかりません。');
+ if(!confirm(`${count}件の日程に、PL・HO・PC情報をまとめて反映します。よろしいですか？`))return;
+ data=data.map(x=>x.runId===runId?TRPG39.normalizeAlbum({...x,participants,participantIds,participantRows:rows}):x);
+ const current=getRunRoster(runId)||ensureRunRosterFromData(runId)||{role:'PL',selfPcs:[]};
+ setRunRoster(runId,{role:current.role||'PL',selfPcs:current.selfPcs||[],participants:rows});
+ let evs=TRPG39.loadEvents(),changed=false;
+ evs=evs.map(e=>{if(e.runId!==runId)return e;changed=true;return TRPG39.normalizeEvent({...e,participants,participantIds})});
+ if(changed)TRPG39.saveEvents(evs);
+ persist();render();
+}
+
 function runDetailHtml(g,r){
  const images=[...new Set(r.items.flatMap(x=>x.imageUrls||[]).filter(Boolean))];
  const dates=r.items.map(x=>x.date).filter(Boolean).sort();
@@ -3512,7 +3567,8 @@ function runDetailHtml(g,r){
    <button id="backToRuns" type="button">← 陣一覧へ</button>
    <div class="lib-run-detail-title">${esc(r.label||"開催記録")}${range?` <span class="small muted">${esc(range)}</span>`:""}</div>
  </div>
- <div class="lib-parent-actions"><button type="button" data-add-run="${esc(r.id)}" data-run-label="${esc(r.label)}" data-run-scenario="${esc(g.scenarioId)}">＋ この陣に日程</button><button type="button" data-archive-run="${esc(r.id)}" data-archived="${r.items.every(x=>x.archived)?"1":"0"}">${r.items.every(x=>x.archived)?"アーカイブから戻す":"アーカイブ"}</button></div>
+ <div class="lib-parent-actions"><button type="button" data-add-run="${esc(r.id)}" data-run-label="${esc(r.label)}" data-run-scenario="${esc(g.scenarioId)}">＋ この陣に日程</button><button type="button" data-run-roster-edit="${esc(r.id)}">この陣のPL・HO・PCを一括設定</button><button type="button" data-archive-run="${esc(r.id)}" data-archived="${r.items.every(x=>x.archived)?"1":"0"}">${r.items.every(x=>x.archived)?"アーカイブから戻す":"アーカイブ"}</button></div>
+ <div id="runRosterBulk-${esc(r.id)}" class="run-roster-bulk" hidden></div>
  ${xReportsRunHtml(r)}
  ${images.length?`<div class="lib-run-gallery">${images.map(u=>`<img src="${esc(u)}" alt="" loading="lazy">`).join("")}</div>`:""}
  ${articlePagesHtml(r)}
@@ -5360,6 +5416,7 @@ function render(){
    q("list").innerHTML=playFilterTabsHtml()+focusedGroupHtml(focused);bindPlayFilterTabs();
    q("libraryBackToGrid").onclick=()=>{focusedScenarioKey="";focusedRunId="";render()};
    q("backToRuns")?.addEventListener("click",()=>{focusedRunId="";render()});
+   document.querySelectorAll("[data-run-roster-edit]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();renderRunRosterBulk(b.dataset.runRosterEdit)});
    document.querySelectorAll("[data-thumb-mode]").forEach(b=>b.onclick=e=>{
    e.preventDefault();e.stopPropagation();
    const scenarioId=b.dataset.thumbScenario||"",title=b.dataset.thumbTitle||"",mode=b.dataset.thumbMode||"auto";
