@@ -122,21 +122,19 @@ async function snapshotStore(db,storeName,onProgress){
     const idx=store.index(name);
     meta.indexes.push({name,keyPath:idx.keyPath,unique:!!idx.unique,multiEntry:!!idx.multiEntry});
   }
-  const records=[];
-  await new Promise((resolve,reject)=>{
-    const req=store.openCursor();
-    req.onerror=()=>reject(req.error);
-    req.onsuccess=async()=>{
-      const cur=req.result;
-      if(!cur){resolve();return;}
-      try{
-        records.push({key:await encodeValue(cur.primaryKey),value:await encodeValue(cur.value)});
-        if(onProgress)onProgress();
-        cur.continue();
-      }catch(e){reject(e)}
-    };
-  });
+  // IndexedDB transactions may auto-close while awaiting Blob/File encoding.
+  // Read keys and values completely while the transaction is active, then
+  // perform the asynchronous encoding after the transaction has finished.
+  const [keys,values]=await Promise.all([
+    reqPromise(store.getAllKeys()),
+    reqPromise(store.getAll())
+  ]);
   await txPromise(tx).catch(()=>{});
+  const records=[];
+  for(let i=0;i<values.length;i++){
+    records.push({key:await encodeValue(keys[i]),value:await encodeValue(values[i])});
+    if(onProgress)onProgress();
+  }
   meta.records=records;
   return meta;
 }
