@@ -156,6 +156,18 @@
 .schedule-saved-case{width:auto;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px}
 .schedule-saved-case small{color:var(--muted)}
 .schedule-saved-case.active{outline:2px solid var(--accent)}
+.schedule-saved-case-wrap{display:flex;gap:6px;align-items:stretch}
+.schedule-saved-case-wrap>.schedule-saved-case{flex:1}
+.schedule-saved-delete{width:auto!important;min-width:44px;padding:7px 10px!important}
+.availability-month-dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:inherit;max-width:min(620px,92vw);width:100%;padding:0}
+.availability-month-dialog::backdrop{background:rgba(0,0,0,.62)}
+.availability-month-panel{padding:18px}
+.availability-month-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.availability-month-option{display:flex;align-items:center;gap:7px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer}
+.availability-month-option input{margin:0}
+.availability-month-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.availability-month-actions button{width:auto}
+@media(max-width:560px){.availability-month-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .schedule-owner-candidate-select{display:inline-flex;align-items:center;gap:6px;margin-right:6px}
 .schedule-owner-candidate.confirmed{background:color-mix(in srgb,var(--accent) 6%,transparent)}
 .schedule-confirmed-summary{margin:8px 0;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
@@ -1212,12 +1224,36 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
    box.innerHTML=`<div class="schedule-saved-title"><strong>日程調整案件</strong><span class="small muted">${cases.length}件</span></div>
      <div class="schedule-saved-list">${cases.map(c=>{
        const p=c.payload||{};
-       return `<button type="button" class="schedule-saved-case ${c.id===activeCaseId?"active":""}" data-case-id="${c.id}">
-         <span>${String(p.title||"日程すり合わせ")}</span>
-         <small>${statusLabelForCase(p)}${p.startDate?` ／ ${p.startDate}〜${p.endDate||""}`:""}</small>
-       </button>`;
+       return `<div class="schedule-saved-case-wrap">
+         <button type="button" class="schedule-saved-case ${c.id===activeCaseId?"active":""}" data-case-id="${c.id}">
+           <span>${String(p.title||"日程すり合わせ")}</span>
+           <small>${statusLabelForCase(p)}${p.startDate?` ／ ${p.startDate}〜${p.endDate||""}`:""}</small>
+         </button>
+         <button type="button" class="schedule-saved-delete danger" data-delete-case-id="${c.id}" title="この日程調整を削除">削除</button>
+       </div>`;
      }).join("")}</div>`;
    box.querySelectorAll("[data-case-id]").forEach(b=>b.onclick=()=>openSavedCase(b.dataset.caseId));
+   box.querySelectorAll("[data-delete-case-id]").forEach(b=>b.onclick=async()=>{
+     const id=b.dataset.deleteCaseId;
+     const row=loadCases().find(x=>x.id===id);
+     const title=String(row?.payload?.title||"この日程調整");
+     if(!confirm(`「${title}」を削除しますか？\n\n日程調整の回答・コメント・共有ページは削除扱いになります。\nCALENDARに登録済みの卓予定は削除しません。`))return;
+     b.disabled=true;
+     try{
+       if(window.TRPG39Cloud?.updateSharedPage){
+         try{await TRPG39Cloud.updateSharedPage(id,{kind:"calendar-schedule-deleted",version:1,deletedAt:new Date().toISOString()})}catch(e){console.warn("共有側の削除反映に失敗",e)}
+       }
+       const next=loadCases().filter(x=>x.id!==id);
+       saveCases(next);
+       const legacy=loadLegacyCase();
+       if(legacy?.id===id){
+         if(next[0])localStorage.setItem(CASE_KEY,JSON.stringify(next[0]));
+         else localStorage.removeItem(CASE_KEY);
+       }
+       if(activeCaseId===id)activeCaseId=next[0]?.id||"";
+       location.reload();
+     }finally{b.disabled=false}
+   });
  }
  async function openSavedCase(id){
    const cases=loadCases(),saved=cases.find(x=>x.id===id);
@@ -1946,6 +1982,7 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
  const STORE_KEY="trpg39.calendar.availabilityShare.v2";
  const pad=n=>String(n).padStart(2,"0");
  const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+ const monthKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
 
  function loadStored(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||"null")}catch(_){return null}}
  function saveStored(v){localStorage.setItem(STORE_KEY,JSON.stringify(v))}
@@ -1955,40 +1992,87 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
      return String(p?.displayName||"").trim();
    }catch(_){return ""}
  }
+ function displayedMonth(){
+   const y=Number(document.getElementById("yearJump")?.value),m=Number(document.getElementById("monthJump")?.value);
+   if(Number.isInteger(y)&&Number.isInteger(m)&&m>=1&&m<=12)return new Date(y,m-1,1);
+   const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);
+ }
+ function monthChoices(){
+   const now=new Date(),todayBase=new Date(now.getFullYear(),now.getMonth(),1),view=displayedMonth();
+   const base=view<todayBase?todayBase:view;
+   return Array.from({length:12},(_,i)=>{const d=new Date(base.getFullYear(),base.getMonth()+i,1);return{key:monthKey(d),year:d.getFullYear(),month:d.getMonth()+1,label:`${d.getFullYear()}年${d.getMonth()+1}月`}});
+ }
+ function chooseMonths(){
+   return new Promise(resolve=>{
+     document.getElementById("availabilityMonthDialog")?.remove();
+     const choices=monthChoices(),stored=loadStored(),storedMonths=Array.isArray(stored?.selectedMonths)?stored.selectedMonths:[];
+     const defaultKey=monthKey(displayedMonth());
+     const selected=new Set(storedMonths.filter(k=>choices.some(x=>x.key===k)));
+     if(!selected.size&&choices.some(x=>x.key===defaultKey))selected.add(defaultKey);
+     if(!selected.size)selected.add(choices[0].key);
+     const dlg=document.createElement("dialog");
+     dlg.id="availabilityMonthDialog";dlg.className="availability-month-dialog";
+     dlg.innerHTML=`<div class="availability-month-panel">
+       <h2 style="margin:0">空き日を共有する月</h2>
+       <p class="small muted" style="margin:6px 0 0">複数の月を選べます。選んだ月の空いている日だけ共有します。</p>
+       <div class="availability-month-grid">${choices.map(x=>`<label class="availability-month-option"><input type="checkbox" value="${x.key}" ${selected.has(x.key)?"checked":""}><span>${x.label}</span></label>`).join("")}</div>
+       <div class="availability-month-actions"><button type="button" data-cancel>キャンセル</button><button type="button" data-share>共有URLを作成・更新</button></div>
+     </div>`;
+     document.body.appendChild(dlg);
+     const finish=v=>{try{dlg.close()}catch(_){}dlg.remove();resolve(v)};
+     dlg.querySelector("[data-cancel]").onclick=()=>finish(null);
+     dlg.querySelector("[data-share]").onclick=()=>{
+       const vals=[...dlg.querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
+       if(!vals.length)return alert("共有する月を1つ以上選んでください。");
+       finish(vals);
+     };
+     dlg.addEventListener("cancel",e=>{e.preventDefault();finish(null)},{once:true});
+     dlg.showModal();
+   });
+ }
 
- function buildPayload(){
+ function buildPayload(selectedMonths){
    const events=(window.TRPG39&&TRPG39.loadEvents)?TRPG39.loadEvents():[];
-   const start=new Date(); start.setHours(0,0,0,0);
-   const end=new Date(start); end.setMonth(end.getMonth()+3);
-
+   const now=new Date();now.setHours(0,0,0,0);
    const days=[];
-   for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
-     const date=fmt(d);
-     const busy=events.some(e=>{
-       if(String(e.start||"").slice(0,10)!==date)return false;
-       if(e.type==="blocked")return true;
-       return ["tentative","planned","confirmed"].includes(String(e.status||""));
-     });
-     days.push({date,state:busy?"busy":"free"});
-   }
+   selectedMonths.slice().sort().forEach(key=>{
+     const [y,m]=key.split("-").map(Number);
+     if(!y||!m)return;
+     const first=new Date(y,m-1,1),last=new Date(y,m,0);
+     const begin=(first<now&&now<=last)?new Date(now):first;
+     if(last<now)return;
+     for(let d=new Date(begin);d<=last;d.setDate(d.getDate()+1)){
+       const date=fmt(d);
+       const busy=events.some(e=>{
+         if(String(e.start||"").slice(0,10)!==date)return false;
+         if(e.type==="blocked")return true;
+         return ["tentative","planned","confirmed"].includes(String(e.status||""));
+       });
+       days.push({date,state:busy?"busy":"free"});
+     }
+   });
 
    const ownerName=profileDisplayName();
+   const validDates=days.map(x=>x.date).sort();
    return {
      kind:"calendar-availability",
-     version:4,
+     version:5,
      ownerName,
      label:ownerName?`${ownerName}の空き日共有`:"空き日共有",
-     startDate:fmt(start),
-     endDate:fmt(end),
+     selectedMonths:selectedMonths.slice().sort(),
+     startDate:validDates[0]||"",
+     endDate:validDates.at(-1)||"",
      days,
      generatedAt:new Date().toISOString()
    };
  }
 
  btn.onclick=async()=>{
+   const selectedMonths=await chooseMonths();
+   if(!selectedMonths)return;
    try{
      if(!(window.TRPG39Cloud&&TRPG39Cloud.configured()))throw new Error("Supabase設定がありません");
-     const payload=buildPayload();
+     const payload=buildPayload(selectedMonths);
      const stored=loadStored();
      let id=stored?.id||"";
 
@@ -1998,7 +2082,7 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
        id=await TRPG39Cloud.createSharedPage(payload);
      }
 
-     saveStored({id,updatedAt:new Date().toISOString()});
+     saveStored({id,selectedMonths,updatedAt:new Date().toISOString()});
      const url=new URL("https://sakumeru-share.sakumeru.workers.dev/");
      url.searchParams.set("id",id);
      url.searchParams.set("type","availability");

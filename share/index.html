@@ -679,6 +679,10 @@
     });
     return
   }
+  if(p.kind==="calendar-schedule-deleted"){
+    box.innerHTML=`<h2>日程調整</h2><p>この日程調整は削除されました。</p>`;
+    return
+  }
   if(p.kind==="calendar-availability"){
     const freeDays=(p.days||[]).filter(d=>d&&d.state==="free"&&/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||"")));
     const months=new Map();
