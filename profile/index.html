@@ -239,7 +239,7 @@ function profileBlocksHtml(blocks){
    if(!child){child={item:{title:"",body:"",toggle:false,level:1},children:[]};root.children.push(child)}
    child.children.push({...item,level:2});
  });
- const body=b=>`${b.body?`<div style="white-space:pre-wrap;line-height:1.8;padding-top:8px">${esc(b.body)}</div>`:""}`;
+ const body=b=>`${b.body?`<div style="line-height:1.8;padding-top:8px">${richText(b.body)}</div>`:""}`;
  const leaf=b=>b.toggle!==false?`<details><summary>${esc(b.title||"プロフィール")}</summary>${body(b)}</details>`:`<section class="share-report-block"><strong>${esc(b.title||"プロフィール")}</strong>${body(b)}</section>`;
  const mid=c=>{const kids=c.children.length?`<div class="profile-nested-children level-2">${c.children.map(leaf).join("")}</div>`:"";const b=c.item;if(!b.title&&!b.body)return kids;return b.toggle!==false?`<details><summary>${esc(b.title||"プロフィール")}</summary>${body(b)}${kids}</details>`:`<section class="share-report-block"><strong>${esc(b.title||"プロフィール")}</strong>${body(b)}${kids}</section>`};
  return roots.map(r=>{const kids=r.children.length?`<div class="profile-nested-children">${r.children.map(mid).join("")}</div>`:"";const b=r.item;return b.toggle!==false?`<details><summary>${esc(b.title||"プロフィール")}</summary>${body(b)}${kids}</details>`:`<section class="share-report-block"><strong>${esc(b.title||"プロフィール")}</strong>${body(b)}${kids}</section>`}).join("");
