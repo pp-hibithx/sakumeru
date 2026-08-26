@@ -52,7 +52,7 @@
 
 .profile-blocks{display:grid;gap:10px}.profile-block-row{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}.profile-block-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.profile-block-tools select{width:auto;min-width:150px}.profile-preview .profile-public-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px}.profile-preview .profile-public-side{border-right:1px solid var(--line);padding-right:20px}.profile-preview .profile-public-main{min-width:0}.profile-preview .profile-public-main details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}.profile-preview .profile-public-main summary{font-weight:700;cursor:pointer}.profile-editor-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;align-items:start}.profile-editor-side,.profile-editor-main{min-width:0}.profile-editor-side{display:grid;gap:18px}.profile-editor-main .profile-card{height:auto}.profile-nested-children{margin:10px 0 0 18px;padding-left:12px;border-left:2px solid var(--line)}.profile-nested-children.level-2{margin-left:18px;border-left-style:dashed}.profile-nested-children>details,.profile-nested-children>.share-report-block{margin-bottom:8px!important}@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}}@media(max-width:760px){.profile-preview .profile-public-layout{grid-template-columns:1fr}.profile-preview .profile-public-side{border-right:0;border-bottom:1px solid var(--line);padding:0 0 18px}}.profile-block-row input,.profile-block-row textarea{width:100%;box-sizing:border-box}.shared-link-row{display:grid;grid-template-columns:180px minmax(0,1fr) auto;gap:8px;align-items:center}.shared-link-row input{width:100%;box-sizing:border-box}.profile-public-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px}.profile-public-side{border-right:1px solid var(--line);padding-right:20px}.profile-public-main{min-width:0}.profile-public-main details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}.profile-public-main summary{font-weight:700;cursor:pointer}@media(max-width:760px){.shared-link-row{grid-template-columns:1fr}.profile-public-layout{grid-template-columns:1fr}.profile-public-side{border-right:0;border-bottom:1px solid var(--line);padding:0 0 18px}}
 
-/* v0.3.52: compact left editor + tree hierarchy + collapsible share settings */
+/* v0.3.49: compact left editor + visible hierarchy */
 .profile-editor-layout{grid-template-columns:360px minmax(0,1fr)}
 .profile-editor-side .profile-card{padding:18px}
 .profile-editor-side .profile-card-head{margin-bottom:12px}
@@ -74,25 +74,36 @@
 .profile-editor-side .shared-link-row{grid-template-columns:1fr;gap:6px}
 .profile-editor-side .profile-link-row{grid-template-columns:1fr;gap:6px}
 .profile-editor-side .profile-links{gap:10px}
-.rich-toolbar{display:flex;gap:6px;flex-wrap:wrap}.rich-toolbar button{padding:5px 9px;font-size:.78rem}
-.profile-block-row{position:relative;transition:margin .15s ease,border-color .15s ease,background .15s ease}
-.profile-block-row[data-level="1"]{margin-left:18px}
-.profile-block-row[data-level="2"]{margin-left:36px}
-.profile-block-row[data-level="1"]::before,.profile-block-row[data-level="2"]::before{content:"";position:absolute;pointer-events:none;border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-bottom-left-radius:7px;height:20px;top:-1px;left:-12px;width:10px}
-.profile-block-row[data-level="2"]::after{content:"";position:absolute;pointer-events:none;left:-30px;top:-11px;bottom:-11px;border-left:2px solid var(--line);opacity:.7}
-.profile-block-row .block-level-label{display:flex;align-items:center;gap:6px}
-.profile-block-row[data-level="0"] .block-level-label::before{content:"親";font-size:.68rem;color:var(--muted)}
-.profile-block-row[data-level="1"] .block-level-label::before{content:"子";font-size:.68rem;color:var(--muted)}
-.profile-block-row[data-level="2"] .block-level-label::before{content:"孫";font-size:.68rem;color:var(--muted)}
-.profile-share-toggle{border:0;padding:0;background:transparent}
-.profile-share-toggle>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;font-size:1rem;padding:2px 0}
-.profile-share-toggle>summary::-webkit-details-marker{display:none}
-.profile-share-toggle>summary::after{content:"›";font-size:1.35rem;color:var(--muted);transition:transform .15s ease}
-.profile-share-toggle[open]>summary::after{transform:rotate(90deg)}
-.profile-share-toggle-body{padding-top:14px}
-.profile-side-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 2px}
+.rich-toolbar{display:flex;gap:6px;flex-wrap:wrap}.rich-toolbar button{padding:5px 9px;font-size:.78rem}.profile-block-row{position:relative;transition:margin .15s ease,border-color .15s ease,background .15s ease}
+.profile-block-row[data-level="1"]{margin-left:28px;border-left:3px solid var(--line)}
+.profile-block-row[data-level="2"]{margin-left:56px;border-left:3px double var(--line)}
+.profile-block-row[data-level="1"]::before,.profile-block-row[data-level="2"]::before{position:absolute;left:-25px;top:14px;font-size:.7rem;color:var(--muted);white-space:nowrap}
+.profile-block-row[data-level="1"]::before{content:"└ 子"}
+.profile-block-row[data-level="2"]::before{content:"└ 孫";left:-48px}
+.profile-block-row[data-level="0"] .block-level-label::after{content:"（親）";color:var(--muted);font-size:.72rem}
 @media(max-width:1040px){.profile-editor-layout{grid-template-columns:320px minmax(0,1fr)}}
-@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}.profile-block-row[data-level="1"]{margin-left:14px}.profile-block-row[data-level="2"]{margin-left:28px}.profile-block-row[data-level="2"]::after{left:-23px}}
+@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}.profile-block-row[data-level="1"]{margin-left:18px}.profile-block-row[data-level="2"]{margin-left:36px}.profile-block-row[data-level="2"]::before{left:-34px}}
+
+
+/* v0.3.54: inline nested-toggle PROFILE editor */
+.profile-blocks{display:grid;gap:12px}
+.profile-block-row{margin:0!important;border:1px solid var(--line)!important;border-radius:12px;padding:0!important;background:var(--panel);overflow:hidden}
+.profile-block-row::before,.profile-block-row::after{display:none!important}
+.profile-block-editor{margin:0}
+.profile-block-editor>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:11px 12px;font-weight:700;background:color-mix(in srgb,var(--panel) 92%,var(--line))}
+.profile-block-editor>summary::-webkit-details-marker{display:none}
+.profile-block-editor>summary::before{content:"›";font-size:1.25rem;line-height:1;color:var(--muted);transition:transform .15s ease}
+.profile-block-editor[open]>summary::before{transform:rotate(90deg)}
+.profile-block-summary-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-block-summary-title.is-empty{color:var(--muted);font-weight:500}
+.profile-block-editor-body{display:grid;gap:9px;padding:12px}
+.profile-block-children{display:grid;gap:10px;margin:2px 0 0 18px;padding-left:12px;border-left:2px solid var(--line)}
+.profile-block-row[data-level="2"] .profile-block-children{display:none}
+.profile-inline-add{justify-self:start}
+.profile-block-tools{padding-top:2px}
+.profile-block-tools .block-level-label{display:none!important}
+.profile-block-tools .block-toggle-wrap{font-size:.82rem;color:var(--muted)}
+@media(max-width:620px){.profile-block-children{margin-left:10px;padding-left:9px}}
 
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
@@ -157,33 +168,29 @@
       </section>
 
       <section class="profile-card">
-        <details class="profile-share-toggle">
-          <summary>共有設定</summary>
-          <div class="profile-share-toggle-body">
-            <div id="shareFields" class="profile-checks">
-              <label><input type="checkbox" value="socialName" checked>共有表示名</label>
-              <label><input type="checkbox" value="iconUrl" checked>アイコン</label>
-              <label><input type="checkbox" value="systems" checked>システム</label>
-              <label><input type="checkbox" value="roles" checked>役割</label>
-              <label><input type="checkbox" value="sessionStyles" checked>セッションスタイル</label>
-              <label><input type="checkbox" value="availability" checked>時間帯</label>
-              <label><input type="checkbox" value="links" checked>リンク</label>
-            </div>
-            <div class="profile-share-name"><strong>共有ページで使う名前</strong><span id="shareNamePreview" class="muted">未設定</span></div>
-          </div>
-        </details>
+        <h3>共有設定</h3>
+        <div id="shareFields" class="profile-checks">
+          <label><input type="checkbox" value="socialName" checked>共有表示名</label>
+          <label><input type="checkbox" value="iconUrl" checked>アイコン</label>
+          <label><input type="checkbox" value="systems" checked>システム</label>
+          <label><input type="checkbox" value="roles" checked>役割</label>
+          <label><input type="checkbox" value="sessionStyles" checked>セッションスタイル</label>
+          <label><input type="checkbox" value="availability" checked>時間帯</label>
+          <label><input type="checkbox" value="links" checked>リンク</label>
+        </div>
+        <div class="profile-share-name"><strong>共有ページで使う名前</strong><span id="shareNamePreview" class="muted">未設定</span></div>
+        <div class="profile-save-bar">
+          <button id="saveProfile" type="button">保存</button>
+          <button id="shareProfile" type="button">共有URLを作成・更新</button>
+        </div>
       </section>
-      <div class="profile-side-actions">
-        <button id="saveProfile" type="button">保存</button>
-        <button id="shareProfile" type="button">共有URLを作成・更新</button>
-      </div>
 
     </div>
     <div class="profile-editor-main">
   <section class="profile-card">
     <div class="profile-card-head"><div><h3>プロフィール本文</h3><p class="small muted">見出しと本文をブロック単位で追加できます。</p></div></div>
     <div id="profileBlocks" class="profile-blocks"></div>
-    <button id="addProfileBlock" type="button" class="text-action">＋ ブロックを追加</button>
+    <button id="addProfileBlock" type="button" class="text-action">＋ トグルを追加</button>
       </section>
     </div>
   </div>
@@ -202,7 +209,32 @@ const split=s=>String(s||"").split(/[,、]/).map(v=>v.trim()).filter(Boolean);
 function addLink(label="",url=""){const row=document.createElement("div");row.className="profile-link-row";row.innerHTML=`<input class="link-label" placeholder="表示名" value="${esc(label)}"><input class="link-url" type="url" placeholder="https://..." value="${esc(url)}"><button type="button" class="danger">削除</button>`;row.querySelector("button").onclick=()=>{row.remove();renderPreview()};row.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderPreview));$("links").appendChild(row)}
 function wrapSelection(ta,before,after=before){const s=ta.selectionStart,e=ta.selectionEnd,v=ta.value;ta.value=v.slice(0,s)+before+v.slice(s,e)+after+v.slice(e);ta.focus();ta.setSelectionRange(s+before.length,e+before.length);ta.dispatchEvent(new Event("input",{bubbles:true}))}
 function richText(s){let h=esc(s||"");h=h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');h=h.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");h=h.replace(/__([^_]+)__/g,"<u>$1</u>");return h.replace(/\n/g,"<br>")}
-function addProfileBlock(title="",body="",toggle=true,level=0){const row=document.createElement("div");row.className="profile-block-row";row.innerHTML=`<input class="block-title" placeholder="見出し" value="${esc(title)}"><div class="rich-toolbar"><button type="button" class="text-action rich-bold"><b>B</b></button><button type="button" class="text-action rich-under"><u>U</u></button><button type="button" class="text-action rich-link">リンク</button></div><textarea class="block-body" rows="4" placeholder="本文（文字を選択して B / U / リンク で装飾）">${esc(body)}</textarea><div class="profile-block-tools"><label><input class="block-toggle" type="checkbox" ${toggle?"checked":""}> トグル表示</label><label class="block-level-label">階層 <select class="block-level"><option value="0" ${Number(level)===0?"selected":""}>通常</option><option value="1" ${Number(level)===1?"selected":""}>1段下げる</option><option value="2" ${Number(level)===2?"selected":""}>2段下げる</option></select></label><button type="button" class="text-action block-up">↑</button><button type="button" class="text-action block-down">↓</button><button type="button" class="danger block-delete">削除</button></div>`;const ta=row.querySelector(".block-body");row.querySelector(".rich-bold").onclick=()=>wrapSelection(ta,"**","**");row.querySelector(".rich-under").onclick=()=>wrapSelection(ta,"__","__");row.querySelector(".rich-link").onclick=()=>{const url=prompt("リンク先URLを入力してください","https://");if(url)wrapSelection(ta,"[","]("+url+")")};const applyLevel=()=>row.dataset.level=String(Math.max(0,Math.min(2,Number(row.querySelector(".block-level")?.value||0))));applyLevel();row.querySelector(".block-level").addEventListener("change",applyLevel);row.querySelector(".block-delete").onclick=()=>{row.remove();renderPreview()};row.querySelector(".block-up").onclick=()=>{const prev=row.previousElementSibling;if(prev){row.parentNode.insertBefore(row,prev);renderPreview()}};row.querySelector(".block-down").onclick=()=>{const next=row.nextElementSibling;if(next){row.parentNode.insertBefore(next,row);renderPreview()}};row.querySelectorAll("input,textarea,select").forEach(i=>i.addEventListener(i.type==="checkbox"||i.tagName==="SELECT"?"change":"input",renderPreview));$("profileBlocks").appendChild(row)}
+function makeProfileBlockRow(title="",body="",toggle=true,level=0){
+ const row=document.createElement("div");row.className="profile-block-row";row.dataset.level=String(Math.max(0,Math.min(2,Number(level||0))));
+ row.innerHTML=`<details class="profile-block-editor" open><summary><span class="profile-block-summary-title ${title?"":"is-empty"}">${esc(title||"見出し未入力")}</span></summary><div class="profile-block-editor-body"><input class="block-title" placeholder="見出し" value="${esc(title)}"><div class="rich-toolbar"><button type="button" class="text-action rich-bold"><b>B</b></button><button type="button" class="text-action rich-under"><u>U</u></button><button type="button" class="text-action rich-link">リンク</button></div><textarea class="block-body" rows="4" placeholder="本文（文字を選択して B / U / リンク で装飾）">${esc(body)}</textarea><div class="profile-block-tools"><label class="block-toggle-wrap"><input class="block-toggle" type="checkbox" ${toggle?"checked":""}> 公開時もトグル表示</label><button type="button" class="text-action block-up">↑</button><button type="button" class="text-action block-down">↓</button><button type="button" class="danger block-delete">削除</button></div><div class="profile-block-children"></div><button type="button" class="text-action profile-inline-add">＋ この中に追加</button></div></details>`;
+ const ta=row.querySelector(".block-body"),titleInput=row.querySelector(".block-title"),summaryTitle=row.querySelector(".profile-block-summary-title");
+ const refreshTitle=()=>{const v=titleInput.value.trim();summaryTitle.textContent=v||"見出し未入力";summaryTitle.classList.toggle("is-empty",!v)};
+ titleInput.addEventListener("input",refreshTitle);
+ row.querySelector(".rich-bold").onclick=()=>wrapSelection(ta,"**","**");
+ row.querySelector(".rich-under").onclick=()=>wrapSelection(ta,"__","__");
+ row.querySelector(".rich-link").onclick=()=>{const url=prompt("リンク先URLを入力してください","https://");if(url)wrapSelection(ta,"[","]("+url+")")};
+ row.querySelector(".block-delete").onclick=()=>{row.remove();renderPreview()};
+ row.querySelector(".block-up").onclick=()=>{const prev=row.previousElementSibling;if(prev&&prev.classList.contains("profile-block-row")){row.parentNode.insertBefore(row,prev);renderPreview()}};
+ row.querySelector(".block-down").onclick=()=>{const next=row.nextElementSibling;if(next&&next.classList.contains("profile-block-row")){row.parentNode.insertBefore(next,row);renderPreview()}};
+ const addInside=row.querySelector(".profile-inline-add");
+ if(Number(row.dataset.level)>=2){addInside.remove()}else addInside.onclick=()=>{const child=makeProfileBlockRow("","",true,Number(row.dataset.level)+1);row.querySelector(".profile-block-children").appendChild(child);child.querySelector(".block-title").focus();renderPreview()};
+ row.querySelectorAll("input,textarea").forEach(i=>i.addEventListener(i.type==="checkbox"?"change":"input",renderPreview));
+ return row;
+}
+function addProfileBlock(title="",body="",toggle=true,level=0,parent=null){
+ const row=makeProfileBlockRow(title,body,toggle,level);
+ (parent||$("profileBlocks")).appendChild(row);
+ return row;
+}
+function appendLoadedProfileBlock(block,parent=null){
+ const row=addProfileBlock(block.title||"",block.body||"",block.toggle!==false,Number(block.level||0),parent);
+ return row;
+}
 function addSharedLink(label="",url=""){const row=document.createElement("div");row.className="shared-link-row";row.innerHTML=`<input class="shared-label" placeholder="例：所持シナリオ一覧" value="${esc(label)}"><input class="shared-url" type="url" placeholder="https://..." value="${esc(url)}"><button type="button" class="danger">削除</button>`;row.querySelector("button").onclick=()=>{row.remove();renderPreview()};row.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderPreview));$("sharedLinks").appendChild(row)}
 function currentIcon(){const data=$("iconEditorPreview").dataset.dataUrl||"";return data||$("iconUrl").value.trim()}
 function collect(){
@@ -211,7 +243,7 @@ function collect(){
   systems:split($("systems").value),roles:split($("roles").value),sessionStyles:split($("sessionStyles").value),
   availability:$("availability").value.trim(),
   links:[...document.querySelectorAll(".profile-link-row")].map(r=>({label:r.querySelector(".link-label").value.trim(),url:r.querySelector(".link-url").value.trim()})).filter(x=>x.label||x.url),
-  blocks:[...document.querySelectorAll(".profile-block-row")].map(r=>({title:r.querySelector(".block-title").value.trim(),body:r.querySelector(".block-body").value.trim(),toggle:r.querySelector(".block-toggle").checked,level:Number(r.querySelector(".block-level")?.value||0)})).filter(x=>x.title||x.body),
+  blocks:(()=>{const out=[];const walk=(container,level)=>{[...container.children].filter(r=>r.classList?.contains("profile-block-row")).forEach(r=>{const item={title:r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .block-title").value.trim(),body:r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .block-body").value.trim(),toggle:r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .profile-block-tools .block-toggle").checked,level};if(item.title||item.body)out.push(item);const kids=r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .profile-block-children");if(kids&&level<2)walk(kids,level+1)});};walk($("profileBlocks"),0);return out})(),
   sharedLinks:[...document.querySelectorAll(".shared-link-row")].map(r=>({label:r.querySelector(".shared-label").value.trim(),url:r.querySelector(".shared-url").value.trim()})).filter(x=>x.label||x.url),
   shareFields:[...document.querySelectorAll("#shareFields input:checked")].map(x=>x.value)
  };
@@ -227,7 +259,7 @@ async function imageFileToDataUrl(file){
  }finally{URL.revokeObjectURL(src)}
 }
 function save(show=true){const x=collect();localStorage.setItem(KEY,JSON.stringify(x));if(show)$("savedNote").textContent="✓ 保存しました";renderPreview(x);return x}
-function load(){let x={};try{x=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{};["displayName","socialName","availability"].forEach(k=>$(k).value=x[k]||"");const icon=String(x.iconUrl||"");if(icon.startsWith("data:")){setIconPreview(icon,true);$("iconUrl").value=""}else{$("iconUrl").value=icon;setIconPreview(icon,false)}$("systems").value=(x.systems||[]).join(", ");$("roles").value=(x.roles||[]).join(", ");$("sessionStyles").value=(x.sessionStyles||[]).join(", ");$("links").innerHTML="";(x.links||[]).forEach(l=>addLink(l.label,l.url));if(!(x.links||[]).length)addLink();$("profileBlocks").innerHTML="";(x.blocks||[]).forEach(b=>addProfileBlock(b.title,b.body,b.toggle!==false,Number(b.level||0)));if(!(x.blocks||[]).length){if(x.intro)addProfileBlock("自己紹介",x.intro,false,0);if(x.likes)addProfileBlock("好きな傾向",x.likes,true,0);if(x.dislikes)addProfileBlock("苦手・避けたい傾向",x.dislikes,true,0);if(x.note)addProfileBlock("ひとこと",x.note,true,0);}$("sharedLinks").innerHTML="";(x.sharedLinks||[]).forEach(l=>addSharedLink(l.label,l.url));if(!(x.sharedLinks||[]).length)addSharedLink();const fields=new Set(x.shareFields||["socialName","iconUrl","systems","roles","sessionStyles","availability","links"]);document.querySelectorAll("#shareFields input").forEach(c=>c.checked=fields.has(c.value));renderPreview(x)}
+function load(){let x={};try{x=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{};["displayName","socialName","availability"].forEach(k=>$(k).value=x[k]||"");const icon=String(x.iconUrl||"");if(icon.startsWith("data:")){setIconPreview(icon,true);$("iconUrl").value=""}else{$("iconUrl").value=icon;setIconPreview(icon,false)}$("systems").value=(x.systems||[]).join(", ");$("roles").value=(x.roles||[]).join(", ");$("sessionStyles").value=(x.sessionStyles||[]).join(", ");$("links").innerHTML="";(x.links||[]).forEach(l=>addLink(l.label,l.url));if(!(x.links||[]).length)addLink();$("profileBlocks").innerHTML="";(()=>{let root=null,child=null;(x.blocks||[]).forEach(b=>{let level=Math.max(0,Math.min(2,Number(b.level||0)));if(level===0||!root){root=addProfileBlock(b.title,b.body,b.toggle!==false,0);child=null;return}if(level===1){child=addProfileBlock(b.title,b.body,b.toggle!==false,1,root.querySelector(".profile-block-children"));return}if(!child){child=addProfileBlock("","",false,1,root.querySelector(".profile-block-children"))}addProfileBlock(b.title,b.body,b.toggle!==false,2,child.querySelector(".profile-block-children"))})})();if(!(x.blocks||[]).length){if(x.intro)addProfileBlock("自己紹介",x.intro,false,0);if(x.likes)addProfileBlock("好きな傾向",x.likes,true,0);if(x.dislikes)addProfileBlock("苦手・避けたい傾向",x.dislikes,true,0);if(x.note)addProfileBlock("ひとこと",x.note,true,0);}$("sharedLinks").innerHTML="";(x.sharedLinks||[]).forEach(l=>addSharedLink(l.label,l.url));if(!(x.sharedLinks||[]).length)addSharedLink();const fields=new Set(x.shareFields||["socialName","iconUrl","systems","roles","sessionStyles","availability","links"]);document.querySelectorAll("#shareFields input").forEach(c=>c.checked=fields.has(c.value));renderPreview(x)}
 function profileBlocksHtml(blocks){
  const rows=(Array.isArray(blocks)?blocks:[]).filter(b=>b&&(b.title||b.body));
  if(!rows.length)return "";
@@ -239,7 +271,7 @@ function profileBlocksHtml(blocks){
    if(!child){child={item:{title:"",body:"",toggle:false,level:1},children:[]};root.children.push(child)}
    child.children.push({...item,level:2});
  });
- const body=b=>`${b.body?`<div style="line-height:1.8;padding-top:8px">${richText(b.body)}</div>`:""}`;
+ const body=b=>`${b.body?`<div style="white-space:pre-wrap;line-height:1.8;padding-top:8px">${richText(b.body)}</div>`:""}`;
  const leaf=b=>b.toggle!==false?`<details><summary>${esc(b.title||"プロフィール")}</summary>${body(b)}</details>`:`<section class="share-report-block"><strong>${esc(b.title||"プロフィール")}</strong>${body(b)}</section>`;
  const mid=c=>{const kids=c.children.length?`<div class="profile-nested-children level-2">${c.children.map(leaf).join("")}</div>`:"";const b=c.item;if(!b.title&&!b.body)return kids;return b.toggle!==false?`<details><summary>${esc(b.title||"プロフィール")}</summary>${body(b)}${kids}</details>`:`<section class="share-report-block"><strong>${esc(b.title||"プロフィール")}</strong>${body(b)}${kids}</section>`};
  return roots.map(r=>{const kids=r.children.length?`<div class="profile-nested-children">${r.children.map(mid).join("")}</div>`:"";const b=r.item;return b.toggle!==false?`<details><summary>${esc(b.title||"プロフィール")}</summary>${body(b)}${kids}</details>`:`<section class="share-report-block"><strong>${esc(b.title||"プロフィール")}</strong>${body(b)}${kids}</section>`}).join("");
