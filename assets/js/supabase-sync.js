@@ -57,7 +57,53 @@ async function getCloud(id=getSyncId()){
   return rpc("get_39x2_backup",{p_id:id});
 }
 function isValidSnapshot(data){
-  return !!data && Array.isArray(data.scenarios) && Array.isArray(data.events) && Array.isArray(data.album);
+  return !!data && (
+    (Array.isArray(data.scenarios) && Array.isArray(data.events) && Array.isArray(data.album)) ||
+    (data.cloudFormat === "chunked-v1" && data.chunks && typeof data.chunks === "object")
+  );
+}
+const CLOUD_CHUNK_BYTES = 420000;
+function jsonBytes(value){
+  try { return new Blob([JSON.stringify(value)]).size; }
+  catch { return JSON.stringify(value).length; }
+}
+function splitArrayForCloud(items, maxBytes=CLOUD_CHUNK_BYTES){
+  const out=[]; let current=[]; let size=2;
+  for(const item of (Array.isArray(items)?items:[])){
+    const itemSize=jsonBytes(item)+1;
+    if(current.length && size+itemSize>maxBytes){ out.push(current); current=[]; size=2; }
+    current.push(item); size+=itemSize;
+  }
+  if(current.length || !out.length) out.push(current);
+  return out;
+}
+function cloudPartId(id,key,index){ return `${id}__${key}_${index}`; }
+async function saveChunkedCloud(id,data){
+  const keys=["scenarios","events","album","pcs","players"];
+  const manifest={app:data.app,schemaVersion:data.schemaVersion,savedAt:data.savedAt,cloudFormat:"chunked-v1",chunks:{}};
+  for(const key of keys){
+    const parts=splitArrayForCloud(data[key]);
+    manifest.chunks[key]=parts.length;
+    for(let i=0;i<parts.length;i++){
+      await rpc("save_39x2_backup",{p_id:cloudPartId(id,key,i),p_data:{cloudPart:true,key,index:i,items:parts[i]}});
+    }
+  }
+  // Save the small manifest last. A reader will never see a new timestamp until all parts exist.
+  await rpc("save_39x2_backup",{p_id:id,p_data:manifest});
+}
+async function expandCloudSnapshot(id,data){
+  if(!data || data.cloudFormat!=="chunked-v1") return data;
+  const full={app:data.app||"39*2",schemaVersion:data.schemaVersion||1,savedAt:data.savedAt||""};
+  for(const key of ["scenarios","events","album","pcs","players"]){
+    full[key]=[];
+    const count=Number(data.chunks?.[key]||0);
+    for(let i=0;i<count;i++){
+      const part=await getCloud(cloudPartId(id,key,i));
+      if(!part || !Array.isArray(part.items)) throw new Error(`クラウド同期データの一部が見つかりません（${key} ${i+1}/${count}）。`);
+      full[key].push(...part.items);
+    }
+  }
+  return full;
 }
 function conflictError(){
   const e=new Error("他の端末に、まだこの端末へ読み込んでいない新しい変更があります。");
@@ -75,7 +121,7 @@ async function saveCloud(options={}){
       if(remoteAt && localAt && remoteAt > localAt) throw conflictError();
     }
     const data=snapshot();
-    await rpc("save_39x2_backup",{p_id:id,p_data:data});
+    await saveChunkedCloud(id,data);
     setLastSyncAt(data.savedAt);
     emitStatus("synced","同期済み");
     return id;
@@ -89,8 +135,9 @@ async function loadCloud(id=getSyncId()){
   id=(id||"").trim(); if(!id) throw new Error("同期コードを入力してください。");
   emitStatus("syncing","読み込み中…");
   try {
-    const data=await getCloud(id);
+    let data=await getCloud(id);
     if(!isValidSnapshot(data)) throw new Error("この同期コードのデータが見つかりません。");
+    data=await expandCloudSnapshot(id,data);
     suppressAutoPush=true;
     try {
       TRPG39.saveScenarios(data.scenarios); TRPG39.saveEvents(data.events); TRPG39.saveAlbum(data.album);
@@ -125,11 +172,12 @@ function patchSaves(){
 async function autoPullIfNewer(){
   if(!getAutoSync() || !getSyncId() || !configured()) return false;
   emitStatus("checking","確認中…");
-  const data=await getCloud(getSyncId());
+  let data=await getCloud(getSyncId());
   if(!isValidSnapshot(data)){ emitStatus("synced","同期済み"); return false; }
   const cloudAt=String(data.savedAt||"");
   const localAt=getLastSyncAt();
   if(cloudAt && localAt && cloudAt <= localAt){ emitStatus("synced","同期済み"); return false; }
+  data=await expandCloudSnapshot(getSyncId(),data);
   suppressAutoPush=true;
   try {
     TRPG39.saveScenarios(data.scenarios); TRPG39.saveEvents(data.events); TRPG39.saveAlbum(data.album);
