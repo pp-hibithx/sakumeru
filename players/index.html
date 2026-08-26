@@ -3712,8 +3712,8 @@ function renderPlayerDetail(player){
    <section class="player-section">
      <h3>${esc(player.name)}の連絡先</h3>
      <p class="small muted">同卓者限定共有などで使うための連絡先です。Xの表示名ではなく、@から始まるアカウント名またはプロフィールURLを保存できます。</p>
-     <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;max-width:680px">
-       <div><label>Xアカウント</label><input id="playerXAccount" value="${esc(player.xAccount||"")}" placeholder="@username または https://x.com/username"></div>
+     <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end;max-width:680px">
+       <div><label>Xアカウント</label><input id="playerXAccount" value="${esc(player.xAccount||"")}" placeholder="@username または https://x.com/username"></div><div><label>共有URL</label><input id="playerShareUrl" type="url" value="${esc(player.shareUrl||"")}" placeholder="SAKU+MERUプロフィール等の共有URL"></div>
        <button id="savePlayerContact" type="button">保存</button>
      </div>
    </section>
@@ -3743,7 +3743,7 @@ function renderPlayerDetail(player){
      <h3>${esc(player.name)}の別卓で通過済み</h3>
      <p class="small muted">自分とは別の卓で通過済みと分かっているシナリオを、自分用に記録します。HO・メモは共有されません。</p>
      <div class="player-external-row">
-       <div><label>シナリオ</label><select id="externalScenario"><option value="">選択してください</option>${scenarios.slice().sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja")).map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join("")}</select></div>
+       <div><label>シナリオ検索</label><input id="externalScenarioSearch" placeholder="タイトル・よみで検索"><select id="externalScenario" style="margin-top:6px"><option value="">選択してください</option>${scenarios.slice().sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja")).map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join("")}</select></div>
        <div><label>HO <span class="small muted">任意</span></label><input id="externalHo" placeholder="HO1 など"></div>
        <div><label>メモ <span class="small muted">任意</span></label><input id="externalMemo" placeholder="いつ頃聞いた等"></div>
        <button id="addExternalPlayed" type="button">追加</button>
@@ -3758,10 +3758,11 @@ function renderPlayerDetail(player){
 
  q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");history.replaceState(null,"",u);render()};
  q("openPlayerRelationFromDetail").onclick=()=>openPlayerRelationshipGraph(player.id);
- q("savePlayerContact").onclick=()=>{const value=String(q("playerXAccount").value||"").trim();players=players.map(p=>p.id===player.id?{...p,xAccount:value}:p);savePlayersState();const updated=players.find(p=>p.id===player.id)||player;renderPlayerDetail(updated)};
+ q("savePlayerContact").onclick=()=>{const value=String(q("playerXAccount").value||"").trim();const shareUrl=String(q("playerShareUrl").value||"").trim();players=players.map(p=>p.id===player.id?{...p,xAccount:value,shareUrl}:p);savePlayersState();const updated=players.find(p=>p.id===player.id)||player;renderPlayerDetail(updated)};
  q("playerDetailRole").onchange=()=>{playerDetailRoleFilter=q("playerDetailRole").value;renderPlayerDetail(player)};
  q("playerDetailSystem").onchange=()=>{playerDetailSystemFilter=q("playerDetailSystem").value;renderPlayerDetail(player)};
  q("playerDetailPc").onchange=()=>{playerDetailPcFilter=q("playerDetailPc").value;renderPlayerDetail(player)};
+ q("externalScenarioSearch").oninput=()=>{const term=String(q("externalScenarioSearch").value||"").trim().toLowerCase();const sel=q("externalScenario"),current=sel.value;sel.innerHTML='<option value="">選択してください</option>'+scenarios.slice().sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja")).filter(sc=>!term||[sc.title,sc.sortKana,sc.kana,sc.shortTitle].some(v=>String(v||"").toLowerCase().includes(term))).map(sc=>`<option value="${esc(sc.id)}">${esc(sc.title)}</option>`).join("");if([...sel.options].some(o=>o.value===current))sel.value=current;};
  q("addExternalPlayed").onclick=()=>{
    const sid=q("externalScenario").value;
    if(!sid)return alert("シナリオを選んでください。");
