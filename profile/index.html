@@ -118,6 +118,18 @@
   </section>
 
   <section class="profile-card">
+    <div class="profile-card-head"><div><h3>プロフィール本文</h3><p class="small muted">見出しと本文をブロック単位で追加できます。</p></div></div>
+    <div id="profileBlocks" class="profile-blocks"></div>
+    <button id="addProfileBlock" type="button" class="text-action">＋ ブロックを追加</button>
+  </section>
+
+  <section class="profile-card">
+    <div class="profile-card-head"><div><h3>SAKU+MERU共有リンク</h3><p class="small muted">発行済みの共有URLを名刺ページにまとめられます。</p></div></div>
+    <div id="sharedLinks" class="profile-links"></div>
+    <button id="addSharedLink" type="button" class="text-action">＋ 共有リンクを追加</button>
+  </section>
+
+  <section class="profile-card">
     <h3>共有する項目</h3>
     <div id="shareFields" class="profile-checks">
       <label><input type="checkbox" value="socialName" checked>共有表示名</label>
@@ -182,7 +194,7 @@ async function shareProfile(){const x=save(false),payload={kind:"profile",versio
 $("addLink").onclick=()=>addLink();$("addProfileBlock").onclick=()=>addProfileBlock();$("addSharedLink").onclick=()=>addSharedLink();$("saveProfile").onclick=()=>save(true);$("shareProfile").onclick=shareProfile;$("chooseIcon").onclick=()=>$("iconFile").click();
 $("togglePreview").onclick=()=>{renderPreview();$("previewPanel").hidden=false;$("togglePreview").textContent="プレビューを更新";$("previewPanel").scrollIntoView({behavior:"smooth",block:"start"})};
 $("closePreview").onclick=()=>{$("previewPanel").hidden=true;$("togglePreview").textContent="プレビューを表示"};
-$("iconFile").addEventListener("change",async()=>{const f=$("iconFile").files?.[0];if(!f)return;try{const data=await imageFileToDataUrl(f);setIconPreview(data,true);$("iconUrl").value="";renderPreview()}catch(e){console.error(e);alert("画像を読み込めませんでした。")}});
+$("iconFile").addEventListener("change",async()=>{const f=$("iconFile").files?.[0];if(!f)return;try{const data=await imageFileToDataUrl(f);setIconPreview(data,true);$("iconUrl").value="";$("iconFileName").textContent=f.name;renderPreview()}catch(e){console.error(e);alert("画像を読み込めませんでした。")}});
 $("clearIcon").onclick=()=>{$("iconFile").value="";$("iconFileName").textContent="未選択";$("iconUrl").value="";setIconPreview("",false);renderPreview()};
 $("iconUrl").addEventListener("input",()=>{if($("iconUrl").value.trim())setIconPreview($("iconUrl").value.trim(),false);else if(!$("iconEditorPreview").dataset.dataUrl)setIconPreview("",false);renderPreview()});
 document.querySelectorAll("input:not(.link-label):not(.link-url),textarea").forEach(el=>{el.addEventListener(el.type==="checkbox"?"change":"input",renderPreview)});
