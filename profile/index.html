@@ -11,20 +11,35 @@
 <script defer src="../assets/js/common-layout.js?v=0303"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
-.profile-wrap{max-width:900px;margin:auto;padding:24px 20px}
-.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.profile-grid .full{grid-column:1/-1}
-.profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.profile-preview{margin-top:18px;border:1px solid var(--line);border-radius:12px;padding:18px;background:var(--panel)}
+.profile-wrap{max-width:1180px;margin:auto;padding:28px 24px 56px}
+.profile-shell{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(320px,.8fr);gap:22px;align-items:start}
+.profile-stack{display:grid;gap:18px}
+.profile-card{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:20px}
+.profile-card h3{margin:0 0 14px;font-size:1.05rem}
+.profile-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.profile-card-head p{margin:4px 0 0}
+.profile-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.profile-field{display:grid;gap:6px;min-width:0}
+.profile-field.full{grid-column:1/-1}
+.profile-field label{margin:0;font-size:.9rem}
+.profile-field input,.profile-field textarea{width:100%;box-sizing:border-box;margin:0}
+.profile-field textarea{min-height:92px;resize:vertical}
+.profile-help{font-size:.78rem;color:var(--muted);line-height:1.55}
+.profile-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.profile-preview{position:sticky;top:88px;border:1px solid var(--line);border-radius:14px;padding:20px;background:var(--panel);margin:0}
+.profile-preview-label{font-size:.78rem;color:var(--muted);margin-bottom:12px;letter-spacing:.05em}
 .profile-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
-.profile-icon{width:96px;height:96px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
+.profile-icon{width:88px;height:88px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
 .profile-chips{display:flex;gap:6px;flex-wrap:wrap}
-.profile-checks{display:flex;gap:8px;flex-wrap:wrap}
-.profile-checks label{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:5px 8px}
-.profile-checks input{width:auto}
-.profile-links{display:grid;gap:7px}
-.profile-link-row{display:grid;grid-template-columns:160px 1fr auto;gap:7px}
-@media(max-width:700px){.profile-grid{grid-template-columns:1fr}.profile-grid .full{grid-column:auto}.profile-link-row{grid-template-columns:1fr}}
+.profile-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.profile-checks label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+.profile-checks input{width:auto;margin:0}
+.profile-links{display:grid;gap:8px}
+.profile-link-row{display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:8px;align-items:center}
+.profile-share-name{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-top:8px}
+.profile-share-name strong{display:block;margin-bottom:3px}
+@media(max-width:900px){.profile-shell{grid-template-columns:1fr}.profile-preview{position:static}.profile-form-grid{grid-template-columns:1fr}.profile-field.full{grid-column:auto}}
+@media(max-width:620px){.profile-wrap{padding:20px 14px 44px}.profile-checks{grid-template-columns:1fr}.profile-link-row{grid-template-columns:1fr}.profile-card{padding:16px}}
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
@@ -33,43 +48,66 @@
 <div data-site-header data-active="profile"></div>
 <main class="profile-wrap">
 <div class="hero"><h2>PROFILE</h2><p>卓の自己紹介をまとめて、必要な内容だけ共有できます。</p></div>
-<section class="panel">
-<div class="profile-grid">
-<div><label>表示名</label><input id="displayName" placeholder="例：プレイヤー名"></div>
-<div><label>SNS表示名</label><input id="socialName" placeholder="例：★ / 名前"></div>
-<div class="full"><label>アイコン画像URL</label><input id="iconUrl" type="url" placeholder="https://..."></div>
-<div class="full"><label>自己紹介</label><textarea id="intro" rows="4" placeholder="TRPG歴、普段の遊び方など"></textarea></div>
-<div class="full"><label>よく遊ぶシステム <span class="small muted">（カンマ区切り）</span></label><input id="systems" placeholder="CoC6版, エモクロア, マダミス"></div>
-<div class="full"><label>遊び方・役割 <span class="small muted">（カンマ区切り）</span></label><input id="roles" placeholder="PL, KP, DL, GM"></div>
-<div class="full"><label>好きな傾向</label><textarea id="likes" rows="3"></textarea></div>
-<div class="full"><label>苦手・避けたい傾向</label><textarea id="dislikes" rows="3"></textarea></div>
-<div class="full"><label>遊べる時間帯</label><textarea id="availability" rows="2" placeholder="例：平日21時〜 / 土日昼夜"></textarea></div>
-<div class="full"><label>ひとこと</label><textarea id="note" rows="2"></textarea></div>
-<div class="full"><label>リンク</label><div id="links" class="profile-links"></div><button id="addLink" type="button" class="text-action">＋ リンクを追加</button></div>
-</div>
+<div class="profile-shell">
+  <div class="profile-stack">
+    <section class="profile-card">
+      <div class="profile-card-head"><div><h3>基本プロフィール</h3><p class="small muted">SAKU+MERU内で使う名前と、外向けの表示名を設定します。</p></div></div>
+      <div class="profile-form-grid">
+        <div class="profile-field"><label for="displayName">表示名</label><input id="displayName" placeholder="例：はいびす"><div class="profile-help">SAKU+MERU内で使う名前です。</div></div>
+        <div class="profile-field"><label for="socialName">共有表示名</label><input id="socialName" placeholder="例：🌺 / はいびす"><div class="profile-help">シナリオ一覧や空き日共有など、外向けの共有ページで使います。</div></div>
+        <div class="profile-field full"><label for="iconUrl">アイコン画像URL</label><input id="iconUrl" type="url" placeholder="https://..."></div>
+        <div class="profile-field full"><label for="intro">自己紹介</label><textarea id="intro" rows="4" placeholder="TRPG歴、普段の遊び方など"></textarea></div>
+      </div>
+    </section>
 
-<h3>共有する項目</h3>
-<div id="shareFields" class="profile-checks">
-<label><input type="checkbox" value="socialName" checked>SNS表示名</label>
-<label><input type="checkbox" value="iconUrl" checked>アイコン</label>
-<label><input type="checkbox" value="intro" checked>自己紹介</label>
-<label><input type="checkbox" value="systems" checked>システム</label>
-<label><input type="checkbox" value="roles" checked>役割</label>
-<label><input type="checkbox" value="likes" checked>好きな傾向</label>
-<label><input type="checkbox" value="dislikes">苦手・避けたい傾向</label>
-<label><input type="checkbox" value="availability" checked>時間帯</label>
-<label><input type="checkbox" value="note" checked>ひとこと</label>
-<label><input type="checkbox" value="links" checked>リンク</label>
-</div>
-<div class="small muted" style="margin-top:8px">チェックした項目だけ共有ページに含まれます。PROFILEの保存データ自体はこのブラウザ内に保存されます。</div>
+    <section class="profile-card">
+      <div class="profile-card-head"><div><h3>TRPGプロフィール</h3><p class="small muted">遊び方や好みをまとめます。</p></div></div>
+      <div class="profile-form-grid">
+        <div class="profile-field"><label for="systems">よく遊ぶシステム <span class="small muted">（カンマ区切り）</span></label><input id="systems" placeholder="CoC6版, エモクロア, マダミス"></div>
+        <div class="profile-field"><label for="roles">遊び方・役割 <span class="small muted">（カンマ区切り）</span></label><input id="roles" placeholder="PL, KP, DL, GM"></div>
+        <div class="profile-field full"><label for="likes">好きな傾向</label><textarea id="likes" rows="3"></textarea></div>
+        <div class="profile-field full"><label for="dislikes">苦手・避けたい傾向</label><textarea id="dislikes" rows="3"></textarea></div>
+        <div class="profile-field full"><label for="availability">遊べる時間帯</label><textarea id="availability" rows="2" placeholder="例：平日21時〜 / 土日昼夜"></textarea></div>
+        <div class="profile-field full"><label for="note">ひとこと</label><textarea id="note" rows="2"></textarea></div>
+      </div>
+    </section>
 
-<div class="profile-actions">
-<button id="saveProfile" type="button">保存</button>
-<button id="shareProfile" type="button">共有URLを作成・更新</button>
-<span id="savedNote" class="small muted"></span>
+    <section class="profile-card">
+      <div class="profile-card-head"><div><h3>リンク</h3><p class="small muted">SNSや外部プロフィールなどをまとめられます。</p></div></div>
+      <div id="links" class="profile-links"></div>
+      <button id="addLink" type="button" class="text-action">＋ リンクを追加</button>
+    </section>
+  </div>
+
+  <aside class="profile-stack">
+    <section class="profile-preview">
+      <div class="profile-preview-label">プレビュー</div>
+      <div id="previewContent"></div>
+    </section>
+
+    <section class="profile-card">
+      <h3>共有する項目</h3>
+      <div id="shareFields" class="profile-checks">
+        <label><input type="checkbox" value="socialName" checked>共有表示名</label>
+        <label><input type="checkbox" value="iconUrl" checked>アイコン</label>
+        <label><input type="checkbox" value="intro" checked>自己紹介</label>
+        <label><input type="checkbox" value="systems" checked>システム</label>
+        <label><input type="checkbox" value="roles" checked>役割</label>
+        <label><input type="checkbox" value="likes" checked>好きな傾向</label>
+        <label><input type="checkbox" value="dislikes">苦手・避けたい傾向</label>
+        <label><input type="checkbox" value="availability" checked>時間帯</label>
+        <label><input type="checkbox" value="note" checked>ひとこと</label>
+        <label><input type="checkbox" value="links" checked>リンク</label>
+      </div>
+      <div class="profile-share-name"><strong>共有ページで使う名前</strong><span id="shareNamePreview" class="muted">未設定</span></div>
+      <div class="profile-actions">
+        <button id="saveProfile" type="button">保存</button>
+        <button id="shareProfile" type="button">共有URLを作成・更新</button>
+        <span id="savedNote" class="small muted"></span>
+      </div>
+    </section>
+  </aside>
 </div>
-</section>
-<section class="profile-preview" id="preview"></section>
 </main>
 <div data-site-footer></div>
 <script src="../assets/js/main.js?v=0292"></script>
@@ -92,7 +130,7 @@ function collect(){
 }
 function save(show=true){const x=collect();localStorage.setItem(KEY,JSON.stringify(x));if(show)$("savedNote").textContent="✓ 保存しました";renderPreview(x);return x}
 function load(){let x={};try{x=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{};["displayName","socialName","iconUrl","intro","likes","dislikes","availability","note"].forEach(k=>$(k).value=x[k]||"");$("systems").value=(x.systems||[]).join(", ");$("roles").value=(x.roles||[]).join(", ");$("links").innerHTML="";(x.links||[]).forEach(l=>addLink(l.label,l.url));if(!(x.links||[]).length)addLink();const fields=new Set(x.shareFields||["socialName","iconUrl","intro","systems","roles","likes","availability","note","links"]);document.querySelectorAll("#shareFields input").forEach(c=>c.checked=fields.has(c.value));renderPreview(x)}
-function renderPreview(x=collect()){const chips=a=>(a||[]).map(v=>`<span class="badge">${esc(v)}</span>`).join("");$("preview").innerHTML=`<div class="profile-head">${x.iconUrl?`<img class="profile-icon" src="${esc(x.iconUrl)}" alt="">`:""}<div><h2 style="margin:0">${esc(x.displayName||"名前未設定")}</h2>${x.socialName?`<div class="small muted">${esc(x.socialName)}</div>`:""}${x.intro?`<p style="white-space:pre-wrap">${esc(x.intro)}</p>`:""}</div></div>${x.systems?.length?`<h3>よく遊ぶシステム</h3><div class="profile-chips">${chips(x.systems)}</div>`:""}${x.roles?.length?`<h3>遊び方・役割</h3><div class="profile-chips">${chips(x.roles)}</div>`:""}${x.likes?`<h3>好きな傾向</h3><p style="white-space:pre-wrap">${esc(x.likes)}</p>`:""}${x.dislikes?`<h3>苦手・避けたい傾向</h3><p style="white-space:pre-wrap">${esc(x.dislikes)}</p>`:""}${x.availability?`<h3>遊べる時間帯</h3><p style="white-space:pre-wrap">${esc(x.availability)}</p>`:""}${x.note?`<h3>ひとこと</h3><p style="white-space:pre-wrap">${esc(x.note)}</p>`:""}`}
+function renderPreview(x=collect()){const chips=a=>(a||[]).map(v=>`<span class="badge">${esc(v)}</span>`).join("");const shareName=(x.socialName||x.displayName||"").trim();if($("shareNamePreview"))$("shareNamePreview").textContent=shareName||"未設定";$("previewContent").innerHTML=`<div class="profile-head">${x.iconUrl?`<img class="profile-icon" src="${esc(x.iconUrl)}" alt="">`:""}<div><h2 style="margin:0">${esc(x.displayName||"名前未設定")}</h2>${x.socialName?`<div class="small muted">${esc(x.socialName)}</div>`:""}${x.intro?`<p style="white-space:pre-wrap">${esc(x.intro)}</p>`:""}</div></div>${x.systems?.length?`<h3>よく遊ぶシステム</h3><div class="profile-chips">${chips(x.systems)}</div>`:""}${x.roles?.length?`<h3>遊び方・役割</h3><div class="profile-chips">${chips(x.roles)}</div>`:""}${x.likes?`<h3>好きな傾向</h3><p style="white-space:pre-wrap">${esc(x.likes)}</p>`:""}${x.dislikes?`<h3>苦手・避けたい傾向</h3><p style="white-space:pre-wrap">${esc(x.dislikes)}</p>`:""}${x.availability?`<h3>遊べる時間帯</h3><p style="white-space:pre-wrap">${esc(x.availability)}</p>`:""}${x.note?`<h3>ひとこと</h3><p style="white-space:pre-wrap">${esc(x.note)}</p>`:""}`}
 function publicProfile(x){
  const fields=new Set(x.shareFields||[]),p={displayName:x.displayName||""};
  ["socialName","iconUrl","intro","systems","roles","likes","dislikes","availability","note","links"].forEach(k=>{if(fields.has(k))p[k]=x[k]});

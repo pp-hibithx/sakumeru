@@ -1989,7 +1989,7 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
  function profileDisplayName(){
    try{
      const p=JSON.parse(localStorage.getItem("39x2_profile_v1")||"{}");
-     return String(p?.displayName||"").trim();
+     return String(p?.socialName||p?.displayName||"").trim();
    }catch(_){return ""}
  }
  function displayedMonth(){
