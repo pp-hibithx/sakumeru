@@ -59,49 +59,68 @@ async function getCloud(id=getSyncId()){
 function isValidSnapshot(data){
   return !!data && (
     (Array.isArray(data.scenarios) && Array.isArray(data.events) && Array.isArray(data.album)) ||
-    (data.cloudFormat === "chunked-v1" && data.chunks && typeof data.chunks === "object")
+    ((data.cloudFormat === "chunked-v1" || data.cloudFormat === "chunked-text-v2") && data.chunks && typeof data.chunks === "object")
   );
 }
-const CLOUD_CHUNK_BYTES = 420000;
-function jsonBytes(value){
-  try { return new Blob([JSON.stringify(value)]).size; }
-  catch { return JSON.stringify(value).length; }
-}
-function splitArrayForCloud(items, maxBytes=CLOUD_CHUNK_BYTES){
-  const out=[]; let current=[]; let size=2;
-  for(const item of (Array.isArray(items)?items:[])){
-    const itemSize=jsonBytes(item)+1;
-    if(current.length && size+itemSize>maxBytes){ out.push(current); current=[]; size=2; }
-    current.push(item); size+=itemSize;
+const CLOUD_TEXT_CHUNK_BYTES = 64000;
+function utf8Bytes(text){ return new TextEncoder().encode(String(text||"")).length; }
+function splitUtf8Text(text,maxBytes=CLOUD_TEXT_CHUNK_BYTES){
+  text=String(text||"");
+  const out=[];
+  let buf="", bytes=0;
+  for(const ch of text){
+    const b=utf8Bytes(ch);
+    if(buf && bytes+b>maxBytes){ out.push(buf); buf=""; bytes=0; }
+    buf+=ch; bytes+=b;
   }
-  if(current.length || !out.length) out.push(current);
+  if(buf || !out.length) out.push(buf);
   return out;
 }
 function cloudPartId(id,key,index){ return `${id}__${key}_${index}`; }
+async function saveTextParts(id,key,value){
+  const json=JSON.stringify(value ?? []);
+  const parts=splitUtf8Text(json);
+  for(let i=0;i<parts.length;i++){
+    await rpc("save_39x2_backup",{
+      p_id:cloudPartId(id,key,i),
+      p_data:{cloudPart:true,encoding:"json-text-v2",key,index:i,text:parts[i]}
+    });
+  }
+  return parts.length;
+}
 async function saveChunkedCloud(id,data){
   const keys=["scenarios","events","album","pcs","players"];
-  const manifest={app:data.app,schemaVersion:data.schemaVersion,savedAt:data.savedAt,cloudFormat:"chunked-v1",chunks:{}};
-  for(const key of keys){
-    const parts=splitArrayForCloud(data[key]);
-    manifest.chunks[key]=parts.length;
-    for(let i=0;i<parts.length;i++){
-      await rpc("save_39x2_backup",{p_id:cloudPartId(id,key,i),p_data:{cloudPart:true,key,index:i,items:parts[i]}});
-    }
-  }
-  // Save the small manifest last. A reader will never see a new timestamp until all parts exist.
+  const manifest={app:data.app,schemaVersion:data.schemaVersion,savedAt:data.savedAt,cloudFormat:"chunked-text-v2",chunks:{}};
+  for(const key of keys){ manifest.chunks[key]=await saveTextParts(id,key,data[key]); }
   await rpc("save_39x2_backup",{p_id:id,p_data:manifest});
 }
 async function expandCloudSnapshot(id,data){
-  if(!data || data.cloudFormat!=="chunked-v1") return data;
+  if(!data) return data;
+  if(data.cloudFormat==="chunked-v1"){
+    const full={app:data.app||"39*2",schemaVersion:data.schemaVersion||1,savedAt:data.savedAt||""};
+    for(const key of ["scenarios","events","album","pcs","players"]){
+      full[key]=[];
+      const count=Number(data.chunks?.[key]||0);
+      for(let i=0;i<count;i++){
+        const part=await getCloud(cloudPartId(id,key,i));
+        if(!part || !Array.isArray(part.items)) throw new Error(`クラウド同期データの一部が見つかりません（${key} ${i+1}/${count}）。`);
+        full[key].push(...part.items);
+      }
+    }
+    return full;
+  }
+  if(data.cloudFormat!=="chunked-text-v2") return data;
   const full={app:data.app||"39*2",schemaVersion:data.schemaVersion||1,savedAt:data.savedAt||""};
   for(const key of ["scenarios","events","album","pcs","players"]){
-    full[key]=[];
+    let json="";
     const count=Number(data.chunks?.[key]||0);
     for(let i=0;i<count;i++){
       const part=await getCloud(cloudPartId(id,key,i));
-      if(!part || !Array.isArray(part.items)) throw new Error(`クラウド同期データの一部が見つかりません（${key} ${i+1}/${count}）。`);
-      full[key].push(...part.items);
+      if(!part || part.encoding!=="json-text-v2" || typeof part.text!=="string") throw new Error(`クラウド同期データの一部が見つかりません（${key} ${i+1}/${count}）。`);
+      json+=part.text;
     }
+    try { full[key]=json ? JSON.parse(json) : []; }
+    catch { throw new Error(`クラウド同期データを復元できませんでした（${key}）。`); }
   }
   return full;
 }
