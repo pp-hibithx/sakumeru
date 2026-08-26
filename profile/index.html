@@ -51,6 +51,39 @@
 @media(max-width:620px){.profile-wrap{padding:20px 14px 44px}.profile-checks,.session-style-options{grid-template-columns:1fr}.profile-link-row{grid-template-columns:1fr}.profile-card{padding:16px}.profile-icon-editor{flex-direction:column}.profile-icon-editor img{width:84px;height:84px}}
 
 .profile-blocks{display:grid;gap:10px}.profile-block-row{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}.profile-block-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.profile-block-tools select{width:auto;min-width:150px}.profile-preview .profile-public-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px}.profile-preview .profile-public-side{border-right:1px solid var(--line);padding-right:20px}.profile-preview .profile-public-main{min-width:0}.profile-preview .profile-public-main details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}.profile-preview .profile-public-main summary{font-weight:700;cursor:pointer}.profile-editor-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;align-items:start}.profile-editor-side,.profile-editor-main{min-width:0}.profile-editor-side{display:grid;gap:18px}.profile-editor-main .profile-card{height:auto}.profile-nested-children{margin:10px 0 0 18px;padding-left:12px;border-left:2px solid var(--line)}.profile-nested-children.level-2{margin-left:18px;border-left-style:dashed}.profile-nested-children>details,.profile-nested-children>.share-report-block{margin-bottom:8px!important}@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}}@media(max-width:760px){.profile-preview .profile-public-layout{grid-template-columns:1fr}.profile-preview .profile-public-side{border-right:0;border-bottom:1px solid var(--line);padding:0 0 18px}}.profile-block-row input,.profile-block-row textarea{width:100%;box-sizing:border-box}.shared-link-row{display:grid;grid-template-columns:180px minmax(0,1fr) auto;gap:8px;align-items:center}.shared-link-row input{width:100%;box-sizing:border-box}.profile-public-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px}.profile-public-side{border-right:1px solid var(--line);padding-right:20px}.profile-public-main{min-width:0}.profile-public-main details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}.profile-public-main summary{font-weight:700;cursor:pointer}@media(max-width:760px){.shared-link-row{grid-template-columns:1fr}.profile-public-layout{grid-template-columns:1fr}.profile-public-side{border-right:0;border-bottom:1px solid var(--line);padding:0 0 18px}}
+
+/* v0.3.49: compact left editor + visible hierarchy */
+.profile-editor-layout{grid-template-columns:360px minmax(0,1fr)}
+.profile-editor-side .profile-card{padding:18px}
+.profile-editor-side .profile-card-head{margin-bottom:12px}
+.profile-editor-side .profile-card-head h3{font-size:1rem}
+.profile-editor-side .profile-card-head p{font-size:.76rem;line-height:1.45}
+.profile-editor-side .profile-form-grid{grid-template-columns:1fr;gap:12px}
+.profile-editor-side .profile-field.full{grid-column:auto}
+.profile-editor-side .profile-field label{font-size:.82rem}
+.profile-editor-side .profile-help{font-size:.72rem;line-height:1.4}
+.profile-editor-side .profile-icon-editor{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;align-items:start}
+.profile-editor-side .profile-icon-editor img{width:76px;height:76px}
+.profile-editor-side .profile-upload-row{display:grid;grid-template-columns:auto auto;gap:6px;justify-content:start}
+.profile-editor-side .profile-upload-row .file-name{grid-column:1/-1;font-size:.72rem}
+.profile-editor-side .icon-fields>input{min-width:0}
+.profile-editor-side .profile-checks{grid-template-columns:1fr;gap:6px}
+.profile-editor-side .profile-checks label{padding:7px 9px;font-size:.8rem}
+.profile-editor-side .profile-share-name{font-size:.8rem;padding:9px 10px}
+.profile-editor-side .profile-save-bar{margin-top:12px;padding-top:12px}
+.profile-editor-side .shared-link-row{grid-template-columns:1fr;gap:6px}
+.profile-editor-side .profile-link-row{grid-template-columns:1fr;gap:6px}
+.profile-editor-side .profile-links{gap:10px}
+.profile-block-row{position:relative;transition:margin .15s ease,border-color .15s ease,background .15s ease}
+.profile-block-row[data-level="1"]{margin-left:28px;border-left:3px solid var(--line)}
+.profile-block-row[data-level="2"]{margin-left:56px;border-left:3px double var(--line)}
+.profile-block-row[data-level="1"]::before,.profile-block-row[data-level="2"]::before{position:absolute;left:-25px;top:14px;font-size:.7rem;color:var(--muted);white-space:nowrap}
+.profile-block-row[data-level="1"]::before{content:"└ 子"}
+.profile-block-row[data-level="2"]::before{content:"└ 孫";left:-48px}
+.profile-block-row[data-level="0"] .block-level-label::after{content:"（親）";color:var(--muted);font-size:.72rem}
+@media(max-width:1040px){.profile-editor-layout{grid-template-columns:320px minmax(0,1fr)}}
+@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}.profile-block-row[data-level="1"]{margin-left:18px}.profile-block-row[data-level="2"]{margin-left:36px}.profile-block-row[data-level="2"]::before{left:-34px}}
+
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
@@ -107,6 +140,29 @@
     <button id="addLink" type="button" class="text-action">＋ リンクを追加</button>
       </section>
 
+      <section class="profile-card">
+        <div class="profile-card-head"><div><h3>SAKU+MERU共有リンク</h3><p class="small muted">発行済みの共有URLを名刺ページにまとめられます。</p></div></div>
+        <div id="sharedLinks" class="profile-links"></div>
+        <button id="addSharedLink" type="button" class="text-action">＋ 共有リンクを追加</button>
+      </section>
+
+      <section class="profile-card">
+        <h3>共有設定</h3>
+        <div id="shareFields" class="profile-checks">
+          <label><input type="checkbox" value="socialName" checked>共有表示名</label>
+          <label><input type="checkbox" value="iconUrl" checked>アイコン</label>
+          <label><input type="checkbox" value="systems" checked>システム</label>
+          <label><input type="checkbox" value="roles" checked>役割</label>
+          <label><input type="checkbox" value="sessionStyles" checked>セッションスタイル</label>
+          <label><input type="checkbox" value="availability" checked>時間帯</label>
+          <label><input type="checkbox" value="links" checked>リンク</label>
+        </div>
+        <div class="profile-share-name"><strong>共有ページで使う名前</strong><span id="shareNamePreview" class="muted">未設定</span></div>
+        <div class="profile-save-bar">
+          <button id="saveProfile" type="button">保存</button>
+          <button id="shareProfile" type="button">共有URLを作成・更新</button>
+        </div>
+      </section>
 
     </div>
     <div class="profile-editor-main">
@@ -118,29 +174,6 @@
     </div>
   </div>
 
-  <section class="profile-card">
-    <div class="profile-card-head"><div><h3>SAKU+MERU共有リンク</h3><p class="small muted">発行済みの共有URLを名刺ページにまとめられます。</p></div></div>
-    <div id="sharedLinks" class="profile-links"></div>
-    <button id="addSharedLink" type="button" class="text-action">＋ 共有リンクを追加</button>
-  </section>
-
-  <section class="profile-card">
-    <h3>共有する項目</h3>
-    <div id="shareFields" class="profile-checks">
-      <label><input type="checkbox" value="socialName" checked>共有表示名</label>
-      <label><input type="checkbox" value="iconUrl" checked>アイコン</label>
-      <label><input type="checkbox" value="systems" checked>システム</label>
-      <label><input type="checkbox" value="roles" checked>役割</label>
-      <label><input type="checkbox" value="sessionStyles" checked>セッションスタイル</label>
-      <label><input type="checkbox" value="availability" checked>時間帯</label>
-      <label><input type="checkbox" value="links" checked>リンク</label>
-    </div>
-    <div class="profile-share-name"><strong>共有ページで使う名前</strong><span id="shareNamePreview" class="muted">未設定</span></div>
-    <div class="profile-save-bar">
-      <button id="saveProfile" type="button">保存</button>
-      <button id="shareProfile" type="button">共有URLを作成・更新</button>
-    </div>
-  </section>
 </div>
 </main>
 <div data-site-footer></div>
@@ -153,7 +186,7 @@ const KEY="39x2_profile_v1",SHARE_KEY="39x2_fixed_profile_share_id_v1",$=id=>doc
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const split=s=>String(s||"").split(/[,、]/).map(v=>v.trim()).filter(Boolean);
 function addLink(label="",url=""){const row=document.createElement("div");row.className="profile-link-row";row.innerHTML=`<input class="link-label" placeholder="表示名" value="${esc(label)}"><input class="link-url" type="url" placeholder="https://..." value="${esc(url)}"><button type="button" class="danger">削除</button>`;row.querySelector("button").onclick=()=>{row.remove();renderPreview()};row.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderPreview));$("links").appendChild(row)}
-function addProfileBlock(title="",body="",toggle=true,level=0){const row=document.createElement("div");row.className="profile-block-row";row.innerHTML=`<input class="block-title" placeholder="見出し" value="${esc(title)}"><textarea class="block-body" rows="4" placeholder="本文">${esc(body)}</textarea><div class="profile-block-tools"><label><input class="block-toggle" type="checkbox" ${toggle?"checked":""}> トグル表示</label><label>階層 <select class="block-level"><option value="0" ${Number(level)===0?"selected":""}>通常</option><option value="1" ${Number(level)===1?"selected":""}>1段下げる</option><option value="2" ${Number(level)===2?"selected":""}>2段下げる</option></select></label><button type="button" class="text-action block-up">↑</button><button type="button" class="text-action block-down">↓</button><button type="button" class="danger block-delete">削除</button></div>`;row.querySelector(".block-delete").onclick=()=>{row.remove();renderPreview()};row.querySelector(".block-up").onclick=()=>{const prev=row.previousElementSibling;if(prev){row.parentNode.insertBefore(row,prev);renderPreview()}};row.querySelector(".block-down").onclick=()=>{const next=row.nextElementSibling;if(next){row.parentNode.insertBefore(next,row);renderPreview()}};row.querySelectorAll("input,textarea,select").forEach(i=>i.addEventListener(i.type==="checkbox"||i.tagName==="SELECT"?"change":"input",renderPreview));$("profileBlocks").appendChild(row)}
+function addProfileBlock(title="",body="",toggle=true,level=0){const row=document.createElement("div");row.className="profile-block-row";row.innerHTML=`<input class="block-title" placeholder="見出し" value="${esc(title)}"><textarea class="block-body" rows="4" placeholder="本文">${esc(body)}</textarea><div class="profile-block-tools"><label><input class="block-toggle" type="checkbox" ${toggle?"checked":""}> トグル表示</label><label class="block-level-label">階層 <select class="block-level"><option value="0" ${Number(level)===0?"selected":""}>通常</option><option value="1" ${Number(level)===1?"selected":""}>1段下げる</option><option value="2" ${Number(level)===2?"selected":""}>2段下げる</option></select></label><button type="button" class="text-action block-up">↑</button><button type="button" class="text-action block-down">↓</button><button type="button" class="danger block-delete">削除</button></div>`;const applyLevel=()=>row.dataset.level=String(Math.max(0,Math.min(2,Number(row.querySelector(".block-level")?.value||0))));applyLevel();row.querySelector(".block-level").addEventListener("change",applyLevel);row.querySelector(".block-delete").onclick=()=>{row.remove();renderPreview()};row.querySelector(".block-up").onclick=()=>{const prev=row.previousElementSibling;if(prev){row.parentNode.insertBefore(row,prev);renderPreview()}};row.querySelector(".block-down").onclick=()=>{const next=row.nextElementSibling;if(next){row.parentNode.insertBefore(next,row);renderPreview()}};row.querySelectorAll("input,textarea,select").forEach(i=>i.addEventListener(i.type==="checkbox"||i.tagName==="SELECT"?"change":"input",renderPreview));$("profileBlocks").appendChild(row)}
 function addSharedLink(label="",url=""){const row=document.createElement("div");row.className="shared-link-row";row.innerHTML=`<input class="shared-label" placeholder="例：所持シナリオ一覧" value="${esc(label)}"><input class="shared-url" type="url" placeholder="https://..." value="${esc(url)}"><button type="button" class="danger">削除</button>`;row.querySelector("button").onclick=()=>{row.remove();renderPreview()};row.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderPreview));$("sharedLinks").appendChild(row)}
 function currentIcon(){const data=$("iconEditorPreview").dataset.dataUrl||"";return data||$("iconUrl").value.trim()}
 function collect(){
