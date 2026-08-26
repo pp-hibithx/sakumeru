@@ -1014,10 +1014,13 @@ async function shareScenarioList(){
        shareId=await TRPG39Cloud.createSharedPage(manifest);
        localStorage.setItem(MY_FIXED_SHARE_KEY,shareId);
      }
-     const url=(TRPG39 && typeof TRPG39.makeShortShareUrl==="function")
-       ? TRPG39.makeShortShareUrl(shareId)
-       : new URL("../share/index.html?id="+encodeURIComponent(shareId), location.href).href;
-     showShareUrl(url,`あなた専用のシナリオ棚URLです。${items.length}件を共有しました。
+     // 共有IDは固定のまま、SNSへ渡すURLだけOGP対応Workerを使用する。
+     // v はSNS側のOGPキャッシュ更新用で、共有IDそのものは変わらない。
+     const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
+     previewUrl.searchParams.set("id",shareId);
+     previewUrl.searchParams.set("type","scenario-list");
+     previewUrl.searchParams.set("v",Date.now().toString(36));
+     showShareUrl(previewUrl.href,`あなた専用のシナリオ棚URLです。${items.length}件を共有しました。
 視聴済み ${items.filter(x=>x.statusKeys.includes("watched")).length}件 ／ 回した ${items.filter(x=>x.statusKeys.includes("kpDone")).length}件 ／ 回す予定 ${items.filter(x=>x.statusKeys.includes("kpPlanned")).length}件 ／ 部屋あり ${items.filter(x=>x.statusKeys.includes("roomReady")).length}件
 同じURL内で分類を切り替えられます。`);
      return;
