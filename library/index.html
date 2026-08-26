@@ -64,7 +64,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 @media(max-width:760px){.player-external-row{grid-template-columns:1fr}}
 
 .run-roster-bulk{margin:12px 0}.run-roster-bulk-card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px}.run-roster-bulk-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.run-roster-bulk-head button,.run-roster-bulk-actions button,.run-roster-bulk-row button{width:auto}.run-roster-bulk-labels,.run-roster-bulk-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(100px,.65fr) minmax(140px,1fr) auto;gap:8px;align-items:center}.run-roster-bulk-labels{font-size:12px;color:var(--muted);margin-top:12px;padding:0 2px}.run-roster-bulk-row{padding:7px 0;border-top:1px solid var(--line)}.run-roster-bulk-row input{margin:0}.run-roster-bulk-actions{display:flex;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}@media(max-width:720px){.run-roster-bulk-labels{display:none}.run-roster-bulk-row{grid-template-columns:1fr 1fr}.run-roster-bulk-row [data-roster-pc]{grid-column:1/-1}.run-roster-bulk-row button{justify-self:end;grid-column:2}}
-</style>
+.lib-self-pcs{display:grid;gap:4px;margin-bottom:4px}.lib-self-pcs .lib-child-title{margin:0}</style>
 
 <style>
 .library-page{display:grid;gap:14px}
@@ -3487,11 +3487,16 @@ function bindArticlePageButtons(){
 }
 
 
+function selfPcSummaryHtml(x){
+ const rows=storedSelfPcRows(x);
+ if(!rows.length){const name=String(x.pcName||"").trim(),ho=String(x.selfHo||"").trim();if(!name&&!ho)return `<div class="lib-child-title">${esc(displayRoleForRecord(x)||"開催記録")}</div>`;return `<div class="lib-child-title">${name?`PC：${esc(name)}`:esc(displayRoleForRecord(x)||"開催記録")}${ho?` <span class="badge">${esc(ho)}</span>`:""}</div>`}
+ return `<div class="lib-self-pcs">${rows.map((r,idx)=>`<div class="lib-child-title">${r.pcName?`PC：${esc(r.pcName)}`:`PC ${idx+1}`}${r.ho?` <span class="badge">${esc(r.ho)}</span>`:""}</div>`).join("")}</div>`;
+}
 function sessionRecordHtml(x,i){
  return `<article class="lib-child" id="record-${esc(x.id)}">
    <div class="lib-child-date">${esc(x.date||`記録 ${i+1}`)}${x.start&&String(x.start).slice(11,16)?` ${esc(String(x.start).slice(11,16))}`:""}<br><span class="badge">${esc(sessionKindLabel[sessionKindForRecord(x)]||"本編")}</span> <span class="badge">${esc(statusLabel[x.status]||"完了")}</span></div>
    <div>${(x.imageUrls||[]).length?`<button type="button" class="lib-report-thumb-button" data-report-gallery="${esc(x.id)}"><img class="lib-child-thumb" src="${esc(normalizedReportImages(x.imageUrls)[0])}" alt="スクリーンショット" loading="lazy">${normalizedReportImages(x.imageUrls).length>1?`<span>＋${normalizedReportImages(x.imageUrls).length-1}</span>`:""}</button>`:""}
-     <div class="lib-child-title">${esc(x.pcName?`PC：${x.pcName}`:(displayRoleForRecord(x)||"開催記録"))}${x.selfHo?` <span class="badge">${esc(x.selfHo)}</span>`:""}</div>${x.articleBody?`<div class="lib-article-body">${esc(x.articleBody).replace(/\n/g,"<br>")}</div>`:""}${x.spoilerBody?`<details class="lib-spoiler"><summary>ネタバレを表示</summary><div class="spoiler-body">${esc(x.spoilerBody).replace(/\n/g,"<br>")}</div></details>`:""}
+     ${selfPcSummaryHtml(x)}${x.articleBody?`<div class="lib-article-body">${esc(x.articleBody).replace(/\n/g,"<br>")}</div>`:""}${x.spoilerBody?`<details class="lib-spoiler"><summary>ネタバレを表示</summary><div class="spoiler-body">${esc(x.spoilerBody).replace(/\n/g,"<br>")}</div></details>`:""}
      <div class="lib-child-meta">${participantHtml(x)}<span class="badge lib-visibility">公開設定：${esc(vis[x.visibility]||"自分のみ")}</span></div>
      ${x.comment?`<div class="lib-child-note">${esc(x.comment)}</div>`:""}${diceAnalysisHtml(x)}${linksHtml(x)}
    </div>

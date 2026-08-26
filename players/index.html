@@ -3710,6 +3710,15 @@ function renderPlayerDetail(player){
    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="backToPlayers" type="button">← 同卓者一覧へ</button><button id="openPlayerRelationFromDetail" class="player-rel-open" type="button">同卓者関係図</button></div>
 
    <section class="player-section">
+     <h3>${esc(player.name)}の連絡先</h3>
+     <p class="small muted">同卓者限定共有などで使うための連絡先です。Xの表示名ではなく、@から始まるアカウント名またはプロフィールURLを保存できます。</p>
+     <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;max-width:680px">
+       <div><label>Xアカウント</label><input id="playerXAccount" value="${esc(player.xAccount||"")}" placeholder="@username または https://x.com/username"></div>
+       <button id="savePlayerContact" type="button">保存</button>
+     </div>
+   </section>
+
+   <section class="player-section">
      <div style="display:flex;gap:12px;align-items:end;justify-content:space-between;flex-wrap:wrap">
        <div><h3 style="margin-bottom:4px">${esc(player.name)}の卓記録</h3><div class="small muted">${history.length}卓</div></div>
        <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
@@ -3749,6 +3758,7 @@ function renderPlayerDetail(player){
 
  q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");history.replaceState(null,"",u);render()};
  q("openPlayerRelationFromDetail").onclick=()=>openPlayerRelationshipGraph(player.id);
+ q("savePlayerContact").onclick=()=>{const value=String(q("playerXAccount").value||"").trim();players=players.map(p=>p.id===player.id?{...p,xAccount:value}:p);savePlayersState();const updated=players.find(p=>p.id===player.id)||player;renderPlayerDetail(updated)};
  q("playerDetailRole").onchange=()=>{playerDetailRoleFilter=q("playerDetailRole").value;renderPlayerDetail(player)};
  q("playerDetailSystem").onchange=()=>{playerDetailSystemFilter=q("playerDetailSystem").value;renderPlayerDetail(player)};
  q("playerDetailPc").onchange=()=>{playerDetailPcFilter=q("playerDetailPc").value;renderPlayerDetail(player)};
@@ -3782,7 +3792,7 @@ function renderPlayerView(){
  }
  const term=q("search").value.trim().toLowerCase();
  let rows=players.filter(x=>!x.excluded).map(x=>({x,st:playerStats(x.name),systems:playerAvailableSystems(x)}))
-   .filter(({x})=>!term||[x.name,x.publicName,x.socialName].filter(Boolean).join(" ").toLowerCase().includes(term))
+   .filter(({x})=>!term||[x.name,x.publicName,x.socialName,x.xAccount].filter(Boolean).join(" ").toLowerCase().includes(term))
    .filter(({x})=>playerArchiveFilter==="all"||(playerArchiveFilter==="archived"?!!x.archived:!x.archived));
 
  rows.sort((a,b)=>{
@@ -3796,7 +3806,7 @@ function renderPlayerView(){
  q("list").innerHTML=`<div style="margin-bottom:10px"><button type="button" id="openPlayerRelationSelf" class="player-rel-open">自分を中心に同卓者関係図を見る</button></div><div class="library-directory-grid">${rows.length?rows.map(({x,st,systems})=>`<article class="library-dir-card">
    <div class="player-dir-card-main" data-player-focus="${esc(x.id)}" tabindex="0">
      <div class="library-dir-title">${esc(x.name)}</div>
-     <div class="library-dir-meta">公開名：${esc(x.publicName||x.name)}</div>
+     <div class="library-dir-meta">公開名：${esc(x.publicName||x.name)}</div>${x.xAccount?`<div class="library-dir-meta">X：${esc(x.xAccount)}</div>`:""}
      ${systems.length?`<div class="library-dir-meta">${systems.map(s=>`<span class="badge">${esc(s)}</span>`).join(" ")}</div>`:""}
      <div class="library-dir-meta">同卓 ${st.count}シナリオ${st.first?` ／ 初同卓 ${esc(st.first)}`:""}${st.last?` ／ 最終 ${esc(st.last)}`:""}</div>
      ${x.archived?`<div class="player-archived-mark">アーカイブ済み</div>`:""}
