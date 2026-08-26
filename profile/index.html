@@ -52,7 +52,7 @@
 
 .profile-blocks{display:grid;gap:10px}.profile-block-row{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}.profile-block-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.profile-block-tools select{width:auto;min-width:150px}.profile-preview .profile-public-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px}.profile-preview .profile-public-side{border-right:1px solid var(--line);padding-right:20px}.profile-preview .profile-public-main{min-width:0}.profile-preview .profile-public-main details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}.profile-preview .profile-public-main summary{font-weight:700;cursor:pointer}.profile-editor-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;align-items:start}.profile-editor-side,.profile-editor-main{min-width:0}.profile-editor-side{display:grid;gap:18px}.profile-editor-main .profile-card{height:auto}.profile-nested-children{margin:10px 0 0 18px;padding-left:12px;border-left:2px solid var(--line)}.profile-nested-children.level-2{margin-left:18px;border-left-style:dashed}.profile-nested-children>details,.profile-nested-children>.share-report-block{margin-bottom:8px!important}@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}}@media(max-width:760px){.profile-preview .profile-public-layout{grid-template-columns:1fr}.profile-preview .profile-public-side{border-right:0;border-bottom:1px solid var(--line);padding:0 0 18px}}.profile-block-row input,.profile-block-row textarea{width:100%;box-sizing:border-box}.shared-link-row{display:grid;grid-template-columns:180px minmax(0,1fr) auto;gap:8px;align-items:center}.shared-link-row input{width:100%;box-sizing:border-box}.profile-public-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px}.profile-public-side{border-right:1px solid var(--line);padding-right:20px}.profile-public-main{min-width:0}.profile-public-main details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}.profile-public-main summary{font-weight:700;cursor:pointer}@media(max-width:760px){.shared-link-row{grid-template-columns:1fr}.profile-public-layout{grid-template-columns:1fr}.profile-public-side{border-right:0;border-bottom:1px solid var(--line);padding:0 0 18px}}
 
-/* v0.3.49: compact left editor + visible hierarchy */
+/* v0.3.52: compact left editor + tree hierarchy + collapsible share settings */
 .profile-editor-layout{grid-template-columns:360px minmax(0,1fr)}
 .profile-editor-side .profile-card{padding:18px}
 .profile-editor-side .profile-card-head{margin-bottom:12px}
@@ -74,15 +74,25 @@
 .profile-editor-side .shared-link-row{grid-template-columns:1fr;gap:6px}
 .profile-editor-side .profile-link-row{grid-template-columns:1fr;gap:6px}
 .profile-editor-side .profile-links{gap:10px}
-.rich-toolbar{display:flex;gap:6px;flex-wrap:wrap}.rich-toolbar button{padding:5px 9px;font-size:.78rem}.profile-block-row{position:relative;transition:margin .15s ease,border-color .15s ease,background .15s ease}
-.profile-block-row[data-level="1"]{margin-left:28px;border-left:3px solid var(--line)}
-.profile-block-row[data-level="2"]{margin-left:56px;border-left:3px double var(--line)}
-.profile-block-row[data-level="1"]::before,.profile-block-row[data-level="2"]::before{position:absolute;left:-25px;top:14px;font-size:.7rem;color:var(--muted);white-space:nowrap}
-.profile-block-row[data-level="1"]::before{content:"└ 子"}
-.profile-block-row[data-level="2"]::before{content:"└ 孫";left:-48px}
-.profile-block-row[data-level="0"] .block-level-label::after{content:"（親）";color:var(--muted);font-size:.72rem}
+.rich-toolbar{display:flex;gap:6px;flex-wrap:wrap}.rich-toolbar button{padding:5px 9px;font-size:.78rem}
+.profile-block-row{position:relative;transition:margin .15s ease,border-color .15s ease,background .15s ease}
+.profile-block-row[data-level="1"]{margin-left:18px}
+.profile-block-row[data-level="2"]{margin-left:36px}
+.profile-block-row[data-level="1"]::before,.profile-block-row[data-level="2"]::before{content:"";position:absolute;pointer-events:none;border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-bottom-left-radius:7px;height:20px;top:-1px;left:-12px;width:10px}
+.profile-block-row[data-level="2"]::after{content:"";position:absolute;pointer-events:none;left:-30px;top:-11px;bottom:-11px;border-left:2px solid var(--line);opacity:.7}
+.profile-block-row .block-level-label{display:flex;align-items:center;gap:6px}
+.profile-block-row[data-level="0"] .block-level-label::before{content:"親";font-size:.68rem;color:var(--muted)}
+.profile-block-row[data-level="1"] .block-level-label::before{content:"子";font-size:.68rem;color:var(--muted)}
+.profile-block-row[data-level="2"] .block-level-label::before{content:"孫";font-size:.68rem;color:var(--muted)}
+.profile-share-toggle{border:0;padding:0;background:transparent}
+.profile-share-toggle>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;font-size:1rem;padding:2px 0}
+.profile-share-toggle>summary::-webkit-details-marker{display:none}
+.profile-share-toggle>summary::after{content:"›";font-size:1.35rem;color:var(--muted);transition:transform .15s ease}
+.profile-share-toggle[open]>summary::after{transform:rotate(90deg)}
+.profile-share-toggle-body{padding-top:14px}
+.profile-side-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 2px}
 @media(max-width:1040px){.profile-editor-layout{grid-template-columns:320px minmax(0,1fr)}}
-@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}.profile-block-row[data-level="1"]{margin-left:18px}.profile-block-row[data-level="2"]{margin-left:36px}.profile-block-row[data-level="2"]::before{left:-34px}}
+@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr}.profile-block-row[data-level="1"]{margin-left:14px}.profile-block-row[data-level="2"]{margin-left:28px}.profile-block-row[data-level="2"]::after{left:-23px}}
 
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
@@ -147,22 +157,26 @@
       </section>
 
       <section class="profile-card">
-        <h3>共有設定</h3>
-        <div id="shareFields" class="profile-checks">
-          <label><input type="checkbox" value="socialName" checked>共有表示名</label>
-          <label><input type="checkbox" value="iconUrl" checked>アイコン</label>
-          <label><input type="checkbox" value="systems" checked>システム</label>
-          <label><input type="checkbox" value="roles" checked>役割</label>
-          <label><input type="checkbox" value="sessionStyles" checked>セッションスタイル</label>
-          <label><input type="checkbox" value="availability" checked>時間帯</label>
-          <label><input type="checkbox" value="links" checked>リンク</label>
-        </div>
-        <div class="profile-share-name"><strong>共有ページで使う名前</strong><span id="shareNamePreview" class="muted">未設定</span></div>
-        <div class="profile-save-bar">
-          <button id="saveProfile" type="button">保存</button>
-          <button id="shareProfile" type="button">共有URLを作成・更新</button>
-        </div>
+        <details class="profile-share-toggle">
+          <summary>共有設定</summary>
+          <div class="profile-share-toggle-body">
+            <div id="shareFields" class="profile-checks">
+              <label><input type="checkbox" value="socialName" checked>共有表示名</label>
+              <label><input type="checkbox" value="iconUrl" checked>アイコン</label>
+              <label><input type="checkbox" value="systems" checked>システム</label>
+              <label><input type="checkbox" value="roles" checked>役割</label>
+              <label><input type="checkbox" value="sessionStyles" checked>セッションスタイル</label>
+              <label><input type="checkbox" value="availability" checked>時間帯</label>
+              <label><input type="checkbox" value="links" checked>リンク</label>
+            </div>
+            <div class="profile-share-name"><strong>共有ページで使う名前</strong><span id="shareNamePreview" class="muted">未設定</span></div>
+          </div>
+        </details>
       </section>
+      <div class="profile-side-actions">
+        <button id="saveProfile" type="button">保存</button>
+        <button id="shareProfile" type="button">共有URLを作成・更新</button>
+      </div>
 
     </div>
     <div class="profile-editor-main">
