@@ -112,12 +112,19 @@
    <div class="dm-field" id="layerColorField"><label id="layerColorLabel">図形の色</label><input id="shapeColor" type="color" value="#ffffff"></div>
    <div class="dm-field"><label id="layerOpacityLabel">透明度</label><input id="shapeOpacity" type="range" min="0" max="100" value="100"></div>
    <div class="dm-field"><label id="layerScaleLabel">大きさ</label><input id="shapeScale" type="range" min="10" max="800" value="100"></div>
+   <div class="dm-field" id="shapeBlurField"><label>ぼかし</label><input id="shapeBlur" type="range" min="0" max="30" step="1" value="0"><div class="dm-note"><span id="shapeBlurValue">0</span>px</div></div>
    <div class="dm-row" id="rectSizeControls" hidden>
      <div class="dm-field"><label>横幅</label><input id="rectWidth" type="number" min="4" max="4000" step="1" value="216"></div>
      <div class="dm-field"><label>高さ</label><input id="rectHeight" type="number" min="4" max="4000" step="1" value="120"></div>
    </div>
    <div class="dm-note" id="rectSizeNote" hidden>横幅と高さを別々に変えられます。細い帯や太いパネルにもできます。</div>
    <div class="dm-row dm-actions" id="imageLayerActions" hidden><button type="button" id="silhouetteLayer">シルエット化</button><button type="button" id="restoreImageLayer">元画像に戻す</button></div>
+   <div id="imagePrivacyControls" hidden>
+    <div class="dm-field"><label>画像ぼかし</label><input id="imageBlur" type="range" min="0" max="30" step="1" value="0"><div class="dm-note"><span id="imageBlurValue">0</span>px</div></div>
+    <div class="dm-row dm-actions"><button type="button" id="eraserMode">消しゴム OFF</button><button type="button" id="undoErase">1つ戻す</button><button type="button" id="clearErase">消しゴム解除</button></div>
+    <div class="dm-field"><label>消しゴムサイズ</label><input id="eraserSize" type="range" min="10" max="180" step="2" value="48"><div class="dm-note"><span id="eraserSizeValue">48</span>px。画像レイヤーを選択し、プレビュー上をなぞって消します。</div></div>
+    <div class="dm-note">ネタバレを確実に隠す場合は、ぼかしだけでなく不透明な図形で覆う方法もおすすめです。</div>
+   </div>
  </div>
  <div id="textLayerControls" hidden>
    <div class="dm-field"><label>文字</label><textarea id="layerText" rows="3"></textarea></div>
@@ -177,7 +184,7 @@
    </div>
    <div class="dm-note" id="draftStatus">一時保存はこのブラウザ内に1件だけ作業状態を保存できます。PNGを書き出す前の途中作業向けです。</div>
  </details>
- <div class="dm-note">v1.2.2a：編集グリッド・中央スナップ・新版宣伝OGP。旧タグライン入りロゴ画像を不使用。画像操作一本化。すべて同じレイヤー操作で移動・拡大・複製・透明度調整・シルエット化・削除可能に。</div>
+ <div class="dm-note">v1.3.1：正式ロゴを宣伝OGPへ復帰。卓報告向け消しゴム・画像/図形ぼかし・編集グリッド・中央スナップ・新版宣伝OGP。すべて同じレイヤー操作で移動・拡大・複製・透明度調整・シルエット化・削除可能に。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -190,7 +197,7 @@
 <script>
 const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
-let extraLayers=[],selectedExtraLayerId=null,layerSeq=1,dmExporting=false;
+let extraLayers=[],selectedExtraLayerId=null,layerSeq=1,dmExporting=false,eraserActive=false;
 const builtinTextLayers=[
  {id:"builtin_system",type:"builtinText",name:"システム",field:"systemText",x:70,y:100,font:"sans-serif",fontSize:28,color:"#ffffff",bold:false,visible:true},
  {id:"builtin_title",type:"builtinText",name:"シナリオ名",field:"titleText",x:70,y:155,font:"sans-serif",fontSize:58,color:"#ffffff",bold:true,visible:true},
@@ -209,7 +216,7 @@ function builtinLayerById(id){return builtinTextLayers.find(x=>x.id===id)||null}
 function selectedLayer(){return builtinLayerById(selectedExtraLayerId)||extraLayers.find(x=>x.id===selectedExtraLayerId)||null}
 
 function makeLayer(type,name){
- return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,textWidth:600,bold:false,aspectX:1,aspectY:1,silhouette:false};
+ return {id:"layer_"+(layerSeq++),type,name,x:600,y:337,scale:100,color:"#ffffff",opacity:100,img:null,visible:true,text:"文字",font:"sans-serif",fontSize:42,textWidth:600,bold:false,aspectX:1,aspectY:1,silhouette:false,blur:0,eraseStrokes:[]};
 }
 function selectedExtraLayer(){return selectedLayer()}
 
@@ -372,6 +379,7 @@ function draw(){
   if(!layer.visible)return;
   ctx.save();
   ctx.globalAlpha=(layer.opacity??100)/100;
+  if(Number(layer.blur)>0)ctx.filter=`blur(${Number(layer.blur)}px)`;
   if(layer.type==="text"){
     ctx.fillStyle=layer.color||"#ffffff";
     ctx.textBaseline="top";
@@ -393,7 +401,14 @@ function draw(){
       oc.drawImage(layer.img,(off.width-dw)/2,(off.height-dh)/2,dw,dh);
       oc.globalCompositeOperation="source-in";oc.fillStyle=layer.color||"#000000";oc.fillRect(0,0,off.width,off.height);
       ctx.drawImage(off,layer.x-w/2,layer.y-h/2,w,h);
-    }else fitImage(layer.img,layer.x-w/2,layer.y-h/2,w,h,true);
+    }else{
+      const off=document.createElement("canvas");off.width=Math.max(1,Math.round(w));off.height=Math.max(1,Math.round(h));const oc=off.getContext("2d");
+      const iw=layer.img.width,ih=layer.img.height,fs=Math.min(off.width/iw,off.height/ih),dw=iw*fs,dh=ih*fs;
+      oc.drawImage(layer.img,(off.width-dw)/2,(off.height-dh)/2,dw,dh);
+      const strokes=Array.isArray(layer.eraseStrokes)?layer.eraseStrokes:[];
+      if(strokes.length){oc.save();oc.globalCompositeOperation="destination-out";oc.lineCap="round";oc.lineJoin="round";for(const st of strokes){const pts=st.points||[];if(!pts.length)continue;oc.lineWidth=Number(st.size)||48;oc.beginPath();oc.moveTo(pts[0].x*off.width,pts[0].y*off.height);for(let i=1;i<pts.length;i++)oc.lineTo(pts[i].x*off.width,pts[i].y*off.height);oc.stroke()}oc.restore();}
+      ctx.drawImage(off,layer.x-w/2,layer.y-h/2,w,h);
+    }
   }else if(layer.type!=="image"){
     const size=120*((layer.scale||100)/100);
     ctx.fillStyle=layer.color||"#ffffff";
@@ -531,7 +546,7 @@ function moveManagedLayer(id,delta){
 function syncShapeControls(){
  const l=selectedExtraLayer(),box=q("shapeControls");
  if(!box)return;
- if(!l){box.hidden=true;q("textLayerControls").hidden=true;if(q("rectSizeControls"))q("rectSizeControls").hidden=true;if(q("rectSizeNote"))q("rectSizeNote").hidden=true;return;}
+ if(!l){box.hidden=true;q("textLayerControls").hidden=true;if(q("rectSizeControls"))q("rectSizeControls").hidden=true;if(q("rectSizeNote"))q("rectSizeNote").hidden=true;if(q("imagePrivacyControls"))q("imagePrivacyControls").hidden=true;return;}
  box.hidden=false;
  const isText=l.type==="text"||l.type==="builtinText";
  box.hidden=isText;
@@ -552,6 +567,10 @@ function syncShapeControls(){
    q("layerOpacityLabel").textContent="透明度";
    q("layerScaleLabel").textContent="大きさ";
    q("imageLayerActions").hidden=!isImage;
+   q("imagePrivacyControls").hidden=!isImage;
+   q("shapeBlurField").hidden=isImage;
+   if(isImage){q("imageBlur").value=Number(l.blur)||0;q("imageBlurValue").textContent=String(Number(l.blur)||0);}
+   else{q("shapeBlur").value=Number(l.blur)||0;q("shapeBlurValue").textContent=String(Number(l.blur)||0);}
    const isWideRect=l.type==="wideRect";
    q("rectSizeControls").hidden=!isWideRect;
    q("rectSizeNote").hidden=!isWideRect;
@@ -630,6 +649,12 @@ q("restoreImageLayer").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=
  }
  draw();
 }));
+q("imageBlur").addEventListener("input",()=>{const l=selectedExtraLayer();if(!l||l.type!=="image")return;l.blur=Number(q("imageBlur").value)||0;q("imageBlurValue").textContent=String(l.blur);draw();});
+q("shapeBlur").addEventListener("input",()=>{const l=selectedExtraLayer();if(!l||l.type==="image"||l.type==="text"||l.type==="builtinText")return;l.blur=Number(q("shapeBlur").value)||0;q("shapeBlurValue").textContent=String(l.blur);draw();});
+q("eraserSize").addEventListener("input",()=>q("eraserSizeValue").textContent=q("eraserSize").value);
+q("eraserMode").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=="image"){eraserActive=false;q("eraserMode").textContent="消しゴム OFF";return;}eraserActive=!eraserActive;q("eraserMode").textContent=eraserActive?"消しゴム ON":"消しゴム OFF";canvas.style.cursor=eraserActive?"crosshair":"grab";};
+q("undoErase").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=="image")return;(l.eraseStrokes||(l.eraseStrokes=[])).pop();draw();};
+q("clearErase").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=="image")return;l.eraseStrokes=[];draw();};
 ["rectWidth","rectHeight"].forEach(id=>q(id).addEventListener("input",()=>{
  const l=selectedExtraLayer();if(!l||l.type!=="wideRect")return;
  const v=Math.max(4,Math.min(4000,Number(q(id).value)||4));
@@ -637,6 +662,8 @@ q("restoreImageLayer").onclick=()=>{const l=selectedExtraLayer();if(!l||l.type!=
  draw();
 }));
 
+let eraseDrawing=false,currentEraseStroke=null;
+function imageLocalPoint(layer,p){const sc=(layer.scale||100)/100,w=320*sc,h=320*sc;return {x:(p.x-(layer.x-w/2))/w,y:(p.y-(layer.y-h/2))/h};}
 let dmDragging=false,dmDragStartX=0,dmDragStartY=0,dmBaseX=0,dmBaseY=0;
 function canvasPoint(e){
  const r=canvas.getBoundingClientRect();
@@ -657,6 +684,7 @@ function dragFields(){
  return null;
 }
 function startDrag(e){
+ if(eraserActive){const l=selectedExtraLayer();if(l&&l.type==="image"){const p=canvasPoint(e),lp=imageLocalPoint(l,p);eraseDrawing=true;currentEraseStroke={size:Number(q("eraserSize").value)||48,points:[lp]};(l.eraseStrokes||(l.eraseStrokes=[])).push(currentEraseStroke);draw();e.preventDefault();return;}}
  const f=dragFields();if(!f)return;
  const p=canvasPoint(e);
  dmDragging=true;dmDragStartX=p.x;dmDragStartY=p.y;
@@ -666,6 +694,7 @@ function startDrag(e){
  e.preventDefault();
 }
 function moveDrag(e){
+ if(eraseDrawing){const l=selectedExtraLayer();if(l&&currentEraseStroke){const p=canvasPoint(e);currentEraseStroke.points.push(imageLocalPoint(l,p));draw();e.preventDefault();}return;}
  if(!dmDragging)return;
  const f=dragFields();if(!f)return;
  const p=canvasPoint(e);
@@ -675,7 +704,7 @@ function moveDrag(e){
  draw();
  e.preventDefault();
 }
-function endDrag(){dmDragging=false;canvas.classList.remove("dragging")}
+function endDrag(){eraseDrawing=false;currentEraseStroke=null;dmDragging=false;canvas.classList.remove("dragging")}
 canvas.addEventListener("mousedown",startDrag);
 window.addEventListener("mousemove",moveDrag);
 window.addEventListener("mouseup",endDrag);
@@ -729,10 +758,11 @@ async function applySakumeruOgpTemplate(){
      layers.push(l);
    }
 
-   // 旧タグライン入り画像は使わず、編集可能な文字レイヤーでロゴを構成。
-   const logoSaku=makeLayer("text","ロゴ・SAKU");Object.assign(logoSaku,{text:"SAKU",x:285,y:205,fontSize:92,textWidth:260,color:"#f5f5f2",bold:true,font:"sans-serif"});layers.push(logoSaku);
-   const logoPlus=makeLayer("text","ロゴ・＋");Object.assign(logoPlus,{text:"＋",x:535,y:220,fontSize:62,textWidth:120,color:"#cd9723",bold:false,font:"serif"});layers.push(logoPlus);
-   const logoMeru=makeLayer("text","ロゴ・MERU");Object.assign(logoMeru,{text:"MERU",x:655,y:205,fontSize:92,textWidth:300,color:"#f5f5f2",bold:true,font:"sans-serif"});layers.push(logoMeru);
+   // 正式ロゴ画像を使用。旧タグライン部分は消しゴムで非破壊編集できる。
+   const logo=makeLayer("image","SAKU+MERU 正式ロゴ");
+   logo.img=await imageFromSrc("../../assets/img/sakumeru-logo-horizontal-dark-smooth.png");
+   Object.assign(logo,{x:600,y:250,scale:245,opacity:100,blur:0,eraseStrokes:[]});
+   layers.push(logo);
 
    const separator=makeLayer("wideRect","区切り線");
    Object.assign(separator,{x:600,y:470,width:1056,height:1,scale:100,color:"#cd9723",opacity:55});
@@ -745,7 +775,7 @@ async function applySakumeruOgpTemplate(){
 
    extraLayers.push(...layers);
    layerOrder=[...layers.map(l=>l.id),...builtinTextLayers.map(l=>l.id)];
-   selectedExtraLayerId=logoSaku.id;
+   selectedExtraLayerId=logo.id;
    if(q("dragTarget"))q("dragTarget").value="extra";
    draw();renderLayerList();syncShapeControls();
    if(status)status.textContent="SAKU+MERU 宣伝OGPを反映しました。ロゴ・枠・区切り線・コピーはすべて個別に位置調整できます。";
