@@ -139,6 +139,19 @@
 .profile-side-actions button{flex:1 1 140px}
 
 </style>
+/* v0.3.56 — PROFILE sidebar structure fix */
+.profile-editor-layout{grid-template-columns:340px minmax(0,1fr)!important;gap:18px;align-items:start}
+.profile-editor-side{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;width:340px;min-width:0}
+.profile-editor-side>.profile-card{width:100%;box-sizing:border-box;margin:0;padding:12px 14px!important}
+.profile-side-toggle>summary{font-size:.84rem!important;padding:2px 0!important}
+.profile-side-toggle-body{padding-top:10px!important}
+.profile-editor-side .profile-field label{font-size:.74rem!important}
+.profile-editor-side .profile-help{font-size:.68rem!important;line-height:1.35!important;margin-top:0}
+.profile-editor-side input,.profile-editor-side textarea,.profile-editor-side select{font-size:.78rem!important}
+.profile-side-actions{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
+.profile-side-actions button{width:100%!important;box-sizing:border-box;font-size:.78rem!important;padding:8px 10px!important}
+@media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr!important}.profile-editor-side{width:100%!important}}
+
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 </head>
@@ -164,8 +177,8 @@
           <summary>基本プロフィール</summary>
           <div class="profile-side-toggle-body">
 <div class="profile-form-grid">
-      <div class="profile-field"><label for="displayName">表示名</label><input id="displayName" placeholder="例：プレイヤー名"><div class="profile-help">SAKU+MERU内で使う名前です。</div></div>
-      <div class="profile-field"><label for="socialName">共有表示名</label><input id="socialName" placeholder="例：🌺 / プレイヤー名"><div class="profile-help">シナリオ一覧や空き日共有など、外向けの共有ページで使います。</div></div>
+      <div class="profile-field"><label for="displayName">表示名</label><input id="displayName" placeholder="例：プレイヤー名"><div class="profile-help">サイト内で使う名前。</div></div>
+      <div class="profile-field"><label for="socialName">共有表示名</label><input id="socialName" placeholder="例：🌺 / プレイヤー名"><div class="profile-help">共有ページで使う名前。</div></div>
       <div class="profile-field full">
         <label>アイコン画像</label>
         <div class="profile-icon-editor">
@@ -173,12 +186,11 @@
           <div class="icon-fields">
             <div class="profile-upload-row"><input id="iconFile" class="profile-file-input" type="file" accept="image/*"><button id="chooseIcon" type="button">画像を選ぶ</button><span id="iconFileName" class="file-name">未選択</span><button id="clearIcon" type="button" class="text-action">画像を削除</button></div>
             <input id="iconUrl" type="url" placeholder="画像URLを使う場合：https://...">
-            <div class="profile-help">端末の画像を選ぶか、画像URLを指定できます。端末画像はプロフィール用に縮小して保存します。</div>
+            <div class="profile-help">画像を選ぶか、URLを指定。</div>
           </div>
         </div>
       </div>
     </div>
-      </section>
           </div>
         </details>
       </section>
@@ -193,7 +205,6 @@
       <div class="profile-field"><label for="sessionStyles">セッションスタイル <span class="small muted">（カンマ区切り）</span></label><input id="sessionStyles" placeholder="ボイセ, 半テキ"></div>
       <div class="profile-field full"><label for="availability">遊べる時間帯</label><textarea id="availability" rows="2" placeholder="例：平日21時〜 / 土日昼夜"></textarea></div>
     </div>
-      </section>
           </div>
         </details>
       </section>
@@ -204,7 +215,6 @@
           <div class="profile-side-toggle-body">
 <div id="links" class="profile-links"></div>
     <button id="addLink" type="button" class="text-action">＋ リンクを追加</button>
-      </section>
           </div>
         </details>
       </section>
@@ -215,7 +225,6 @@
           <div class="profile-side-toggle-body">
 <div id="sharedLinks" class="profile-links"></div>
         <button id="addSharedLink" type="button" class="text-action">＋ 共有リンクを追加</button>
-      </section>
           </div>
         </details>
       </section>
