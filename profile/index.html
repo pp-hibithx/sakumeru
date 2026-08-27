@@ -215,6 +215,25 @@
 #addSharedLink{width:auto!important;display:inline-flex!important;align-items:center!important}
 .shared-link-row{position:relative}
 
+
+/* v0.3.60 — shared link persistence fix */
+.profile-editor-side .shared-link-row{
+  display:grid!important;
+  grid-template-columns:1fr auto!important;
+  gap:6px!important;
+  align-items:center!important;
+}
+.profile-editor-side .shared-link-row .shared-label,
+.profile-editor-side .shared-link-row .shared-url,
+.profile-editor-side .shared-link-row .shared-memo{
+  grid-column:1!important;
+}
+.profile-editor-side .shared-link-row .shared-delete{
+  grid-column:2!important;
+  grid-row:1 / span 3!important;
+  align-self:center!important;
+}
+
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
@@ -365,23 +384,15 @@ function appendLoadedProfileBlock(block,parent=null){
  const row=addProfileBlock(block.title||"",block.body||"",block.toggle!==false,Number(block.level||0),parent);
  return row;
 }
-function addSharedLink(label="",url=""){const row=document.createElement("div");row.className="shared-link-row";row.innerHTML=`<input class="shared-label" placeholder="例：所持シナリオ一覧" value="${esc(label)}"><input class="shared-url" type="url" placeholder="https://..." value="${esc(url)}"><button type="button" class="danger">削除</button>`;row.querySelector("button").onclick=()=>{row.remove();renderPreview()};row.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderPreview));$("sharedLinks").appendChild(row)}
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const btn=document.getElementById("addSharedLink");
-  if(btn){
-    btn.type="button";
-    btn.onclick=(e)=>{
-      e.preventDefault();
-      const row=addSharedLink("","","");
-      const target=row?.querySelector?.("input");
-      if(target) target.focus();
-      if(typeof renderPreview==="function") renderPreview();
-    };
-  }
+function addSharedLink(label="",url="",memo=""){
+ const row=document.createElement("div");
+ row.className="shared-link-row";
+ row.innerHTML=`<input class="shared-label" placeholder="例：所持シナリオ一覧" value="${esc(label)}"><input class="shared-url" type="url" placeholder="https://..." value="${esc(url)}"><input class="shared-memo" placeholder="メモ（任意）" value="${esc(memo)}"><button type="button" class="danger shared-delete">削除</button>`;
+ row.querySelector(".shared-delete").onclick=()=>{row.remove();renderPreview()};
+ row.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderPreview));
+ $("sharedLinks").appendChild(row);
  return row;
-});
-
+}
 function currentIcon(){const data=$("iconEditorPreview").dataset.dataUrl||"";return data||$("iconUrl").value.trim()}
 function collect(){
  return {
@@ -390,7 +401,7 @@ function collect(){
   availability:$("availability").value.trim(),
   links:[...document.querySelectorAll(".profile-link-row")].map(r=>({label:r.querySelector(".link-label").value.trim(),url:r.querySelector(".link-url").value.trim()})).filter(x=>x.label||x.url),
   blocks:(()=>{const out=[];const walk=(container,level)=>{[...container.children].filter(r=>r.classList?.contains("profile-block-row")).forEach(r=>{const item={title:r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .block-title").value.trim(),body:r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .block-body").value.trim(),toggle:r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .profile-block-tools .block-toggle").checked,level};if(item.title||item.body)out.push(item);const kids=r.querySelector(":scope > .profile-block-editor > .profile-block-editor-body > .profile-block-children");if(kids&&level<2)walk(kids,level+1)});};walk($("profileBlocks"),0);return out})(),
-  sharedLinks:[...document.querySelectorAll(".shared-link-row")].map(r=>({label:r.querySelector(".shared-label").value.trim(),url:r.querySelector(".shared-url").value.trim()})).filter(x=>x.label||x.url),
+  sharedLinks:[...document.querySelectorAll(".shared-link-row")].map(r=>({label:r.querySelector(".shared-label").value.trim(),url:r.querySelector(".shared-url").value.trim(),memo:r.querySelector(".shared-memo")?.value.trim()||""})).filter(x=>x.label||x.url||x.memo),
   shareFields:[...document.querySelectorAll("#shareFields input:checked")].map(x=>x.value)
  };
 }
@@ -405,7 +416,7 @@ async function imageFileToDataUrl(file){
  }finally{URL.revokeObjectURL(src)}
 }
 function save(show=true){const x=collect();localStorage.setItem(KEY,JSON.stringify(x));if(show)$("savedNote").textContent="✓ 保存しました";renderPreview(x);return x}
-function load(){let x={};try{x=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{};["displayName","socialName","availability"].forEach(k=>$(k).value=x[k]||"");const icon=String(x.iconUrl||"");if(icon.startsWith("data:")){setIconPreview(icon,true);$("iconUrl").value=""}else{$("iconUrl").value=icon;setIconPreview(icon,false)}$("systems").value=(x.systems||[]).join(", ");$("roles").value=(x.roles||[]).join(", ");$("sessionStyles").value=(x.sessionStyles||[]).join(", ");$("links").innerHTML="";(x.links||[]).forEach(l=>addLink(l.label,l.url));if(!(x.links||[]).length)addLink();$("profileBlocks").innerHTML="";(()=>{let root=null,child=null;(x.blocks||[]).forEach(b=>{let level=Math.max(0,Math.min(2,Number(b.level||0)));if(level===0||!root){root=addProfileBlock(b.title,b.body,b.toggle!==false,0);child=null;return}if(level===1){child=addProfileBlock(b.title,b.body,b.toggle!==false,1,root.querySelector(".profile-block-children"));return}if(!child){child=addProfileBlock("","",false,1,root.querySelector(".profile-block-children"))}addProfileBlock(b.title,b.body,b.toggle!==false,2,child.querySelector(".profile-block-children"))})})();if(!(x.blocks||[]).length){if(x.intro)addProfileBlock("自己紹介",x.intro,false,0);if(x.likes)addProfileBlock("好きな傾向",x.likes,true,0);if(x.dislikes)addProfileBlock("苦手・避けたい傾向",x.dislikes,true,0);if(x.note)addProfileBlock("ひとこと",x.note,true,0);}$("sharedLinks").innerHTML="";(x.sharedLinks||[]).forEach(l=>addSharedLink(l.label,l.url));if(!(x.sharedLinks||[]).length)addSharedLink();const fields=new Set(x.shareFields||["socialName","iconUrl","systems","roles","sessionStyles","availability","links"]);document.querySelectorAll("#shareFields input").forEach(c=>c.checked=fields.has(c.value));renderPreview(x)}
+function load(){let x={};try{x=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{};["displayName","socialName","availability"].forEach(k=>$(k).value=x[k]||"");const icon=String(x.iconUrl||"");if(icon.startsWith("data:")){setIconPreview(icon,true);$("iconUrl").value=""}else{$("iconUrl").value=icon;setIconPreview(icon,false)}$("systems").value=(x.systems||[]).join(", ");$("roles").value=(x.roles||[]).join(", ");$("sessionStyles").value=(x.sessionStyles||[]).join(", ");$("links").innerHTML="";(x.links||[]).forEach(l=>addLink(l.label,l.url));if(!(x.links||[]).length)addLink();$("profileBlocks").innerHTML="";(()=>{let root=null,child=null;(x.blocks||[]).forEach(b=>{let level=Math.max(0,Math.min(2,Number(b.level||0)));if(level===0||!root){root=addProfileBlock(b.title,b.body,b.toggle!==false,0);child=null;return}if(level===1){child=addProfileBlock(b.title,b.body,b.toggle!==false,1,root.querySelector(".profile-block-children"));return}if(!child){child=addProfileBlock("","",false,1,root.querySelector(".profile-block-children"))}addProfileBlock(b.title,b.body,b.toggle!==false,2,child.querySelector(".profile-block-children"))})})();if(!(x.blocks||[]).length){if(x.intro)addProfileBlock("自己紹介",x.intro,false,0);if(x.likes)addProfileBlock("好きな傾向",x.likes,true,0);if(x.dislikes)addProfileBlock("苦手・避けたい傾向",x.dislikes,true,0);if(x.note)addProfileBlock("ひとこと",x.note,true,0);}$("sharedLinks").innerHTML="";(x.sharedLinks||[]).forEach(l=>addSharedLink(l.label,l.url,l.memo||""));if(!(x.sharedLinks||[]).length)addSharedLink();const fields=new Set(x.shareFields||["socialName","iconUrl","systems","roles","sessionStyles","availability","links"]);document.querySelectorAll("#shareFields input").forEach(c=>c.checked=fields.has(c.value));renderPreview(x)}
 function profileBlocksHtml(blocks){
  const rows=(Array.isArray(blocks)?blocks:[]).filter(b=>b&&(b.title||b.body));
  if(!rows.length)return "";
@@ -433,7 +444,7 @@ function renderPreview(x=collect()){
 }
 function publicProfile(x){const fields=new Set(x.shareFields||[]),p={displayName:x.displayName||""};["socialName","iconUrl","systems","roles","sessionStyles","availability","links"].forEach(k=>{if(fields.has(k))p[k]=x[k]});p.blocks=x.blocks||[];p.sharedLinks=x.sharedLinks||[];return p}
 async function shareProfile(){const x=save(false),payload={kind:"profile",version:2,updatedAt:new Date().toISOString(),profile:publicProfile(x)};try{if(!(window.TRPG39Cloud&&TRPG39Cloud.configured()))throw new Error("Supabase設定がありません");let id=localStorage.getItem(SHARE_KEY)||"";if(id&&TRPG39Cloud.updateSharedPage)await TRPG39Cloud.updateSharedPage(id,payload);else{id=await TRPG39Cloud.createSharedPage(payload);localStorage.setItem(SHARE_KEY,id)}const url=new URL("https://sakumeru-share.sakumeru.workers.dev/");url.searchParams.set("id",id);url.searchParams.set("type","profile");url.searchParams.set("v",Date.now().toString(36));if(navigator.clipboard&&window.isSecureContext)try{await navigator.clipboard.writeText(url.href)}catch{}prompt("PROFILE共有URLです。更新しても同じURLを使えます。",url.href)}catch(e){console.error(e);alert("共有URLを作成できませんでした: "+(e.message||e))}}
-$("addLink").onclick=()=>addLink();$("addProfileBlock").onclick=()=>addProfileBlock();$("addSharedLink").onclick=()=>addSharedLink();$("saveProfile").onclick=()=>save(true);$("shareProfile").onclick=shareProfile;$("chooseIcon").onclick=()=>$("iconFile").click();
+$("addLink").onclick=()=>addLink();$("addSharedLink").onclick=(e)=>{e.preventDefault();const row=addSharedLink();row.querySelector(".shared-label")?.focus();renderPreview()};$("addProfileBlock").onclick=()=>addProfileBlock();$("saveProfile").onclick=()=>save(true);$("shareProfile").onclick=shareProfile;$("chooseIcon").onclick=()=>$("iconFile").click();
 $("togglePreview").onclick=()=>{renderPreview();$("previewPanel").hidden=false;$("togglePreview").textContent="プレビューを更新";$("previewPanel").scrollIntoView({behavior:"smooth",block:"start"})};
 $("closePreview").onclick=()=>{$("previewPanel").hidden=true;$("togglePreview").textContent="プレビューを表示"};
 $("iconFile").addEventListener("change",async()=>{const f=$("iconFile").files?.[0];if(!f)return;try{const data=await imageFileToDataUrl(f);setIconPreview(data,true);$("iconUrl").value="";$("iconFileName").textContent=f.name;renderPreview()}catch(e){console.error(e);alert("画像を読み込めませんでした。")}});
