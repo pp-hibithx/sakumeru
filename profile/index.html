@@ -207,6 +207,14 @@
   }
 }
 
+/* v0.3.58 compact actions */
+.profile-editor-side .profile-side-actions{display:flex!important;grid-template-columns:none!important;justify-content:center!important;gap:8px!important;width:100%!important}
+.profile-editor-side .profile-side-actions button{width:auto!important;min-width:0!important;flex:0 0 auto!important;padding:5px 9px!important;font-size:.72rem!important}
+
+/* v0.3.59 — shared-link add control repair */
+#addSharedLink{width:auto!important;display:inline-flex!important;align-items:center!important}
+.shared-link-row{position:relative}
+
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
@@ -358,6 +366,22 @@ function appendLoadedProfileBlock(block,parent=null){
  return row;
 }
 function addSharedLink(label="",url=""){const row=document.createElement("div");row.className="shared-link-row";row.innerHTML=`<input class="shared-label" placeholder="例：所持シナリオ一覧" value="${esc(label)}"><input class="shared-url" type="url" placeholder="https://..." value="${esc(url)}"><button type="button" class="danger">削除</button>`;row.querySelector("button").onclick=()=>{row.remove();renderPreview()};row.querySelectorAll("input").forEach(i=>i.addEventListener("input",renderPreview));$("sharedLinks").appendChild(row)}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const btn=document.getElementById("addSharedLink");
+  if(btn){
+    btn.type="button";
+    btn.onclick=(e)=>{
+      e.preventDefault();
+      const row=addSharedLink("","","");
+      const target=row?.querySelector?.("input");
+      if(target) target.focus();
+      if(typeof renderPreview==="function") renderPreview();
+    };
+  }
+ return row;
+});
+
 function currentIcon(){const data=$("iconEditorPreview").dataset.dataUrl||"";return data||$("iconUrl").value.trim()}
 function collect(){
  return {
