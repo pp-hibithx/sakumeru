@@ -37,7 +37,7 @@
     <span class="brand-word">SAKU</span>
     <span class="brand-plus">＋</span>
     <span class="brand-word">MERU</span>
-    <span class="brand-tagline">遊んで、記して、本になる。</span>
+    <span class="brand-tagline">遊べば、記せば、本になる。</span>
   </span>
 </a></div>
 <nav class="nav"><a href="../../index.html">HOME</a><a href="../../scenario/index.html?v=0292">SCENARIO</a><a href="../../calendar/index.html?v=0292">CALENDAR</a><a href="../../library/index.html?v=0292">LIBRARY</a><a href="../../pcs/index.html?v=0292">PC</a><a href="../../players/index.html?v=0292">PLAYERS</a><a href="../../profile/index.html">PROFILE</a><a href="../../tools/index.html" aria-current="page">TOOLS</a><a href="../../backup/index.html">BACKUP</a><a href="../../help/index.html">HELP</a><a href="../../about/index.html">ABOUT</a><a href="../../settings/index.html">SETTINGS</a></nav>
@@ -94,6 +94,12 @@
  <div class="dm-row" id="customCanvasFields" hidden>
   <div class="dm-field"><label>幅 px</label><input id="canvasWidth" type="number" min="320" max="4000" value="675"></div>
   <div class="dm-field"><label>高さ px</label><input id="canvasHeight" type="number" min="320" max="4000" value="1200"></div>
+ </div>
+ <div class="dm-field"><label>編集ガイド</label>
+  <label><input id="showGrid" type="checkbox" checked> グリッドを表示</label>
+  <label><input id="showSafeArea" type="checkbox" checked> セーフエリアを表示</label>
+  <label><input id="snapCenter" type="checkbox" checked> 中央線にスナップ</label>
+  <div class="dm-note">中央線・3分割線・方眼を表示します。ガイドはPNG保存・SNS共有画像には入りません。</div>
  </div>
 </details>
 <details class="dm-control-group" open><summary>レイヤー</summary>
@@ -176,7 +182,7 @@
    </div>
    <div class="dm-note" id="draftStatus">一時保存はこのブラウザ内に1件だけ作業状態を保存できます。PNGを書き出す前の途中作業向けです。</div>
  </details>
- <div class="dm-note">v1.2.1：画像操作一本化。すべて同じレイヤー操作で移動・拡大・複製・透明度調整・シルエット化・削除可能に。</div>
+ <div class="dm-note">v1.2.2：編集グリッド・中央スナップ・新版SAKU+MERU宣伝OGP。画像操作一本化。すべて同じレイヤー操作で移動・拡大・複製・透明度調整・シルエット化・削除可能に。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -189,7 +195,7 @@
 <script>
 const q=id=>document.getElementById(id);
 const canvas=q("dmCanvas"),ctx=canvas.getContext("2d");
-let extraLayers=[],selectedExtraLayerId=null,layerSeq=1;
+let extraLayers=[],selectedExtraLayerId=null,layerSeq=1,dmExporting=false;
 const builtinTextLayers=[
  {id:"builtin_system",type:"builtinText",name:"システム",field:"systemText",x:70,y:100,font:"sans-serif",fontSize:28,color:"#ffffff",bold:false,visible:true},
  {id:"builtin_title",type:"builtinText",name:"シナリオ名",field:"titleText",x:70,y:155,font:"sans-serif",fontSize:58,color:"#ffffff",bold:true,visible:true},
@@ -361,6 +367,21 @@ function fitImage(im,x,y,w,h,contain=false){
  ctx.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
 }
 function num(id,fallback=0){const n=Number(q(id)?.value);return Number.isFinite(n)?n:fallback}
+function drawEditingGuides(){
+ if(dmExporting||!q("showGrid")?.checked)return;
+ const w=canvas.width,h=canvas.height;ctx.save();
+ ctx.lineWidth=1;ctx.strokeStyle="rgba(255,255,255,.10)";
+ for(let x=50;x<w;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+ for(let y=50;y<h;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ ctx.strokeStyle="rgba(205,151,35,.4)";ctx.setLineDash([8,8]);
+ [w/3,w*2/3].forEach(x=>{ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()});
+ [h/3,h*2/3].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()});
+ ctx.strokeStyle="rgba(205,151,35,.95)";ctx.lineWidth=2;ctx.setLineDash([]);
+ ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
+ if(q("showSafeArea")?.checked){ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=1;ctx.setLineDash([10,7]);ctx.strokeRect(w*.05,h*.05,w*.9,h*.9)}
+ ctx.restore();
+}
 function draw(){
  const bg=q("bgColor").value||"#151515";
  ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -408,6 +429,7 @@ function draw(){
   }
   ctx.restore();
  });
+ drawEditingGuides();
 }
 
 function drawWrappedText(text,x,y,maxWidth,lineHeight){
@@ -666,7 +688,9 @@ function moveDrag(e){
  if(!dmDragging)return;
  const f=dragFields();if(!f)return;
  const p=canvasPoint(e);
- const nx=dmBaseX+(p.x-dmDragStartX),ny=dmBaseY+(p.y-dmDragStartY);
+ let nx=dmBaseX+(p.x-dmDragStartX),ny=dmBaseY+(p.y-dmDragStartY);
+ const snap=Math.max(8,canvas.width*.012);
+ if(q("snapCenter")?.checked){if(Math.abs(nx-canvas.width/2)<=snap)nx=canvas.width/2;if(Math.abs(ny-canvas.height/2)<=snap)ny=canvas.height/2;}
  if(f.layer){f.layer.x=nx;f.layer.y=ny;renderLayerList();}
  else {if(!f.x||!f.y)return;f.x.value=Math.max(Number(f.x.min||-9999),Math.min(Number(f.x.max||9999),nx));f.y.value=Math.max(Number(f.y.min||-9999),Math.min(Number(f.y.max||9999),ny));}
  draw();
@@ -681,6 +705,7 @@ window.addEventListener("touchmove",moveDrag,{passive:false});
 window.addEventListener("touchend",endDrag);
 
 q("transparentBg")?.addEventListener("change",draw);
+["showGrid","showSafeArea"].forEach(id=>q(id)?.addEventListener("change",draw));
 q("systemPreset").addEventListener("change",()=>{
  if(q("systemPreset").value)q("systemText").value=q("systemPreset").value;
  draw();
@@ -733,12 +758,15 @@ async function applySakumeruOgpTemplate(){
    layers.push(logo);
 
    const separator=makeLayer("wideRect","区切り線");
-   Object.assign(separator,{x:600,y:510,width:1056,height:1,scale:100,color:"#cd9723",opacity:55});
+   Object.assign(separator,{x:600,y:470,width:1056,height:1,scale:100,color:"#cd9723",opacity:55});
    layers.push(separator);
 
    const copy=makeLayer("text","宣伝コピー");
-   Object.assign(copy,{text:"立卓、調整、記録…すべてをひとつに。",x:600,y:545,fontSize:38,textWidth:1050,color:"#f5f5f2",bold:true,font:"sans-serif"});
+   Object.assign(copy,{text:"立卓、調整、記録、共有…\\n卓のあれこれをサクッとまとめるWebアプリ",x:75,y:495,fontSize:30,textWidth:1050,color:"#f5f5f2",bold:true,font:"sans-serif"});
    layers.push(copy);
+   const tagline=makeLayer("text","タグライン");
+   Object.assign(tagline,{text:"遊べば、記せば、本になる。",x:75,y:585,fontSize:18,textWidth:1050,color:"#cd9723",bold:false,font:"serif"});
+   layers.push(tagline);
 
    extraLayers.push(...layers);
    layerOrder=[...layers.map(l=>l.id),...builtinTextLayers.map(l=>l.id)];
@@ -772,13 +800,16 @@ q("canvasPreset").addEventListener("change",()=>{
  if(q("canvasPreset").value==="custom")setCanvasSize(q("canvasWidth").value,q("canvasHeight").value);
 }));
 q("savePng").onclick=()=>{
+ dmExporting=true;draw();
  const a=document.createElement("a");
  a.download=(q("titleText").value||"display")+".png";
  a.href=canvas.toDataURL("image/png");a.click();
+ dmExporting=false;draw();
 };
 
 function canvasPngBlob(){
- return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("PNGの作成に失敗しました。")),"image/png"));
+ dmExporting=true;draw();
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>{dmExporting=false;draw();blob?resolve(blob):reject(new Error("PNGの作成に失敗しました。"));},"image/png"));
 }
 function shareStatus(msg,isError=false){
  const el=q("socialShareStatus");if(!el)return;el.textContent=msg;el.style.color=isError?"#d85b5b":"";
