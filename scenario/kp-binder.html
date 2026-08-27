@@ -13,17 +13,23 @@
 .rich{min-height:320px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:14px;line-height:1.75;overflow:auto}.rich:focus{outline:2px solid var(--accent)}
 .kp2-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.kp2-prep{width:100%;height:900px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
 .reveal-card{border:1px solid var(--line);border-radius:10px;padding:11px;margin:8px 0}.reveal-head{display:flex;gap:8px;justify-content:space-between;align-items:center}.reveal-body{margin-top:8px;padding:10px;background:var(--bg);border-radius:8px}
-.revealed{border-color:var(--accent)}.secret-badge{font-size:11px;border:1px solid var(--accent);border-radius:999px;padding:2px 7px}.share-url{display:flex;gap:7px}.share-url input{flex:1}
+.revealed{border-color:var(--accent)}.kp2-images{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}.kp2-images img{width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}.secret-badge{font-size:11px;border:1px solid var(--accent);border-radius:999px;padding:2px 7px}.share-url{display:flex;gap:7px}.share-url input{flex:1}
 .kp2-pcgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kp2-person{border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
 @media(max-width:760px){.kp2-grid,.kp2-pcgrid{grid-template-columns:1fr}.kp2-prep{height:1100px}}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kp2"><div class="kp2-head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
-<nav class="kp2-tabs"><button class="kp2-tab active" data-tab="binder">バインダー</button><button class="kp2-tab" data-tab="run">進行・BGM・PDF</button><button class="kp2-tab" data-tab="share">秘匿・開示</button><button class="kp2-tab" data-tab="pc">参加PC・技能</button></nav>
-<section class="kp2-pane" data-pane="binder"><div class="kp2-box"><h2>総合メモ</h2><div class="richbar" data-toolbar="overview"></div><div id="overview" class="rich" contenteditable="true"></div></div>
-<div class="kp2-box"><div class="kp2-actions" style="justify-content:space-between"><div><h2 style="margin:0">ページ</h2><div class="small muted">NPC・読み上げ・改変・プロットなど。ドラッグではなく↑↓で並べ替えできます。</div></div><button id="addPage">＋ ページ追加</button></div><div class="kp2-grid" style="margin-top:12px"><div id="pageList" class="kp2-list"></div><div id="pageEditor"></div></div></div></section>
-<section class="kp2-pane" data-pane="run" hidden><div class="kp2-box"><h2>進行ノート・素材</h2><p class="small muted">旧「卓準備」にあったシーン、BGM・画像素材LIBRARY、PDF取り込みをKP BINDER内へ統合しています。同じ保存データを使うため既存内容も引き継ぎます。</p><iframe id="prepFrame" class="kp2-prep" title="進行ノート・素材"></iframe></div></section>
-<section class="kp2-pane" data-pane="share" hidden><div class="kp2-box"><h2>共通PL共有URL</h2><p class="small muted">開示した情報だけが同じURLへ追加されます。未開示の本文は共有データへ含めません。</p><div class="share-url"><input id="shareUrl" readonly placeholder="まだ共有URLは作成されていません"><button id="makeShare">共有URLを作成</button><button id="copyShare">コピー</button></div><div id="shareStatus" class="small muted" style="margin-top:7px"></div></div>
+<nav class="kp2-tabs"><button class="kp2-tab active" data-tab="session">シナリオ進行</button><button class="kp2-tab" data-tab="pc">参加PC・技能</button></nav>
+<section class="kp2-pane" data-pane="session">
+<div class="kp2-box"><h2>シナリオ進行</h2><p class="small muted">シーン・KPメモ・RP原稿・BGM・画像・PDF・開示情報をここにまとめます。卓中は「RP済み」→「要点を開示」の順で進行できます。</p>
+<div class="share-url"><input id="shareUrl" readonly placeholder="まだ共有URLは作成されていません"><button id="makeShare">共通共有URLを作成</button><button id="copyShare">コピー</button></div><div id="shareStatus" class="small muted" style="margin-top:7px"></div></div>
+<div class="kp2-box"><h2>全体メモ</h2><div class="richbar" data-toolbar="overview"></div><div id="overview" class="rich" contenteditable="true"></div></div>
+<div class="kp2-box"><div class="kp2-actions" style="justify-content:space-between"><div><h2 style="margin:0">シーン・進行項目</h2><div class="small muted">導入・探索場所・NPC・イベント・エンディングなどを進行順に並べます。</div></div><button id="addPage">＋ シーン／項目追加</button></div><div class="kp2-grid" style="margin-top:12px"><div id="pageList" class="kp2-list"></div><div id="pageEditor"></div></div></div>
+<div class="kp2-box"><h2>進行素材・BGM・PDF</h2><p class="small muted">BGM・画像素材・PDF取り込み・進行ノートは既存の保存データをそのまま使います。</p><iframe id="prepFrame" class="kp2-prep" title="進行素材・BGM・PDF"></iframe></div>
+<div class="kp2-box"><div class="kp2-actions" style="justify-content:space-between"><div><h2 style="margin:0">RP・開示情報</h2><div class="small muted">RP原稿とPL向け要点を分けて登録。文章・複数画像をひとまとまりで開示できます。</div></div><button id="addReveal">＋ 情報ブロック追加</button></div><div id="revealList"></div></div>
+</section>
+<section class="kp2-pane" data-pane="run" hidden style="display:none!important"><div class="kp2-box"><h2>進行ノート・素材</h2><p class="small muted">旧「卓準備」にあったシーン、BGM・画像素材LIBRARY、PDF取り込みをKP BINDER内へ統合しています。同じ保存データを使うため既存内容も引き継ぎます。</p><iframe id="prepFrame" class="kp2-prep" title="進行ノート・素材"></iframe></div></section>
+<section class="kp2-pane" data-pane="share" hidden style="display:none!important"><div class="kp2-box"><h2>共通PL共有URL</h2><p class="small muted">開示した情報だけが同じURLへ追加されます。未開示の本文は共有データへ含めません。</p><div class="share-url"><input id="shareUrl" readonly placeholder="まだ共有URLは作成されていません"><button id="makeShare">共有URLを作成</button><button id="copyShare">コピー</button></div><div id="shareStatus" class="small muted" style="margin-top:7px"></div></div>
 <div class="kp2-box"><div class="kp2-actions" style="justify-content:space-between"><div><h2 style="margin:0">秘匿・開示情報</h2><div class="small muted">対象をメモしておき、必要なタイミングで「開示」。開示順は共有ページにそのまま残ります。</div></div><button id="addReveal">＋ 情報追加</button></div><div id="revealList"></div></div></section>
 <section class="kp2-pane" data-pane="pc" hidden><div class="kp2-box"><div class="kp2-actions"><div style="flex:1"><h2 style="margin:0">参加PC管理</h2></div><select id="pcSelect"><option value="">PCを選択…</option></select><button id="addPc">追加</button></div><div id="participants"></div></div><div class="kp2-box"><h2>技能比較</h2><div id="compare" style="overflow:auto"></div></div></section>
 </main><div data-site-footer></div>
@@ -31,7 +37,7 @@
 <script>
 const q=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const sid=new URLSearchParams(location.search).get("id")||"";const scenarios=TRPG39.loadScenarios?.()||[];const sc=scenarios.find(x=>String(x.id)===String(sid))||{title:"シナリオ"};
-q("#scenarioName").textContent=sc.title+" ／ 自分専用";
+q("#scenarioName").textContent=sc.title+" ／ 自分専用";setTimeout(()=>{const f=q("#prepFrame");if(f&&!f.src)f.src=`../prep/index.html?scenario=${encodeURIComponent(sid)}&embed=kp`},0);
 const KEY="39x2_scenario_kp_binders_v1",all=(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch{return {}}})();
 const uuid=()=>TRPG39.uuid?.()||crypto.randomUUID();function def(){return {overview:"",pages:[],participants:[],reveals:[],shareId:"",revealLog:[]}}
 const b=all[sid]||(all[sid]=def());b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];const save=()=>localStorage.setItem(KEY,JSON.stringify(all));
@@ -42,10 +48,41 @@ let active=b.pages[0]?.id||"";function renderPages(){const list=q("#pageList"),e
 function movePage(d){const i=b.pages.findIndex(x=>x.id===active),j=i+d;if(i<0||j<0||j>=b.pages.length)return;[b.pages[i],b.pages[j]]=[b.pages[j],b.pages[i]];save();renderPages()}
 q("#addPage").onclick=()=>{const p={id:uuid(),title:"新しいページ",body:""};b.pages.push(p);active=p.id;save();renderPages()};renderPages();
 document.querySelectorAll(".kp2-tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".kp2-tab").forEach(x=>x.classList.toggle("active",x===t));document.querySelectorAll(".kp2-pane").forEach(x=>x.hidden=x.dataset.pane!==t.dataset.tab);if(t.dataset.tab==="run"&&!q("#prepFrame").src)q("#prepFrame").src=`../prep/index.html?scenario=${encodeURIComponent(sid)}&embed=kp`});
-function renderReveals(){q("#revealList").innerHTML=b.reveals.length?b.reveals.map((r,i)=>`<article class="reveal-card ${r.revealed?"revealed":""}"><div class="reveal-head"><div><b>${esc(r.title||"無題")}</b> <span class="secret-badge">${esc(r.target||"全員")}</span></div><div>${r.revealed?'<span class="small">開示済み</span>':`<button data-open="${i}">開示</button>`} <button data-edit="${i}">編集</button> <button class="danger" data-rdel="${i}">削除</button></div></div><div class="reveal-body">${r.body||'<span class="muted">本文なし</span>'}</div></article>`).join(""):'<div class="small muted">まだ開示情報はありません。</div>';q("#revealList").querySelectorAll("[data-open]").forEach(x=>x.onclick=async()=>{const r=b.reveals[+x.dataset.open];if(!confirm(`「${r.title||"この情報"}」を共有URLへ開示しますか？`))return;r.revealed=true;r.revealedAt=new Date().toISOString();b.revealLog.push({id:r.id,at:r.revealedAt});save();await syncShare();renderReveals()});q("#revealList").querySelectorAll("[data-edit]").forEach(x=>x.onclick=()=>editReveal(+x.dataset.edit));q("#revealList").querySelectorAll("[data-rdel]").forEach(x=>x.onclick=async()=>{if(!confirm("この情報を削除しますか？"))return;b.reveals.splice(+x.dataset.rdel,1);save();await syncShare();renderReveals()})}
-function editReveal(i){const r=i>=0?b.reveals[i]:{id:uuid(),title:"",target:"全員",body:"",revealed:false};const title=prompt("情報タイトル",r.title||"");if(title===null)return;const target=prompt("対象（例：全員／HO1／HO2）",r.target||"全員");if(target===null)return;const body=prompt("本文（簡易入力。保存後はバインダーページ同様HTMLとして表示）",String(r.body||"").replace(/<[^>]+>/g,""));if(body===null)return;r.title=title;r.target=target;r.body=`<p>${esc(body).replace(/\\n/g,"<br>")}</p>`;if(i<0)b.reveals.push(r);save();renderReveals()}
+
+function imgToData(file){return new Promise((ok,ng)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=ng;r.readAsDataURL(file)})}
+function renderReveals(){
+  const host=q("#revealList");
+  host.innerHTML=b.reveals.length?b.reveals.map((r,i)=>{
+    r.images??=[];r.rpDone=!!r.rpDone;
+    return `<article class="reveal-card ${r.revealed?"revealed":""}">
+      <div class="reveal-head"><div><b>${esc(r.title||"無題")}</b> <span class="secret-badge">${esc(r.target||"全員")}</span></div>
+      <div><span class="small">${r.rpDone?"🎭 RP済み":"未RP"}${r.revealed?" ／ ✓ 開示済み":""}</span></div></div>
+      ${r.rpText?`<details><summary>KP用RP原稿</summary><div class="reveal-body">${r.rpText}</div></details>`:""}
+      <details><summary>PL向け要点・資料 ${r.images.length?`（画像${r.images.length}枚）`:""}</summary><div class="reveal-body">${r.body||'<span class="muted">本文なし</span>'}${r.images.length?`<div class="kp2-images">${r.images.map(x=>`<img src="${x}" alt="">`).join("")}</div>`:""}</div></details>
+      <div class="kp2-actions">
+        <button data-rp="${i}" ${r.rpDone?"disabled":""}>🎭 RP済みにする</button>
+        <button data-open="${i}" ${!r.rpDone||r.revealed?"disabled":""}>${r.revealed?"開示済み":"要点を開示"}</button>
+        <button data-edit="${i}">編集</button><button class="danger" data-rdel="${i}">削除</button>
+      </div></article>`}).join(""):'<div class="small muted">まだRP・開示情報はありません。</div>';
+  host.querySelectorAll("[data-rp]").forEach(x=>x.onclick=()=>{const r=b.reveals[+x.dataset.rp];r.rpDone=true;r.rpDoneAt=new Date().toISOString();save();renderReveals()});
+  host.querySelectorAll("[data-open]").forEach(x=>x.onclick=async()=>{const r=b.reveals[+x.dataset.open];if(!r.rpDone)return;if(!confirm(`「${r.title||"この情報"}」のPL向け要点を開示しますか？`))return;r.revealed=true;r.revealedAt=new Date().toISOString();r.sharedSnapshot={title:r.title,target:r.target,body:r.body,images:[...(r.images||[])],revealedAt:r.revealedAt};b.revealLog.push({id:r.id,at:r.revealedAt});save();await syncShare();renderReveals()});
+  host.querySelectorAll("[data-edit]").forEach(x=>x.onclick=()=>editReveal(+x.dataset.edit));
+  host.querySelectorAll("[data-rdel]").forEach(x=>x.onclick=async()=>{if(!confirm("この情報を削除しますか？"))return;b.reveals.splice(+x.dataset.rdel,1);save();await syncShare();renderReveals()})
+}
+function editReveal(i){
+ const r=i>=0?b.reveals[i]:{id:uuid(),title:"",target:"全員",rpText:"",body:"",images:[],rpDone:false,revealed:false};
+ const dlg=document.createElement("dialog");dlg.innerHTML=`<form method="dialog" style="min-width:min(680px,88vw)"><h3>${i<0?"情報ブロック追加":"情報ブロック編集"}</h3>
+ <label>タイトル<input id="rvTitle" value="${esc(r.title||"")}"></label><label>公開先<input id="rvTarget" value="${esc(r.target||"全員")}" placeholder="全員 / HO1 / HO2"></label>
+ <label>KP用RP原稿<div class="rich" id="rvRp" contenteditable="true" style="min-height:130px"></div></label>
+ <label>PL向け要点<div class="rich" id="rvBody" contenteditable="true" style="min-height:130px"></div></label>
+ <label>資料画像（複数選択可）<input id="rvImgs" type="file" accept="image/*" multiple></label><div class="small muted">現在 ${r.images?.length||0} 枚。新しく選択した場合は追加します。</div>
+ <div class="kp2-actions" style="justify-content:flex-end"><button value="cancel">キャンセル</button><button id="rvSave" value="default">保存</button></div></form>`;
+ document.body.appendChild(dlg);dlg.querySelector("#rvRp").innerHTML=r.rpText||"";dlg.querySelector("#rvBody").innerHTML=r.body||"";
+ dlg.querySelector("#rvSave").onclick=async e=>{e.preventDefault();r.title=dlg.querySelector("#rvTitle").value.trim();r.target=dlg.querySelector("#rvTarget").value.trim()||"全員";r.rpText=dlg.querySelector("#rvRp").innerHTML;r.body=dlg.querySelector("#rvBody").innerHTML;r.images??=[];for(const f of dlg.querySelector("#rvImgs").files)r.images.push(await imgToData(f));if(i<0)b.reveals.push(r);save();dlg.close();dlg.remove();renderReveals()};
+ dlg.addEventListener("close",()=>{if(dlg.isConnected)dlg.remove()});dlg.showModal()
+}
 q("#addReveal").onclick=()=>editReveal(-1);renderReveals();
-function sharePayload(){return {kind:"kp-live-share",title:sc.title||"セッション共有",updatedAt:new Date().toISOString(),items:b.reveals.filter(x=>x.revealed).sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt)).map(x=>({id:x.id,title:x.title,target:x.target,body:x.body,revealedAt:x.revealedAt}))}}
+function sharePayload(){return {kind:"kp-live-share",title:sc.title||"セッション共有",updatedAt:new Date().toISOString(),items:b.reveals.filter(x=>x.revealed).sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt)).map(x=>x.sharedSnapshot||({id:x.id,title:x.title,target:x.target,body:x.body,images:[...(x.images||[])],revealedAt:x.revealedAt}))}}
 async function syncShare(){if(!b.shareId)return;try{await TRPG39Cloud.updateSharedPage(b.shareId,sharePayload());q("#shareStatus").textContent="共有ページを更新しました。"}catch(e){q("#shareStatus").textContent=e.message||e}}
 function showShare(){q("#shareUrl").value=b.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(b.shareId)}&type=kp-live`:""}showShare();
 q("#makeShare").onclick=async()=>{try{if(!b.shareId)b.shareId=await TRPG39Cloud.createSharedPage(sharePayload());else await syncShare();save();showShare();q("#shareStatus").textContent="共通共有URLを用意しました。以後、開示するたび同じURLを更新します。"}catch(e){q("#shareStatus").textContent=e.message||e}};
