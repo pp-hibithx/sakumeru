@@ -150,6 +150,63 @@
 .profile-side-actions{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
 .profile-side-actions button{width:100%!important;box-sizing:border-box;font-size:.78rem!important;padding:8px 10px!important}
 @media(max-width:860px){.profile-editor-layout{grid-template-columns:1fr!important}.profile-editor-side{width:100%!important}}
+
+/* v0.3.57 — PROFILE alignment / compact identity / 3-column tags */
+.profile-editor-layout{
+  grid-template-columns:340px minmax(0,1fr)!important;
+  align-items:start!important;
+}
+.profile-editor-side,.profile-editor-main{align-self:start!important;margin-top:0!important}
+.profile-editor-main>.profile-card:first-child,
+.profile-editor-main>.panel:first-child{margin-top:0!important}
+
+/* Basic profile: portrait/name area stays centered inside the narrow sidebar. */
+.profile-editor-side .profile-icon-editor{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  text-align:center!important;
+  gap:8px!important;
+}
+.profile-editor-side .profile-icon-editor img{
+  width:76px!important;height:76px!important;margin-inline:auto!important;
+}
+.profile-editor-side .profile-icon-editor>div,
+.profile-editor-side .profile-icon-editor .profile-upload-row{
+  width:100%!important;
+}
+.profile-editor-side .profile-upload-row{
+  justify-content:center!important;
+}
+.profile-editor-side .profile-icon-editor input[type="url"]{
+  text-align:left!important;
+}
+
+/* Comma-separated profile chips: no more than three across. */
+.profile-tag-grid,
+.profile-chips,
+.profile-chip-list,
+.tag-list,
+.chip-list{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+.profile-tag-grid>*,
+.profile-chips>*,
+.profile-chip-list>*,
+.tag-list>*,
+.chip-list>*{
+  min-width:0!important;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+@media(max-width:720px){
+  .profile-tag-grid,.profile-chips,.profile-chip-list,.tag-list,.chip-list{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
