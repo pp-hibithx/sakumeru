@@ -463,6 +463,7 @@
     }
   }
   if(p.kind==="library-article"){unlockArticle(p);return}
+  if(p.kind==="profile-page"){renderArticle({...p,scenarioTitle:"PROFILE"});return}
   if(p.kind==="display-maker"){
     const meta=[p.system,p.ho,p.pc].filter(Boolean);
     box.innerHTML=`<h2>${esc(p.title||"卓ディスプレイ")}</h2>${meta.length?`<div class="share-meta">${meta.map(x=>`<span class="badge">${esc(x)}</span>`).join("")}</div>`:""}${p.image?`<img src="${esc(p.image)}" alt="${esc(p.title||"卓ディスプレイ")}" style="display:block;max-width:min(100%,900px);max-height:80vh;width:auto;height:auto;object-fit:contain;margin:14px auto;border-radius:10px;border:1px solid var(--line)">`:"<p>共有画像を読み込めませんでした。</p>"}<p class="muted" style="text-align:center">SAKU+MERU DISPLAY MAKER</p>`;
