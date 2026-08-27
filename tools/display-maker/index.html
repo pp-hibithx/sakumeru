@@ -24,7 +24,7 @@
 .dm-control-group>summary{cursor:pointer;font-weight:700;padding:11px 4px;user-select:none}
 .dm-control-group[open]>summary{border-bottom:1px solid var(--line);margin-bottom:10px}
 @media(max-width:850px){.dm-layout{grid-template-columns:1fr}}
-</style>
+.dm-richtext-panel{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.015)}.dm-richtext-panel button,.dm-richtext-panel select{width:auto}</style>
 </head>
 <body>
 <header class="site-header"><div class="wrap">
@@ -137,6 +137,21 @@
    <div class="dm-row"><div class="dm-field"><label>サイズ</label><input id="layerFontSize" type="range" min="12" max="140" value="42"></div><div class="dm-field"><label>文字色</label><input id="layerTextColor" type="color" value="#ffffff"></div></div>
    <div class="dm-field"><label>文字幅（ここで自動改行）</label><input id="layerTextWidth" type="range" min="100" max="1100" step="10" value="600"><div class="dm-note"><span id="layerTextWidthValue">600</span>px。Enterで手動改行もできます。</div></div>
    <label><input id="layerBold" type="checkbox"> 太字</label>
+   <div class="dm-richtext-panel">
+    <div class="dm-note"><strong>選択した文字だけ装飾</strong></div>
+    <div class="dm-row dm-actions">
+      <button type="button" id="partialBold">部分太字</button>
+      <button type="button" id="partialReset">部分装飾を解除</button>
+    </div>
+    <div class="dm-row">
+      <div class="dm-field"><label>部分文字色</label><input id="partialTextColor" type="color" value="#cd9723"></div>
+      <div class="dm-field"><label>部分サイズ</label><select id="partialTextSize"><option value="">変更しない</option><option value="80">小</option><option value="100">標準</option><option value="120">大</option><option value="150">特大</option></select></div>
+    </div>
+    <div class="dm-row dm-actions">
+      <button type="button" id="applyPartialColor">選択文字に色</button>
+      <button type="button" id="applyPartialSize">選択文字にサイズ</button>
+    </div>
+   </div>
  </div>
  <div class="dm-field"><label>ドラッグ対象</label><select id="dragTarget">
 <option value="system">システム文字</option>
@@ -184,7 +199,7 @@
    </div>
    <div class="dm-note" id="draftStatus">一時保存はこのブラウザ内に1件だけ作業状態を保存できます。PNGを書き出す前の途中作業向けです。</div>
  </details>
- <div class="dm-note">v1.3.1：正式ロゴを宣伝OGPへ復帰。卓報告向け消しゴム・画像/図形ぼかし・編集グリッド・中央スナップ・新版宣伝OGP。すべて同じレイヤー操作で移動・拡大・複製・透明度調整・シルエット化・削除可能に。</div>
+ <div class="dm-note">v1.3.2：文字レイヤーの部分色・部分太字・部分サイズに対応。正式ロゴ・消しゴム・ぼかし・編集グリッドも維持。すべて同じレイヤー操作で移動・拡大・複製・透明度調整・シルエット化・削除可能に。</div>
 <input id="extraImagePicker" type="file" accept="image/*" hidden>
 </section>
 <section class="dm-canvas-wrap"><canvas id="dmCanvas" width="1200" height="675"></canvas></section>
@@ -384,7 +399,7 @@ function draw(){
     ctx.fillStyle=layer.color||"#ffffff";
     ctx.textBaseline="top";
     ctx.font=`${layer.bold?"bold ":""}${layer.fontSize||42}px ${layer.font||"sans-serif"}`;
-    drawWrappedText(String(layer.text||""),layer.x,layer.y,Number(layer.textWidth)||600,(layer.fontSize||42)*1.2);
+    drawRichWrappedText(String(layer.text||""),layer.x,layer.y,Number(layer.textWidth)||600,Number(layer.fontSize)||42,layer.font||"sans-serif",layer.color||"#ffffff",!!layer.bold,(Number(layer.fontSize)||42)*1.35);
   }else if(layer.type==="builtinText"){
     const text=q(layer.field)?.value||"";
     ctx.fillStyle=layer.color||"#ffffff";
@@ -427,6 +442,42 @@ function draw(){
  });
  drawEditingGuides();
 }
+
+
+function parseDmRichText(text,base){
+ const src=String(text||""),out=[];let i=0,buf="",style={...base},stack=[];
+ const flush=()=>{if(buf){out.push({text:buf,style:{...style}});buf=""}};
+ while(i<src.length){
+   const r=src.slice(i);let m;
+   if((m=r.match(/^\[color=(#[0-9a-fA-F]{6})\]/))){flush();stack.push({tag:"color",style:{...style}});style.color=m[1];i+=m[0].length;continue}
+   if(r.startsWith("[/color]")){flush();const j=[...stack].reverse().findIndex(x=>x.tag==="color");if(j>=0){const k=stack.length-1-j;style={...stack[k].style};stack.splice(k,1)}i+=8;continue}
+   if((m=r.match(/^\[size=(\d{2,3})\]/))){flush();stack.push({tag:"size",style:{...style}});style.scale=Math.max(.4,Math.min(3,Number(m[1])/100));i+=m[0].length;continue}
+   if(r.startsWith("[/size]")){flush();const j=[...stack].reverse().findIndex(x=>x.tag==="size");if(j>=0){const k=stack.length-1-j;style={...stack[k].style};stack.splice(k,1)}i+=7;continue}
+   if(r.startsWith("[b]")){flush();stack.push({tag:"b",style:{...style}});style.bold=true;i+=3;continue}
+   if(r.startsWith("[/b]")){flush();const j=[...stack].reverse().findIndex(x=>x.tag==="b");if(j>=0){const k=stack.length-1-j;style={...stack[k].style};stack.splice(k,1)}i+=4;continue}
+   buf+=src[i++];
+ }
+ flush();return out;
+}
+function drawRichWrappedText(text,x,y,maxWidth,size,font,color,bold,lineHeight){
+ const runs=parseDmRichText(text,{scale:1,font,color,bold});let cx=x,cy=y;
+ for(const run of runs){
+   const st=run.style,fs=Math.max(6,size*(st.scale||1));
+   ctx.font=`${st.bold?"bold ":""}${fs}px ${st.font||font}`;ctx.fillStyle=st.color||color;
+   for(const ch of [...run.text]){
+     if(ch==="\n"){cx=x;cy+=lineHeight;continue}
+     const w=ctx.measureText(ch).width;
+     if(cx!==x&&cx-x+w>maxWidth){cx=x;cy+=lineHeight}
+     ctx.fillText(ch,cx,cy);cx+=w;
+   }
+ }
+}
+function wrapSelectedTextArea(ta,before,after){
+ const a=ta.selectionStart,b=ta.selectionEnd;if(a===b){alert("装飾したい文字を選択してください。");return}
+ ta.value=ta.value.slice(0,a)+before+ta.value.slice(a,b)+after+ta.value.slice(b);
+ ta.focus();ta.setSelectionRange(a+before.length,b+before.length);ta.dispatchEvent(new Event("input",{bubbles:true}));
+}
+function stripDmRichTags(text){return String(text||"").replace(/\[(?:\/?b|color=#[0-9a-fA-F]{6}|\/color|size=\d{2,3}|\/size)\]/g,"")}
 
 function drawWrappedText(text,x,y,maxWidth,lineHeight){
  const paragraphs=String(text||"").split("\n");
@@ -604,7 +655,7 @@ q("addTextLayer").onclick=()=>{
    if(q(l.field))q(l.field).value=q("layerText").value;
  }else{
    l.text=q("layerText").value;
-   l.name=(l.text.split("\n")[0]||"文字").slice(0,18);
+   l.name=(stripDmRichTags(l.text).split("\n")[0]||"文字").slice(0,18);
  }
  l.font=q("layerFont").value;
  l.fontSize=Number(q("layerFontSize").value);
@@ -615,6 +666,12 @@ q("addTextLayer").onclick=()=>{
  renderLayerList();
  draw();
 }));
+
+q("partialBold").onclick=()=>wrapSelectedTextArea(q("layerText"),"[b]","[/b]");
+q("applyPartialColor").onclick=()=>wrapSelectedTextArea(q("layerText"),`[color=${q("partialTextColor").value||"#cd9723"}]`,"[/color]");
+q("applyPartialSize").onclick=()=>{const v=q("partialTextSize").value;if(!v)return alert("部分サイズを選んでください。");wrapSelectedTextArea(q("layerText"),`[size=${v}]`,"[/size]")};
+q("partialReset").onclick=()=>{const ta=q("layerText"),a=ta.selectionStart,b=ta.selectionEnd;if(a===b)return alert("装飾を解除したい文字を選択してください。");const clean=stripDmRichTags(ta.value.slice(a,b));ta.value=ta.value.slice(0,a)+clean+ta.value.slice(b);ta.focus();ta.setSelectionRange(a,a+clean.length);ta.dispatchEvent(new Event("input",{bubbles:true}))};
+
 q("addRectLayer").onclick=()=>addShape("rect","四角");
 q("addWideRectLayer").onclick=()=>addShape("wideRect","長方形");
 q("addDiamondLayer").onclick=()=>addShape("diamond","ひし形");
