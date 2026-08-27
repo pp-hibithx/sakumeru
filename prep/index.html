@@ -123,6 +123,25 @@ html[data-theme="light"] .prep-item{
 .pdf-composer-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 </style><script src="../assets/js/beta-gate.js?v=02315"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0306"></script>
+
+<style>
+html.kp-embed body{background:transparent}
+html.kp-embed .prep-wrap>p,html.kp-embed .prep-wrap>h1,html.kp-embed #scenarioTitle,
+html.kp-embed .prep-grid>aside.prep-panel>h2,html.kp-embed .prep-grid>aside.prep-panel>.template-btn,
+html.kp-embed .prep-grid>aside.prep-panel>h3:first-of-type,html.kp-embed #customTemplates,
+html.kp-embed #saveTemplate,html.kp-embed .backup-box,
+html.kp-embed .prep-grid>section.prep-panel>.prep-head,
+html.kp-embed #progress,html.kp-embed #saveNote,html.kp-embed #items,
+html.kp-embed .prep-grid>section.prep-panel>hr,
+html.kp-embed .prep-grid>section.prep-panel>h3,
+html.kp-embed #newTitle,html.kp-embed .prep-add{display:none!important}
+html.kp-embed .prep-wrap{max-width:none;padding:0;margin:0}
+html.kp-embed .prep-grid{grid-template-columns:minmax(260px,.7fr) minmax(0,1.3fr);gap:14px}
+html.kp-embed .prep-panel{margin:0}
+html.kp-embed .scene-panel{display:block!important;margin-top:0;padding-top:0;border-top:0}
+@media(max-width:850px){html.kp-embed .prep-grid{grid-template-columns:1fr}}
+</style>
+<script>if(new URLSearchParams(location.search).get("embed")==="kp")document.documentElement.classList.add("kp-embed");</script>
 </head><body><main class="prep-wrap"><p><a href="../scenario/index.html?v=0292">← SCENARIO</a></p><h1>卓準備</h1><div id="scenarioTitle" class="small muted"></div>
 <div class="prep-grid"><aside class="prep-panel"><h2>テンプレート</h2><button class="template-btn" data-template="kp">CoC KP基本セット</button><button class="template-btn" data-template="pl">CoC PL基本セット</button><h3>自作テンプレート</h3><div id="customTemplates"></div><button id="saveTemplate">現在の項目をテンプレート保存</button>
 <div class="backup-box">
@@ -249,6 +268,7 @@ document.querySelectorAll("[data-check]").forEach(c=>c.onchange=()=>{const x=xs.
 document.querySelectorAll("[data-save-detail]").forEach(b=>b.onclick=()=>{const id=b.dataset.saveDetail,x=xs.find(v=>v.id===id);if(!x)return;x.deadline=document.querySelector(`[data-edit-deadline="${CSS.escape(id)}"]`)?.value||"";x.url=document.querySelector(`[data-edit-url="${CSS.escape(id)}"]`)?.value.trim()||"";x.memo=document.querySelector(`[data-edit-memo="${CSS.escape(id)}"]`)?.value.trim()||"";save()});
 document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const i=xs.findIndex(v=>v.id===b.dataset.del);xs.splice(i,1);save()});renderTemplates();renderScenes()}
 function renderTemplates(){q("customTemplates").innerHTML=custom.map((t,i)=>`<button class="template-btn" data-custom="${i}">${esc(t.name)}</button>`).join("");document.querySelectorAll("[data-custom]").forEach(b=>b.onclick=()=>{const t=custom[Number(b.dataset.custom)];t.items.forEach(x=>add(x.title,x.deadline||"",x.url||"",x.memo||""))})}
+if(new URLSearchParams(location.search).get("embed")==="kp"){q("scope").value="kpRun";activeLabel=normLabel(q("runLabel").value);saveUI();render();}
 q("addItem").onclick=()=>{add(q("newTitle").value,q("newDeadline").value,q("newUrl").value,q("newMemo").value);q("newTitle").value=q("newDeadline").value=q("newUrl").value=q("newMemo").value=""};document.querySelectorAll("[data-template]").forEach(b=>b.onclick=()=>applyTemplate(b.dataset.template));q("scope").onchange=()=>{activeLabel=normLabel(q("runLabel").value);saveUI();render()};q("runLabel").oninput=()=>saveUI();q("runLabel").onchange=commitRunLabel;q("runLabel").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();q("runLabel").blur()}};q("saveTemplate").onclick=()=>{const name=prompt("テンプレート名");if(!name)return;custom.push({name,items:bucket().map(({title,deadline,url,memo})=>({title,deadline,url,memo}))});localStorage.setItem(TK,JSON.stringify(custom));renderTemplates()};q("addScene").onclick=()=>{sceneBucket().push(makeScene());persistScenes();renderScenes()};q("openMaterialLibrary").onclick=()=>openMaterialLibrary("bgm","");q("bgmPrepClose").onclick=()=>q("bgmPrepDialog").close();document.querySelectorAll("[data-material-tab]").forEach(b=>b.onclick=()=>setMaterialTab(b.dataset.materialTab));q("bgmPrepSearch").oninput=renderBgmPrep;q("bgmPrepTag").onchange=renderBgmPrep;q("bgmNewSave").onclick=registerNewBgm;q("bgmEditCancel").onclick=resetBgmForm;q("imagePrepSearch").oninput=renderImagePrep;q("imagePrepType").onchange=renderImagePrep;q("imageNewSave").onclick=registerNewImage;q("imageEditCancel").onclick=resetImageForm;
 const PREP_BACKUP_VERSION=1;
 const PREP_BACKUP_KEYS=[

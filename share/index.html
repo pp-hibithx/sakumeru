@@ -463,6 +463,10 @@
       p={kind:"scenario-list",version:p.version||1,title:p.title||"シナリオ一覧",updatedAt:p.updatedAt||"",items};
     }
   }
+  if(p.kind==="kp-live-share"){
+    const items=Array.isArray(p.items)?p.items:[];
+    box.innerHTML=`<style>.kp-live{max-width:860px;margin:auto}.kp-live-item{border:1px solid var(--line);border-radius:11px;padding:14px;margin:12px 0;background:var(--panel)}.kp-live-meta{font-size:12px;color:var(--muted);margin-bottom:6px}.kp-live-body{line-height:1.75}</style><article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報がここに追加されます。ページを再読み込みすると最新状態になります。</p>${items.length?items.map((x,i)=>`<section class="kp-live-item"><div class="kp-live-meta">開示 ${i+1}${x.target?` ／ ${esc(x.target)}`:""}</div><h3>${esc(x.title||"情報")}</h3><div class="kp-live-body">${richText(x.body||"")}</div></section>`).join(""):'<div class="small muted">まだ開示された情報はありません。</div>'}</article>`;return
+  }
   if(p.kind==="library-article"){unlockArticle(p);return}
   if(p.kind==="profile-page"){renderProfilePage(p);return}
   if(p.kind==="display-maker"){
