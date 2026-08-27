@@ -4,6 +4,12 @@
   if(!script) return;
   const siteRoot=new URL("../../",script.src);
   const url=(path)=>new URL(path,siteRoot).href;
+  const headerCss=new URL("assets/css/common-header.css",siteRoot).href;
+  if(!document.querySelector('link[data-sakumeru-common-header]')){
+    const link=document.createElement("link");
+    link.rel="stylesheet";link.href=headerCss;link.dataset.sakumeruCommonHeader="1";
+    document.head.appendChild(link);
+  }
   const NAV=[
     ["home","HOME","index.html"],["scenario","SCENARIO","scenario/index.html?v=0292"],
     ["calendar","CALENDAR","calendar/index.html?v=0292"],["library","LIBRARY","library/index.html?v=0292"],

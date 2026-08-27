@@ -27,26 +27,7 @@
 .dm-richtext-panel{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.015)}.dm-richtext-panel button,.dm-richtext-panel select{width:auto}</style>
 </head>
 <body>
-<header class="site-header"><div class="wrap">
-<div class="brand-logo-row"><a class="site-brand-logo" href="../../index.html" aria-label="SAKU+MERU HOME">
-  <span class="brand-symbol" aria-hidden="true">
-    <img class="symbol-dark" src="../../assets/img/sakumeru-symbol-dark.png" alt="">
-    <img class="symbol-light" src="../../assets/img/sakumeru-symbol-light.png" alt="">
-  </span>
-  <span class="brand-type" aria-hidden="true">
-    <span class="brand-word">SAKU</span>
-    <span class="brand-plus">＋</span>
-    <span class="brand-word">MERU</span>
-    <span class="brand-tagline">遊べば、記せば、本になる。</span>
-  </span>
-</a></div>
-<nav class="nav"><a href="../../index.html">HOME</a><a href="../../scenario/index.html?v=0292">SCENARIO</a><a href="../../calendar/index.html?v=0292">CALENDAR</a><a href="../../library/index.html?v=0292">LIBRARY</a><a href="../../pcs/index.html?v=0292">PC</a><a href="../../players/index.html?v=0292">PLAYERS</a><a href="../../profile/index.html">PROFILE</a><a href="../../tools/index.html" aria-current="page">TOOLS</a><a href="../../backup/index.html">BACKUP</a><a href="../../help/index.html">HELP</a><a href="../../about/index.html">ABOUT</a><a href="../../settings/index.html">SETTINGS</a></nav>
-<div class="theme-switcher" aria-label="テーマ">
-  <button type="button" data-theme-choice="system">端末</button><span>·</span>
-  <button type="button" data-theme-choice="dark">ダーク</button><span>·</span>
-  <button type="button" data-theme-choice="light">ライト</button>
-</div>
-</div></header>
+<div data-site-header data-active="tools"></div>
 <main><div class="wrap">
 <div class="hero"><h2>DISPLAY MAKER</h2><p>卓記録から、卓報告用ディスプレイをサクッと作ります。</p></div>
 <div class="dm-layout">
@@ -1056,4 +1037,5 @@ q("runSelect").onchange=()=>{
 };
 populate();renderLayerList();setCanvasSize(675,1200);
 </script>
+<script src="../../assets/js/common-layout.js?v=20260827-header"></script>
 </body></html>

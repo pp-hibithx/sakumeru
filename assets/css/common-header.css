@@ -1,0 +1,57 @@
+
+/* SAKU+MERU common header v1 — shared by every main page */
+.site-header{
+  border-bottom:1px solid rgba(205,151,35,.45)!important;
+  padding:12px 0 9px!important;
+}
+.site-header>.wrap{
+  display:block!important;
+}
+.site-header .brand-logo-row{
+  display:block!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+}
+.site-header .site-brand-logo{
+  display:inline-block!important;
+  width:auto!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  line-height:0!important;
+  text-decoration:none!important;
+}
+.site-header .site-brand-logo>img{
+  display:block!important;
+  width:min(440px,72vw)!important;
+  height:auto!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+.site-header .nav{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px 18px!important;
+  align-items:center!important;
+  margin:10px 0 0!important;
+  padding:8px 0 10px!important;
+  border-bottom:1px solid var(--line)!important;
+}
+.site-header .nav a{
+  white-space:nowrap!important;
+}
+.site-header .theme-switcher{
+  display:flex!important;
+  justify-content:flex-end!important;
+  align-items:center!important;
+  gap:5px!important;
+  margin:5px 0 0!important;
+}
+@media(max-width:700px){
+  .site-header{padding:9px 0 7px!important}
+  .site-header .site-brand-logo>img{width:min(390px,92vw)!important}
+  .site-header .nav{gap:7px 13px!important;margin-top:8px!important;padding-bottom:8px!important}
+  .site-header .theme-switcher{justify-content:flex-start!important}
+}
