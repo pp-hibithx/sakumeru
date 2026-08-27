@@ -17,8 +17,7 @@
     const nav=NAV.map(([key,label,path])=>`<a href="${escAttr(url(path))}"${active===key?' aria-current="page"':''}>${label}</a>`).join("");
     return `<header class="site-header"><div class="wrap">
 <div class="brand-logo-row"><a class="site-brand-logo" href="${escAttr(url("index.html"))}" aria-label="SAKU+MERU HOME">
-  <span class="brand-symbol" aria-hidden="true"><img class="symbol-dark" src="${escAttr(url("assets/img/sakumeru-symbol-dark.png"))}" alt=""><img class="symbol-light" src="${escAttr(url("assets/img/sakumeru-symbol-light.png"))}" alt=""></span>
-  <span class="brand-type" aria-hidden="true"><span class="brand-word">SAKU</span><span class="brand-plus">＋</span><span class="brand-word">MERU</span><span class="brand-tagline">遊んで、記して、本になる。</span></span>
+  <img class="brand-official-logo" src="${escAttr(url("assets/img/sakumeru-logo-horizontal-dark-smooth.png"))}" alt="SAKU+MERU — 遊べば、記せば、本になる。">
 </a></div>
 <nav class="nav">${nav}</nav>
 <div class="theme-switcher" aria-label="テーマ"><button type="button" data-theme-choice="system">端末</button><span>·</span><button type="button" data-theme-choice="dark">ダーク</button><span>·</span><button type="button" data-theme-choice="light">ライト</button></div>

@@ -1549,3 +1549,12 @@ body:has(#betaAccessKey)::after{
     width:min(240px,100%) !important;
   }
 }
+
+/* SAKU+MERU official horizontal logo 2026-08-27 */
+.site-header .brand-logo-row{min-height:0 !important;padding:4px 0 0 !important}
+.site-header .site-brand-logo{display:inline-block !important;max-width:min(100%,560px) !important;line-height:0 !important;transform:none !important}
+.site-header .site-brand-logo .brand-official-logo{display:block !important;width:clamp(300px,48vw,500px) !important;height:auto !important;object-fit:contain !important;object-position:left center !important}
+@media(max-width:560px){
+ .site-header .brand-logo-row{min-height:0 !important;padding-top:2px !important}
+ .site-header .site-brand-logo .brand-official-logo{width:min(88vw,390px) !important}
+}
