@@ -1397,11 +1397,14 @@ body.beta-gate-active::after{
   display:none !important;
 }
 
-/* SAKU+MERU official horizontal logo 2026-08-27 */
-.site-header .brand-logo-row{min-height:0 !important;padding:4px 0 0 !important}
-.site-header .site-brand-logo{display:inline-block !important;max-width:min(100%,560px) !important;line-height:0 !important;transform:none !important}
-.site-header .site-brand-logo .brand-official-logo{display:block !important;width:clamp(300px,48vw,500px) !important;height:auto !important;object-fit:contain !important;object-position:left center !important}
+/* 2026-08-27 compact official header */
+.site-header{padding:14px 0 10px !important}
+.site-header .brand-logo-row{min-height:0 !important;height:auto !important;margin:0 !important;padding:0 !important}
+.site-header .site-brand-logo{display:inline-block !important;line-height:0 !important;margin:0 !important;padding:0 !important;max-width:100% !important}
+.site-header .site-brand-logo>img{display:block !important;width:min(460px,72vw) !important;height:auto !important;margin:0 !important}
+.site-header .nav{margin-top:12px !important}
 @media(max-width:560px){
- .site-header .brand-logo-row{min-height:0 !important;padding-top:2px !important}
- .site-header .site-brand-logo .brand-official-logo{width:min(88vw,390px) !important}
+ .site-header{padding:10px 0 8px !important}
+ .site-header .site-brand-logo>img{width:min(390px,92vw) !important}
+ .site-header .nav{margin-top:9px !important}
 }
