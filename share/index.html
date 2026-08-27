@@ -221,7 +221,7 @@
      return id;
    }catch{return ""}
  };
- const renderArticle=p=>{
+ const renderProfilePage=p=>{const renderBlocks=(blocks,level=0)=>(Array.isArray(blocks)?blocks:[]).map(b=>{const type=String(b?.type||"").toLowerCase();if(type==="toggle"){const kids=renderBlocks(b.children||[],level+1);return `<details class="profile-page-toggle-public level-${level}"><summary>${esc(b.title||"トグル")}</summary><div class="profile-page-toggle-public-body">${kids}</div></details>`}if(type==="text")return String(b.text||"").trim()?`<div class="share-article-text">${richText(b.text)}</div>`:"";if(type==="image"){const url=String(b.url||"").trim();return url?`<figure class="shared-article-image"><img src="${esc(url)}" data-shared-article-image alt="${esc(b.caption||"")}" loading="lazy">${b.caption?`<figcaption class="small muted">${esc(b.caption)}</figcaption>`:""}</figure>`:""}if(type==="youtube"){const id=youtubeId(b.url||"");return id?`<div class="shared-article-youtube">${b.caption?`<div class="shared-article-caption">${esc(b.caption)}</div>`:""}<div class="shared-youtube-frame"><iframe src="https://www.youtube-nocookie.com/embed/${esc(id)}" title="YouTube video player" loading="lazy" allowfullscreen></iframe></div></div>`:""}return ""}).join("");box.innerHTML=`<style>.profile-page-public{max-width:920px;margin:auto}.profile-page-public>h2{margin-bottom:18px}.profile-page-toggle-public{border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden}.profile-page-toggle-public>summary{cursor:pointer;font-weight:700;padding:10px 12px}.profile-page-toggle-public-body{display:grid;gap:12px;padding:4px 12px 12px}.profile-page-toggle-public.level-1{margin-left:14px}.profile-page-toggle-public.level-2{margin-left:28px}@media(max-width:620px){.profile-page-toggle-public.level-1{margin-left:8px}.profile-page-toggle-public.level-2{margin-left:16px}}</style><article class="profile-page-public"><h2>${esc(p.title||"PROFILE")}</h2><div class="shared-article-blocks">${renderBlocks(p.blocks||[])}</div></article>`};\n const renderArticle=p=>{
    const blocks=Array.isArray(p.blocks)?p.blocks:[];
    const blocksHtml=blocks.map(b=>{
      const type=String(b?.type||"").toLowerCase();
@@ -463,7 +463,7 @@
     }
   }
   if(p.kind==="library-article"){unlockArticle(p);return}
-  if(p.kind==="profile-page"){renderArticle({...p,scenarioTitle:"PROFILE"});return}
+  if(p.kind==="profile-page"){renderProfilePage(p);return}
   if(p.kind==="display-maker"){
     const meta=[p.system,p.ho,p.pc].filter(Boolean);
     box.innerHTML=`<h2>${esc(p.title||"卓ディスプレイ")}</h2>${meta.length?`<div class="share-meta">${meta.map(x=>`<span class="badge">${esc(x)}</span>`).join("")}</div>`:""}${p.image?`<img src="${esc(p.image)}" alt="${esc(p.title||"卓ディスプレイ")}" style="display:block;max-width:min(100%,900px);max-height:80vh;width:auto;height:auto;object-fit:contain;margin:14px auto;border-radius:10px;border:1px solid var(--line)">`:"<p>共有画像を読み込めませんでした。</p>"}<p class="muted" style="text-align:center">SAKU+MERU DISPLAY MAKER</p>`;
