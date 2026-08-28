@@ -212,7 +212,9 @@ function renderFlow(p){
    <div class="kp2-actions" style="margin:0"><button type="button" data-fup="${i}">↑</button><button type="button" data-fdown="${i}">↓</button><button type="button" class="danger" data-fdel="${i}">削除</button></div>
   </div>
   <div class="flow-body"><div class="richbar" data-ftool="${i}"></div><div class="rich" data-fbody="${i}" contenteditable="true"></div></div>
-  ${(x.kind==="rp"||x.kind==="reveal"||x.kind==="secret")?`<div class="kp2-actions">${x.kind==="rp"?`<button type="button" data-frp="${i}" ${x.rpDone?"disabled":""}>${x.rpDone?"🎭 RP済み":"🎭 RP済みにする"}</button>`:""}${(x.kind==="reveal"||x.kind==="secret")?`<button type="button" data-fopen="${i}" ${x.revealed?"disabled":""}>${x.revealed?"✓ 開示済み":"要点を開示"}</button>`:""}</div>`:""}
+  ${(x.kind==="rp"||x.kind==="reveal"||x.kind==="secret")?`<div class="kp2-actions">${x.kind==="rp"?`<button type="button" data-frp="${i}" ${x.rpDone?"disabled":""}>${x.rpDone?"🎭 RP済み":"🎭 RP済みにする"}</button>`:""}${(x.kind==="reveal"||x.kind==="secret")?(x.revealed
+?`<button type="button" data-fupdate="${i}">共有を更新</button><button type="button" class="secondary" data-fwithdraw="${i}">開示を取り消す</button>`
+:`<button type="button" data-fopen="${i}">要点を開示</button>`):""}</div>`:""}
  </article>`).join(""):'<div class="small muted">「＋ 進行ブロック」から通常本文・KPメモ・RP・開示情報などを進行順に追加できます。</div>';
  p.blocks.forEach((x,i)=>{const body=host.querySelector(`[data-fbody="${i}"]`);if(body){body.innerHTML=x.body||"";toolbar(host.querySelector(`[data-ftool="${i}"]`),body);body.oninput=()=>{x.body=body.innerHTML;save()}}});
  host.querySelectorAll("[data-fkind]").forEach(el=>el.onchange=()=>{p.blocks[+el.dataset.fkind].kind=el.value;save();renderFlow(p)});
@@ -222,14 +224,55 @@ function renderFlow(p){
  host.querySelectorAll("[data-fdown]").forEach(el=>el.onclick=()=>moveFlow(p,+el.dataset.fdown,1));
  host.querySelectorAll("[data-fdel]").forEach(el=>el.onclick=()=>{const i=+el.dataset.fdel;if(!confirm("この進行ブロックを削除しますか？"))return;p.blocks.splice(i,1);save();renderFlow(p)});
  host.querySelectorAll("[data-frp]").forEach(el=>el.onclick=()=>{const x=p.blocks[+el.dataset.frp];x.rpDone=true;x.rpDoneAt=new Date().toISOString();save();renderFlow(p)});
- host.querySelectorAll("[data-fopen]").forEach(el=>el.onclick=async()=>{const x=p.blocks[+el.dataset.fopen];if(!confirm(`「${x.title||FLOW_KINDS[x.kind]}」を開示しますか？`))return;x.revealed=true;x.revealedAt=new Date().toISOString();x.sharedSnapshot={id:x.id,title:x.title||FLOW_KINDS[x.kind],target:x.target||"全員",body:x.body||"",images:[],revealedAt:x.revealedAt};b.revealLog.push({id:x.id,at:x.revealedAt});save();await syncShare();renderFlow(p)});
+ host.querySelectorAll("[data-fopen]").forEach(el=>el.onclick=async()=>{
+ const x=p.blocks[+el.dataset.fopen];
+ if(!confirm(`「${x.title||FLOW_KINDS[x.kind]}」を開示しますか？`))return;
+ x.revealed=true;
+ x.revealedAt=new Date().toISOString();
+ x.sharedSnapshot={id:x.id,title:x.title||FLOW_KINDS[x.kind],target:x.target||"全員",body:x.body||"",images:[],revealedAt:x.revealedAt};
+ b.revealLog.push({id:x.id,at:x.revealedAt});
+ save();await syncShare();renderFlow(p)
+});
+host.querySelectorAll("[data-fupdate]").forEach(el=>el.onclick=async()=>{
+ const x=p.blocks[+el.dataset.fupdate];
+ if(!confirm(`「${x.title||FLOW_KINDS[x.kind]}」の共有内容を現在の編集内容で更新しますか？`))return;
+ const revealedAt=x.sharedSnapshot?.revealedAt||x.revealedAt||new Date().toISOString();
+ x.revealed=true;
+ x.revealedAt=revealedAt;
+ x.sharedSnapshot={id:x.id,title:x.title||FLOW_KINDS[x.kind],target:x.target||"全員",body:x.body||"",images:[],revealedAt,updatedAt:new Date().toISOString()};
+ save();await syncShare();renderFlow(p)
+});
+host.querySelectorAll("[data-fwithdraw]").forEach(el=>el.onclick=async()=>{
+ const x=p.blocks[+el.dataset.fwithdraw];
+ if(!confirm(`「${x.title||FLOW_KINDS[x.kind]}」を共有ページから取り消しますか？`))return;
+ x.revealed=false;
+ x.revealedAt="";
+ x.sharedSnapshot=null;
+ b.revealLog=(b.revealLog||[]).filter(v=>v.id!==x.id);
+ save();await syncShare();renderFlow(p)
+});
 }
 function renderSceneInfos(){
  const host=q("#sceneInfoList");if(!host)return;
  const items=b.reveals.map((r,i)=>({r,i})).filter(x=>(x.r.sceneId||"")===active);
- host.innerHTML=items.length?`<h3 style="margin-top:16px">このシーンのRP・開示情報</h3>`+items.map(({r,i})=>`<article class="reveal-card ${r.revealed?"revealed":""}"><div class="reveal-head"><div><b>${esc(r.title||"無題")}</b> <span class="secret-badge">${esc(r.target||"全員")}</span></div><span class="small">${r.rpDone?"🎭 RP済み":"未RP"}${r.revealed?" ／ ✓ 開示済み":""}</span></div>${r.rpText?`<details><summary>KP用RP原稿</summary><div class="reveal-body">${r.rpText}</div></details>`:""}<details><summary>PL向け要点・資料 ${r.images?.length?`（画像${r.images.length}枚）`:""}</summary><div class="reveal-body">${r.body||""}</div></details><div class="kp2-actions"><button data-srp="${i}" ${r.rpDone?"disabled":""}>🎭 RP済みにする</button><button data-sopen="${i}" ${!r.rpDone||r.revealed?"disabled":""}>${r.revealed?"開示済み":"要点を開示"}</button><button data-sedit="${i}">編集</button></div></article>`).join(""):'';
+ host.innerHTML=items.length?`<h3 style="margin-top:16px">このシーンのRP・開示情報</h3>`+items.map(({r,i})=>`<article class="reveal-card ${r.revealed?"revealed":""}"><div class="reveal-head"><div><b>${esc(r.title||"無題")}</b> <span class="secret-badge">${esc(r.target||"全員")}</span></div><span class="small">${r.rpDone?"🎭 RP済み":"未RP"}${r.revealed?" ／ ✓ 開示済み":""}</span></div>${r.rpText?`<details><summary>KP用RP原稿</summary><div class="reveal-body">${r.rpText}</div></details>`:""}<details><summary>PL向け要点・資料 ${r.images?.length?`（画像${r.images.length}枚）`:""}</summary><div class="reveal-body">${r.body||""}</div></details><div class="kp2-actions"><button data-srp="${i}" ${r.rpDone?"disabled":""}>🎭 RP済みにする</button>${r.revealed?`<button data-supdate="${i}">共有を更新</button><button class="secondary" data-swithdraw="${i}">開示を取り消す</button>`:`<button data-sopen="${i}" ${!r.rpDone?"disabled":""}>要点を開示</button>`}<button data-sedit="${i}">編集</button></div></article>`).join(""):'';
  host.querySelectorAll("[data-srp]").forEach(x=>x.onclick=()=>{const r=b.reveals[+x.dataset.srp];r.rpDone=true;r.rpDoneAt=new Date().toISOString();save();renderSceneInfos();renderReveals()});
  host.querySelectorAll("[data-sopen]").forEach(x=>x.onclick=async()=>{const r=b.reveals[+x.dataset.sopen];if(!r.rpDone)return;if(!confirm(`「${r.title||"この情報"}」のPL向け要点を開示しますか？`))return;r.revealed=true;r.revealedAt=new Date().toISOString();r.sharedSnapshot={title:r.title,target:r.target,body:r.body,images:[...(r.images||[])],revealedAt:r.revealedAt};b.revealLog.push({id:r.id,at:r.revealedAt});save();await syncShare();renderSceneInfos();renderReveals()});
+host.querySelectorAll("[data-supdate]").forEach(x=>x.onclick=async()=>{
+ const r=b.reveals[+x.dataset.supdate];
+ if(!confirm(`「${r.title||"この情報"}」の共有内容を現在の編集内容で更新しますか？`))return;
+ const revealedAt=r.sharedSnapshot?.revealedAt||r.revealedAt||new Date().toISOString();
+ r.revealed=true;r.revealedAt=revealedAt;
+ r.sharedSnapshot={id:r.id,title:r.title,target:r.target,body:r.body,images:[...(r.images||[])],revealedAt,updatedAt:new Date().toISOString()};
+ save();await syncShare();renderSceneInfos();renderReveals()
+});
+host.querySelectorAll("[data-swithdraw]").forEach(x=>x.onclick=async()=>{
+ const r=b.reveals[+x.dataset.swithdraw];
+ if(!confirm(`「${r.title||"この情報"}」を共有ページから取り消しますか？`))return;
+ r.revealed=false;r.revealedAt="";r.sharedSnapshot=null;
+ b.revealLog=(b.revealLog||[]).filter(v=>v.id!==r.id);
+ save();await syncShare();renderSceneInfos();renderReveals()
+});
  host.querySelectorAll("[data-sedit]").forEach(x=>x.onclick=()=>editReveal(+x.dataset.sedit,active))
 }
 function renderReveals(){
