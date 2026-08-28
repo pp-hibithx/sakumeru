@@ -46,6 +46,10 @@
   <div class="home-task-head"><h2>卓準備</h2><span id="prepTaskCount" class="small muted"></span></div>
   <div id="prepTaskList" class="home-task-list"></div>
 </section>
+<section id="lastKpBinder" class="home-task-panel" hidden>
+  <div class="home-task-head"><h2>最後に開いたKPバインダー</h2></div>
+  <div id="lastKpBinderBody" class="home-task-list"></div>
+</section>
 <section><div class="grid">
 <a class="card" href="scenario/index.html?v=0292"><span class="badge">SCENARIO</span><h3>遊ぶシナリオをまとめる</h3><p>所持・通過・予定・KP状況を、 自分用のシナリオ棚にまとめられます。</p></a>
 <a class="card" href="calendar/index.html?v=0292"><span class="badge">CALENDAR</span><h3>卓予定をまとめる</h3><p>予定と遊んだ記録を、日付から確認できます。</p></a>
@@ -84,6 +88,23 @@ function loadScenarios(){
    return [];
  }catch{return []}
 }
+function renderLastKpBinder(){
+ const panel=document.getElementById("lastKpBinder"),body=document.getElementById("lastKpBinderBody");
+ if(!panel||!body)return;
+ let x=null;try{x=JSON.parse(localStorage.getItem("39x2_last_kp_binder_v1")||"null")}catch{}
+ if(!x||!x.scenarioId){panel.hidden=true;return}
+ const title=x.scenarioTitle||"シナリオ";
+ const href=`scenario/kp-binder.html?id=${encodeURIComponent(x.scenarioId)}`;
+ let meta="すぐに続きから開けます";
+ if(x.openedAt){
+   const d=new Date(x.openedAt);
+   if(!Number.isNaN(d.getTime())){
+     meta=`最終アクセス ${d.toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}`;
+   }
+ }
+ body.innerHTML=`<a class="home-task" href="${href}"><div class="home-task-main"><div class="home-task-title">${esc(title)}</div><div class="home-task-meta">${esc(meta)}</div></div><div class="home-task-due">KPバインダーを開く →</div></a>`;
+ panel.hidden=false;
+}
 function renderPrepTasks(){
  let all={};try{all=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{}
  const scenarios=loadScenarios(), names=new Map(scenarios.map(s=>[String(s.id),s.title||"シナリオ"])), tasks=[];
@@ -110,7 +131,8 @@ function renderPrepTasks(){
    return `<a class="home-task${cls}" href="${href}"><div class="home-task-main"><div class="home-task-title">${esc(t.item.title)}</div><div class="home-task-meta">${esc(t.title)}${esc(label)} ／ 締切 ${esc(t.deadline.replaceAll("-","/"))}</div></div><div class="home-task-due">${esc(dueText(t.deadline))}</div></a>`;
  }).join("");
 }
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",renderPrepTasks);else renderPrepTasks();
+function renderHomePanels(){renderPrepTasks();renderLastKpBinder()}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",renderHomePanels);else renderHomePanels();
 })();
 </script>
 <script src="./assets/js/shared-data.js?v=0292"></script>
