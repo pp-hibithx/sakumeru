@@ -529,7 +529,37 @@
   }
   if(p.kind==="kp-live-share"){
     const items=Array.isArray(p.items)?p.items:[];
-    box.innerHTML=`<style>.kp-live{max-width:860px;margin:auto}.kp-live-item{border:1px solid var(--line);border-radius:11px;padding:14px;margin:12px 0;background:var(--panel)}.kp-live-meta{font-size:12px;color:var(--muted);margin-bottom:6px}.kp-live-body{line-height:1.75}</style><article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報がここに追加されます。ページを再読み込みすると最新状態になります。</p>${items.length?items.map((x,i)=>`<section class="kp-live-item"><div class="kp-live-meta">開示 ${i+1}${x.target?` ／ ${esc(x.target)}`:""}</div><h3>${esc(x.title||"情報")}</h3><div class="kp-live-body">${richText(x.body||"")}${Array.isArray(x.images)&&x.images.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px">${x.images.map(src=>`<img src="${esc(src)}" alt="" style="width:100%;height:auto;border-radius:8px">`).join("")}</div>`:""}</div></section>`).join(""):'<div class="small muted">まだ開示された情報はありません。</div>'}</article>`;return
+    const itemId=(x,i)=>"kp-item-"+String(x?.id||i+1).replace(/[^a-zA-Z0-9_-]/g,"-");
+    const toc=items.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${items.map((x,i)=>`<li><a href="#${itemId(x,i)}">開示 ${i+1}｜${esc(x.title||"情報")}${x.target?` <span class="small muted">（${esc(x.target)}）</span>`:""}</a></li>`).join("")}</ol></nav>`:"";
+    const cards=items.length?items.map((x,i)=>{
+      const latest=i===items.length-1;
+      return `<details class="kp-live-item" id="${itemId(x,i)}" ${latest?"open":""}>
+        <summary><span class="kp-live-summary-main"><span class="kp-live-meta">開示 ${i+1}${x.target?` ／ ${esc(x.target)}`:""}</span><strong>${esc(x.title||"情報")}</strong></span></summary>
+        <div class="kp-live-body">${richText(x.body||"")}${Array.isArray(x.images)&&x.images.length?`<div class="kp-live-images">${x.images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy">`).join("")}</div>`:""}</div>
+      </details>`;
+    }).join(""):'<div class="small muted">まだ開示された情報はありません。</div>';
+    box.innerHTML=`<style>
+      .kp-live{max-width:860px;margin:auto}
+      .kp-live-toc{border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin:16px 0;background:var(--panel)}
+      .kp-live-toc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+      .kp-live-toc ol{margin:10px 0 0;padding-left:1.5em;display:grid;gap:5px}
+      .kp-live-tools{display:flex;gap:6px;flex-wrap:wrap}
+      .kp-live-tools button{padding:5px 9px;font-size:12px}
+      .kp-live-item{border:1px solid var(--line);border-radius:11px;margin:12px 0;background:var(--panel);scroll-margin-top:16px;overflow:hidden}
+      .kp-live-item>summary{cursor:pointer;padding:13px 14px;list-style-position:inside}
+      .kp-live-item[open]>summary{border-bottom:1px solid var(--line)}
+      .kp-live-summary-main{display:inline-flex;flex-direction:column;gap:3px;vertical-align:middle}
+      .kp-live-meta{font-size:12px;color:var(--muted)}
+      .kp-live-body{line-height:1.75;padding:14px}
+      .kp-live-images{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px}
+      .kp-live-images img{width:100%;height:auto;border-radius:8px}
+    </style>
+    <article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2>
+    <p class="small muted">KPから開示された情報がここに追加されます。最新の開示だけ最初から開き、過去情報はトグルと目次から確認できます。</p>
+    ${toc}${cards}</article>`;
+    q("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=true));
+    q("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=false));
+    return
   }
   if(p.kind==="library-article"){unlockArticle(p);return}
   if(p.kind==="profile-page"){renderProfilePage(p);return}
