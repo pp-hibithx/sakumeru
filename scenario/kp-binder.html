@@ -24,7 +24,9 @@
 <nav class="kp2-tabs"><button class="kp2-tab active" data-tab="session">シナリオ進行</button><button class="kp2-tab" data-tab="pc">参加PC・技能</button></nav>
 <section class="kp2-pane" data-pane="session">
 <div class="kp2-box"><h2>シナリオ進行</h2><p class="small muted">シーンごとに本文・KPメモ・RP・開示情報を進行順にまとめます。BGM・画像・PDF資料も同じ画面から参照できます。</p>
-<div class="share-url"><input id="shareUrl" readonly placeholder="まだ共有URLは作成されていません"><button id="makeShare">共通共有URLを作成</button><button id="copyShare">コピー</button></div><div id="shareStatus" class="small muted" style="margin-top:7px"></div></div>
+<div class="share-url"><input id="shareUrl" readonly placeholder="このセッションの共有URLはまだありません"><button id="makeShare">このセッションの共有URLを作成</button><button id="copyShare">コピー</button></div>
+<div class="kp2-actions" style="margin-top:8px"><button type="button" class="secondary" id="newShareSession">新しいセッションを開始</button></div>
+<div id="shareStatus" class="small muted" style="margin-top:7px"></div></div>
 <div class="kp2-box"><div class="kp2-actions" style="justify-content:space-between"><div><h2 style="margin:0">シーン・進行項目</h2><div class="small muted">導入・探索場所・NPC・イベント・エンディングなど、大きな場面ごとにシーンを作ります。通常本文もKPメモ・RP・開示情報も、すべて進行ブロックとして順番に管理します。</div></div><button id="addPage">＋ シーン追加</button></div><div class="kp2-grid" style="margin-top:12px"><div id="pageList" class="kp2-list"></div><div id="pageEditor"></div></div></div>
 <div id="revealList" hidden></div></section>
 <section class="kp2-pane" data-pane="pc" hidden><div class="kp2-box"><div class="kp2-actions"><div style="flex:1"><h2 style="margin:0">参加PC管理</h2></div><select id="pcSelect"><option value="">PCを選択…</option></select><button id="addPc">追加</button></div><div id="participants"></div></div><div class="kp2-box"><h2>技能比較</h2><div id="compare" style="overflow:auto"></div></div></section>
@@ -35,8 +37,13 @@ const q=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>
 const sid=new URLSearchParams(location.search).get("id")||"";const scenarios=TRPG39.loadScenarios?.()||[];const sc=scenarios.find(x=>String(x.id)===String(sid))||{title:"シナリオ"};
 q("#scenarioName").textContent=sc.title+" ／ 自分専用";
 const KEY="39x2_scenario_kp_binders_v1",all=(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch{return {}}})();
-const uuid=()=>TRPG39.uuid?.()||crypto.randomUUID();function def(){return {overview:"",pages:[],participants:[],reveals:[],shareId:"",revealLog:[]}}
-const b=all[sid]||(all[sid]=def());b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];
+const uuid=()=>TRPG39.uuid?.()||crypto.randomUUID();
+function def(){return {overview:"",pages:[],participants:[],reveals:[],shareId:"",shareSessionId:"",shareSessionStartedAt:"",shareSessions:[],revealLog:[]}}
+const b=all[sid]||(all[sid]=def());
+b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];
+b.shareSessions??=[];
+b.shareSessionId??="";
+b.shareSessionStartedAt??="";
 function save(){
   try{
     localStorage.setItem(KEY,JSON.stringify(all));
@@ -271,12 +278,94 @@ if(!b.flowMigratedV1){
 function sharePayload(){
  const legacy=b.reveals.filter(x=>x.revealed).map(x=>x.sharedSnapshot||({id:x.id,title:x.title,target:x.target,body:x.body,images:[...(x.images||[])],revealedAt:x.revealedAt}));
  const flow=b.pages.flatMap(p=>(p.blocks||[]).filter(x=>x.revealed&&(x.kind==="reveal"||x.kind==="secret")).map(x=>x.sharedSnapshot||({id:x.id,title:x.title||FLOW_KINDS[x.kind],target:x.target||"全員",body:x.body||"",images:[],revealedAt:x.revealedAt})));
- return {kind:"kp-live-share",title:sc.title||"セッション共有",updatedAt:new Date().toISOString(),items:[...legacy,...flow].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
+ return {
+   kind:"kp-live-share",
+   title:sc.title||"セッション共有",
+   scenarioId:String(sid||""),
+   sessionId:String(b.shareSessionId||""),
+   sessionStartedAt:b.shareSessionStartedAt||"",
+   updatedAt:new Date().toISOString(),
+   items:[...legacy,...flow].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))
+ }
 }
-async function syncShare(){if(!b.shareId)return;try{await TRPG39Cloud.updateSharedPage(b.shareId,sharePayload());q("#shareStatus").textContent="共有ページを更新しました。"}catch(e){q("#shareStatus").textContent=e.message||e}}
-function showShare(){q("#shareUrl").value=b.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(b.shareId)}&type=kp-live`:""}showShare();
-q("#makeShare").onclick=async()=>{try{if(!b.shareId)b.shareId=await TRPG39Cloud.createSharedPage(sharePayload());else await syncShare();save();showShare();q("#shareStatus").textContent="共通共有URLを用意しました。以後、開示するたび同じURLを更新します。"}catch(e){q("#shareStatus").textContent=e.message||e}};
-q("#copyShare").onclick=async()=>{if(!q("#shareUrl").value)return;await navigator.clipboard.writeText(q("#shareUrl").value);q("#shareStatus").textContent="共有URLをコピーしました。"};
+async function syncShare(){
+ if(!b.shareId)return;
+ try{
+   await TRPG39Cloud.updateSharedPage(b.shareId,sharePayload());
+   q("#shareStatus").textContent="このセッションの共有ページを更新しました。";
+ }catch(e){q("#shareStatus").textContent=e.message||e}
+}
+function showShare(){
+ q("#shareUrl").value=b.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(b.shareId)}&type=kp-live`:"";
+}
+function ensureShareSession(){
+ if(!b.shareSessionId){
+   b.shareSessionId=uuid();
+   b.shareSessionStartedAt=new Date().toISOString();
+ }
+}
+function resetShareProgressForNewSession(){
+ b.revealLog=[];
+ b.reveals.forEach(r=>{
+   r.revealed=false;
+   r.revealedAt="";
+   r.sharedSnapshot=null;
+ });
+ b.pages.forEach(p=>(p.blocks||[]).forEach(x=>{
+   if(x.kind==="reveal"||x.kind==="secret"){
+     x.revealed=false;
+     x.revealedAt="";
+     x.sharedSnapshot=null;
+   }
+ }));
+}
+function archiveCurrentShareSession(){
+ if(!b.shareId)return;
+ b.shareSessions.push({
+   sessionId:b.shareSessionId||"",
+   shareId:b.shareId,
+   startedAt:b.shareSessionStartedAt||"",
+   endedAt:new Date().toISOString(),
+   url:`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(b.shareId)}&type=kp-live`
+ });
+}
+showShare();
+
+q("#makeShare").onclick=async()=>{
+ try{
+   ensureShareSession();
+   if(!b.shareId){
+     b.shareId=await TRPG39Cloud.createSharedPage(sharePayload());
+   }else{
+     await syncShare();
+   }
+   save();
+   showShare();
+   q("#shareStatus").textContent="このセッション専用の共有URLです。開示するたび、このURLだけが更新されます。";
+ }catch(e){q("#shareStatus").textContent=e.message||e}
+};
+
+q("#newShareSession").onclick=()=>{
+ const msg=b.shareId
+   ?"現在の共有URLはそのまま残し、新しいセッション用URLへ切り替えます。開示済み状態も新しい卓用にリセットします。よろしいですか？"
+   :"新しいセッションを開始します。開示済み状態を新しい卓用にリセットします。よろしいですか？";
+ if(!confirm(msg))return;
+ archiveCurrentShareSession();
+ b.shareId="";
+ b.shareSessionId=uuid();
+ b.shareSessionStartedAt=new Date().toISOString();
+ resetShareProgressForNewSession();
+ save();
+ showShare();
+ renderPages();
+ q("#shareStatus").textContent="新しいセッションを開始しました。「このセッションの共有URLを作成」を押してください。前の共有URLは変更されません。";
+};
+
+q("#copyShare").onclick=async()=>{
+ if(!q("#shareUrl").value)return;
+ await navigator.clipboard.writeText(q("#shareUrl").value);
+ q("#shareStatus").textContent="このセッションの共有URLをコピーしました。";
+};
 const pcs=TRPG39.loadPCs?.()||[];q("#pcSelect").innerHTML='<option value="">PCを選択…</option>'+pcs.map(x=>`<option value="${esc(x.id)}">${esc(x.name||"PC")}</option>`).join("");
 function parseSkills(t){const m={};String(t||"").split(/\\n/).forEach(l=>{const x=l.match(/^\\s*([^:：]+)[:：]\\s*(\\d+)/);if(x)m[x[1].trim()]=+x[2]});return m}
 function renderPC(){q("#participants").innerHTML=b.participants.length?b.participants.map((p,i)=>`<div class="kp2-person"><div class="kp2-actions" style="justify-content:space-between"><b>${esc(p.name||"PC")}</b><button class="danger" data-prm="${i}">削除</button></div><div class="kp2-pcgrid"><label>能力値・主要数値<textarea data-ab="${i}">${esc(p.abilities||"")}</textarea></label><label>技能値（技能名：値）<textarea data-sk="${i}">${esc(p.skills||"")}</textarea></label></div></div>`).join(""):'<div class="small muted">参加PCはまだ登録されていません。</div>';q("#participants").querySelectorAll("[data-prm]").forEach(x=>x.onclick=()=>{b.participants.splice(+x.dataset.prm,1);save();renderPC()});q("#participants").querySelectorAll("[data-ab]").forEach(x=>x.oninput=()=>{b.participants[+x.dataset.ab].abilities=x.value;save()});q("#participants").querySelectorAll("[data-sk]").forEach(x=>x.oninput=()=>{b.participants[+x.dataset.sk].skills=x.value;save();renderCompare()});renderCompare()}
