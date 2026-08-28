@@ -126,6 +126,7 @@ function appendPdfToScene(i,selectedOnly){
  q("#scenePdfStatus").textContent=`PDF p.${x.page} ${selectedOnly?"の選択範囲":"全文"}を通常ブロックへ追加しました。`;
 }
 
+const FLOW_KINDS={normal:"通常",memo:"KPメモ",rp:"RP",reveal:"開示情報",secret:"秘匿",note:"進行メモ"};
 let active=b.pages[0]?.id||"";function renderPages(){const list=q("#pageList"),ed=q("#pageEditor");list.innerHTML=b.pages.length?b.pages.map((p,i)=>`<button class="${p.id===active?"active":""}" data-p="${p.id}">${esc(p.title||"無題")}</button>`).join(""):'<div class="small muted">まだページがありません。</div>';list.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{active=x.dataset.p;renderPages()});const p=b.pages.find(x=>x.id===active);if(!p){ed.innerHTML="";return}if(!Array.isArray(p.bgm))p.bgm=[];if(!Array.isArray(p.images))p.images=[];p.pdfNotes??="";if(!Array.isArray(p.blocks))p.blocks=[];
 if(!p.bodyMigratedToFlowV1){const oldBody=String(p.body||"").trim();if(oldBody)p.blocks.unshift({id:uuid(),kind:"normal",title:"",target:"全員",body:p.body,rpDone:false,revealed:false});p.body="";p.bodyMigratedToFlowV1=true;save()}
 if(!p.blocks.length)p.blocks.push({id:uuid(),kind:"normal",title:"",target:"全員",body:"",rpDone:false,revealed:false});
@@ -171,7 +172,7 @@ document.querySelectorAll(".kp2-tab").forEach(t=>t.onclick=()=>{document.querySe
 
 function imgToData(file){return new Promise((ok,ng)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=ng;r.readAsDataURL(file)})}
 
-const FLOW_KINDS={normal:"通常",memo:"KPメモ",rp:"RP",reveal:"開示情報",secret:"秘匿",note:"進行メモ"};
+
 function addFlowBlock(p){
  if(!p)return;
  if(!Array.isArray(p.blocks))p.blocks=[];
