@@ -37,7 +37,20 @@ q("#scenarioName").textContent=sc.title+" ／ 自分専用";
 const KEY="39x2_scenario_kp_binders_v1",all=(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch{return {}}})();
 const uuid=()=>TRPG39.uuid?.()||crypto.randomUUID();function def(){return {overview:"",pages:[],participants:[],reveals:[],shareId:"",revealLog:[]}}
 const b=all[sid]||(all[sid]=def());b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];
-const save=()=>localStorage.setItem(KEY,JSON.stringify(all));
+function save(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(all));
+    return true;
+  }catch(e){
+    console.error("KPバインダー保存エラー",e);
+    const st=q("#kpSaveStatus");
+    if(st){
+      st.textContent="保存できませんでした。ブラウザ保存領域が一杯の可能性があります。";
+      st.hidden=false;
+    }
+    return false;
+  }
+}
 try{
   const openedAt=new Date().toISOString();
   b.lastOpenedAt=openedAt;
@@ -117,7 +130,9 @@ let active=b.pages[0]?.id||"";function renderPages(){const list=q("#pageList"),e
 if(!p.bodyMigratedToFlowV1){const oldBody=String(p.body||"").trim();if(oldBody)p.blocks.unshift({id:uuid(),kind:"normal",title:"",target:"全員",body:p.body,rpDone:false,revealed:false});p.body="";p.bodyMigratedToFlowV1=true;save()}
 if(!p.blocks.length)p.blocks.push({id:uuid(),kind:"normal",title:"",target:"全員",body:"",rpDone:false,revealed:false});
 ed.innerHTML=`<input class="kp2-editor-title" id="pageTitle" value="${esc(p.title||"")}">
-<div id="sceneFlow" class="scene-flow"></div><div class="kp2-actions"><button type="button" id="addFlowBlock" onclick="window.__kpAddFlowBlock&&window.__kpAddFlowBlock()">＋ 進行ブロック</button></div>
+<div id="kpSaveStatus" class="small" hidden style="margin:0 0 8px;color:#b42318"></div>
+<div id="sceneFlow" class="scene-flow"></div>
+<div class="kp2-actions"><button type="button" id="addFlowBlock">＋ 進行ブロック</button></div>
 <div class="scene-assets">
  <div class="scene-assetbox"><h4>🎵 BGM・SE</h4><div class="scene-file"><input id="bgmUrl" placeholder="BGM / SE のURL"><button id="addBgm">追加</button></div><div id="bgmList"></div></div>
  <div class="scene-assetbox"><h4>🖼 画像資料</h4><input id="sceneImgs" type="file" accept="image/*" multiple><div id="sceneThumbs" class="scene-thumbs"></div></div>
@@ -140,8 +155,16 @@ q("#sceneImgs").onchange=async e=>{for(const f of e.target.files)p.images.push(a
 q("#pdfNotes").oninput=e=>{p.pdfNotes=e.target.value;save()};
 q("#pickScenePdf").onclick=()=>q("#scenePdfFile").click();
 q("#scenePdfFile").onchange=e=>{const file=e.target.files?.[0];e.target.value="";if(file)readScenePdf(file)};
-window.__kpActivePage=p;
-renderSceneAssets();renderFlow(p);q("#dupPage").onclick=()=>{const n=structuredClone(p);n.id=uuid();n.title=(p.title||"無題")+" コピー";b.pages.push(n);active=n.id;save();renderPages()};q("#delPage").onclick=()=>{if(confirm("このページを削除しますか？")){b.pages=b.pages.filter(x=>x.id!==p.id);active=b.pages[0]?.id||"";save();renderPages()}};q("#upPage").onclick=()=>movePage(-1);q("#downPage").onclick=()=>movePage(1)}
+renderSceneAssets();
+renderFlow(p);
+const addFlowBtn=q("#addFlowBlock");
+if(addFlowBtn){
+  addFlowBtn.onclick=(e)=>{
+    e.preventDefault();
+    addFlowBlock(p);
+  };
+}
+q("#dupPage").onclick=()=>{const n=structuredClone(p);n.id=uuid();n.title=(p.title||"無題")+" コピー";b.pages.push(n);active=n.id;save();renderPages()};q("#delPage").onclick=()=>{if(confirm("このページを削除しますか？")){b.pages=b.pages.filter(x=>x.id!==p.id);active=b.pages[0]?.id||"";save();renderPages()}};q("#upPage").onclick=()=>movePage(-1);q("#downPage").onclick=()=>movePage(1)}
 function movePage(d){const i=b.pages.findIndex(x=>x.id===active),j=i+d;if(i<0||j<0||j>=b.pages.length)return;[b.pages[i],b.pages[j]]=[b.pages[j],b.pages[i]];save();renderPages()}
 q("#addPage").onclick=()=>{const p={id:uuid(),title:"新しいページ",body:"",bodyMigratedToFlowV1:true,blocks:[{id:uuid(),kind:"normal",title:"",target:"全員",body:"",rpDone:false,revealed:false}]};b.pages.push(p);active=p.id;save();renderPages()};renderPages();
 document.querySelectorAll(".kp2-tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".kp2-tab").forEach(x=>x.classList.toggle("active",x===t));document.querySelectorAll(".kp2-pane").forEach(x=>x.hidden=x.dataset.pane!==t.dataset.tab)});
@@ -153,8 +176,8 @@ function addFlowBlock(p){
  if(!p)return;
  if(!Array.isArray(p.blocks))p.blocks=[];
  p.blocks.push({id:uuid(),kind:"normal",title:"",target:"全員",body:"",rpDone:false,revealed:false});
- save();
  renderFlow(p);
+ save();
  requestAnimationFrame(()=>{
    const cards=q("#sceneFlow")?.querySelectorAll(".flow-card");
    const last=cards?.[cards.length-1];
@@ -165,10 +188,6 @@ function addFlowBlock(p){
    }
  });
 }
-window.__kpAddFlowBlock=()=>{
- const p=window.__kpActivePage||b.pages.find(x=>x.id===active);
- addFlowBlock(p);
-};
 function moveFlow(p,i,d){
  const j=i+d;if(j<0||j>=p.blocks.length)return;
  [p.blocks[i],p.blocks[j]]=[p.blocks[j],p.blocks[i]];save();renderFlow(p);
