@@ -29,6 +29,13 @@
 .block-tools button{padding:5px 8px;font-size:12px}
 .image-preview{max-width:100%;max-height:520px;display:block;margin:8px auto;border-radius:9px}
 .copy-note{padding:7px 9px;border:1px dashed var(--line);border-radius:8px;font-size:12px;color:var(--muted);margin-bottom:10px}
+.element-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.element-tools-label{font-size:12px;font-weight:700;margin-right:3px}
+.element-tools button{padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;font-weight:600;cursor:pointer}
+.element-tools button:hover{border-color:var(--accent)}
+.element-tools button[data-add="normal"]{border-color:var(--accent)}
+.element-sep{width:1px;height:22px;background:var(--line);margin:0 2px}
+.element-tools-help{font-size:11px;color:var(--muted);margin-left:auto}
 .annotation-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:0 0 9px;padding:6px 7px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}
 .annotation-label{font-size:11px;font-weight:700;color:var(--muted);margin-right:2px;letter-spacing:.04em}
 .annotation-bar button{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;font-size:12px;line-height:1;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text)}
@@ -44,7 +51,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v8 — コピー編集＋注釈UI整理<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v9 — 本文ツール整理<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -56,15 +63,19 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
    <h2 id="sceneTitle" class="scene-title"></h2>
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
-   <div class="addbar" id="addbar">
+   <div class="element-tools" id="addbar" aria-label="本文要素を追加">
+<span class="element-tools-label">本文を追加</span>
 <button type="button" data-add="normal">＋ 段落</button>
 <button type="button" data-add="heading">＋ 小見出し</button>
+<span class="element-sep" aria-hidden="true"></span>
 <button type="button" data-add="memo">＋ KPメモ</button>
 <button type="button" data-add="rp">＋ RP</button>
 <button type="button" data-add="reveal">＋ 開示情報</button>
 <button type="button" data-add="secret">＋ 秘匿</button>
+<span class="element-sep" aria-hidden="true"></span>
 <button type="button" data-add="image">＋ 画像</button>
-<button type="button" class="secondary" id="resetCopy">コピーを元に戻す</button>
+<span class="element-tools-help">選択中のシーン末尾に追加</span>
+<button type="button" class="secondary" id="resetCopy">↶ コピーを元に戻す</button>
 </div>
    <p class="muted-note">※ テスト編集はできますが、本番保存・共有更新は行いません。再読み込みで破棄されます。</p>
   </section>
