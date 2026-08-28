@@ -29,7 +29,7 @@
 <script defer src="../../assets/js/common-layout.js?v=0303"></script>
 <script defer src="../../assets/js/theme-v0296.js"></script>
 <style>
-/* Life Archive のダイスログ画面を、SAKU+MERU の配色のまま再構成 */
+/* 個人サイトで使用していた のダイスログ画面を、SAKU+MERU の配色のまま再構成 */
 :root{
   --dl-panel:var(--panel,#181b21);
   --dl-panel2:var(--panel-hover,#20242c);
@@ -152,7 +152,7 @@ main>.wrap{
 
 
 <style id="diceQuietUI">
-/* v0.2.10 — ダイスログもSAKU+MERU共通の静かな操作感へ */
+/* v0.2.10 — 更新部分 */
 #diceQuietUI{}
 body{font-size:14px}
 .hero.hero-copy h2{font-size:24px;margin-bottom:6px}.hero.hero-copy p{font-size:13px}
@@ -180,7 +180,7 @@ input[type="file"]{padding:5px;font-size:12px}input[type="file"]::file-selector-
 </style>
 
 <style id="diceUnifiedUI_v0211">
-/* v0.2.11 — ダイスログ専用のサイズ階層を一本化 */
+/* v0.2.11 — 更新部分 */
 main>.wrap{max-width:1000px}
 main section{margin-top:20px}
 .hero.hero-copy{padding:22px 0 10px}
@@ -312,8 +312,8 @@ html.theme-light .source-preview .source-line.hit{
 <section class="panel">
 <h2>ログ</h2>
 <div class="inline2">
-  <div><label>キャンペーン名</label><input id="trpgCampaign" placeholder="例：○○のシナリオ"></div>
-  <div><label>区切り・章</label><input id="trpgScenario" placeholder="例：初日／Case2／第3話"></div>
+  <div><label>シナリオ名</label><input id="trpgCampaign" placeholder="例：○○のシナリオ"></div>
+  <div><label>CPの区切り・章</label><input id="trpgScenario" placeholder="例：初日／Case2／第3話"></div>
 </div>
 <div class="inline2">
   <div><label>抽出開始の目印（任意）</label><input id="trpgStartMarker" placeholder="例：◎××病院から再開"></div>
