@@ -48,6 +48,15 @@ try{
     scenarioTitle:String(sc.title||"シナリオ"),
     openedAt
   }));
+  if(sid&&window.parent&&window.parent!==window){
+    window.parent.postMessage({
+      type:"sakumeru:last-kp-binder",
+      scenarioId:String(sid),
+      scenarioTitle:String(sc.title||"シナリオ"),
+      openedAt,
+      url:location.href
+    },"*");
+  }
 }catch(e){}
 function toolbar(host,editor){host.innerHTML=`<button data-c="bold"><b>B</b></button><button data-c="italic"><i>I</i></button><button data-c="underline"><u>U</u></button><select data-block><option value="">段落</option><option value="h2">見出し大</option><option value="h3">見出し小</option><option value="blockquote">引用</option></select><input data-color type="color" value="#cd9723"><button data-list="insertUnorderedList">・リスト</button><button data-list="insertOrderedList">1.リスト</button><button data-link>リンク</button><button data-clear>装飾解除</button>`;
 host.querySelectorAll("[data-c]").forEach(x=>x.onclick=()=>{document.execCommand(x.dataset.c);editor.focus()});host.querySelector("[data-block]").onchange=e=>{if(e.target.value)document.execCommand("formatBlock",false,e.target.value);editor.focus()};host.querySelector("[data-color]").oninput=e=>{document.execCommand("foreColor",false,e.target.value);editor.focus()};host.querySelectorAll("[data-list]").forEach(x=>x.onclick=()=>{document.execCommand(x.dataset.list);editor.focus()});host.querySelector("[data-link]").onclick=()=>{const u=prompt("リンクURL");if(u)document.execCommand("createLink",false,u);editor.focus()};host.querySelector("[data-clear]").onclick=()=>{document.execCommand("removeFormat");editor.focus()}}
