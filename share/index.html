@@ -203,7 +203,71 @@
 (async()=>{
  const box=document.getElementById("shareContent");
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
- const richText=s=>{let h=esc(s||"");h=h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/__([^_]+)__/g,"<u>$1</u>");return h.replace(/\n/g,"<br>")};
+ const sanitizeRichHtml=input=>{
+   const tpl=document.createElement("template");
+   tpl.innerHTML=String(input||"");
+   const allowed=new Set(["DIV","P","BR","STRONG","B","EM","I","U","S","UL","OL","LI","BLOCKQUOTE","A","SPAN"]);
+   const clean=node=>{
+     [...node.childNodes].forEach(child=>{
+       if(child.nodeType===Node.TEXT_NODE)return;
+       if(child.nodeType!==Node.ELEMENT_NODE){child.remove();return}
+       if(!allowed.has(child.tagName)){
+         const frag=document.createDocumentFragment();
+         while(child.firstChild)frag.appendChild(child.firstChild);
+         child.replaceWith(frag);
+         clean(node);
+         return;
+       }
+       [...child.attributes].forEach(a=>child.removeAttribute(a.name));
+       if(child.tagName==="A"){
+         const href=String(child.getAttribute("href")||"");
+         if(/^https?:\/\//i.test(href)){
+           child.setAttribute("href",href);
+           child.setAttribute("target","_blank");
+           child.setAttribute("rel","noopener noreferrer");
+         }else child.removeAttribute("href");
+       }
+       clean(child);
+     });
+   };
+   // Save href values before stripping attributes.
+   [...tpl.content.querySelectorAll("a")].forEach(a=>a.dataset.safeHref=a.getAttribute("href")||"");
+   const cleanWithHref=node=>{
+     [...node.childNodes].forEach(child=>{
+       if(child.nodeType===Node.TEXT_NODE)return;
+       if(child.nodeType!==Node.ELEMENT_NODE){child.remove();return}
+       if(!allowed.has(child.tagName)){
+         const frag=document.createDocumentFragment();
+         while(child.firstChild)frag.appendChild(child.firstChild);
+         child.replaceWith(frag);
+         cleanWithHref(node);
+         return;
+       }
+       const href=child.tagName==="A"?(child.dataset.safeHref||""):"";
+       [...child.attributes].forEach(a=>child.removeAttribute(a.name));
+       if(child.tagName==="A"&&/^https?:\/\//i.test(href)){
+         child.setAttribute("href",href);
+         child.setAttribute("target","_blank");
+         child.setAttribute("rel","noopener noreferrer");
+       }
+       cleanWithHref(child);
+     });
+   };
+   cleanWithHref(tpl.content);
+   return tpl.innerHTML;
+ };
+ const richText=s=>{
+   const raw=String(s||"");
+   // KPバインダー等のcontenteditable保存値はHTMLなので、安全なタグだけ残して描画する。
+   if(/<\s*\/?\s*(div|p|br|strong|b|em|i|u|s|ul|ol|li|blockquote|a|span)\b/i.test(raw)){
+     return sanitizeRichHtml(raw);
+   }
+   let h=esc(raw);
+   h=h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>")
+      .replace(/__([^_]+)__/g,"<u>$1</u>");
+   return h.replace(/\n/g,"<br>");
+ };
  async function sha256Text(text){const bytes=new TextEncoder().encode(String(text||""));const hash=await crypto.subtle.digest("SHA-256",bytes);return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("")}
  const youtubeId=url=>{
    try{
