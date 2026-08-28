@@ -48,10 +48,53 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .scene-row{display:flex;gap:5px;align-items:center}.scene-row>button:first-child{flex:1}
 .scene-row .mini{padding:5px 7px}
+
+/* v10: 一本のシーン本文 */
+.manuscript{padding:0}
+.scene-sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.scene-sheet .copy-note{margin-bottom:12px}
+.scene-annotation{position:sticky;top:6px;z-index:8;margin-bottom:14px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.manuscript-stream{max-width:900px;margin:0 auto}
+.manu-item{position:relative;padding:13px 2px 15px;border-bottom:1px dashed var(--line)}
+.manu-item:last-child{border-bottom:0}
+.manu-head{display:flex;align-items:center;gap:8px;min-height:26px;margin-bottom:4px}
+.manu-label{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.02em}
+.manu-title{flex:1;min-width:140px;border:0!important;border-bottom:1px solid transparent!important;border-radius:0!important;background:transparent!important;padding:3px 2px!important;font-weight:700}
+.manu-title:focus{border-bottom-color:var(--accent)!important;outline:none}
+.manu-target{width:130px;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;background:transparent!important;padding:3px 2px!important;font-size:12px}
+.manu-tools{display:flex;gap:3px;opacity:.22;transition:opacity .15s}
+.manu-item:hover .manu-tools,.manu-item:focus-within .manu-tools{opacity:1}
+.manu-tools button{padding:3px 6px;font-size:11px}
+.manu-body{min-height:34px;padding:5px 7px;border:1px solid transparent;border-radius:6px;background:transparent;line-height:1.8;outline:none}
+.manu-body:hover{background:rgba(255,255,255,.012)}
+.manu-body:focus{border-color:var(--line);background:var(--bg)}
+.manu-item.heading{padding-top:18px}
+.manu-item.heading .manu-label{font-size:14px;color:var(--text)}
+.manu-item.heading .manu-title{font-size:16px}
+.manu-item.memo{border-left:3px solid var(--line);padding-left:10px}
+.manu-item.rp{border-left:3px dotted var(--line);padding-left:10px}
+.manu-item.reveal,.manu-item.secret{padding-left:10px}
+.manu-item.reveal{border-left:3px solid var(--accent)}
+.manu-item.secret{border-left:3px double var(--line)}
+.reveal-action{margin-top:7px;padding-left:7px}
+.reveal-action button{padding:5px 9px;font-size:12px}
+.manu-image{margin:4px 0 2px;text-align:center}
+.manu-image img{max-width:100%;max-height:520px;border-radius:8px}
+.manu-image-actions{display:flex;justify-content:center;gap:6px;margin-top:6px}
+.manu-image-actions button{padding:5px 8px;font-size:12px}
+.element-tools{max-width:900px;margin:14px auto 0}
+.element-tools button[data-add="normal"]{border-color:var(--line)}
+@media(max-width:760px){
+ .scene-sheet{padding:12px 10px}
+ .manu-head{flex-wrap:wrap}
+ .manu-tools{opacity:1;margin-left:auto}
+ .manu-target{width:110px}
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v9 — 本文ツール整理<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v10 — 一本のシーン本文UI<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -64,7 +107,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
    <div class="element-tools" id="addbar" aria-label="本文要素を追加">
-<span class="element-tools-label">本文を追加</span>
+<span class="element-tools-label">ここに要素を追加</span>
 <button type="button" data-add="normal">＋ 段落</button>
 <button type="button" data-add="heading">＋ 小見出し</button>
 <span class="element-sep" aria-hidden="true"></span>
@@ -74,7 +117,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 <button type="button" data-add="secret">＋ 秘匿</button>
 <span class="element-sep" aria-hidden="true"></span>
 <button type="button" data-add="image">＋ 画像</button>
-<span class="element-tools-help">選択中のシーン末尾に追加</span>
+<span class="element-tools-help">選択中シーンの末尾へ追加（並べ替え可）</span>
 <button type="button" class="secondary" id="resetCopy">↶ コピーを元に戻す</button>
 </div>
    <p class="muted-note">※ テスト編集はできますが、本番保存・共有更新は行いません。再読み込みで破棄されます。</p>
@@ -180,79 +223,99 @@ function renderEditor(){
  const blocks=ensureBlocks(p);
  q("#sceneTitle").innerHTML=`<input class="edit-title" id="sceneTitleInput" value="${esc(p.title||"")}" aria-label="シーン名">`;
  refreshStats();
- let html=`<div class="copy-note">ここでの変更はコピーだけに反映されます。本番データには保存されません。</div>`;
- html+=blocks.map((x,i)=>{
+
+ const itemHtml=blocks.map((x,i)=>{
    const kind=x.kind||"normal",label=FLOW_LABEL[kind]||kind;
    if(kind==="image"){
-     return `<article class="block image"><div class="block-head"><div><span class="kind">画像</span></div><div class="block-tools"><button class="secondary" data-up="${i}">↑</button><button class="secondary" data-down="${i}">↓</button><button class="secondary" data-del="${i}">削除</button></div></div>
-       ${x.image?`<img class="image-preview" src="${x.image}" alt="">`:'<div class="muted-note">画像未選択</div>'}
-       <div class="block-tools" style="margin-top:8px"><button type="button" data-pickimg="${i}">画像を選択</button>${x.image?`<button type="button" class="secondary" data-clearimg="${i}">画像を外す</button>`:""}</div>
-     </article>`
+     return `<section class="manu-item image" data-item="${i}">
+       <div class="manu-head">
+         <span class="manu-label">▼ 画像</span>
+         <span class="spacer"></span>
+         <div class="manu-tools"><button class="secondary" data-up="${i}">↑</button><button class="secondary" data-down="${i}">↓</button><button class="secondary" data-del="${i}">削除</button></div>
+       </div>
+       <figure class="manu-image">
+         ${x.image?`<img src="${x.image}" alt="">`:'<div class="muted-note">画像未選択</div>'}
+         <div class="manu-image-actions"><button type="button" data-pickimg="${i}">画像を選択</button>${x.image?`<button type="button" class="secondary" data-clearimg="${i}">画像を外す</button>`:""}</div>
+       </figure>
+     </section>`;
    }
-   return `<article class="block ${esc(kind)}">
-     <div class="block-head">
-       <div><span class="kind">${esc(label)}</span>${x.revealed?'<span class="shared"> ✓ 元データでは共有済み</span>':''}</div>
-       <div class="block-tools"><button class="secondary" data-up="${i}">↑</button><button class="secondary" data-down="${i}">↓</button><button class="secondary" data-del="${i}">削除</button></div>
+
+   const titleInput=kind!=="normal"
+     ? `<input class="manu-title" data-title="${i}" value="${esc(x.title||"")}" placeholder="${kind==="heading"?"小見出し":label+"の見出し"}">`
+     : "";
+   const target=(kind==="reveal"||kind==="secret")
+     ? `<input class="manu-target" data-target="${i}" value="${esc(x.target||"全員")}" placeholder="対象">`
+     : "";
+   const revealAction=(kind==="reveal")
+     ? `<div class="reveal-action"><button type="button" disabled title="コピー編集テストでは共有しません">${x.revealed?"✓ 元データでは共有済み":"開示する"}</button></div>`
+     : "";
+
+   return `<section class="manu-item ${esc(kind)}" data-item="${i}">
+     <div class="manu-head">
+       <span class="manu-label">▼ ${esc(label)}</span>
+       ${titleInput}
+       ${target}
+       <div class="manu-tools"><button class="secondary" data-up="${i}">↑</button><button class="secondary" data-down="${i}">↓</button><button class="secondary" data-del="${i}">削除</button></div>
      </div>
-     ${kind!=="normal"?`<input class="edit-title" data-title="${i}" value="${esc(x.title||"")}" placeholder="${kind==="heading"?"小見出し":label+"の見出し"}">`:""}
-     ${(kind==="reveal"||kind==="secret")?`<div style="margin-top:7px"><input class="edit-target" data-target="${i}" value="${esc(x.target||"全員")}" placeholder="対象"></div>`:""}
-     <div class="annotation-bar" aria-label="注釈ツール">
-       <span class="annotation-label">注釈</span>
-       <button type="button" data-marker="${i}" title="選択した文字にマーカー">▰ マーカー</button>
-       <button type="button" data-sticky="${i}" title="選択した文字にKP用の付箋">🗒 付箋</button>
-       <button type="button" data-clearanno="${i}" title="選択範囲にあるマーカー・付箋を外す">× 注釈解除</button>
-       <span class="annotation-help">文字を選択して使用</span>
-     </div>
-     <div class="edit-body" contenteditable="true" data-body="${i}" style="margin-top:8px">${x.body||""}</div>
-   </article>`
+     <div class="manu-body" contenteditable="true" data-body="${i}">${x.body||""}</div>
+     ${revealAction}
+   </section>`;
  }).join("");
- q("#manuscript").innerHTML=html||'<div class="box muted-note">本文要素がありません。</div>';
+
+ q("#manuscript").innerHTML=`<div class="scene-sheet">
+   <div class="copy-note">一本のシーン本文として表示しています。変更はコピーだけに反映され、本番データには保存されません。</div>
+   <div class="annotation-bar scene-annotation" aria-label="シーン本文の注釈ツール">
+     <span class="annotation-label">注釈</span>
+     <button type="button" id="sceneMarker" title="選択した文字にマーカー">▰ マーカー</button>
+     <button type="button" id="sceneSticky" title="選択した文字にKP用の付箋">🗒 付箋</button>
+     <button type="button" id="sceneClearAnno" title="選択範囲にあるマーカー・付箋を外す">× 注釈解除</button>
+     <span class="annotation-help">シーン本文の文字を選択して使用</span>
+   </div>
+   <div class="manuscript-stream">${itemHtml||'<div class="muted-note">本文要素がありません。</div>'}</div>
+ </div>`;
+
  q("#sceneTitleInput").oninput=e=>{p.title=e.target.value;renderScenes();refreshStats()};
  q("#manuscript").querySelectorAll("[data-title]").forEach(el=>el.oninput=()=>{blocks[+el.dataset.title].title=el.value;refreshStats()});
  q("#manuscript").querySelectorAll("[data-target]").forEach(el=>el.oninput=()=>{blocks[+el.dataset.target].target=el.value});
  q("#manuscript").querySelectorAll("[data-body]").forEach(el=>el.oninput=()=>{blocks[+el.dataset.body].body=el.innerHTML;refreshStats()});
- function selectedRangeIn(body){
+
+ function selectedBodyRange(){
    const sel=window.getSelection?.();
    if(!sel||!sel.rangeCount||sel.isCollapsed)return null;
    const range=sel.getRangeAt(0);
-   if(!body.contains(range.commonAncestorContainer))return null;
-   return range;
+   const bodies=[...q("#manuscript").querySelectorAll("[data-body]")];
+   const body=bodies.find(el=>el.contains(range.commonAncestorContainer));
+   if(!body)return null;
+   return {sel,range,body,i:+body.dataset.body};
  }
  function syncBody(i,body){blocks[i].body=body.innerHTML;refreshStats()}
- function wrapSelection(i,tag,attrs={}){
-   const body=q(`[data-body="${i}"]`),range=selectedRangeIn(body);
-   if(!range){alert("本文から注釈を付けたい文字を選択してください。");return}
-   const el=document.createElement(tag);
+ function wrapSceneSelection(tag,attrs={}){
+   const hit=selectedBodyRange();
+   if(!hit){alert("シーン本文から注釈を付けたい文字を選択してください。");return}
+   const {sel,range,body,i}=hit,el=document.createElement(tag);
    Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
-   try{range.surroundContents(el)}
-   catch{
-     const frag=range.extractContents();el.appendChild(frag);range.insertNode(el);
-   }
-   syncBody(i,body);window.getSelection()?.removeAllRanges();
+   try{range.surroundContents(el)}catch{const frag=range.extractContents();el.appendChild(frag);range.insertNode(el)}
+   syncBody(i,body);sel.removeAllRanges();
  }
- q("#manuscript").querySelectorAll("[data-marker]").forEach(el=>el.onmousedown=e=>{
-   e.preventDefault();wrapSelection(+el.dataset.marker,"mark",{class:"kp-marker"});
- });
- q("#manuscript").querySelectorAll("[data-sticky]").forEach(el=>el.onmousedown=e=>{
+ q("#sceneMarker").onmousedown=e=>{e.preventDefault();wrapSceneSelection("mark",{class:"kp-marker"})};
+ q("#sceneSticky").onmousedown=e=>{
    e.preventDefault();
-   const i=+el.dataset.sticky,body=q(`[data-body="${i}"]`),range=selectedRangeIn(body);
-   if(!range){alert("本文から付箋を付けたい文字を選択してください。");return}
-   const note=prompt("付箋に書くKPメモ");
-   if(note===null||!note.trim())return;
-   const el2=document.createElement("span");el2.className="kp-sticky";el2.dataset.note=note.trim();
-   try{range.surroundContents(el2)}catch{const frag=range.extractContents();el2.appendChild(frag);range.insertNode(el2)}
-   syncBody(i,body);window.getSelection()?.removeAllRanges();
- });
- q("#manuscript").querySelectorAll("[data-clearanno]").forEach(el=>el.onmousedown=e=>{
+   const hit=selectedBodyRange();
+   if(!hit){alert("シーン本文から付箋を付けたい文字を選択してください。");return}
+   const note=prompt("付箋に書くKPメモ");if(note===null||!note.trim())return;
+   const {sel,range,body,i}=hit,el=document.createElement("span");el.className="kp-sticky";el.dataset.note=note.trim();
+   try{range.surroundContents(el)}catch{const frag=range.extractContents();el.appendChild(frag);range.insertNode(el)}
+   syncBody(i,body);sel.removeAllRanges();
+ };
+ q("#sceneClearAnno").onmousedown=e=>{
    e.preventDefault();
-   const i=+el.dataset.clearanno,body=q(`[data-body="${i}"]`),range=selectedRangeIn(body);
-   if(!range){alert("注釈を外したい文字を選択してください。");return}
-   const hits=[...body.querySelectorAll("mark.kp-marker,span.kp-sticky")].filter(n=>{
-     try{return range.intersectsNode(n)}catch{return false}
-   });
-   hits.forEach(n=>n.replaceWith(...n.childNodes));
-   body.normalize();syncBody(i,body);window.getSelection()?.removeAllRanges();
- });
+   const hit=selectedBodyRange();
+   if(!hit){alert("注釈を外したい文字を選択してください。");return}
+   const {sel,range,body,i}=hit;
+   [...body.querySelectorAll("mark.kp-marker,span.kp-sticky")].filter(n=>{try{return range.intersectsNode(n)}catch{return false}}).forEach(n=>n.replaceWith(...n.childNodes));
+   body.normalize();syncBody(i,body);sel.removeAllRanges();
+ };
+
  q("#manuscript").querySelectorAll("[data-up]").forEach(el=>el.onclick=()=>moveBlock(+el.dataset.up,-1));
  q("#manuscript").querySelectorAll("[data-down]").forEach(el=>el.onclick=()=>moveBlock(+el.dataset.down,1));
  q("#manuscript").querySelectorAll("[data-del]").forEach(el=>el.onclick=()=>deleteBlock(+el.dataset.del));
