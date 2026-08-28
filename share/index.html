@@ -539,13 +539,17 @@
       </details>`;
     }).join(""):'<div class="small muted">まだ開示された情報はありません。</div>';
     box.innerHTML=`<style>
-      .kp-live{max-width:860px;margin:auto}
-      .kp-live-toc{border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin:16px 0;background:var(--panel)}
-      .kp-live-toc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-      .kp-live-toc ol{margin:10px 0 0;padding-left:1.5em;display:grid;gap:5px}
+      .kp-live{max-width:1180px;margin:auto}
+      .kp-live-layout{display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:18px;align-items:start}
+      .kp-live-sidebar{position:sticky;top:12px}
+      .kp-live-toc{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:var(--panel);max-height:calc(100vh - 24px);overflow:auto}
+      .kp-live-toc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+      .kp-live-toc ol{margin:10px 0 0;padding-left:1.35em;display:grid;gap:6px}
+      .kp-live-toc a{text-decoration:none}
       .kp-live-tools{display:flex;gap:6px;flex-wrap:wrap}
       .kp-live-tools button{padding:5px 9px;font-size:12px}
-      .kp-live-item{border:1px solid var(--line);border-radius:11px;margin:12px 0;background:var(--panel);scroll-margin-top:16px;overflow:hidden}
+      .kp-live-main{min-width:0}
+      .kp-live-item{border:1px solid var(--line);border-radius:11px;margin:0 0 12px;background:var(--panel);scroll-margin-top:16px;overflow:hidden}
       .kp-live-item>summary{cursor:pointer;padding:13px 14px;list-style-position:inside}
       .kp-live-item[open]>summary{border-bottom:1px solid var(--line)}
       .kp-live-summary-main{display:inline-flex;flex-direction:column;gap:3px;vertical-align:middle}
@@ -553,10 +557,19 @@
       .kp-live-body{line-height:1.75;padding:14px}
       .kp-live-images{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px}
       .kp-live-images img{width:100%;height:auto;border-radius:8px}
+      @media(max-width:760px){
+        .kp-live-layout{grid-template-columns:1fr}
+        .kp-live-sidebar{position:static}
+        .kp-live-toc{max-height:none}
+      }
     </style>
     <article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2>
-    <p class="small muted">KPから開示された情報がここに追加されます。最新の開示だけ最初から開き、過去情報はトグルと目次から確認できます。</p>
-    ${toc}${cards}</article>`;
+    <p class="small muted">KPから開示された情報がここに追加されます。左の目次から情報へ移動できます。</p>
+    <div class="kp-live-layout">
+      <aside class="kp-live-sidebar">${toc}</aside>
+      <main class="kp-live-main">${cards}</main>
+    </div>
+    </article>`;
     q("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=true));
     q("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=false));
     return
