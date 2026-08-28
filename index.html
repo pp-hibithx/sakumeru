@@ -91,8 +91,28 @@ function loadScenarios(){
 function renderLastKpBinder(){
  const panel=document.getElementById("lastKpBinder"),body=document.getElementById("lastKpBinderBody");
  if(!panel||!body)return;
- let x=null;try{x=JSON.parse(localStorage.getItem("39x2_last_kp_binder_v1")||"null")}catch{}
- if(!x||!x.scenarioId){panel.hidden=true;return}
+
+ let x=null;
+ try{x=JSON.parse(localStorage.getItem("39x2_last_kp_binder_v1")||"null")}catch{}
+
+ // 専用キーが無い／壊れている場合は、KPバインダー本体の保存データから最後に開いたものを拾う。
+ if(!x?.scenarioId){
+   try{
+     const all=JSON.parse(localStorage.getItem("39x2_scenario_kp_binders_v1")||"{}");
+     const scenarios=loadScenarios();
+     const names=new Map(scenarios.map(s=>[String(s.id),s.title||"シナリオ"]));
+     const rows=Object.entries(all||{}).map(([scenarioId,binder])=>({
+       scenarioId:String(scenarioId),
+       scenarioTitle:String(binder?.scenarioTitle||names.get(String(scenarioId))||"シナリオ"),
+       openedAt:String(binder?.lastOpenedAt||"")
+     })).filter(v=>v.scenarioId&&v.openedAt);
+     rows.sort((a,b)=>String(b.openedAt).localeCompare(String(a.openedAt)));
+     x=rows[0]||null;
+   }catch{}
+ }
+
+ if(!x?.scenarioId){panel.hidden=true;return}
+
  const title=x.scenarioTitle||"シナリオ";
  const href=`scenario/kp-binder.html?id=${encodeURIComponent(x.scenarioId)}`;
  let meta="すぐに続きから開けます";
