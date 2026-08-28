@@ -55,17 +55,19 @@ if(!sid){
    if(candidate&&all[candidate])sid=candidate;
  }catch{}
 }
-if(!sid||!all[sid]){
- const candidates=Object.entries(all).filter(([,v])=>v&&Array.isArray(v.pages)&&v.pages.length);
- if(candidates.length){
-   candidates.sort((a,z)=>new Date(z[1]?.lastOpenedAt||0)-new Date(a[1]?.lastOpenedAt||0));
-   sid=String(candidates[0][0]);
- }
+if(sid && !all[sid]){
+ sid="";
 }
 const scenarios=window.TRPG39?.loadScenarios?.()||[];
 const sc=scenarios.find(x=>String(x.id)===String(sid))||{title:"シナリオ"};
 q("#scenarioName").textContent=sc.title+" ／ 移行表示テスト";
-const sourceInfo=document.createElement("div");sourceInfo.className="muted-note";sourceInfo.style.marginTop="4px";sourceInfo.textContent=sid?`読み込み対象：${sc.title} ／ ${sid}`:"読み込み対象を特定できません";q("#scenarioName").insertAdjacentElement("afterend",sourceInfo);
+const sourceInfo=document.createElement("div");
+sourceInfo.className="muted-note";
+sourceInfo.style.marginTop="4px";
+sourceInfo.textContent=sid
+ ? `読み込み対象：${sc.title} ／ ID: ${sid}（完全一致）`
+ : "読み込み対象を特定できません。LAのKPショートカットと同じ ?id= を付けて開いてください。";
+q("#scenarioName").insertAdjacentElement("afterend",sourceInfo);
 let b=all[sid]||{pages:[]};
 if(!Array.isArray(b.pages))b.pages=[];
 if(!b.pages.length && new URLSearchParams(location.search).get("preview")==="1"){
