@@ -11,7 +11,7 @@
   }
 
   function gateHeaderHtml(){
-    return `<header class="site-header beta-gate-header"><div class="wrap">
+    return `<header class="site-header beta-gate-header" data-beta-gate-owned="1"><div class="wrap">
 <div class="brand-logo-row"><a class="site-brand-logo" href="${escAttr(url("index.html"))}" aria-label="SAKU+MERU HOME">
   <img src="${escAttr(url("assets/img/sakumeru-logo-horizontal-dark-smooth.png"))}" alt="SAKU+MERU — 遊べば、記せば、本になる。">
 </a></div>
@@ -19,16 +19,35 @@
   }
 
   function gateFooterHtml(){
-    return `<footer class="footer beta-gate-footer"><div class="wrap">© ${new Date().getFullYear()} SAKU+MERU</div></footer>`;
+    return `<footer class="footer beta-gate-footer" data-beta-gate-owned="1"><div class="wrap">© ${new Date().getFullYear()} SAKU+MERU</div></footer>`;
+  }
+
+  function removeLegacyRecruitment(main){
+    [...main.querySelectorAll("p")].forEach(p=>{
+      const t=(p.textContent||"").replace(/\s+/g,"").trim();
+      if(
+        t.includes("本体はテスター募集中です") ||
+        t.includes("DMにてお声がけください")
+      ){
+        p.remove();
+      }
+    });
   }
 
   function refreshGateCopy(main){
+    // beta-gate.js の旧タイトルは入口UI側で置き換える。
+    main.querySelector("h1")?.remove();
+
     const h2=main.querySelector("h2");
     if(h2) h2.textContent="現在、限定テスト公開中です";
 
-    const ps=[...main.querySelectorAll(":scope > p")];
-    if(ps[0]) ps[0].textContent="SAKU+MERUは現在、テスター向けに先行公開しています。";
-    if(ps[1]) ps[1].textContent="ご案内済みのテスターキーを入力してください。";
+    const directPs=[...main.querySelectorAll(":scope > p")];
+    const normalPs=directPs.filter(p=>p.id!=="betaAccessError");
+
+    if(normalPs[0]) normalPs[0].textContent="SAKU+MERUは現在、テスター向けに先行公開しています。";
+    if(normalPs[1]) normalPs[1].textContent="ご案内済みのテスターキーを入力してください。";
+
+    removeLegacyRecruitment(main);
 
     const input=document.getElementById("betaAccessKey");
     if(input){
@@ -39,37 +58,61 @@
     const button=document.getElementById("betaAccessButton");
     if(button) button.textContent="SAKU+MERUに入る";
 
-    // beta-gate.js が生成する旧案内文を、現在の限定テスト運用に合わせる。
-    if(ps[2]){
-      ps[2].textContent="共有ページ・ABOUT・HELP・一部の公開ツールは、キーなしでもご利用いただけます。";
-      ps[2].classList.add("beta-gate-public-note");
-    }
-    if(ps[3]){
-      ps[3].remove();
+    // 募集文削除後、旧「共有ページ～」の案内だけを現在の公開範囲表記へ。
+    [...main.querySelectorAll(":scope > p")].forEach(p=>{
+      if(p.id==="betaAccessError") return;
+      const t=(p.textContent||"").replace(/\s+/g,"");
+      if(t.includes("共有ページの閲覧") || t.includes("共有ページ・ABOUT・HELP")){
+        p.textContent="共有ページ・ABOUT・HELP・一部の公開ツールは、キーなしでもご利用いただけます。";
+        p.classList.add("beta-gate-public-note");
+      }
+    });
+
+    if(!main.querySelector(".beta-gate-eyebrow")){
+      const eyebrow=document.createElement("div");
+      eyebrow.className="beta-gate-eyebrow";
+      eyebrow.textContent="SAKU+MERU  β TEST";
+      h2?.insertAdjacentElement("beforebegin",eyebrow);
     }
 
-    const eyebrow=document.createElement("div");
-    eyebrow.className="beta-gate-eyebrow";
-    eyebrow.textContent="SAKU+MERU  β TEST";
-    h2?.insertAdjacentElement("beforebegin",eyebrow);
+    if(!main.querySelector(".beta-gate-home-link")){
+      const home=document.createElement("a");
+      home.className="beta-gate-home-link";
+      home.href=url("index.html");
+      home.textContent="← HOMEに戻る";
+      main.insertAdjacentElement("afterbegin",home);
+    }
+  }
+
+  function removeDuplicateChrome(){
+    // ゲート表示中に別スクリプトがヘッダー/フッターを追加しても、入口用1組だけ残す。
+    document.body.querySelectorAll("header,footer").forEach(el=>{
+      if(el.dataset.betaGateOwned!=="1") el.remove();
+    });
   }
 
   function applyGateLayout(){
     if(!document.getElementById("betaAccessKey")) return;
-    if(document.body.classList.contains("beta-gate-active")) return;
 
     document.body.classList.add("beta-gate-active");
 
-    const main=document.body.querySelector(":scope > main");
+    const main=[...document.body.children].find(el=>el.tagName==="MAIN") || document.querySelector("main");
     if(!main) return;
 
+    removeDuplicateChrome();
     refreshGateCopy(main);
-    main.insertAdjacentHTML("beforebegin",gateHeaderHtml());
-    document.body.insertAdjacentHTML("beforeend",gateFooterHtml());
 
-    const style=document.createElement("style");
-    style.id="beta-gate-ui-0307";
-    style.textContent=`
+    if(!document.querySelector('[data-beta-gate-owned="1"].beta-gate-header')){
+      main.insertAdjacentHTML("beforebegin",gateHeaderHtml());
+    }
+    if(!document.querySelector('[data-beta-gate-owned="1"].beta-gate-footer')){
+      document.body.insertAdjacentHTML("beforeend",gateFooterHtml());
+    }
+
+    if(!document.getElementById("beta-gate-ui-0308")){
+      const style=document.createElement("style");
+      style.id="beta-gate-ui-0308";
+      style.textContent=`
 body.beta-gate-active:before,
 body.beta-gate-active:after{
   content:none !important;
@@ -98,11 +141,18 @@ body.beta-gate-active > .beta-gate-header .brand-logo-row{
 body.beta-gate-active > main{
   flex:0 0 auto !important;
   align-self:center !important;
+  position:relative !important;
 }
 body.beta-gate-active > .beta-gate-footer{
   flex:0 0 auto !important;
   width:100% !important;
   margin-top:auto !important;
+}
+body.beta-gate-active .beta-gate-home-link{
+  display:inline-block;
+  margin:0 0 18px;
+  font-size:13px;
+  text-decoration:none;
 }
 body.beta-gate-active .beta-gate-eyebrow{
   margin:0 0 7px;
@@ -129,7 +179,27 @@ body.beta-gate-active #betaAccessButton{
   }
 }
 `;
-    document.head.appendChild(style);
+      document.head.appendChild(style);
+    }
+
+    // 遅れて共通ヘッダーが挿入されるページにも対応。
+    let timer=null;
+    const observer=new MutationObserver(()=>{
+      clearTimeout(timer);
+      timer=setTimeout(()=>{
+        if(!document.getElementById("betaAccessKey")){ observer.disconnect(); return; }
+        removeDuplicateChrome();
+        removeLegacyRecruitment(main);
+        if(!document.querySelector('[data-beta-gate-owned="1"].beta-gate-header')){
+          main.insertAdjacentHTML("beforebegin",gateHeaderHtml());
+        }
+        if(!document.querySelector('[data-beta-gate-owned="1"].beta-gate-footer')){
+          document.body.insertAdjacentHTML("beforeend",gateFooterHtml());
+        }
+      },0);
+    });
+    observer.observe(document.body,{childList:true,subtree:false});
+    setTimeout(()=>observer.disconnect(),1500);
   }
 
   if(document.readyState==="loading"){
