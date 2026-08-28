@@ -124,6 +124,17 @@ function renderLastKpBinder(){
  }
  body.innerHTML=`<a class="home-task" href="${href}"><div class="home-task-main"><div class="home-task-title">${esc(title)}</div><div class="home-task-meta">${esc(meta)}</div></div><div class="home-task-due">KPバインダーを開く →</div></a>`;
  panel.hidden=false;
+ try{
+   if(window.parent&&window.parent!==window){
+     window.parent.postMessage({
+       type:"sakumeru:last-kp-binder",
+       scenarioId:String(x.scenarioId||""),
+       scenarioTitle:String(title||"シナリオ"),
+       openedAt:String(x.openedAt||new Date().toISOString()),
+       url:new URL(href,location.href).href
+     },"*");
+   }
+ }catch{}
 }
 function renderPrepTasks(){
  let all={};try{all=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{}
