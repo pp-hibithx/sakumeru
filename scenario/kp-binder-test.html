@@ -29,18 +29,22 @@
 .block-tools button{padding:5px 8px;font-size:12px}
 .image-preview{max-width:100%;max-height:520px;display:block;margin:8px auto;border-radius:9px}
 .copy-note{padding:7px 9px;border:1px dashed var(--line);border-radius:8px;font-size:12px;color:var(--muted);margin-bottom:10px}
-.annotation-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 8px}
-.annotation-bar button{padding:5px 8px;font-size:12px}
+.annotation-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:0 0 9px;padding:6px 7px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}
+.annotation-label{font-size:11px;font-weight:700;color:var(--muted);margin-right:2px;letter-spacing:.04em}
+.annotation-bar button{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;font-size:12px;line-height:1;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text)}
+.annotation-bar button:hover{border-color:var(--accent)}
+.annotation-help{font-size:11px;color:var(--muted);margin-left:3px}
 mark.kp-marker{padding:0 .08em;border-radius:3px}
 .kp-sticky{position:relative;border-bottom:2px dotted currentColor;cursor:help}
-.kp-sticky::after{content:"▣";font-size:.72em;vertical-align:super;margin-left:2px;opacity:.7}
-.kp-sticky:hover::before{content:attr(data-note);position:absolute;left:0;bottom:calc(100% + 7px);z-index:50;width:max-content;max-width:min(360px,70vw);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);box-shadow:0 5px 18px rgba(0,0,0,.18);white-space:pre-wrap;font-size:12px;line-height:1.55}
+.kp-sticky::after{content:"🗒";display:inline-block;font-size:.82em;vertical-align:super;margin-left:3px;line-height:1;filter:saturate(.8)}
+.kp-sticky:hover::before{content:attr(data-note);position:absolute;left:0;bottom:calc(100% + 9px);z-index:50;width:max-content;max-width:min(360px,70vw);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);box-shadow:0 5px 18px rgba(0,0,0,.22);white-space:pre-wrap;font-size:12px;line-height:1.55}
+mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .scene-row{display:flex;gap:5px;align-items:center}.scene-row>button:first-child{flex:1}
 .scene-row .mini{padding:5px 7px}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v7 — コピー編集＋注釈テスト<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v8 — コピー編集＋注釈UI整理<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -181,11 +185,12 @@ function renderEditor(){
      </div>
      ${kind!=="normal"?`<input class="edit-title" data-title="${i}" value="${esc(x.title||"")}" placeholder="${kind==="heading"?"小見出し":label+"の見出し"}">`:""}
      ${(kind==="reveal"||kind==="secret")?`<div style="margin-top:7px"><input class="edit-target" data-target="${i}" value="${esc(x.target||"全員")}" placeholder="対象"></div>`:""}
-     <div class="annotation-bar">
-       <button type="button" class="secondary" data-marker="${i}">マーカー</button>
-       <button type="button" class="secondary" data-sticky="${i}">付箋</button>
-       <button type="button" class="secondary" data-clearanno="${i}">選択範囲の注釈を外す</button>
-       <span class="muted-note">文字を選択して使用</span>
+     <div class="annotation-bar" aria-label="注釈ツール">
+       <span class="annotation-label">注釈</span>
+       <button type="button" data-marker="${i}" title="選択した文字にマーカー">▰ マーカー</button>
+       <button type="button" data-sticky="${i}" title="選択した文字にKP用の付箋">🗒 付箋</button>
+       <button type="button" data-clearanno="${i}" title="選択範囲にあるマーカー・付箋を外す">× 注釈解除</button>
+       <span class="annotation-help">文字を選択して使用</span>
      </div>
      <div class="edit-body" contenteditable="true" data-body="${i}" style="margin-top:8px">${x.body||""}</div>
    </article>`
@@ -271,11 +276,12 @@ function renderPdfCurrent(open=false){
    <button type="button" class="secondary" id="togglePdfText">${open?"本文を閉じる":"本文を開く"}</button>
  </div>
  <div class="pdf-viewer" id="pdfViewer" ${open?"":"hidden"}>
-   <div class="annotation-bar">
-     <button type="button" class="secondary" id="pdfMarker">マーカー</button>
-     <button type="button" class="secondary" id="pdfSticky">付箋</button>
-     <button type="button" class="secondary" id="pdfClearAnno">選択範囲の注釈を外す</button>
-     <span class="muted-note">PDF抽出本文にも注釈できます</span>
+   <div class="annotation-bar" aria-label="PDF注釈ツール">
+     <span class="annotation-label">注釈</span>
+     <button type="button" id="pdfMarker" title="選択した文字にマーカー">▰ マーカー</button>
+     <button type="button" id="pdfSticky" title="選択した文字にKP用の付箋">🗒 付箋</button>
+     <button type="button" id="pdfClearAnno" title="選択範囲にあるマーカー・付箋を外す">× 注釈解除</button>
+     <span class="annotation-help">文字を選択して使用</span>
    </div>
    <div class="pdf-viewer-text" id="pdfViewerText">${x.annotatedHtml||esc(x.text)}</div>
    <div class="pdf-viewer-actions">
