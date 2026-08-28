@@ -109,15 +109,18 @@
       document.body.insertAdjacentHTML("beforeend",gateFooterHtml());
     }
 
-    if(!document.getElementById("beta-gate-ui-0308")){
+    if(!document.getElementById("beta-gate-ui-0309")){
       const style=document.createElement("style");
-      style.id="beta-gate-ui-0308";
+      style.id="beta-gate-ui-0309";
       style.textContent=`
-body.beta-gate-active:before,
-body.beta-gate-active:after{
+body.beta-gate-active:has(#betaAccessKey)::before,
+body.beta-gate-active:has(#betaAccessKey)::after{
   content:none !important;
   display:none !important;
   background:none !important;
+  border:0 !important;
+  padding:0 !important;
+  min-height:0 !important;
 }
 body.beta-gate-active{
   min-height:100vh !important;
@@ -142,6 +145,20 @@ body.beta-gate-active > main{
   flex:0 0 auto !important;
   align-self:center !important;
   position:relative !important;
+  font-size:14px !important;
+  line-height:1.7 !important;
+}
+body.beta-gate-active:has(#betaAccessKey) > main > h2{
+  font-size:22px !important;
+  line-height:1.45 !important;
+}
+body.beta-gate-active:has(#betaAccessKey) > main p{
+  font-size:14px !important;
+  line-height:1.7 !important;
+}
+body.beta-gate-active:has(#betaAccessKey) #betaAccessKey,
+body.beta-gate-active:has(#betaAccessKey) #betaAccessButton{
+  font-size:14px !important;
 }
 body.beta-gate-active > .beta-gate-footer{
   flex:0 0 auto !important;
