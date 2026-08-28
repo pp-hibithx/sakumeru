@@ -44,11 +44,28 @@
 <script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
 <script>
 const q=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const sid=new URLSearchParams(location.search).get("id")||"";
-const scenarios=window.TRPG39?.loadScenarios?.()||[];const sc=scenarios.find(x=>String(x.id)===String(sid))||{title:"シナリオ"};
-q("#scenarioName").textContent=sc.title+" ／ 移行表示テスト";
+const params=new URLSearchParams(location.search);
 const KEY="39x2_scenario_kp_binders_v1";
 let all={};try{all=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{}
+let sid=params.get("id")||"";
+if(!sid){
+ try{
+   const last=JSON.parse(localStorage.getItem("39x2_last_kp_binder_v1")||"null");
+   const candidate=String(last?.scenarioId||last?.id||"");
+   if(candidate&&all[candidate])sid=candidate;
+ }catch{}
+}
+if(!sid||!all[sid]){
+ const candidates=Object.entries(all).filter(([,v])=>v&&Array.isArray(v.pages)&&v.pages.length);
+ if(candidates.length){
+   candidates.sort((a,z)=>new Date(z[1]?.lastOpenedAt||0)-new Date(a[1]?.lastOpenedAt||0));
+   sid=String(candidates[0][0]);
+ }
+}
+const scenarios=window.TRPG39?.loadScenarios?.()||[];
+const sc=scenarios.find(x=>String(x.id)===String(sid))||{title:"シナリオ"};
+q("#scenarioName").textContent=sc.title+" ／ 移行表示テスト";
+const sourceInfo=document.createElement("div");sourceInfo.className="muted-note";sourceInfo.style.marginTop="4px";sourceInfo.textContent=sid?`読み込み対象：${sc.title} ／ ${sid}`:"読み込み対象を特定できません";q("#scenarioName").insertAdjacentElement("afterend",sourceInfo);
 let b=all[sid]||{pages:[]};
 if(!Array.isArray(b.pages))b.pages=[];
 if(!b.pages.length && new URLSearchParams(location.search).get("preview")==="1"){
