@@ -94,7 +94,7 @@ function renderPdfCurrent(open=false){
    </div>
  </div>`;
  q("#togglePdfText").onclick=()=>renderPdfCurrent(!open);
-}><summary data-pdf="${i}"><span>PDF p.${x.page}</span><span class="muted-note">${x.text.length.toLocaleString()}文字</span></summary><div class="pdf-text">${esc(x.text)}</div></details>`).join("");q("#pdfList").querySelectorAll("[data-pdf]").forEach(el=>el.onclick=()=>{activePdf=+el.dataset.pdf;const x=pdfPages[activePdf];q("#pdfCurrent").innerHTML=`<strong>PDF p.${x.page}</strong><span>${x.text.length.toLocaleString()}文字</span><span class="muted">中央上部で本文を参照</span>`})}
+}
 q("#pickPdf").onclick=()=>q("#pdfFile").click();q("#pdfFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)readPdf(f)};
 renderScenes();renderEditor();
 </script></body></html>
