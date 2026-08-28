@@ -15,16 +15,18 @@
 .reveal-card{border:1px solid var(--line);border-radius:10px;padding:11px;margin:8px 0}.reveal-head{display:flex;gap:8px;justify-content:space-between;align-items:center}.reveal-body{margin-top:8px;padding:10px;background:var(--bg);border-radius:8px}
 .revealed{border-color:var(--accent)}.kp2-images{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}.kp2-images img{width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}.scene-assets{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.scene-assetbox{border:1px solid var(--line);border-radius:9px;padding:10px}.scene-assetbox h4{margin:0 0 7px}.scene-file{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:6px 0}.scene-thumbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px;margin-top:8px}.scene-thumbs img{width:100%;height:100px;object-fit:cover;border-radius:7px;border:1px solid var(--line)}.scene-pdf-page{border:1px solid var(--line);border-radius:9px;padding:9px;margin:8px 0;background:var(--bg)}.scene-pdf-page textarea{min-height:150px}.scene-pdf-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}@media(max-width:760px){.scene-assets{grid-template-columns:1fr}}.secret-badge{font-size:11px;border:1px solid var(--accent);border-radius:999px;padding:2px 7px}.share-url{display:flex;gap:7px}.share-url input{flex:1}
 .kp2-pcgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kp2-person{border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
+.scene-flow{display:grid;gap:9px;margin-top:12px}.flow-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel)}.flow-card.is-secret{border-style:dashed}.flow-head{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.flow-kind{font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:2px 8px}.flow-body{margin-top:8px}.flow-body .rich{min-height:110px}.flow-target{max-width:180px}
+.scene-pdf-page details{border:0}.scene-pdf-page summary{cursor:pointer;font-weight:700;display:flex;justify-content:space-between;gap:8px;align-items:center}.scene-pdf-text{white-space:pre-wrap;line-height:1.7;padding:10px 2px;max-height:360px;overflow:auto}.scene-pdf-actions{margin-top:8px}
 @media(max-width:760px){.kp2-grid,.kp2-pcgrid{grid-template-columns:1fr}.kp2-prep{height:1100px}}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kp2"><div class="kp2-head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
 <nav class="kp2-tabs"><button class="kp2-tab active" data-tab="session">シナリオ進行</button><button class="kp2-tab" data-tab="pc">参加PC・技能</button></nav>
 <section class="kp2-pane" data-pane="session">
-<div class="kp2-box"><h2>シナリオ進行</h2><p class="small muted">シーン・KPメモ・RP原稿・BGM・画像・PDF・開示情報をここにまとめます。卓中は「RP済み」→「要点を開示」の順で進行できます。</p>
+<div class="kp2-box"><h2>シナリオ進行</h2><p class="small muted">シーンごとに本文・KPメモ・RP・開示情報を進行順にまとめます。BGM・画像・PDF資料も同じ画面から参照できます。</p>
 <div class="share-url"><input id="shareUrl" readonly placeholder="まだ共有URLは作成されていません"><button id="makeShare">共通共有URLを作成</button><button id="copyShare">コピー</button></div><div id="shareStatus" class="small muted" style="margin-top:7px"></div></div>
 <div class="kp2-box"><h2>全体メモ</h2><div class="richbar" data-toolbar="overview"></div><div id="overview" class="rich" contenteditable="true"></div></div>
-<div class="kp2-box"><div class="kp2-actions" style="justify-content:space-between"><div><h2 style="margin:0">シーン・進行項目</h2><div class="small muted">導入・探索場所・NPC・イベント・エンディングなどを進行順に並べます。</div></div><button id="addPage">＋ シーン／項目追加</button></div><div class="kp2-grid" style="margin-top:12px"><div id="pageList" class="kp2-list"></div><div id="pageEditor"></div></div></div>
+<div class="kp2-box"><div class="kp2-actions" style="justify-content:space-between"><div><h2 style="margin:0">シーン・進行項目</h2><div class="small muted">導入・探索場所・NPC・イベント・エンディングなど、大きな場面ごとにシーンを作ります。シーン内の細かな進行はブロックで管理できます。</div></div><button id="addPage">＋ シーン追加</button></div><div class="kp2-grid" style="margin-top:12px"><div id="pageList" class="kp2-list"></div><div id="pageEditor"></div></div></div>
 <div id="revealList" hidden></div></section>
 <section class="kp2-pane" data-pane="pc" hidden><div class="kp2-box"><div class="kp2-actions"><div style="flex:1"><h2 style="margin:0">参加PC管理</h2></div><select id="pcSelect"><option value="">PCを選択…</option></select><button id="addPc">追加</button></div><div id="participants"></div></div><div class="kp2-box"><h2>技能比較</h2><div id="compare" style="overflow:auto"></div></div></section>
 </main><div data-site-footer></div>
@@ -71,14 +73,19 @@ async function readScenePdf(file){
 }
 function renderScenePdfPreview(){
  const box=q("#scenePdfPreview");if(!box)return;
- box.innerHTML=scenePdfPages.map((x,i)=>`<div class="scene-pdf-page"><div class="scene-pdf-head"><b>PDF p.${x.page}</b><span class="small muted">${x.text.length}文字</span></div><textarea data-spdf="${i}">${esc(x.text)}</textarea><div class="kp2-actions"><button type="button" data-spdf-all="${i}">ページ全文を本文へ追加</button><button type="button" data-spdf-sel="${i}">選択範囲を本文へ追加</button></div></div>`).join("");
+ box.innerHTML=scenePdfPages.map((x,i)=>`<div class="scene-pdf-page"><details><summary><span>PDF p.${x.page}</span><span class="small muted">${x.text.length}文字</span></summary><div class="scene-pdf-text" data-spdf="${i}">${esc(x.text)}</div><div class="kp2-actions scene-pdf-actions"><button type="button" data-spdf-all="${i}">ページ全文を本文へ追加</button><button type="button" data-spdf-sel="${i}">選択範囲を本文へ追加</button></div></details></div>`).join("");
  box.querySelectorAll("[data-spdf-all]").forEach(btn=>btn.onclick=()=>appendPdfToScene(+btn.dataset.spdfAll,false));
  box.querySelectorAll("[data-spdf-sel]").forEach(btn=>btn.onclick=()=>appendPdfToScene(+btn.dataset.spdfSel,true));
 }
 function appendPdfToScene(i,selectedOnly){
- const ta=document.querySelector(`[data-spdf="${i}"]`),x=scenePdfPages[i];if(!ta||!x)return;
- let text=ta.value;
- if(selectedOnly&&ta.selectionStart!==ta.selectionEnd)text=ta.value.slice(ta.selectionStart,ta.selectionEnd);
+ const box=document.querySelector(`[data-spdf="${i}"]`),x=scenePdfPages[i];if(!box||!x)return;
+ let text=x.text;
+ if(selectedOnly){
+   const sel=window.getSelection();
+   const chosen=sel&&sel.rangeCount&&box.contains(sel.anchorNode)&&box.contains(sel.focusNode)?String(sel).trim():"";
+   if(!chosen){q("#scenePdfStatus").textContent="追加したい文章をPDF本文上で選択してください。";return}
+   text=chosen;
+ }
  if(!text.trim())return;
  const body=q("#pageBody");
  body.focus();
@@ -87,7 +94,7 @@ function appendPdfToScene(i,selectedOnly){
  q("#scenePdfStatus").textContent=`PDF p.${x.page} ${selectedOnly?"の選択範囲":"全文"}をこのシーンへ追加しました。`;
 }
 
-let active=b.pages[0]?.id||"";function renderPages(){const list=q("#pageList"),ed=q("#pageEditor");list.innerHTML=b.pages.length?b.pages.map((p,i)=>`<button class="${p.id===active?"active":""}" data-p="${p.id}">${esc(p.title||"無題")}</button>`).join(""):'<div class="small muted">まだページがありません。</div>';list.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{active=x.dataset.p;renderPages()});const p=b.pages.find(x=>x.id===active);if(!p){ed.innerHTML="";return}p.bgm??=[];p.images??=[];p.pdfNotes??="";
+let active=b.pages[0]?.id||"";function renderPages(){const list=q("#pageList"),ed=q("#pageEditor");list.innerHTML=b.pages.length?b.pages.map((p,i)=>`<button class="${p.id===active?"active":""}" data-p="${p.id}">${esc(p.title||"無題")}</button>`).join(""):'<div class="small muted">まだページがありません。</div>';list.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{active=x.dataset.p;renderPages()});const p=b.pages.find(x=>x.id===active);if(!p){ed.innerHTML="";return}p.bgm??=[];p.images??=[];p.pdfNotes??="";p.blocks??=[];
 ed.innerHTML=`<input class="kp2-editor-title" id="pageTitle" value="${esc(p.title||"")}">
 <div class="richbar" id="pageToolbar"></div><div id="pageBody" class="rich" contenteditable="true"></div>
 <div class="scene-assets">
@@ -100,8 +107,8 @@ ed.innerHTML=`<input class="kp2-editor-title" id="pageTitle" value="${esc(p.titl
    <label>参照メモ<textarea id="pdfNotes" rows="5" placeholder="ページ番号・補足メモなど">${esc(p.pdfNotes||"")}</textarea></label>
  </div>
 </div>
-<div class="kp2-actions"><button id="addSceneInfo">＋ このシーンにRP・開示情報</button><button id="upPage">↑</button><button id="downPage">↓</button><button id="dupPage">複製</button><button id="delPage" class="danger">削除</button></div>
-<div id="sceneInfoList"></div>`;q("#pageBody").innerHTML=p.body||"";toolbar(q("#pageToolbar"),q("#pageBody"));q("#pageTitle").oninput=e=>{p.title=e.target.value;save()};q("#pageBody").oninput=e=>{p.body=e.currentTarget.innerHTML;save()};
+<div class="kp2-actions"><button id="addFlowBlock">＋ 進行ブロック</button><button id="upPage">↑ シーン</button><button id="downPage">↓ シーン</button><button id="dupPage">複製</button><button id="delPage" class="danger">削除</button></div>
+<div id="sceneFlow" class="scene-flow"></div>`;q("#pageBody").innerHTML=p.body||"";toolbar(q("#pageToolbar"),q("#pageBody"));q("#pageTitle").oninput=e=>{p.title=e.target.value;save()};q("#pageBody").oninput=e=>{p.body=e.currentTarget.innerHTML;save()};
 function renderSceneAssets(){
  q("#bgmList").innerHTML=p.bgm.length?p.bgm.map((u,i)=>`<div class="scene-file"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a><button data-bdel="${i}" class="danger">削除</button></div>`).join(""):'<div class="small muted">未登録</div>';
  q("#bgmList").querySelectorAll("[data-bdel]").forEach(x=>x.onclick=()=>{p.bgm.splice(+x.dataset.bdel,1);save();renderSceneAssets()});
@@ -113,13 +120,48 @@ q("#sceneImgs").onchange=async e=>{for(const f of e.target.files)p.images.push(a
 q("#pdfNotes").oninput=e=>{p.pdfNotes=e.target.value;save()};
 q("#pickScenePdf").onclick=()=>q("#scenePdfFile").click();
 q("#scenePdfFile").onchange=e=>{const file=e.target.files?.[0];e.target.value="";if(file)readScenePdf(file)};
-q("#addSceneInfo").onclick=()=>editReveal(-1,p.id);
-renderSceneAssets();renderSceneInfos();q("#dupPage").onclick=()=>{const n={...p,id:uuid(),title:(p.title||"無題")+" コピー"};b.pages.push(n);active=n.id;save();renderPages()};q("#delPage").onclick=()=>{if(confirm("このページを削除しますか？")){b.pages=b.pages.filter(x=>x.id!==p.id);active=b.pages[0]?.id||"";save();renderPages()}};q("#upPage").onclick=()=>movePage(-1);q("#downPage").onclick=()=>movePage(1)}
+q("#addFlowBlock").onclick=()=>addFlowBlock(p);
+renderSceneAssets();renderFlow(p);q("#dupPage").onclick=()=>{const n=structuredClone(p);n.id=uuid();n.title=(p.title||"無題")+" コピー";b.pages.push(n);active=n.id;save();renderPages()};q("#delPage").onclick=()=>{if(confirm("このページを削除しますか？")){b.pages=b.pages.filter(x=>x.id!==p.id);active=b.pages[0]?.id||"";save();renderPages()}};q("#upPage").onclick=()=>movePage(-1);q("#downPage").onclick=()=>movePage(1)}
 function movePage(d){const i=b.pages.findIndex(x=>x.id===active),j=i+d;if(i<0||j<0||j>=b.pages.length)return;[b.pages[i],b.pages[j]]=[b.pages[j],b.pages[i]];save();renderPages()}
-q("#addPage").onclick=()=>{const p={id:uuid(),title:"新しいページ",body:""};b.pages.push(p);active=p.id;save();renderPages()};renderPages();
+q("#addPage").onclick=()=>{const p={id:uuid(),title:"新しいページ",body:"",blocks:[]};b.pages.push(p);active=p.id;save();renderPages()};renderPages();
 document.querySelectorAll(".kp2-tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".kp2-tab").forEach(x=>x.classList.toggle("active",x===t));document.querySelectorAll(".kp2-pane").forEach(x=>x.hidden=x.dataset.pane!==t.dataset.tab)});
 
 function imgToData(file){return new Promise((ok,ng)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=ng;r.readAsDataURL(file)})}
+
+const FLOW_KINDS={memo:"KPメモ",rp:"RP",reveal:"開示情報",secret:"秘匿",note:"進行メモ"};
+function addFlowBlock(p){
+ p.blocks??=[];
+ p.blocks.push({id:uuid(),kind:"memo",title:"",target:"全員",body:"",rpDone:false,revealed:false});
+ save();renderFlow(p);
+}
+function moveFlow(p,i,d){
+ const j=i+d;if(j<0||j>=p.blocks.length)return;
+ [p.blocks[i],p.blocks[j]]=[p.blocks[j],p.blocks[i]];save();renderFlow(p);
+}
+function renderFlow(p){
+ const host=q("#sceneFlow");if(!host)return;p.blocks??=[];
+ host.innerHTML=p.blocks.length?p.blocks.map((x,i)=>`<article class="flow-card ${x.kind==="secret"?"is-secret":""}" data-flow="${i}">
+  <div class="flow-head">
+   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+    <select data-fkind="${i}">${Object.entries(FLOW_KINDS).map(([v,n])=>`<option value="${v}" ${x.kind===v?"selected":""}>${n}</option>`).join("")}</select>
+    <input data-ftitle="${i}" value="${esc(x.title||"")}" placeholder="見出し（任意）">
+    ${(x.kind==="reveal"||x.kind==="secret")?`<input class="flow-target" data-ftarget="${i}" value="${esc(x.target||"全員")}" placeholder="全員 / HO1 / HO2">`:""}
+   </div>
+   <div class="kp2-actions" style="margin:0"><button type="button" data-fup="${i}">↑</button><button type="button" data-fdown="${i}">↓</button><button type="button" class="danger" data-fdel="${i}">削除</button></div>
+  </div>
+  <div class="flow-body"><div class="richbar" data-ftool="${i}"></div><div class="rich" data-fbody="${i}" contenteditable="true"></div></div>
+  ${(x.kind==="rp"||x.kind==="reveal"||x.kind==="secret")?`<div class="kp2-actions">${x.kind==="rp"?`<button type="button" data-frp="${i}" ${x.rpDone?"disabled":""}>${x.rpDone?"🎭 RP済み":"🎭 RP済みにする"}</button>`:""}${(x.kind==="reveal"||x.kind==="secret")?`<button type="button" data-fopen="${i}" ${x.revealed?"disabled":""}>${x.revealed?"✓ 開示済み":"要点を開示"}</button>`:""}</div>`:""}
+ </article>`).join(""):'<div class="small muted">細かなKPメモ・RP・開示情報は「＋ 進行ブロック」から、このシーン内に進行順で追加できます。</div>';
+ p.blocks.forEach((x,i)=>{const body=host.querySelector(`[data-fbody="${i}"]`);if(body){body.innerHTML=x.body||"";toolbar(host.querySelector(`[data-ftool="${i}"]`),body);body.oninput=()=>{x.body=body.innerHTML;save()}}});
+ host.querySelectorAll("[data-fkind]").forEach(el=>el.onchange=()=>{p.blocks[+el.dataset.fkind].kind=el.value;save();renderFlow(p)});
+ host.querySelectorAll("[data-ftitle]").forEach(el=>el.oninput=()=>{p.blocks[+el.dataset.ftitle].title=el.value;save()});
+ host.querySelectorAll("[data-ftarget]").forEach(el=>el.oninput=()=>{p.blocks[+el.dataset.ftarget].target=el.value;save()});
+ host.querySelectorAll("[data-fup]").forEach(el=>el.onclick=()=>moveFlow(p,+el.dataset.fup,-1));
+ host.querySelectorAll("[data-fdown]").forEach(el=>el.onclick=()=>moveFlow(p,+el.dataset.fdown,1));
+ host.querySelectorAll("[data-fdel]").forEach(el=>el.onclick=()=>{const i=+el.dataset.fdel;if(!confirm("この進行ブロックを削除しますか？"))return;p.blocks.splice(i,1);save();renderFlow(p)});
+ host.querySelectorAll("[data-frp]").forEach(el=>el.onclick=()=>{const x=p.blocks[+el.dataset.frp];x.rpDone=true;x.rpDoneAt=new Date().toISOString();save();renderFlow(p)});
+ host.querySelectorAll("[data-fopen]").forEach(el=>el.onclick=async()=>{const x=p.blocks[+el.dataset.fopen];if(!confirm(`「${x.title||FLOW_KINDS[x.kind]}」を開示しますか？`))return;x.revealed=true;x.revealedAt=new Date().toISOString();x.sharedSnapshot={id:x.id,title:x.title||FLOW_KINDS[x.kind],target:x.target||"全員",body:x.body||"",images:[],revealedAt:x.revealedAt};b.revealLog.push({id:x.id,at:x.revealedAt});save();await syncShare();renderFlow(p)});
+}
 function renderSceneInfos(){
  const host=q("#sceneInfoList");if(!host)return;
  const items=b.reveals.map((r,i)=>({r,i})).filter(x=>(x.r.sceneId||"")===active);
@@ -160,7 +202,22 @@ function editReveal(i,sceneId=""){
  dlg.addEventListener("close",()=>{if(dlg.isConnected)dlg.remove()});dlg.showModal()
 }
 renderReveals();
-function sharePayload(){return {kind:"kp-live-share",title:sc.title||"セッション共有",updatedAt:new Date().toISOString(),items:b.reveals.filter(x=>x.revealed).sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt)).map(x=>x.sharedSnapshot||({id:x.id,title:x.title,target:x.target,body:x.body,images:[...(x.images||[])],revealedAt:x.revealedAt}))}}
+if(!b.flowMigratedV1){
+ b.pages.forEach(p=>{p.blocks??=[]});
+ const keep=[];
+ for(const r of b.reveals){
+   const p=b.pages.find(x=>String(x.id)===String(r.sceneId||""));
+   if(p){
+     p.blocks.push({id:r.id||uuid(),kind:r.revealed||r.target&&r.target!=="全員"?"reveal":"rp",title:r.title||"",target:r.target||"全員",body:r.body||r.rpText||"",rpDone:!!r.rpDone,revealed:!!r.revealed,rpDoneAt:r.rpDoneAt||"",revealedAt:r.revealedAt||"",sharedSnapshot:r.sharedSnapshot||null});
+   }else keep.push(r);
+ }
+ b.reveals=keep;b.flowMigratedV1=true;save();renderPages();
+}
+function sharePayload(){
+ const legacy=b.reveals.filter(x=>x.revealed).map(x=>x.sharedSnapshot||({id:x.id,title:x.title,target:x.target,body:x.body,images:[...(x.images||[])],revealedAt:x.revealedAt}));
+ const flow=b.pages.flatMap(p=>(p.blocks||[]).filter(x=>x.revealed&&(x.kind==="reveal"||x.kind==="secret")).map(x=>x.sharedSnapshot||({id:x.id,title:x.title||FLOW_KINDS[x.kind],target:x.target||"全員",body:x.body||"",images:[],revealedAt:x.revealedAt})));
+ return {kind:"kp-live-share",title:sc.title||"セッション共有",updatedAt:new Date().toISOString(),items:[...legacy,...flow].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
+}
 async function syncShare(){if(!b.shareId)return;try{await TRPG39Cloud.updateSharedPage(b.shareId,sharePayload());q("#shareStatus").textContent="共有ページを更新しました。"}catch(e){q("#shareStatus").textContent=e.message||e}}
 function showShare(){q("#shareUrl").value=b.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(b.shareId)}&type=kp-live`:""}showShare();
 q("#makeShare").onclick=async()=>{try{if(!b.shareId)b.shareId=await TRPG39Cloud.createSharedPage(sharePayload());else await syncShare();save();showShare();q("#shareStatus").textContent="共通共有URLを用意しました。以後、開示するたび同じURLを更新します。"}catch(e){q("#shareStatus").textContent=e.message||e}};
