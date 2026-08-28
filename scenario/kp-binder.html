@@ -113,11 +113,11 @@ function appendPdfToScene(i,selectedOnly){
  q("#scenePdfStatus").textContent=`PDF p.${x.page} ${selectedOnly?"の選択範囲":"全文"}を通常ブロックへ追加しました。`;
 }
 
-let active=b.pages[0]?.id||"";function renderPages(){const list=q("#pageList"),ed=q("#pageEditor");list.innerHTML=b.pages.length?b.pages.map((p,i)=>`<button class="${p.id===active?"active":""}" data-p="${p.id}">${esc(p.title||"無題")}</button>`).join(""):'<div class="small muted">まだページがありません。</div>';list.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{active=x.dataset.p;renderPages()});const p=b.pages.find(x=>x.id===active);if(!p){ed.innerHTML="";return}p.bgm??=[];p.images??=[];p.pdfNotes??="";p.blocks??=[];
+let active=b.pages[0]?.id||"";function renderPages(){const list=q("#pageList"),ed=q("#pageEditor");list.innerHTML=b.pages.length?b.pages.map((p,i)=>`<button class="${p.id===active?"active":""}" data-p="${p.id}">${esc(p.title||"無題")}</button>`).join(""):'<div class="small muted">まだページがありません。</div>';list.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{active=x.dataset.p;renderPages()});const p=b.pages.find(x=>x.id===active);if(!p){ed.innerHTML="";return}if(!Array.isArray(p.bgm))p.bgm=[];if(!Array.isArray(p.images))p.images=[];p.pdfNotes??="";if(!Array.isArray(p.blocks))p.blocks=[];
 if(!p.bodyMigratedToFlowV1){const oldBody=String(p.body||"").trim();if(oldBody)p.blocks.unshift({id:uuid(),kind:"normal",title:"",target:"全員",body:p.body,rpDone:false,revealed:false});p.body="";p.bodyMigratedToFlowV1=true;save()}
 if(!p.blocks.length)p.blocks.push({id:uuid(),kind:"normal",title:"",target:"全員",body:"",rpDone:false,revealed:false});
 ed.innerHTML=`<input class="kp2-editor-title" id="pageTitle" value="${esc(p.title||"")}">
-<div id="sceneFlow" class="scene-flow"></div><div class="kp2-actions"><button type="button" id="addFlowBlock">＋ 進行ブロック</button></div>
+<div id="sceneFlow" class="scene-flow"></div><div class="kp2-actions"><button type="button" id="addFlowBlock" onclick="window.__kpAddFlowBlock&&window.__kpAddFlowBlock()">＋ 進行ブロック</button></div>
 <div class="scene-assets">
  <div class="scene-assetbox"><h4>🎵 BGM・SE</h4><div class="scene-file"><input id="bgmUrl" placeholder="BGM / SE のURL"><button id="addBgm">追加</button></div><div id="bgmList"></div></div>
  <div class="scene-assetbox"><h4>🖼 画像資料</h4><input id="sceneImgs" type="file" accept="image/*" multiple><div id="sceneThumbs" class="scene-thumbs"></div></div>
@@ -140,7 +140,7 @@ q("#sceneImgs").onchange=async e=>{for(const f of e.target.files)p.images.push(a
 q("#pdfNotes").oninput=e=>{p.pdfNotes=e.target.value;save()};
 q("#pickScenePdf").onclick=()=>q("#scenePdfFile").click();
 q("#scenePdfFile").onchange=e=>{const file=e.target.files?.[0];e.target.value="";if(file)readScenePdf(file)};
-q("#addFlowBlock").addEventListener("click",e=>{e.preventDefault();addFlowBlock(p)});
+window.__kpActivePage=p;
 renderSceneAssets();renderFlow(p);q("#dupPage").onclick=()=>{const n=structuredClone(p);n.id=uuid();n.title=(p.title||"無題")+" コピー";b.pages.push(n);active=n.id;save();renderPages()};q("#delPage").onclick=()=>{if(confirm("このページを削除しますか？")){b.pages=b.pages.filter(x=>x.id!==p.id);active=b.pages[0]?.id||"";save();renderPages()}};q("#upPage").onclick=()=>movePage(-1);q("#downPage").onclick=()=>movePage(1)}
 function movePage(d){const i=b.pages.findIndex(x=>x.id===active),j=i+d;if(i<0||j<0||j>=b.pages.length)return;[b.pages[i],b.pages[j]]=[b.pages[j],b.pages[i]];save();renderPages()}
 q("#addPage").onclick=()=>{const p={id:uuid(),title:"新しいページ",body:"",bodyMigratedToFlowV1:true,blocks:[{id:uuid(),kind:"normal",title:"",target:"全員",body:"",rpDone:false,revealed:false}]};b.pages.push(p);active=p.id;save();renderPages()};renderPages();
@@ -150,21 +150,31 @@ function imgToData(file){return new Promise((ok,ng)=>{const r=new FileReader();r
 
 const FLOW_KINDS={normal:"通常",memo:"KPメモ",rp:"RP",reveal:"開示情報",secret:"秘匿",note:"進行メモ"};
 function addFlowBlock(p){
- p.blocks??=[];
+ if(!p)return;
+ if(!Array.isArray(p.blocks))p.blocks=[];
  p.blocks.push({id:uuid(),kind:"normal",title:"",target:"全員",body:"",rpDone:false,revealed:false});
- save();renderFlow(p);
+ save();
+ renderFlow(p);
  requestAnimationFrame(()=>{
    const cards=q("#sceneFlow")?.querySelectorAll(".flow-card");
    const last=cards?.[cards.length-1];
-   if(last)last.scrollIntoView({behavior:"smooth",block:"nearest"});
+   if(last){
+     last.scrollIntoView({behavior:"smooth",block:"center"});
+     const title=last.querySelector("[data-ftitle]");
+     if(title)title.focus();
+   }
  });
 }
+window.__kpAddFlowBlock=()=>{
+ const p=window.__kpActivePage||b.pages.find(x=>x.id===active);
+ addFlowBlock(p);
+};
 function moveFlow(p,i,d){
  const j=i+d;if(j<0||j>=p.blocks.length)return;
  [p.blocks[i],p.blocks[j]]=[p.blocks[j],p.blocks[i]];save();renderFlow(p);
 }
 function renderFlow(p){
- const host=q("#sceneFlow");if(!host)return;p.blocks??=[];
+ const host=q("#sceneFlow");if(!host)return;if(!Array.isArray(p.blocks))p.blocks=[];
  host.innerHTML=p.blocks.length?p.blocks.map((x,i)=>`<article class="flow-card ${x.kind==="secret"?"is-secret":""}" data-flow="${i}">
   <div class="flow-head">
    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
