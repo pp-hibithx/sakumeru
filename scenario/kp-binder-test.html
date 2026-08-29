@@ -91,10 +91,59 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
  .manu-target{width:110px}
 }
 
+
+/* v11: ブログ型リッチテキスト */
+.blog-shell{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:visible}
+.blog-note{padding:8px 10px;border-bottom:1px dashed var(--line);font-size:12px;color:var(--muted)}
+.rich-toolbar{position:sticky;top:6px;z-index:12;display:flex;gap:5px;align-items:center;flex-wrap:wrap;padding:8px;border-bottom:1px solid var(--line);background:var(--panel);box-shadow:0 3px 14px rgba(0,0,0,.08)}
+.rich-toolbar .tb-group{display:flex;gap:4px;align-items:center;padding-right:6px;margin-right:1px;border-right:1px solid var(--line)}
+.rich-toolbar .tb-group:last-child{border-right:0}
+.rich-toolbar button,.rich-toolbar select{min-height:30px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px}
+.rich-toolbar button:hover{border-color:var(--accent)}
+.rich-toolbar input[type="color"]{width:32px;height:30px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.rich-toolbar .tb-label{font-size:11px;color:var(--muted);font-weight:700}
+.blog-editor{min-height:560px;padding:24px 26px;background:var(--bg);line-height:1.85;outline:none;font-size:15px}
+.blog-editor:focus{box-shadow:inset 0 0 0 1px var(--accent)}
+.blog-editor h2{font-size:24px;margin:1.4em 0 .55em}
+.blog-editor h3{font-size:19px;margin:1.25em 0 .45em}
+.blog-editor p{margin:.7em 0}
+.blog-editor blockquote{margin:1em 0;padding:.35em 1em;border-left:3px solid var(--line);color:var(--muted)}
+.blog-editor img{max-width:100%;height:auto}
+.blog-editor .kp-special{position:relative;margin:18px 0;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.blog-editor .kp-special[data-kind="reveal"]{border-left:4px solid var(--accent)}
+.blog-editor .kp-special[data-kind="memo"]{border-left:4px dashed var(--line)}
+.blog-editor .kp-special[data-kind="rp"]{border-left:4px dotted var(--line)}
+.blog-editor .kp-special[data-kind="secret"]{border-left:4px double var(--accent)}
+.blog-editor .kp-special-head{display:flex;gap:8px;align-items:center;margin-bottom:7px;font-size:12px;font-weight:800;color:var(--muted)}
+.blog-editor .kp-special-title{font-weight:800;color:var(--text)}
+.blog-editor .kp-special-body{min-height:1.8em}
+.blog-editor .kp-special-action{margin-top:9px}
+.blog-editor .kp-special-action button{padding:6px 10px;font-size:12px}
+.image-grid{display:grid;gap:8px;margin:14px 0}
+.image-grid.cols-1{grid-template-columns:1fr}
+.image-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.image-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.image-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.image-grid figure{margin:0}
+.image-grid img{width:100%;height:auto;display:block;border-radius:7px;border:1px solid var(--line)}
+.image-grid figcaption{font-size:11px;color:var(--muted);margin-top:3px;text-align:center}
+.editor-placeholder:empty:before{content:"ここにシーン本文を書きます。ロドストのように文章を書き、必要な位置へ画像・開示情報・KPメモなどを挿入できます。";color:var(--muted)}
+mark.kp-marker{padding:0 .08em;border-radius:3px}
+.kp-sticky{position:relative;border-bottom:2px dotted currentColor;cursor:help}
+.kp-sticky::after{content:"🗒";display:inline-block;font-size:.82em;vertical-align:super;margin-left:3px;line-height:1}
+.kp-sticky:hover::before{content:attr(data-note);position:absolute;left:0;bottom:calc(100% + 9px);z-index:50;width:max-content;max-width:min(360px,70vw);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);box-shadow:0 5px 18px rgba(0,0,0,.22);white-space:pre-wrap;font-size:12px;line-height:1.55}
+@media(max-width:760px){
+ .blog-editor{padding:16px 14px;min-height:420px}
+ .image-grid.cols-3,.image-grid.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:460px){
+ .image-grid.cols-2,.image-grid.cols-3,.image-grid.cols-4{grid-template-columns:1fr}
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v10 — 一本のシーン本文UI<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v11 — ブログ型リッチテキスト<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -106,18 +155,9 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
    <h2 id="sceneTitle" class="scene-title"></h2>
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
-   <div class="element-tools" id="addbar" aria-label="本文要素を追加">
-<span class="element-tools-label">ここに要素を追加</span>
-<button type="button" data-add="normal">＋ 段落</button>
-<button type="button" data-add="heading">＋ 小見出し</button>
-<span class="element-sep" aria-hidden="true"></span>
-<button type="button" data-add="memo">＋ KPメモ</button>
-<button type="button" data-add="rp">＋ RP</button>
-<button type="button" data-add="reveal">＋ 開示情報</button>
-<button type="button" data-add="secret">＋ 秘匿</button>
-<span class="element-sep" aria-hidden="true"></span>
-<button type="button" data-add="image">＋ 画像</button>
-<span class="element-tools-help">選択中シーンの末尾へ追加（並べ替え可）</span>
+   <div class="element-tools" id="addbar">
+<span class="element-tools-label">テスト操作</span>
+<span class="element-tools-help">本文の追加・装飾はエディタ上部のツールバーから行います。</span>
 <button type="button" class="secondary" id="resetCopy">↶ コピーを元に戻す</button>
 </div>
    <p class="muted-note">※ テスト編集はできますが、本番保存・共有更新は行いません。再読み込みで破棄されます。</p>
@@ -176,7 +216,33 @@ function ensureBlocks(p){
  p.blocks.forEach(x=>{x.id??=uid();x.kind??="normal";x.title??="";x.body??=""});
  return p.blocks
 }
-function sceneChars(p){return ensureBlocks(p).reduce((n,x)=>n+chars(x),0)}
+function blocksToArticle(p){
+ const a=ensureBlocks(p);
+ const html=a.map(x=>{
+   const kind=x.kind||"normal";
+   if(kind==="heading")return `<h3>${esc(x.title||"小見出し")}</h3>${x.body||""}`;
+   if(kind==="normal")return x.body||"<p><br></p>";
+   if(kind==="image"&&x.image)return `<div class="image-grid cols-1"><figure><img src="${x.image}" alt=""></figure></div><p><br></p>`;
+   const label=FLOW_LABEL[kind]||kind;
+   const action=kind==="reveal"?`<div class="kp-special-action" contenteditable="false"><button type="button" disabled>${x.revealed?"✓ 元データでは共有済み":"開示する"}</button></div>`:"";
+   return `<section class="kp-special" data-kind="${esc(kind)}">
+     <div class="kp-special-head" contenteditable="false"><span>${esc(label)}</span>${x.target?`<span>対象：${esc(x.target)}</span>`:""}</div>
+     ${x.title?`<div class="kp-special-title">${esc(x.title)}</div>`:""}
+     <div class="kp-special-body">${x.body||"<p><br></p>"}</div>
+     ${action}
+   </section><p><br></p>`;
+ }).join("");
+ return html||"<p><br></p>";
+}
+function ensureArticle(p){
+ if(typeof p.__v11ArticleHtml!=="string")p.__v11ArticleHtml=blocksToArticle(p);
+ return p.__v11ArticleHtml;
+}
+function sceneChars(p){
+ const html=p?.__v11ArticleHtml;
+ if(typeof html==="string")return plain(html).length;
+ return ensureBlocks(p).reduce((n,x)=>n+chars(x),0)
+}
 function allChars(){return b.pages.reduce((n,p)=>n+sceneChars(p),0)}
 function renderScenes(){
  const list=q("#sceneList");
@@ -201,8 +267,14 @@ function addScene(){
 }
 function addBlock(kind,body=""){
  const p=b.pages.find(x=>String(x.id)===String(active));if(!p)return;
- const x={id:uid(),kind,title:"",target:(kind==="reveal"||kind==="secret")?"全員":"",body,image:"",rpDone:false,revealed:false,revealedAt:"",sharedSnapshot:null};
- ensureBlocks(p).push(x);renderEditor()
+ ensureArticle(p);
+ if(window.__v11Insert){
+   if(kind==="normal")window.__v11Insert(body||"<p><br></p>");
+   else window.__v11InsertSpecial(kind,body||"");
+   return;
+ }
+ p.__v11ArticleHtml+=(kind==="normal"?(body||"<p><br></p>"):`<section class="kp-special" data-kind="${esc(kind)}"><div class="kp-special-head">${esc(FLOW_LABEL[kind]||kind)}</div><div class="kp-special-body">${body||"<p><br></p>"}</div></section><p><br></p>`);
+ renderEditor()
 }
 function moveBlock(i,dir){
  const p=b.pages.find(x=>String(x.id)===String(active));if(!p)return;
@@ -220,112 +292,154 @@ function refreshStats(){
 function renderEditor(){
  const p=b.pages.find(x=>String(x.id)===String(active));
  if(!p){q("#sceneTitle").textContent="シーンを選択してください";q("#manuscript").innerHTML="";q("#stats").innerHTML="";return}
- const blocks=ensureBlocks(p);
  q("#sceneTitle").innerHTML=`<input class="edit-title" id="sceneTitleInput" value="${esc(p.title||"")}" aria-label="シーン名">`;
+ ensureArticle(p);
  refreshStats();
 
- const itemHtml=blocks.map((x,i)=>{
-   const kind=x.kind||"normal",label=FLOW_LABEL[kind]||kind;
-   if(kind==="image"){
-     return `<section class="manu-item image" data-item="${i}">
-       <div class="manu-head">
-         <span class="manu-label">▼ 画像</span>
-         <span class="spacer"></span>
-         <div class="manu-tools"><button class="secondary" data-up="${i}">↑</button><button class="secondary" data-down="${i}">↓</button><button class="secondary" data-del="${i}">削除</button></div>
-       </div>
-       <figure class="manu-image">
-         ${x.image?`<img src="${x.image}" alt="">`:'<div class="muted-note">画像未選択</div>'}
-         <div class="manu-image-actions"><button type="button" data-pickimg="${i}">画像を選択</button>${x.image?`<button type="button" class="secondary" data-clearimg="${i}">画像を外す</button>`:""}</div>
-       </figure>
-     </section>`;
-   }
-
-   const titleInput=kind!=="normal"
-     ? `<input class="manu-title" data-title="${i}" value="${esc(x.title||"")}" placeholder="${kind==="heading"?"小見出し":label+"の見出し"}">`
-     : "";
-   const target=(kind==="reveal"||kind==="secret")
-     ? `<input class="manu-target" data-target="${i}" value="${esc(x.target||"全員")}" placeholder="対象">`
-     : "";
-   const revealAction=(kind==="reveal")
-     ? `<div class="reveal-action"><button type="button" disabled title="コピー編集テストでは共有しません">${x.revealed?"✓ 元データでは共有済み":"開示する"}</button></div>`
-     : "";
-
-   return `<section class="manu-item ${esc(kind)}" data-item="${i}">
-     <div class="manu-head">
-       <span class="manu-label">▼ ${esc(label)}</span>
-       ${titleInput}
-       ${target}
-       <div class="manu-tools"><button class="secondary" data-up="${i}">↑</button><button class="secondary" data-down="${i}">↓</button><button class="secondary" data-del="${i}">削除</button></div>
+ q("#manuscript").innerHTML=`<div class="blog-shell">
+   <div class="blog-note">1シーン＝1つの記事として編集します。ここでの変更はコピーだけで、本番データ・共有URLには保存されません。</div>
+   <div class="rich-toolbar" id="richToolbar">
+     <div class="tb-group">
+       <span class="tb-label">文字</span>
+       <select id="formatBlock" title="見出し">
+         <option value="p">本文</option><option value="h2">大見出し</option><option value="h3">小見出し</option><option value="blockquote">引用</option>
+       </select>
+       <button type="button" data-cmd="bold"><b>B</b></button>
+       <button type="button" data-cmd="italic"><i>I</i></button>
+       <button type="button" data-cmd="underline"><u>U</u></button>
+       <button type="button" data-cmd="strikeThrough"><s>S</s></button>
+       <input type="color" id="foreColor" value="#d7b557" title="文字色">
      </div>
-     <div class="manu-body" contenteditable="true" data-body="${i}">${x.body||""}</div>
-     ${revealAction}
-   </section>`;
- }).join("");
-
- q("#manuscript").innerHTML=`<div class="scene-sheet">
-   <div class="copy-note">一本のシーン本文として表示しています。変更はコピーだけに反映され、本番データには保存されません。</div>
-   <div class="annotation-bar scene-annotation" aria-label="シーン本文の注釈ツール">
-     <span class="annotation-label">注釈</span>
-     <button type="button" id="sceneMarker" title="選択した文字にマーカー">▰ マーカー</button>
-     <button type="button" id="sceneSticky" title="選択した文字にKP用の付箋">🗒 付箋</button>
-     <button type="button" id="sceneClearAnno" title="選択範囲にあるマーカー・付箋を外す">× 注釈解除</button>
-     <span class="annotation-help">シーン本文の文字を選択して使用</span>
+     <div class="tb-group">
+       <span class="tb-label">配置</span>
+       <button type="button" data-cmd="justifyLeft">左</button>
+       <button type="button" data-cmd="justifyCenter">中</button>
+       <button type="button" data-cmd="justifyRight">右</button>
+       <button type="button" data-cmd="insertUnorderedList">• 箇条書き</button>
+       <button type="button" data-cmd="insertOrderedList">1. 番号</button>
+       <button type="button" id="insertLink">🔗</button>
+     </div>
+     <div class="tb-group">
+       <span class="tb-label">注釈</span>
+       <button type="button" id="sceneMarker">▰ マーカー</button>
+       <button type="button" id="sceneSticky">🗒 付箋</button>
+       <button type="button" id="sceneClearAnno">× 解除</button>
+     </div>
+     <div class="tb-group">
+       <span class="tb-label">挿入</span>
+       <button type="button" id="insertImages">🖼 画像</button>
+       <button type="button" data-special="reveal">＋ 開示情報</button>
+       <button type="button" data-special="memo">＋ KPメモ</button>
+       <button type="button" data-special="rp">＋ RP</button>
+       <button type="button" data-special="secret">＋ 秘匿</button>
+     </div>
    </div>
-   <div class="manuscript-stream">${itemHtml||'<div class="muted-note">本文要素がありません。</div>'}</div>
+   <article id="blogEditor" class="blog-editor editor-placeholder" contenteditable="true">${p.__v11ArticleHtml}</article>
  </div>`;
 
- q("#sceneTitleInput").oninput=e=>{p.title=e.target.value;renderScenes();refreshStats()};
- q("#manuscript").querySelectorAll("[data-title]").forEach(el=>el.oninput=()=>{blocks[+el.dataset.title].title=el.value;refreshStats()});
- q("#manuscript").querySelectorAll("[data-target]").forEach(el=>el.oninput=()=>{blocks[+el.dataset.target].target=el.value});
- q("#manuscript").querySelectorAll("[data-body]").forEach(el=>el.oninput=()=>{blocks[+el.dataset.body].body=el.innerHTML;refreshStats()});
+ const ed=q("#blogEditor");
+ let savedRange=null;
 
- function selectedBodyRange(){
+ function saveRange(){
    const sel=window.getSelection?.();
-   if(!sel||!sel.rangeCount||sel.isCollapsed)return null;
-   const range=sel.getRangeAt(0);
-   const bodies=[...q("#manuscript").querySelectorAll("[data-body]")];
-   const body=bodies.find(el=>el.contains(range.commonAncestorContainer));
-   if(!body)return null;
-   return {sel,range,body,i:+body.dataset.body};
+   if(sel&&sel.rangeCount){
+     const r=sel.getRangeAt(0);
+     if(ed.contains(r.commonAncestorContainer))savedRange=r.cloneRange();
+   }
  }
- function syncBody(i,body){blocks[i].body=body.innerHTML;refreshStats()}
- function wrapSceneSelection(tag,attrs={}){
-   const hit=selectedBodyRange();
-   if(!hit){alert("シーン本文から注釈を付けたい文字を選択してください。");return}
-   const {sel,range,body,i}=hit,el=document.createElement(tag);
-   Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
-   try{range.surroundContents(el)}catch{const frag=range.extractContents();el.appendChild(frag);range.insertNode(el)}
-   syncBody(i,body);sel.removeAllRanges();
+ function restoreRange(){
+   ed.focus();
+   const sel=window.getSelection();
+   sel.removeAllRanges();
+   if(savedRange)sel.addRange(savedRange);
+   else{
+     const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);sel.addRange(r);
+   }
  }
- q("#sceneMarker").onmousedown=e=>{e.preventDefault();wrapSceneSelection("mark",{class:"kp-marker"})};
- q("#sceneSticky").onmousedown=e=>{
-   e.preventDefault();
-   const hit=selectedBodyRange();
-   if(!hit){alert("シーン本文から付箋を付けたい文字を選択してください。");return}
-   const note=prompt("付箋に書くKPメモ");if(note===null||!note.trim())return;
-   const {sel,range,body,i}=hit,el=document.createElement("span");el.className="kp-sticky";el.dataset.note=note.trim();
-   try{range.surroundContents(el)}catch{const frag=range.extractContents();el.appendChild(frag);range.insertNode(el)}
-   syncBody(i,body);sel.removeAllRanges();
- };
- q("#sceneClearAnno").onmousedown=e=>{
-   e.preventDefault();
-   const hit=selectedBodyRange();
-   if(!hit){alert("注釈を外したい文字を選択してください。");return}
-   const {sel,range,body,i}=hit;
-   [...body.querySelectorAll("mark.kp-marker,span.kp-sticky")].filter(n=>{try{return range.intersectsNode(n)}catch{return false}}).forEach(n=>n.replaceWith(...n.childNodes));
-   body.normalize();syncBody(i,body);sel.removeAllRanges();
- };
+ function syncArticle(){
+   p.__v11ArticleHtml=ed.innerHTML;
+   refreshStats();
+ }
+ function insertHtml(html){
+   restoreRange();
+   document.execCommand("insertHTML",false,html);
+   saveRange();syncArticle();
+ }
+ function insertSpecial(kind,body=""){
+   const label=FLOW_LABEL[kind]||kind;
+   const target=(kind==="reveal"||kind==="secret")?"全員":"";
+   const title=kind==="reveal"?"開示情報":label;
+   const action=kind==="reveal"?`<div class="kp-special-action" contenteditable="false"><button type="button" disabled>開示する</button></div>`:"";
+   insertHtml(`<section class="kp-special" data-kind="${esc(kind)}">
+     <div class="kp-special-head" contenteditable="false"><span>${esc(label)}</span>${target?`<span>対象：${esc(target)}</span>`:""}</div>
+     <div class="kp-special-title">${esc(title)}</div>
+     <div class="kp-special-body">${body||"<p><br></p>"}</div>
+     ${action}
+   </section><p><br></p>`);
+ }
+ window.__v11Insert=insertHtml;
+ window.__v11InsertSpecial=insertSpecial;
 
- q("#manuscript").querySelectorAll("[data-up]").forEach(el=>el.onclick=()=>moveBlock(+el.dataset.up,-1));
- q("#manuscript").querySelectorAll("[data-down]").forEach(el=>el.onclick=()=>moveBlock(+el.dataset.down,1));
- q("#manuscript").querySelectorAll("[data-del]").forEach(el=>el.onclick=()=>deleteBlock(+el.dataset.del));
- q("#manuscript").querySelectorAll("[data-pickimg]").forEach(el=>el.onclick=()=>{
-   const i=+el.dataset.pickimg,input=document.createElement("input");input.type="file";input.accept="image/*";
-   input.onchange=()=>{const f=input.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{blocks[i].image=String(r.result||"");renderEditor()};r.readAsDataURL(f)};input.click()
+ ed.addEventListener("keyup",saveRange);
+ ed.addEventListener("mouseup",saveRange);
+ ed.addEventListener("input",()=>{saveRange();syncArticle()});
+ ed.addEventListener("blur",saveRange);
+ q("#richToolbar").addEventListener("mousedown",e=>{
+   if(e.target.closest("button,input,select"))saveRange();
  });
- q("#manuscript").querySelectorAll("[data-clearimg]").forEach(el=>el.onclick=()=>{blocks[+el.dataset.clearimg].image="";renderEditor()});
-}
 
+ q("#sceneTitleInput").oninput=e=>{p.title=e.target.value;renderScenes();refreshStats()};
+
+ q("#formatBlock").onchange=e=>{restoreRange();document.execCommand("formatBlock",false,e.target.value);saveRange();syncArticle()};
+ q("#richToolbar").querySelectorAll("[data-cmd]").forEach(btn=>btn.onclick=()=>{restoreRange();document.execCommand(btn.dataset.cmd,false,null);saveRange();syncArticle()});
+ q("#foreColor").oninput=e=>{restoreRange();document.execCommand("foreColor",false,e.target.value);saveRange();syncArticle()};
+ q("#insertLink").onclick=()=>{
+   const url=prompt("リンク先URL");if(!url)return;
+   restoreRange();document.execCommand("createLink",false,url);saveRange();syncArticle();
+ };
+ q("#richToolbar").querySelectorAll("[data-special]").forEach(btn=>btn.onclick=()=>insertSpecial(btn.dataset.special));
+
+ q("#sceneMarker").onclick=()=>{
+   restoreRange();const sel=window.getSelection();
+   if(!sel||!sel.rangeCount||sel.isCollapsed){alert("マーカーを付けたい文字を選択してください。");return}
+   const r=sel.getRangeAt(0);if(!ed.contains(r.commonAncestorContainer))return;
+   const el=document.createElement("mark");el.className="kp-marker";
+   try{r.surroundContents(el)}catch{const f=r.extractContents();el.appendChild(f);r.insertNode(el)}
+   sel.removeAllRanges();syncArticle();
+ };
+ q("#sceneSticky").onclick=()=>{
+   restoreRange();const sel=window.getSelection();
+   if(!sel||!sel.rangeCount||sel.isCollapsed){alert("付箋を付けたい文字を選択してください。");return}
+   const note=prompt("付箋に書くKPメモ");if(note===null||!note.trim())return;
+   const r=sel.getRangeAt(0);if(!ed.contains(r.commonAncestorContainer))return;
+   const el=document.createElement("span");el.className="kp-sticky";el.dataset.note=note.trim();
+   try{r.surroundContents(el)}catch{const f=r.extractContents();el.appendChild(f);r.insertNode(el)}
+   sel.removeAllRanges();syncArticle();
+ };
+ q("#sceneClearAnno").onclick=()=>{
+   restoreRange();const sel=window.getSelection();
+   if(!sel||!sel.rangeCount||sel.isCollapsed){alert("注釈を外したい文字を選択してください。");return}
+   const r=sel.getRangeAt(0);
+   [...ed.querySelectorAll("mark.kp-marker,span.kp-sticky")].filter(n=>{try{return r.intersectsNode(n)}catch{return false}}).forEach(n=>n.replaceWith(...n.childNodes));
+   ed.normalize();sel.removeAllRanges();syncArticle();
+ };
+
+ q("#insertImages").onclick=()=>{
+   const input=document.createElement("input");input.type="file";input.accept="image/*";input.multiple=true;
+   input.onchange=()=>{
+     const files=[...(input.files||[])];if(!files.length)return;
+     const read=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res({src:String(r.result||""),name:f.name});r.readAsDataURL(f)});
+     Promise.all(files.map(read)).then(items=>{
+       for(let i=0;i<items.length;i+=4){
+         const group=items.slice(i,i+4);
+         const figures=group.map(it=>`<figure><img src="${it.src}" alt="${esc(it.name)}"><figcaption>${esc(it.name)}</figcaption></figure>`).join("");
+         insertHtml(`<div class="image-grid cols-${group.length}">${figures}</div><p><br></p>`);
+       }
+     });
+   };
+   input.click();
+ };
+}
 async function readPdf(file){const st=q("#pdfStatus");st.textContent="PDFを読み込み中…";pdfPages=[];activePdf=-1;q("#pdfList").innerHTML="";try{const pdfjsLib=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs");pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";const bytes=new Uint8Array(await file.arrayBuffer());const pdf=await pdfjsLib.getDocument({data:bytes}).promise;for(let n=1;n<=pdf.numPages;n++){st.textContent=`文字を抽出中… ${n}/${pdf.numPages}`;const page=await pdf.getPage(n),tc=await page.getTextContent();let text="",lastY=null;for(const item of tc.items||[]){const y=item.transform?.[5];if(lastY!==null&&y!==undefined&&Math.abs(y-lastY)>4)text+="\n";else if(text&&!text.endsWith("\n"))text+=" ";text+=item.str||"";lastY=y}pdfPages.push({page:n,text:text.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim()})}st.textContent=`${pdf.numPages}ページを読み込みました。`;activePdf=pdfPages.length?0:-1;renderPdf();renderPdfCurrent(false)}catch(e){console.error(e);st.textContent="PDFの読み込みに失敗しました。"}}
 function renderPdf(){
  const list=q("#pdfList");
@@ -390,7 +504,6 @@ function renderPdfCurrent(open=false){
 q("#pickPdf").onclick=()=>q("#pdfFile").click();
 q("#pdfFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)readPdf(f)};
 q("#addScene").onclick=addScene;
-q("#addbar").querySelectorAll("[data-add]").forEach(btn=>btn.onclick=()=>addBlock(btn.dataset.add));
-q("#resetCopy").onclick=()=>{if(!confirm("コピー編集内容を破棄して、元データの読み込み状態へ戻しますか？"))return;b=cloneData(originalCopy);active=b.pages[0]?.id||"";renderScenes();renderEditor()};
+q("#resetCopy").onclick=()=>{if(!confirm("コピー編集内容を破棄して、元データの読み込み状態へ戻しますか？"))return;window.__v11Insert=null;window.__v11InsertSpecial=null;b=cloneData(originalCopy);active=b.pages[0]?.id||"";renderScenes();renderEditor()};
 renderScenes();renderEditor();
 </script></body></html>
