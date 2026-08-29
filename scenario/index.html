@@ -1434,3 +1434,37 @@ q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=rese
 .sc-cover-choice-preview .sc-brand-cover-logo{margin-bottom:2px}
 .sc-cover-choice-preview .sc-brand-cover-wordmark{margin-bottom:0}
 </style>
+
+<style>
+/* Display image chooser alignment fix */
+.sc-cover-choice{align-items:stretch;margin-bottom:10px}
+.sc-cover-choice>label{
+  grid-template-rows:auto auto;
+  align-content:start;
+  min-width:0;
+  height:100%;
+  box-sizing:border-box;
+}
+.sc-cover-choice-preview{
+  display:block;
+  width:100%;
+  min-width:0;
+  aspect-ratio:16/10;
+  height:auto;
+  box-sizing:border-box;
+}
+.sc-cover-choice-preview>img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  display:block;
+  background:rgba(255,255,255,.018);
+}
+#displayImageChoice + .small.muted{
+  display:block;
+  margin-top:8px;
+  line-height:1.5;
+}
+#roomImageFields{margin-top:16px!important}
+</style>
