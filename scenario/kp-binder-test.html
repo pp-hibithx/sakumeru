@@ -596,7 +596,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">共有実験版 v31 — 共有画像圧縮＋失敗時ロールバック<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
+ <div class="test-banner">共有実験版 v32 — Supabase Storage画像共有<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -1512,7 +1512,7 @@ function renderTestShareBar(){const u=testShareUrl(),inp=q("#testShareUrl"),op=q
 async function syncTestShare(){if(!shareTest.shareId)throw new Error("先に共有URLを作成してください。");await TRPG39Cloud.updateSharedPage(shareTest.shareId,testSharePayload());renderTestShareBar()}
 async function compressShareImage(src){
  src=String(src||"");
- if(!src.startsWith("data:image/"))return src;
+ if(!src.startsWith("data:image/"))return {src,mime:"image/webp"};
  return await new Promise(resolve=>{
    const img=new Image();
    img.onload=()=>{
@@ -1521,25 +1521,59 @@ async function compressShareImage(src){
        const w=Math.max(1,Math.round((img.naturalWidth||1)*scale)),h=Math.max(1,Math.round((img.naturalHeight||1)*scale));
        const c=document.createElement("canvas");c.width=w;c.height=h;
        c.getContext("2d").drawImage(img,0,0,w,h);
-       const out=c.toDataURL("image/webp",0.84);
-       resolve(out&&out.length<src.length?out:src);
-     }catch(_){resolve(src)}
+       resolve({src:c.toDataURL("image/webp",0.82),mime:"image/webp"});
+     }catch(_){resolve({src,mime:(src.match(/^data:([^;,]+)/)||[])[1]||"image/png"})}
    };
-   img.onerror=()=>resolve(src);
+   img.onerror=()=>resolve({src,mime:(src.match(/^data:([^;,]+)/)||[])[1]||"image/png"});
    img.src=src;
  });
+}
+function dataUrlToBlob(dataUrl){
+ const [head,data]=String(dataUrl||"").split(",");
+ const mime=(head.match(/^data:([^;]+)/)||[])[1]||"application/octet-stream";
+ const bin=atob(data||"");const arr=new Uint8Array(bin.length);
+ for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+ return new Blob([arr],{type:mime});
+}
+function storageCfg(){
+ const cfg=window.SUPABASE_CONFIG||{};
+ if(!/^https:\/\/.+\.supabase\.co$/i.test(cfg.projectUrl||"")||!cfg.publishableKey)throw new Error("Supabase設定を読み込めませんでした。");
+ return cfg;
+}
+async function uploadShareImage(src,blockId,index){
+ src=String(src||"");
+ if(/^https:\/\//i.test(src))return src;
+ if(!src.startsWith("data:image/"))throw new Error("共有できない画像形式です。");
+ const {src:compressed}=await compressShareImage(src);
+ const blob=dataUrlToBlob(compressed);
+ const cfg=storageCfg();
+ const ext=blob.type==="image/webp"?"webp":blob.type==="image/png"?"png":blob.type.includes("jpeg")?"jpg":"bin";
+ const safeBlock=String(blockId||"reveal").replace(/[^a-zA-Z0-9_-]/g,"_");
+ const path=`${encodeURIComponent(shareTest.sessionId)}/${encodeURIComponent(safeBlock)}/${Date.now()}-${index}.${ext}`;
+ const url=`${cfg.projectUrl}/storage/v1/object/kp-share-images/${path}`;
+ const res=await fetch(url,{method:"POST",headers:{"apikey":cfg.publishableKey,"Authorization":`Bearer ${cfg.publishableKey}`,"Content-Type":blob.type,"x-upsert":"false"},body:blob});
+ if(!res.ok){
+   const body=await res.text();
+   if(res.status===401||res.status===403)throw new Error("画像Storageへのアップロード権限がありません。kp-share-images のINSERTポリシーが必要です。"+(body?` (${body.slice(0,120)})`:""));
+   throw new Error(`画像アップロードに失敗しました (${res.status})${body?`: ${body.slice(0,140)}`:""}`);
+ }
+ return `${cfg.projectUrl}/storage/v1/object/public/kp-share-images/${path}`;
 }
 async function revealSnapshot(section){
  const id=section.dataset.blockId||crypto.randomUUID();
  const title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
- const body=section.querySelector(".kp-special-body")?.innerHTML||"";
  const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
+ // Share body must not contain the original base64 image data. Images are uploaded to Storage separately.
+ const bodyRoot=section.querySelector(".kp-special-body")?.cloneNode(true)||document.createElement("div");
+ bodyRoot.querySelectorAll(".image-grid,[data-image-grid]").forEach(x=>x.remove());
+ bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());
+ const body=bodyRoot.innerHTML||"";
  const raw=[...section.querySelectorAll(".image-grid img, img[data-full-image]")]
    .map(img=>img.getAttribute("src")||"")
    .filter(Boolean)
    .filter((src,i,a)=>a.indexOf(src)===i);
  const images=[];
- for(const src of raw)images.push(await compressShareImage(src));
+ for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
  return {id,title,target,body,images,revealedAt:new Date().toISOString()};
 }
 function setRevealAction(section){
@@ -1570,7 +1604,7 @@ q("#manuscript").addEventListener("click",async e=>{
  try{
    if(!shareTest.shareId)throw new Error("先に「共有URLを作成」を押してください。");
    if(open){
-     st.textContent="開示データを準備中…画像がある場合は共有用に圧縮します。";
+     st.textContent="開示データを準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
      if(!confirm(`「${snap.title}」をテスト共有しますか？`))return;
      shareTest.items.push(snap);
@@ -1578,7 +1612,7 @@ q("#manuscript").addEventListener("click",async e=>{
      st.textContent=`「${snap.title}」を共有しました。`;
    }else if(upd){
      const old=shareTest.items.find(x=>x.id===id);if(!old)return;
-     st.textContent="共有内容を準備中…画像がある場合は共有用に圧縮します。";
+     st.textContent="共有内容を準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);snap.revealedAt=old.revealedAt;snap.updatedAt=new Date().toISOString();
      const backup={...old,images:[...(old.images||[])]};Object.assign(old,snap);
      try{await syncTestShare()}catch(err){Object.keys(old).forEach(k=>delete old[k]);Object.assign(old,backup);throw err}
