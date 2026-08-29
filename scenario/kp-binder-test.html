@@ -498,10 +498,40 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 }
 .blog-editor.sm-drag-active{user-select:none!important}
 
+
+/* v21: handles live outside contenteditable */
+.blog-shell{position:relative!important}
+.block-handle-layer{
+  position:absolute;inset:0;z-index:30;pointer-events:none;overflow:visible
+}
+.block-handle-layer .sm-drag-handle{
+  position:absolute;
+  width:28px;height:30px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:6px;
+  background:var(--panel);color:var(--muted);
+  opacity:.62;box-shadow:0 2px 8px rgba(0,0,0,.22);
+  cursor:grab;pointer-events:auto;user-select:none;
+  font-size:17px;font-weight:800;line-height:1;padding:0;
+}
+.block-handle-layer .sm-drag-handle:hover,
+.block-handle-layer .sm-drag-handle.active{
+  opacity:1;color:var(--text);border-color:var(--accent)
+}
+.block-handle-layer .sm-drag-handle:active{cursor:grabbing}
+.blog-editor > .sm-block{position:relative!important}
+.blog-editor > .sm-block.sm-block-dragging{opacity:.34!important}
+.blog-editor > .sm-block.sm-drop-before::before,
+.blog-editor > .sm-block.sm-drop-after::after{
+  content:"";position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:50
+}
+.blog-editor > .sm-block.sm-drop-before::before{top:-5px}
+.blog-editor > .sm-block.sm-drop-after::after{bottom:-5px}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v20 — ブロックドラッグ修正版<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v21 — 外付けドラッグハンドル修正版<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -705,6 +735,7 @@ function renderEditor(){
        <button type="button" id="insertBackground">▧ 背景</button>
      </div>
    </div>
+   <div class="block-handle-layer" id="blockHandleLayer" contenteditable="false"></div>
    <article id="blogEditor" class="blog-editor editor-placeholder" contenteditable="true">${p.__v11ArticleHtml}</article>
  </div>
  <div class="image-lightbox" id="imageLightbox" contenteditable="false">
@@ -730,121 +761,139 @@ function renderEditor(){
  </div>`;
 
  const ed=q("#blogEditor");
+
  const MOVABLE_SELECTOR="p,h1,h2,h3,h4,blockquote,ul,ol,hr,section.kp-special,div.image-grid,div.media-card,div.kp-cue";
+ const handleLayer=q("#blockHandleLayer");
 
  function directEditorBlocks(){
-   return [...ed.children].filter(el=>{
-     if(el.id==="imageLightbox"||el.id==="videoChoicePop")return false;
-     return el.matches?.(MOVABLE_SELECTOR);
-   });
+   return [...ed.children].filter(el=>el.matches?.(MOVABLE_SELECTOR));
  }
 
- function removeBlockHandles(){
-   ed.querySelectorAll(":scope > .sm-block > .sm-drag-handle").forEach(h=>h.remove());
-   ed.querySelectorAll(":scope > .sm-block").forEach(b=>b.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after"));
- }
-
- function decorateBlocks(){
-   directEditorBlocks().forEach(block=>{
-     block.classList.add("sm-block");
-     block.draggable=false;
-     // The handle is UI, never part of editable/shared content.
-     let h=[...block.children].find(x=>x.classList?.contains("sm-drag-handle"));
-     if(!h){
-       h=document.createElement("button");
-       h.type="button";
-       h.className="sm-drag-handle";
-       h.contentEditable="false";
-       h.draggable=true;
-       h.title="ここをつかんでブロックを移動";
-       h.setAttribute("aria-label","ブロックを移動");
-       h.textContent="⋮⋮";
-       block.insertBefore(h,block.firstChild);
-     }
-     h.draggable=true;
-   });
- }
-
-
- let draggedBlock=null;
  function clearBlockDropMarks(){
    ed.querySelectorAll(":scope > .sm-drop-before,:scope > .sm-drop-after")
      .forEach(x=>x.classList.remove("sm-drop-before","sm-drop-after"));
  }
 
- function blockFromHandle(handle){
-   const block=handle?.parentElement;
-   return block && block.parentElement===ed && block.classList.contains("sm-block") ? block : null;
+ function decorateBlocks(){
+   directEditorBlocks().forEach(block=>block.classList.add("sm-block"));
+   refreshBlockHandles();
  }
 
- // Delegated handlers: newly inserted blocks work without rebinding events.
- ed.addEventListener("dragstart",e=>{
-   const handle=e.target.closest?.(".sm-drag-handle");
-   if(handle){
-     const block=blockFromHandle(handle);
-     if(!block)return;
-     draggedBlock=block;
-     ed.classList.add("sm-drag-active");
-     block.classList.add("sm-block-dragging");
-     e.dataTransfer.effectAllowed="move";
-     try{e.dataTransfer.setData("text/plain","sakumeru-block")}catch(_){}
-     e.stopPropagation();
+ let handleFrame=0;
+ function refreshBlockHandles(){
+   cancelAnimationFrame(handleFrame);
+   handleFrame=requestAnimationFrame(()=>{
+     if(!handleLayer?.isConnected||!ed?.isConnected)return;
+     handleLayer.innerHTML="";
+     const shell=q(".blog-shell");
+     if(!shell)return;
+     const shellRect=shell.getBoundingClientRect();
+     const edRect=ed.getBoundingClientRect();
+
+     directEditorBlocks().forEach((block,index)=>{
+       block.classList.add("sm-block");
+       const r=block.getBoundingClientRect();
+       const h=document.createElement("button");
+       h.type="button";
+       h.className="sm-drag-handle";
+       h.textContent="⋮⋮";
+       h.title="ここをつかんでブロックを移動";
+       h.setAttribute("aria-label","ブロックを移動");
+       h.style.left=`${edRect.left-shellRect.left-34}px`;
+       h.style.top=`${r.top-shellRect.top+Math.min(6,Math.max(0,r.height/2-15))}px`;
+       h._smBlock=block;
+       h.addEventListener("mousedown",startPointerBlockDrag);
+       handleLayer.appendChild(h);
+     });
+   });
+ }
+
+ let pointerDrag=null;
+ function startPointerBlockDrag(e){
+   if(e.button!==0)return;
+   const block=e.currentTarget._smBlock;
+   if(!block||block.parentElement!==ed)return;
+   e.preventDefault();e.stopPropagation();
+
+   pointerDrag={
+     block,
+     handle:e.currentTarget,
+     startX:e.clientX,
+     startY:e.clientY,
+     moved:false,
+     target:null,
+     before:true
+   };
+   pointerDrag.handle.classList.add("active");
+   block.classList.add("sm-block-dragging");
+   document.addEventListener("mousemove",movePointerBlockDrag,true);
+   document.addEventListener("mouseup",endPointerBlockDrag,true);
+ }
+
+ function movePointerBlockDrag(e){
+   if(!pointerDrag)return;
+   const d=Math.hypot(e.clientX-pointerDrag.startX,e.clientY-pointerDrag.startY);
+   if(d>3)pointerDrag.moved=true;
+   if(!pointerDrag.moved)return;
+
+   clearBlockDropMarks();
+   const hit=document.elementFromPoint(e.clientX,e.clientY);
+   const target=hit?.closest?.(".sm-block");
+   if(!target||target===pointerDrag.block||target.parentElement!==ed){
+     pointerDrag.target=null;
      return;
    }
 
-   // Image thumbnails use their own reorder handler.
-   if(e.target.closest?.("[data-img-item]"))return;
-
-   // Never allow browser-native contenteditable drag/copy.
-   e.preventDefault();
- }, true);
-
- ed.addEventListener("dragover",e=>{
-   if(!draggedBlock)return;
-   const target=e.target.closest?.(".sm-block");
-   if(!target || target===draggedBlock || target.parentElement!==ed)return;
-   e.preventDefault();
-   e.stopPropagation();
-   clearBlockDropMarks();
    const r=target.getBoundingClientRect();
-   const before=e.clientY < r.top + r.height/2;
+   const before=e.clientY < r.top+r.height/2;
    target.classList.add(before?"sm-drop-before":"sm-drop-after");
-   e.dataTransfer.dropEffect="move";
- }, true);
+   pointerDrag.target=target;
+   pointerDrag.before=before;
+ }
 
- ed.addEventListener("drop",e=>{
-   if(!draggedBlock)return;
-   const target=e.target.closest?.(".sm-block");
-   if(!target || target===draggedBlock || target.parentElement!==ed)return;
-   e.preventDefault();
-   e.stopPropagation();
+ function endPointerBlockDrag(e){
+   if(!pointerDrag)return;
+   e.preventDefault();e.stopPropagation();
+   const {block,handle,target,before,moved}=pointerDrag;
 
-   const r=target.getBoundingClientRect();
-   const before=e.clientY < r.top + r.height/2;
-   if(before)ed.insertBefore(draggedBlock,target);
-   else ed.insertBefore(draggedBlock,target.nextSibling);
-
-   draggedBlock.classList.remove("sm-block-dragging");
-   ed.classList.remove("sm-drag-active");
-   clearBlockDropMarks();
-   draggedBlock=null;
-   decorateBlocks();
-   syncArticle();
- }, true);
-
- ed.addEventListener("dragend",()=>{
-   if(draggedBlock)draggedBlock.classList.remove("sm-block-dragging");
-   ed.classList.remove("sm-drag-active");
-   clearBlockDropMarks();
-   draggedBlock=null;
- }, true);
-
- ed.addEventListener("mousedown",e=>{
-   if(e.target.closest?.(".sm-drag-handle")){
-     e.preventDefault();
-     e.stopPropagation();
+   if(moved&&target&&block.parentElement===ed&&target.parentElement===ed){
+     if(before)ed.insertBefore(block,target);
+     else ed.insertBefore(block,target.nextSibling);
    }
- }, true);
+
+   block.classList.remove("sm-block-dragging");
+   handle.classList.remove("active");
+   clearBlockDropMarks();
+   pointerDrag=null;
+   document.removeEventListener("mousemove",movePointerBlockDrag,true);
+   document.removeEventListener("mouseup",endPointerBlockDrag,true);
+   refreshBlockHandles();
+   syncArticle();
+ }
+
+ // Native text dragging inside contenteditable creates copies, so only image thumbnails
+ // retain native drag-and-drop. Block movement is handled by the external gutter handles.
+ ed.addEventListener("dragstart",e=>{
+   if(e.target.closest?.("[data-img-item]"))return;
+   e.preventDefault();
+ });
+
+ function removeBlockHandles(){
+   handleLayer.innerHTML="";
+   ed.querySelectorAll(":scope > .sm-block").forEach(b=>
+     b.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after")
+   );
+ }
+
+ function ensureParagraphBlocks(){
+   [...ed.childNodes].forEach(n=>{
+     if(n.nodeType===3 && n.textContent.trim()){
+       const p=document.createElement("p");
+       p.textContent=n.textContent;
+       ed.replaceChild(p,n);
+     }
+   });
+ }
 
  function cleanEditorHtml(){
    const clone=ed.cloneNode(true);
@@ -894,8 +943,44 @@ function renderEditor(){
  function insertHtml(html){
    restoreRange();
    document.execCommand("insertHTML",false,html);
-   saveRange();ensureParagraphBlocks();decorateBlocks();requestAnimationFrame(decorateBlocks);syncArticle();
+   saveRange();ensureParagraphBlocks();decorateBlocks();requestAnimationFrame(()=>{decorateBlocks();refreshBlockHandles()});syncArticle();
  }
+
+ function currentTopLevelBlock(){
+   let node=savedRange?.commonAncestorContainer||null;
+   if(node&&node.nodeType===3)node=node.parentElement;
+   while(node&&node.parentElement!==ed)node=node.parentElement;
+   return node&&node.parentElement===ed?node:null;
+ }
+
+ function insertTopLevelHtml(html){
+   const temp=document.createElement("div");
+   temp.innerHTML=html;
+   const nodes=[...temp.childNodes];
+   const anchor=currentTopLevelBlock();
+   let ref=anchor?anchor.nextSibling:null;
+   nodes.forEach(node=>{
+     ed.insertBefore(node,ref);
+   });
+   ensureParagraphBlocks();
+   decorateBlocks();
+   refreshBlockHandles();
+   syncArticle();
+
+   const last=nodes[nodes.length-1];
+   if(last){
+     const r=document.createRange();
+     if(last.nodeType===1 && last.matches("p")){
+       r.selectNodeContents(last);r.collapse(false);
+     }else{
+       r.setStartAfter(last);r.collapse(true);
+     }
+     savedRange=r.cloneRange();
+     const sel=window.getSelection();
+     sel.removeAllRanges();sel.addRange(r);
+   }
+ }
+
  function insertSpecial(kind,body=""){
    const labels={reveal:"開示情報",memo:"KPメモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
    const label=labels[kind]||FLOW_LABEL[kind]||kind;
@@ -905,7 +990,7 @@ function renderEditor(){
    const inner=kind==="dialogue"
      ? `<div class="dialogue-lines"><div class="dialogue-row"><div class="dialogue-name">KP：</div><div class="dialogue-text">ここに会話ログを入力</div></div></div>`
      : (body||"<p><br></p>");
-   insertHtml(`<section class="kp-special" data-kind="${esc(kind)}">
+   insertTopLevelHtml(`<section class="kp-special" data-kind="${esc(kind)}">
      <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${target?`<span>対象：${esc(target)}</span>`:""}</div>
      <div class="kp-special-title">${esc(title)}</div>
      <div class="kp-special-body">${inner}</div>
@@ -913,21 +998,21 @@ function renderEditor(){
    </section><p><br></p>`);
  }
  decorateBlocks();
+ refreshBlockHandles();
+ window.addEventListener("resize",refreshBlockHandles);
+ ed.addEventListener("scroll",refreshBlockHandles);
+ if(window.ResizeObserver){
+   const ro=new ResizeObserver(refreshBlockHandles);
+   ro.observe(ed);
+ }
  window.__v11Insert=insertHtml;
  window.__v11InsertSpecial=insertSpecial;
 
  
- ed.addEventListener("dragstart",e=>{
-   const handle=e.target.closest?.(".sm-drag-handle");
-   const imageItem=e.target.closest?.("[data-img-item]");
-   if(handle||imageItem)return;
-   // Text/content dragging inside contenteditable otherwise creates copies.
-   e.preventDefault();
- });
 
 ed.addEventListener("keyup",saveRange);
  ed.addEventListener("mouseup",saveRange);
- ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle()});
+ ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle();refreshBlockHandles()});
  ed.addEventListener("blur",saveRange);
  q("#richToolbar").addEventListener("mousedown",e=>{
    if(e.target.closest("button,input,select"))saveRange();
@@ -1028,7 +1113,7 @@ ed.addEventListener("keyup",saveRange);
        insertHtml(`<div class="image-grid" data-image-grid contenteditable="false">${figures}<div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`);
        mergeAdjacentImageGrids();
        initImageUi();
-       syncArticle();
+       syncArticle();refreshBlockHandles();
      });
    };
    input.click();
