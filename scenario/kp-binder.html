@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KP BINDER 移行テスト｜SAKU+MERU</title>
+<title>KP BINDER | SAKU+MERU</title>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/beta-gate.js?v=02315"></script><script src="../assets/js/beta-gate-ui.js?v=0306"></script>
@@ -128,7 +128,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .image-grid figure{margin:0}
 .image-grid img{width:100%;height:auto;display:block;border-radius:7px;border:1px solid var(--line)}
 .image-grid figcaption{font-size:11px;color:var(--muted);margin-top:3px;text-align:center}
-.editor-placeholder:empty:before{content:"ここにシーン本文を書きます。ロドストのように文章を書き、必要な位置へ画像・開示情報・KPメモなどを挿入できます。";color:var(--muted)}
+.editor-placeholder:empty:before{content:"ここにシーンの本文を入力します。文章の途中に画像や開示情報、KPメモなどを自由に追加できます。";color:var(--muted)}
 mark.kp-marker{padding:0 .08em;border-radius:3px}
 .kp-sticky{position:relative;border-bottom:2px dotted currentColor;cursor:help}
 .kp-sticky::after{content:"🗒";display:inline-block;font-size:.82em;vertical-align:super;margin-left:3px;line-height:1}
@@ -1394,7 +1394,48 @@ ed.addEventListener("keyup",saveRange);
  }
 
  
+ function specialBodyIsEmpty(section){
+   const body=section?.querySelector(":scope > .kp-special-body");
+   if(!body)return false;
+   const text=(body.textContent||"").replace(/\u200B/g,"").trim();
+   const hasContent=!!body.querySelector("img,video,audio,iframe,hr,.media-card,.image-grid,table");
+   return !text&&!hasContent;
+ }
+ function placeCaretAfterRemoval(previous){
+   const target=previous&&previous.isConnected?previous:null;
+   if(target){
+     const range=document.createRange(),sel=getSelection();
+     range.selectNodeContents(target);range.collapse(false);
+     sel.removeAllRanges();sel.addRange(range);
+   }else{
+     const p=document.createElement("p");p.innerHTML="<br>";ed.prepend(p);
+     const range=document.createRange(),sel=getSelection();
+     range.setStart(p,0);range.collapse(true);sel.removeAllRanges();sel.addRange(range);
+   }
+   saveRange();
+ }
+ function deleteEmptySpecialFromCaret(){
+   const sel=getSelection();if(!sel||!sel.rangeCount||!sel.isCollapsed)return false;
+   let node=sel.anchorNode;
+   if(node?.nodeType===3)node=node.parentElement;
+   const section=node?.closest?.(".kp-special");
+   if(!section||section.parentElement!==ed||!specialBodyIsEmpty(section))return false;
+   const body=node?.closest?.(".kp-special-body");
+   if(!body)return false;
+   const range=sel.getRangeAt(0).cloneRange();
+   const probe=document.createRange();probe.selectNodeContents(body);probe.setEnd(range.startContainer,range.startOffset);
+   if((probe.toString()||"").replace(/\u200B/g,"").trim())return false;
+   const previous=section.previousElementSibling;
+   section.remove();
+   ensureParagraphBlocks();decorateBlocks();placeCaretAfterRemoval(previous);syncArticle();
+   return true;
+ }
+
  ed.addEventListener("keydown",e=>{
+   if(e.key==="Backspace"&&deleteEmptySpecialFromCaret()){
+     e.preventDefault();
+     return;
+   }
    if(e.key!=="Enter")return;
    if(e.shiftKey){
      // Native Shift+Enter gives a soft line break inside the current block.
