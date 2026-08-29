@@ -596,7 +596,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">共有実験版 v28 — 開示ブロック作成フリーズ修正版<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
+ <div class="test-banner">共有実験版 v30 — 開示画像共有対応<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -1115,11 +1115,23 @@ ed.addEventListener("keyup",saveRange);
      if(sel&&sel.rangeCount){
        let node=sel.anchorNode;
        if(node&&node.nodeType===3)node=node.parentElement;
-       const block=node?.closest?.("p,h1,h2,h3,h4,blockquote,li,div.kp-special-body,div.kp-special-title");
+       const block=node?.closest?.("p,h1,h2,h3,h4,blockquote,li");
        if(block&&ed.contains(block)){
          block.style.textAlign=cmd==="justifyLeft"?"left":cmd==="justifyCenter"?"center":"right";
        }else{
-         document.execCommand(cmd,false,null);
+         // If the caret is directly inside a special title/body, wrap only that current line
+         // instead of aligning the whole special block.
+         const special=node?.closest?.("div.kp-special-body,div.kp-special-title");
+         if(special&&ed.contains(special)){
+           restoreRange();
+           document.execCommand("formatBlock",false,"p");
+           const sel2=window.getSelection();
+           let n2=sel2?.anchorNode;if(n2&&n2.nodeType===3)n2=n2.parentElement;
+           const p2=n2?.closest?.("p,h1,h2,h3,h4,blockquote,li");
+           if(p2&&special.contains(p2))p2.style.textAlign=cmd==="justifyLeft"?"left":cmd==="justifyCenter"?"center":"right";
+         }else{
+           document.execCommand(cmd,false,null);
+         }
        }
      }
    }else{
@@ -1498,7 +1510,17 @@ function testSharePayload(){return {kind:"kp-live-share",title:(b.scenarioTitle|
 function testShareUrl(){return shareTest.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(shareTest.shareId)}&type=kp-live`:""}
 function renderTestShareBar(){const u=testShareUrl(),inp=q("#testShareUrl"),op=q("#openTestShare");if(inp)inp.value=u;if(op){op.href=u||"#";op.hidden=!u}}
 async function syncTestShare(){if(!shareTest.shareId)throw new Error("先に共有URLを作成してください。");await TRPG39Cloud.updateSharedPage(shareTest.shareId,testSharePayload());renderTestShareBar()}
-function revealSnapshot(section){const id=section.dataset.blockId||crypto.randomUUID();const title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";const body=section.querySelector(".kp-special-body")?.innerHTML||"";const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";return {id,title,target,body,images:[],revealedAt:new Date().toISOString()}}
+function revealSnapshot(section){
+ const id=section.dataset.blockId||crypto.randomUUID();
+ const title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
+ const body=section.querySelector(".kp-special-body")?.innerHTML||"";
+ const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
+ const images=[...section.querySelectorAll(".image-grid img, img[data-full-image]")]
+   .map(img=>img.getAttribute("src")||"")
+   .filter(Boolean)
+   .filter((src,i,a)=>a.indexOf(src)===i);
+ return {id,title,target,body,images,revealedAt:new Date().toISOString()};
+}
 function setRevealAction(section){
  const id=section.dataset.blockId,item=shareTest.items.find(x=>x.id===id);
  let host=section.querySelector(":scope > .kp-special-action");
