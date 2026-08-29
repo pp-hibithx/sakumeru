@@ -30,6 +30,8 @@
 .kp-image-lightbox{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:28px;cursor:zoom-out}
 .kp-image-lightbox[hidden]{display:none!important}
 .kp-image-lightbox img{max-width:94vw;max-height:92vh;width:auto;height:auto;object-fit:contain;border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+.kp-image-lightbox-close{position:fixed;top:18px;right:22px;z-index:100000;width:44px;height:44px;border:1px solid rgba(255,255,255,.45);border-radius:999px;background:rgba(10,12,15,.82);color:#fff;font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer}
+.kp-image-lightbox-close:hover{background:rgba(35,38,44,.96)}
 </style>
 
 <style>
@@ -892,9 +894,11 @@ document.addEventListener("click",e=>{
  const box=document.getElementById("kpImageLightbox"),big=document.getElementById("kpImageLightboxImg");
  if(!box||!big)return;big.src=img.currentSrc||img.src;box.hidden=false;
 });
-document.getElementById("kpImageLightbox")?.addEventListener("click",e=>{e.currentTarget.hidden=true;document.getElementById("kpImageLightboxImg").removeAttribute("src")});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){const box=document.getElementById("kpImageLightbox");if(box&&!box.hidden){box.hidden=true;document.getElementById("kpImageLightboxImg")?.removeAttribute("src")}}});
+const closeKpImageLightbox=()=>{const box=document.getElementById("kpImageLightbox"),big=document.getElementById("kpImageLightboxImg");if(box)box.hidden=true;if(big)big.removeAttribute("src")};
+document.getElementById("kpImageLightbox")?.addEventListener("click",e=>{if(e.target===e.currentTarget)closeKpImageLightbox()});
+document.getElementById("kpImageLightboxClose")?.addEventListener("click",e=>{e.stopPropagation();closeKpImageLightbox()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){const box=document.getElementById("kpImageLightbox");if(box&&!box.hidden){closeKpImageLightbox()}}});
 </script>
 <!-- PROFILE attached-page SHARE fix v0.3.64 -->
-<div class="kp-image-lightbox" id="kpImageLightbox" hidden><img id="kpImageLightboxImg" alt=""></div>
+<div class="kp-image-lightbox" id="kpImageLightbox" hidden><button type="button" class="kp-image-lightbox-close" id="kpImageLightboxClose" aria-label="画像を閉じる" title="閉じる">×</button><img id="kpImageLightboxImg" alt=""></div>
 </body></html>
