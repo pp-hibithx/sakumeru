@@ -2220,5 +2220,87 @@ if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find
 renderPC();
 renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
-</script>\n<script id="kpRevealRuntimeFix0830">\n(()=>{\n const qs=(s,r=document)=>r.querySelector(s);\n const qsa=(s,r=document)=>[...r.querySelectorAll(s)];\n\n function currentMode(section){\n   return section?.dataset?.revealMode==='summary'?'summary':'full';\n }\n function setMode(section,mode,doSync=true){\n   if(!section)return;\n   mode=mode==='summary'?'summary':'full';\n   section.dataset.revealMode=mode;\n   qsa('[data-kp-reveal-choice]',section).forEach(b=>{\n     const on=b.dataset.kpRevealChoice===mode;\n     b.classList.toggle('is-active',on);\n     b.setAttribute('aria-pressed',on?'true':'false');\n   });\n   const box=qs('.kp-reveal-summary',section);\n   if(box)box.hidden=mode!=='summary';\n   // Remove old radios entirely so a malformed checked state can never survive serialization.\n   qsa('[data-reveal-mode]',section).forEach(r=>r.remove());\n   if(doSync&&typeof syncArticle==='function')syncArticle();\n }\n function upgradeSection(section){\n   if(!section||section.dataset.revealSeg0830==='1')return;\n   section.dataset.revealSeg0830='1';\n   const oldChecked=qsa('[data-reveal-mode]',section).find(r=>r.checked);\n   const oldMode=oldChecked?.value==='summary'?'summary':(section.dataset.revealMode==='summary'?'summary':'full');\n   const row=qs('.kp-reveal-mode',section);\n   if(row){\n     row.innerHTML='<span>開示内容：</span><span class="kp-reveal-seg"><button type="button" data-kp-reveal-choice="full">シナリオ文章をそのまま</button><button type="button" data-kp-reveal-choice="summary">要点だけ</button></span>';
-   }\n   setMode(section,oldMode,false);\n }\n function upgradeAll(){qsa('.kp-special[data-kind="reveal"]').forEach(upgradeSection)}\n\n document.addEventListener('click',e=>{\n   const b=e.target.closest('[data-kp-reveal-choice]');\n   if(!b)return;\n   e.preventDefault();e.stopPropagation();\n   const section=b.closest('.kp-special[data-kind="reveal"]');\n   setMode(section,b.dataset.kpRevealChoice,true);\n },true);\n\n const mo=new MutationObserver(()=>upgradeAll());\n window.addEventListener('DOMContentLoaded',()=>{\n   upgradeAll();\n   const ed=qs('#blogEditor');if(ed)mo.observe(ed,{childList:true,subtree:true});\n });\n setTimeout(upgradeAll,0);\n\n // Force the snapshot used by the existing share/update handler.\n revealSnapshot=async function(section){\n   const id=section.dataset.blockId||crypto.randomUUID();\n   const target=qsa(':scope > .kp-special-head span',section).map(x=>x.textContent||'').find(x=>x.startsWith('対象：'))?.replace(/^対象：/,'').trim()||'全員';\n   const mode=currentMode(section);\n   const source=mode==='summary'?qs(':scope [data-reveal-summary]',section):qs(':scope > .kp-special-body',section);\n   const bodyRoot=source?.cloneNode(true)||document.createElement('div');\n\n   let title='';\n   if(mode==='full'){\n     const heading=[...bodyRoot.children].find(el=>/^H[1-4]$/.test(el.tagName))||bodyRoot.querySelector('h1,h2,h3,h4');\n     const ht=(heading?.textContent||'').replace(/\\s+/g,' ').trim();\n     if(ht&&ht.length<=80){title=ht;heading.remove();}\n   }\n   if(!title){\n     const own=(qs(':scope > .kp-special-title',section)?.textContent||'').replace(/\\s+/g,' ').trim();\n     if(own&&own!=='開示情報'&&own.length<=80)title=own;\n   }\n   if(!title)title='開示情報';\n\n   bodyRoot.querySelectorAll('.image-grid,[data-image-grid]').forEach(x=>x.remove());\n   bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());\n   const body=bodyRoot.innerHTML||'';\n   if(mode==='summary'&&typeof plain==='function'&&!plain(body))throw new Error('「要点だけ」を選んでいます。PL向け要点を入力してください。');\n\n   const imageScope=mode==='summary'?source:qs(':scope > .kp-special-body',section);\n   const raw=qsa('.image-grid img, img[data-full-image]',imageScope||document).map(img=>img.getAttribute('src')||'').filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);\n   const images=[];\n   for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));\n   return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};\n };\n})();\n</script>\n</body></html>
+</script>\n<script id="kpRevealRuntimeFix0830">
+(()=>{
+ const qs=(s,r=document)=>r.querySelector(s);
+ const qsa=(s,r=document)=>[...r.querySelectorAll(s)];
+
+ function currentMode(section){
+   return section?.dataset?.revealMode==='summary'?'summary':'full';
+ }
+ function setMode(section,mode,doSync=true){
+   if(!section)return;
+   mode=mode==='summary'?'summary':'full';
+   section.dataset.revealMode=mode;
+   qsa('[data-kp-reveal-choice]',section).forEach(b=>{
+     const on=b.dataset.kpRevealChoice===mode;
+     b.classList.toggle('is-active',on);
+     b.setAttribute('aria-pressed',on?'true':'false');
+   });
+   const box=qs('.kp-reveal-summary',section);
+   if(box)box.hidden=mode!=='summary';
+   // Remove old radios entirely so a malformed checked state can never survive serialization.
+   qsa('[data-reveal-mode]',section).forEach(r=>r.remove());
+   if(doSync&&typeof syncArticle==='function')syncArticle();
+ }
+ function upgradeSection(section){
+   if(!section||section.dataset.revealSeg0830==='1')return;
+   section.dataset.revealSeg0830='1';
+   const oldChecked=qsa('[data-reveal-mode]',section).find(r=>r.checked);
+   const oldMode=oldChecked?.value==='summary'?'summary':(section.dataset.revealMode==='summary'?'summary':'full');
+   const row=qs('.kp-reveal-mode',section);
+   if(row){
+     row.innerHTML='<span>開示内容：</span><span class="kp-reveal-seg"><button type="button" data-kp-reveal-choice="full">シナリオ文章をそのまま</button><button type="button" data-kp-reveal-choice="summary">要点だけ</button></span>';
+   }
+   setMode(section,oldMode,false);
+ }
+ function upgradeAll(){qsa('.kp-special[data-kind="reveal"]').forEach(upgradeSection)}
+
+ document.addEventListener('click',e=>{
+   const b=e.target.closest('[data-kp-reveal-choice]');
+   if(!b)return;
+   e.preventDefault();e.stopPropagation();
+   const section=b.closest('.kp-special[data-kind="reveal"]');
+   setMode(section,b.dataset.kpRevealChoice,true);
+ },true);
+
+ const mo=new MutationObserver(()=>upgradeAll());
+ window.addEventListener('DOMContentLoaded',()=>{
+   upgradeAll();
+   const ed=qs('#blogEditor');if(ed)mo.observe(ed,{childList:true,subtree:true});
+ });
+ setTimeout(upgradeAll,0);
+
+ // Force the snapshot used by the existing share/update handler.
+ revealSnapshot=async function(section){
+   const id=section.dataset.blockId||crypto.randomUUID();
+   const target=qsa(':scope > .kp-special-head span',section).map(x=>x.textContent||'').find(x=>x.startsWith('対象：'))?.replace(/^対象：/,'').trim()||'全員';
+   const mode=currentMode(section);
+   const source=mode==='summary'?qs(':scope [data-reveal-summary]',section):qs(':scope > .kp-special-body',section);
+   const bodyRoot=source?.cloneNode(true)||document.createElement('div');
+
+   let title='';
+   if(mode==='full'){
+     const heading=[...bodyRoot.children].find(el=>/^H[1-4]$/.test(el.tagName))||bodyRoot.querySelector('h1,h2,h3,h4');
+     const ht=(heading?.textContent||'').replace(/\\s+/g,' ').trim();
+     if(ht&&ht.length<=80){title=ht;heading.remove();}
+   }
+   if(!title){
+     const own=(qs(':scope > .kp-special-title',section)?.textContent||'').replace(/\\s+/g,' ').trim();
+     if(own&&own!=='開示情報'&&own.length<=80)title=own;
+   }
+   if(!title)title='開示情報';
+
+   bodyRoot.querySelectorAll('.image-grid,[data-image-grid]').forEach(x=>x.remove());
+   bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());
+   const body=bodyRoot.innerHTML||'';
+   if(mode==='summary'&&typeof plain==='function'&&!plain(body))throw new Error('「要点だけ」を選んでいます。PL向け要点を入力してください。');
+
+   const imageScope=mode==='summary'?source:qs(':scope > .kp-special-body',section);
+   const raw=qsa('.image-grid img, img[data-full-image]',imageScope||document).map(img=>img.getAttribute('src')||'').filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
+   const images=[];
+   for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
+   return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
+ };
+})();
+</script>\n</body></html>
