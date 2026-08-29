@@ -389,10 +389,53 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   .kp-cue{width:88%!important}
 }
 
+
+/* v17: Notion-like block handles */
+.blog-editor{
+  --handle-w:30px;
+  padding-left:calc(18px + var(--handle-w))!important;
+}
+.blog-editor > .sm-block{
+  position:relative!important;
+  min-height:1.35em;
+}
+.blog-editor > .sm-block > .sm-drag-handle{
+  position:absolute;
+  left:calc(-1 * var(--handle-w));
+  top:2px;
+  width:24px;height:26px;
+  display:flex;align-items:center;justify-content:center;
+  border:0!important;background:transparent!important;
+  color:var(--muted)!important;opacity:.18;
+  cursor:grab!important;user-select:none!important;
+  font-size:17px;line-height:1;
+  padding:0!important;border-radius:5px!important;
+}
+.blog-editor > .sm-block:hover > .sm-drag-handle,
+.blog-editor > .sm-block > .sm-drag-handle:focus{opacity:.9;background:rgba(255,255,255,.055)!important}
+.blog-editor > .sm-block > .sm-drag-handle:active{cursor:grabbing!important}
+.blog-editor > .sm-block.sm-block-dragging{opacity:.4}
+.blog-editor > .sm-block.sm-drop-before::before,
+.blog-editor > .sm-block.sm-drop-after::after{
+  content:"";position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:8
+}
+.blog-editor > .sm-block.sm-drop-before::before{top:-5px}
+.blog-editor > .sm-block.sm-drop-after::after{bottom:-5px}
+.kp-cue > .sm-drag-handle{
+  left:calc(-1 * var(--handle-w))!important;
+}
+.image-grid > .sm-drag-handle{
+  top:4px!important;
+}
+@media(max-width:600px){
+ .blog-editor{--handle-w:25px;padding-left:calc(10px + var(--handle-w))!important}
+ .blog-editor > .sm-block > .sm-drag-handle{width:21px;font-size:15px}
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v16 — KP演出キュー右寄せ<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v17 — Notion風ブロック移動<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -621,6 +664,107 @@ function renderEditor(){
  </div>`;
 
  const ed=q("#blogEditor");
+ const MOVABLE_SELECTOR="p,h1,h2,h3,h4,blockquote,ul,ol,hr,section.kp-special,div.image-grid,div.media-card,div.kp-cue";
+
+ function directEditorBlocks(){
+   return [...ed.children].filter(el=>{
+     if(el.id==="imageLightbox"||el.id==="videoChoicePop")return false;
+     return el.matches?.(MOVABLE_SELECTOR);
+   });
+ }
+
+ function removeBlockHandles(){
+   ed.querySelectorAll(":scope > .sm-block > .sm-drag-handle").forEach(h=>h.remove());
+   ed.querySelectorAll(":scope > .sm-block").forEach(b=>b.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after"));
+ }
+
+ function decorateBlocks(){
+   directEditorBlocks().forEach(block=>{
+     block.classList.add("sm-block");
+     // The handle is UI, never part of editable/shared content.
+     let h=[...block.children].find(x=>x.classList?.contains("sm-drag-handle"));
+     if(!h){
+       h=document.createElement("button");
+       h.type="button";
+       h.className="sm-drag-handle";
+       h.contentEditable="false";
+       h.draggable=true;
+       h.title="ドラッグしてブロックを移動";
+       h.setAttribute("aria-label","ブロックを移動");
+       h.textContent="⠿";
+       block.insertBefore(h,block.firstChild);
+     }
+     bindBlockHandle(block,h);
+   });
+ }
+
+ let draggedBlock=null;
+ function clearBlockDropMarks(){
+   ed.querySelectorAll(":scope > .sm-drop-before,:scope > .sm-drop-after").forEach(x=>x.classList.remove("sm-drop-before","sm-drop-after"));
+ }
+
+ function bindBlockHandle(block,h){
+   h.onmousedown=e=>{ e.stopPropagation(); };
+   h.onclick=e=>{ e.preventDefault();e.stopPropagation(); };
+   h.ondragstart=e=>{
+     e.stopPropagation();
+     draggedBlock=block;
+     block.classList.add("sm-block-dragging");
+     e.dataTransfer.effectAllowed="move";
+     try{e.dataTransfer.setData("text/plain","sakumeru-block")}catch(_){}
+   };
+   h.ondragend=()=>{
+     block.classList.remove("sm-block-dragging");
+     clearBlockDropMarks();
+     draggedBlock=null;
+     syncArticle();
+   };
+
+   block.ondragover=e=>{
+     if(!draggedBlock||draggedBlock===block)return;
+     e.preventDefault();e.stopPropagation();
+     clearBlockDropMarks();
+     const r=block.getBoundingClientRect();
+     const before=e.clientY < r.top+r.height/2;
+     block.classList.add(before?"sm-drop-before":"sm-drop-after");
+     e.dataTransfer.dropEffect="move";
+   };
+   block.ondrop=e=>{
+     if(!draggedBlock||draggedBlock===block)return;
+     e.preventDefault();e.stopPropagation();
+     const r=block.getBoundingClientRect();
+     const before=e.clientY < r.top+r.height/2;
+     if(before)ed.insertBefore(draggedBlock,block);
+     else ed.insertBefore(draggedBlock,block.nextSibling);
+     clearBlockDropMarks();
+     decorateBlocks();
+     syncArticle();
+   };
+ }
+
+ function cleanEditorHtml(){
+   const clone=ed.cloneNode(true);
+   clone.querySelectorAll(".sm-drag-handle").forEach(h=>h.remove());
+   clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after").forEach(el=>{
+     el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after");
+     if(!el.className)el.removeAttribute("class");
+   });
+   return clone.innerHTML;
+ }
+
+ function ensureParagraphBlocks(){
+   // Browsers sometimes leave bare text nodes in contenteditable. Wrap them so Enter-based
+   // paragraphs consistently become movable blocks.
+   [...ed.childNodes].forEach(n=>{
+     if(n.nodeType===3 && n.textContent.trim()){
+       const p=document.createElement("p");
+       p.textContent=n.textContent;
+       ed.replaceChild(p,n);
+     }
+   });
+ }
+
+
  let savedRange=null;
 
  function saveRange(){
@@ -640,13 +784,13 @@ function renderEditor(){
    }
  }
  function syncArticle(){
-   p.__v11ArticleHtml=ed.innerHTML;
+   p.__v11ArticleHtml=cleanEditorHtml();
    refreshStats();
  }
  function insertHtml(html){
    restoreRange();
    document.execCommand("insertHTML",false,html);
-   saveRange();syncArticle();
+   saveRange();ensureParagraphBlocks();decorateBlocks();syncArticle();
  }
  function insertSpecial(kind,body=""){
    const labels={reveal:"開示情報",memo:"KPメモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
@@ -664,12 +808,13 @@ function renderEditor(){
      ${action}
    </section><p><br></p>`);
  }
+ decorateBlocks();
  window.__v11Insert=insertHtml;
  window.__v11InsertSpecial=insertSpecial;
 
  ed.addEventListener("keyup",saveRange);
  ed.addEventListener("mouseup",saveRange);
- ed.addEventListener("input",()=>{saveRange();syncArticle()});
+ ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle()});
  ed.addEventListener("blur",saveRange);
  q("#richToolbar").addEventListener("mousedown",e=>{
    if(e.target.closest("button,input,select"))saveRange();
@@ -890,7 +1035,26 @@ function renderEditor(){
    });
  }
 
- q("#closeLightbox").onclick=()=>q("#imageLightbox").classList.remove("open");
+ 
+ ed.addEventListener("keydown",e=>{
+   if(e.key!=="Enter")return;
+   if(e.shiftKey){
+     // Native Shift+Enter gives a soft line break inside the current block.
+     return;
+   }
+   // Normal Enter should produce a new paragraph/block rather than a loose DIV.
+   // execCommand keeps the caret behavior reliable in this prototype.
+   e.preventDefault();
+   restoreRange();
+   document.execCommand("insertParagraph",false,null);
+   requestAnimationFrame(()=>{
+     ensureParagraphBlocks();
+     decorateBlocks();
+     saveRange();syncArticle();
+   });
+ });
+
+q("#closeLightbox").onclick=()=>q("#imageLightbox").classList.remove("open");
  q("#imageLightbox").onclick=e=>{if(e.target.id==="imageLightbox")e.currentTarget.classList.remove("open")};
  document.addEventListener("keydown",e=>{if(e.key==="Escape")q("#imageLightbox")?.classList.remove("open")});
  initImageUi();
