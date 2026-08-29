@@ -596,7 +596,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">共有実験版 v32 — Supabase Storage画像共有<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
+ <div class="test-banner">共有実験版 v33 — 文字色・背景色クリア対応<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -780,9 +780,10 @@ function renderEditor(){
        <button type="button" data-cmd="strikeThrough"><s>S</s></button>
        <button type="button" class="color-btn" id="colorButton" title="文字色"><span class="color-dot" id="colorDot"></span>文字色</button>
        <input type="color" id="foreColor" value="#d7b557" title="文字色" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+       <button type="button" id="clearTextColor" title="文字色を標準に戻す">文字色なし</button>
        <button type="button" class="color-btn" id="bgColorButton" title="文字の背景色"><span class="color-dot" id="bgColorDot"></span>背景色</button>
        <input type="color" id="backColor" value="#725d18" title="文字の背景色" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
-       <button type="button" id="clearTextBg" title="文字の背景色を解除">背景なし</button>
+       <button type="button" id="clearTextBg" title="文字の背景色を解除">背景色なし</button>
        <button type="button" id="insertHr" title="区切り線">― 区切り線</button>
      </div>
      <div class="tb-group">
@@ -1144,7 +1145,19 @@ ed.addEventListener("keyup",saveRange);
  q("#foreColor").oninput=e=>{
    q("#colorDot").style.background=e.target.value;
    restoreRange();
+   document.execCommand("styleWithCSS",false,true);
    document.execCommand("foreColor",false,e.target.value);
+   saveRange();syncArticle()
+ };
+ q("#clearTextColor").onclick=()=>{
+   restoreRange();
+   document.execCommand("styleWithCSS",false,true);
+   // "inherit" returns the selection to the editor/theme's normal text color
+   // without removing bold, italic, underline, links, etc.
+   if(!document.execCommand("foreColor",false,"inherit")){
+     const fallback=getComputedStyle(ed).color||"#000000";
+     document.execCommand("foreColor",false,fallback);
+   }
    saveRange();syncArticle()
  };
  q("#bgColorDot").style.background=q("#backColor").value;
@@ -1160,6 +1173,7 @@ ed.addEventListener("keyup",saveRange);
  };
  q("#clearTextBg").onclick=()=>{
    restoreRange();
+   document.execCommand("styleWithCSS",false,true);
    if(!document.execCommand("hiliteColor",false,"transparent")){
      document.execCommand("backColor",false,"transparent");
    }
