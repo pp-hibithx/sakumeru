@@ -217,10 +217,88 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
  .image-grid.cols-1,.image-grid.cols-2,.image-grid.cols-3,.image-grid.cols-4{grid-template-columns:1fr!important}
 }
 
+
+/* v14: rebuilt image gallery + video file/URL chooser */
+.image-grid{
+  display:grid!important;
+  grid-auto-flow:row!important;
+  gap:10px!important;
+  width:100%!important;
+  max-width:100%!important;
+  align-items:start!important;
+  justify-items:stretch!important;
+}
+.image-grid.cols-1{grid-template-columns:minmax(180px,320px)!important}
+.image-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.image-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.image-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.image-grid figure{
+  display:block!important;
+  position:relative!important;
+  margin:0!important;
+  min-width:0!important;
+  width:auto!important;
+  max-width:none!important;
+  cursor:grab!important;
+}
+.image-grid figure.dragging{opacity:.45!important}
+.image-grid figure.drag-over{outline:2px solid var(--accent)!important;outline-offset:2px!important}
+.image-grid img{
+  display:block!important;
+  width:100%!important;
+  height:150px!important;
+  max-width:none!important;
+  object-fit:cover!important;
+  border-radius:7px!important;
+  border:1px solid var(--line)!important;
+  cursor:zoom-in!important;
+}
+.image-grid figcaption{
+  margin-top:5px!important;
+  font-size:11px!important;
+  color:var(--muted)!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.image-grid .grid-help{
+  grid-column:1/-1!important;
+  width:100%!important;
+}
+.image-lightbox{cursor:zoom-out}
+.image-lightbox img{cursor:default}
+.video-choice-pop{
+  position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);padding:20px
+}
+.video-choice-pop.open{display:flex}
+.video-choice-card{
+  width:min(520px,94vw);background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.45)
+}
+.video-choice-card h3{margin:0 0 12px;font-size:16px}
+.video-choice-actions{display:flex;gap:8px;flex-wrap:wrap}
+.video-url-form{display:none;margin-top:12px}
+.video-url-form.open{display:block}
+.video-url-form input{
+  width:100%;box-sizing:border-box;padding:10px;border-radius:7px;border:1px solid var(--line);
+  background:var(--bg);color:var(--text)
+}
+.video-url-form .row{display:flex;gap:8px;margin-top:8px;justify-content:flex-end}
+.video-embed{position:relative;width:min(100%,720px);aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden}
+.video-embed iframe{width:100%;height:100%;border:0}
+.video-link-fallback{word-break:break-all}
+@media(max-width:760px){
+  .image-grid.cols-3,.image-grid.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:460px){
+  .image-grid.cols-1,.image-grid.cols-2,.image-grid.cols-3,.image-grid.cols-4{grid-template-columns:1fr!important}
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v13 — 標準リッチテキスト候補<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v14 — 画像ギャラリー＋動画URL対応<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -426,6 +504,23 @@ function renderEditor(){
  <div class="image-lightbox" id="imageLightbox" contenteditable="false">
    <button type="button" id="closeLightbox">× 閉じる</button>
    <img id="lightboxImage" alt="">
+ </div>
+ <div class="video-choice-pop" id="videoChoicePop" contenteditable="false">
+   <div class="video-choice-card">
+     <h3>動画を挿入</h3>
+     <div class="video-choice-actions">
+       <button type="button" id="videoFromFile">ファイルをアップロード</button>
+       <button type="button" id="videoFromUrl">URLから挿入</button>
+       <button type="button" id="videoChoiceCancel" class="secondary">キャンセル</button>
+     </div>
+     <div class="video-url-form" id="videoUrlForm">
+       <input type="url" id="videoUrlInput" placeholder="YouTube URL または動画URLを入力">
+       <div class="row">
+         <button type="button" id="videoUrlCancel" class="secondary">戻る</button>
+         <button type="button" id="videoUrlInsert">挿入</button>
+       </div>
+     </div>
+   </div>
  </div>`;
 
  const ed=q("#blogEditor");
@@ -562,54 +657,96 @@ function renderEditor(){
    input.click();
  };
 
+ 
  function normalizeGrid(grid){
-   const figures=[...grid.querySelectorAll(":scope > figure[data-img-item]")];
+   if(!grid)return;
+   const figures=[...grid.children].filter(el=>el.matches?.("figure[data-img-item]"));
    grid.classList.remove("cols-1","cols-2","cols-3","cols-4");
-   grid.classList.add(`cols-${Math.max(1,Math.min(4,figures.length))}`);
-   if(!figures.length)grid.remove();
+   if(!figures.length){ grid.remove(); return; }
+   grid.classList.add(`cols-${Math.min(4,figures.length)}`);
  }
- function initImageUi(){
-   const lb=q("#imageLightbox"),lbImg=q("#lightboxImage");
-   ed.querySelectorAll("[data-full-image]").forEach(img=>{
+
+ function bindImageFigure(fig){
+   const img=fig.querySelector("[data-full-image]");
+   const remove=fig.querySelector(".img-remove");
+
+   if(img){
      img.onclick=e=>{
        e.preventDefault();e.stopPropagation();
-       lbImg.src=img.src;lb.classList.add("open");
+       const lb=q("#imageLightbox"),lbImg=q("#lightboxImage");
+       lbImg.src=img.src;
+       lbImg.alt=img.alt||"";
+       lb.classList.add("open");
      };
-   });
-   ed.querySelectorAll(".img-remove").forEach(btn=>{
-     btn.onclick=e=>{
+   }
+
+   if(remove){
+     remove.onclick=e=>{
        e.preventDefault();e.stopPropagation();
-       const fig=btn.closest("figure"),grid=btn.closest("[data-image-grid]");
-       fig?.remove();if(grid)normalizeGrid(grid);syncArticle();
-     };
-   });
-   ed.querySelectorAll("[data-img-item]").forEach(fig=>{
-     fig.ondragstart=e=>{fig.classList.add("dragging");e.dataTransfer.effectAllowed="move";};
-     fig.ondragend=()=>{fig.classList.remove("dragging");ed.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));syncArticle();};
-     fig.ondragover=e=>{e.preventDefault();fig.classList.add("drag-over");e.dataTransfer.dropEffect="move";};
-     fig.ondragleave=()=>fig.classList.remove("drag-over");
-     fig.ondrop=e=>{
-       e.preventDefault();fig.classList.remove("drag-over");
-       const dragging=ed.querySelector("[data-img-item].dragging");
-       if(!dragging||dragging===fig)return;
-       const srcGrid=dragging.closest("[data-image-grid]"),dstGrid=fig.closest("[data-image-grid]");
-       const rect=fig.getBoundingClientRect();
-       const before=e.clientX < rect.left + rect.width/2;
-       dstGrid.insertBefore(dragging,before?fig:fig.nextSibling);
-       if(srcGrid!==dstGrid){
-         const dstItems=[...dstGrid.querySelectorAll(":scope > figure[data-img-item]")];
-         if(dstItems.length>4){ srcGrid.appendChild(dragging); return; }
-       }
-       normalizeGrid(dstGrid);if(srcGrid&&srcGrid!==dstGrid)normalizeGrid(srcGrid);
+       const grid=fig.closest("[data-image-grid]");
+       fig.remove();
+       normalizeGrid(grid);
        syncArticle();
      };
+   }
+
+   fig.setAttribute("draggable","true");
+   fig.ondragstart=e=>{
+     fig.classList.add("dragging");
+     e.dataTransfer.effectAllowed="move";
+     try{e.dataTransfer.setData("text/plain","image-item")}catch(_){}
+   };
+   fig.ondragend=()=>{
+     fig.classList.remove("dragging");
+     ed.querySelectorAll("[data-img-item].drag-over").forEach(x=>x.classList.remove("drag-over"));
+     syncArticle();
+   };
+   fig.ondragover=e=>{
+     e.preventDefault();
+     fig.classList.add("drag-over");
+     e.dataTransfer.dropEffect="move";
+   };
+   fig.ondragleave=()=>fig.classList.remove("drag-over");
+   fig.ondrop=e=>{
+     e.preventDefault();
+     fig.classList.remove("drag-over");
+     const dragging=ed.querySelector("[data-img-item].dragging");
+     if(!dragging||dragging===fig)return;
+
+     const srcGrid=dragging.closest("[data-image-grid]");
+     const dstGrid=fig.closest("[data-image-grid]");
+     if(!srcGrid||!dstGrid)return;
+
+     // One gallery may contain up to four images. Keep each image as an independent item.
+     if(srcGrid!==dstGrid){
+       const dstCount=[...dstGrid.children].filter(el=>el.matches?.("figure[data-img-item]")).length;
+       if(dstCount>=4)return;
+     }
+
+     const rect=fig.getBoundingClientRect();
+     const before=e.clientX < rect.left + rect.width/2;
+     dstGrid.insertBefore(dragging,before?fig:fig.nextSibling);
+
+     normalizeGrid(srcGrid);
+     normalizeGrid(dstGrid);
+     initImageUi();
+     syncArticle();
+   };
+ }
+
+ function initImageUi(){
+   ed.querySelectorAll("[data-image-grid]").forEach(grid=>{
+     normalizeGrid(grid);
+     [...grid.children].filter(el=>el.matches?.("figure[data-img-item]")).forEach(bindImageFigure);
    });
  }
+
  q("#closeLightbox").onclick=()=>q("#imageLightbox").classList.remove("open");
  q("#imageLightbox").onclick=e=>{if(e.target.id==="imageLightbox")e.currentTarget.classList.remove("open")};
+ document.addEventListener("keydown",e=>{if(e.key==="Escape")q("#imageLightbox")?.classList.remove("open")});
  initImageUi();
 
- q("#insertAudio").onclick=()=>{
+q("#insertAudio").onclick=()=>{
    const input=document.createElement("input");input.type="file";input.accept="audio/*";
    input.onchange=()=>{
      const f=input.files?.[0];if(!f)return;
@@ -617,14 +754,103 @@ function renderEditor(){
    };input.click();
  };
  q("#insertVideo").onclick=()=>{
+   q("#videoChoicePop").classList.add("open");
+   q("#videoUrlForm").classList.remove("open");
+   q("#videoUrlInput").value="";
+ };
+
+ q("#videoChoiceCancel").onclick=()=>q("#videoChoicePop").classList.remove("open");
+ q("#videoFromUrl").onclick=()=>q("#videoUrlForm").classList.add("open");
+ q("#videoUrlCancel").onclick=()=>q("#videoUrlForm").classList.remove("open");
+
+ q("#videoFromFile").onclick=()=>{
    const input=document.createElement("input");input.type="file";input.accept="video/*";
    input.onchange=()=>{
      const f=input.files?.[0];if(!f)return;
-     const r=new FileReader();r.onload=()=>insertHtml(`<div class="media-card" contenteditable="false"><div class="media-card-head">▶ 動画：${esc(f.name)}</div><video controls src="${String(r.result||"")}"></video></div><p><br></p>`);r.readAsDataURL(f);
-   };input.click();
+     const r=new FileReader();
+     r.onload=()=>{
+       insertHtml(`<div class="media-card" contenteditable="false">
+         <div class="media-card-head">▶ 動画：${esc(f.name)}</div>
+         <video controls src="${String(r.result||"")}"></video>
+       </div><p><br></p>`);
+       q("#videoChoicePop").classList.remove("open");
+     };
+     r.readAsDataURL(f);
+   };
+   input.click();
  };
 
- q("#insertBgm").onclick=()=>{
+ function youtubeEmbedUrl(raw){
+   try{
+     const u=new URL(raw);
+     const host=u.hostname.replace(/^www\./,"");
+     if(host==="youtu.be"){
+       const id=u.pathname.split("/").filter(Boolean)[0];
+       return id?`https://www.youtube.com/embed/${encodeURIComponent(id)}`:"";
+     }
+     if(host==="youtube.com"||host==="m.youtube.com"){
+       if(u.pathname==="/watch"){
+         const id=u.searchParams.get("v");
+         return id?`https://www.youtube.com/embed/${encodeURIComponent(id)}`:"";
+       }
+       const m=u.pathname.match(/^\/(?:shorts|embed)\/([^/?#]+)/);
+       if(m)return `https://www.youtube.com/embed/${encodeURIComponent(m[1])}`;
+     }
+   }catch(_){}
+   return "";
+ }
+
+ q("#videoUrlInsert").onclick=()=>{
+   const raw=q("#videoUrlInput").value.trim();
+   if(!raw)return;
+   let safe="";
+   try{
+     const u=new URL(raw);
+     if(u.protocol==="http:"||u.protocol==="https:")safe=u.href;
+   }catch(_){}
+   if(!safe)return;
+
+   const yt=youtubeEmbedUrl(safe);
+   if(yt){
+     insertHtml(`<div class="media-card" contenteditable="false">
+       <div class="media-card-head">▶ YouTube</div>
+       <div class="video-embed"><iframe src="${yt}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
+     </div><p><br></p>`);
+   }else if(/\.(mp4|webm|ogg|mov)(?:$|[?#])/i.test(safe)){
+     insertHtml(`<div class="media-card" contenteditable="false">
+       <div class="media-card-head">▶ 動画URL</div>
+       <video controls src="${esc(safe)}"></video>
+     </div><p><br></p>`);
+   }else{
+     insertHtml(`<div class="media-card" contenteditable="false">
+       <div class="media-card-head">▶ 動画リンク</div>
+       <div class="video-link-fallback"><a href="${esc(safe)}" target="_blank" rel="noopener noreferrer">${esc(safe)}</a></div>
+     </div><p><br></p>`);
+   }
+   q("#videoChoicePop").classList.remove("open");
+ };
+
+ q("#videoChoicePop").onclick=e=>{if(e.target.id==="videoChoicePop")e.currentTarget.classList.remove("open")};
+
+ 
+ function ensureCueInsertPoint(){
+   restoreRange();
+   const sel=window.getSelection();
+   if(!sel||!sel.rangeCount)return;
+   let node=sel.anchorNode;
+   if(node&&node.nodeType===3)node=node.parentElement;
+   const special=node?.closest?.(".kp-special");
+   if(!special||!ed.contains(special))return;
+   const r=document.createRange();
+   r.setStartAfter(special);
+   r.collapse(true);
+   sel.removeAllRanges();
+   sel.addRange(r);
+   lastRange=r.cloneRange();
+ }
+
+q("#insertBgm").onclick=()=>{
+   ensureCueInsertPoint();
    const input=document.createElement("input");input.type="file";input.accept="audio/*";
    input.onchange=()=>{
      const f=input.files?.[0];if(!f)return;
@@ -638,6 +864,7 @@ function renderEditor(){
  };
 
  q("#insertBackground").onclick=()=>{
+   ensureCueInsertPoint();
    const input=document.createElement("input");input.type="file";input.accept="image/*";
    input.onchange=()=>{
      const f=input.files?.[0];if(!f)return;
