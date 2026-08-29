@@ -707,9 +707,11 @@ try{
 const FLOW_LABEL={heading:"小見出し",normal:"段落",memo:"KPメモ",rp:"RP",reveal:"開示情報",secret:"秘匿",note:"進行メモ",image:"画像"};
 let active=b.pages[0]?.id||"",pdfPages=[],activePdf=-1,pdfDoc=null,pdfRenderToken=0;
 function currentShare(){
- if(!b.currentShareSession)return null;
- b.currentShareSession.items??=[];
- b.currentShareSession.participants??=[];
+ if(!b.currentShareSession || typeof b.currentShareSession!=="object" || Array.isArray(b.currentShareSession)){
+   b.currentShareSession=freshShareSession();
+ }
+ if(!Array.isArray(b.currentShareSession.items))b.currentShareSession.items=[];
+ if(!Array.isArray(b.currentShareSession.participants))b.currentShareSession.participants=[];
  return b.currentShareSession;
 }
 function freshShareSession(){
@@ -1743,10 +1745,30 @@ function renderShareParticipants(){
    </div>`
  }).join("");
 }
-q("#addPl").onclick=()=>{
- shareTest=currentShare()||shareTest;const inp=q("#plName"),name=String(inp.value||"").trim();if(!name)return;
- shareTest.participants??=[];shareTest.participants.push({id:crypto.randomUUID?.()||String(Date.now()),name,ho:"",pcName:"",sheetUrl:"",shareId:""});inp.value="";saveNow();renderShareParticipants();
-};
+function addShareParticipant(){
+ shareTest=currentShare()||shareTest;
+ const inp=q("#plName");
+ const name=String(inp?.value||"").trim();
+ if(!name){
+   q("#testShareStatus").textContent="PL名を入力してください。";
+   inp?.focus();
+   return;
+ }
+ if(!Array.isArray(shareTest.participants))shareTest.participants=[];
+ shareTest.participants.push({
+   id:(globalThis.crypto?.randomUUID?.()||(`pl-${Date.now()}-${Math.random().toString(36).slice(2)}`)),
+   name,ho:"",pcName:"",sheetUrl:"",shareId:""
+ });
+ if(inp)inp.value="";
+ saveNow();
+ renderShareParticipants();
+ q("#testShareStatus").textContent=`${name}さんをこの陣に登録しました。`;
+ inp?.focus();
+}
+q("#addPl")?.addEventListener("click",addShareParticipant);
+q("#plName")?.addEventListener("keydown",e=>{
+ if(e.key==="Enter"){e.preventDefault();addShareParticipant()}
+});
 q("#shareParticipants").addEventListener("input",e=>{
  shareTest=currentShare()||shareTest;const el=e.target;let i=-1,key="";
  if(el.matches("[data-pl-ho]")){i=+el.dataset.plHo;key="ho"}
@@ -1968,6 +1990,7 @@ q("#addScene").onclick=addScene;
 document.querySelectorAll(".kp-prod-tab").forEach(t=>t.onclick=()=>{
  document.querySelectorAll(".kp-prod-tab").forEach(x=>x.classList.toggle("active",x===t));
  document.querySelectorAll(".kp-prod-pane").forEach(x=>x.hidden=x.dataset.pane!==t.dataset.tab);
+ if(t.dataset.tab==="pc")renderShareParticipants();
 });
 
 const pcs=window.TRPG39?.loadPCs?.()||[];
