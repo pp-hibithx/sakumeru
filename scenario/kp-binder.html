@@ -1,4 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="sakumeru-kp-binder-build" content="20260830-0824">
 <title>KP BINDER | SAKU+MERU</title>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
 <script defer src="../assets/js/theme-v0296.js"></script>
@@ -720,11 +721,12 @@ const FLOW_LABEL={heading:"小見出し",normal:"段落",memo:"KPメモ",rp:"RP"
 
 function revealShareBox(mode="full",summaryHtml=""){
  const m=mode==="summary"?"summary":"full";
+ const group=`reveal-mode-${uid()}`;
  return `<div class="kp-reveal-sharebox" contenteditable="false">
    <div class="kp-reveal-mode">
      <span>開示内容：</span>
-     <label><input type="radio" name="reveal-mode-${uid()}" data-reveal-mode value="full" ${m==="full"?"checked":""}> シナリオ文章をそのまま</label>
-     <label><input type="radio" name="reveal-mode-${uid()}" data-reveal-mode value="summary" ${m==="summary"?"checked":""}> 要点だけ</label>
+     <label><input type="radio" name="${group}" data-reveal-mode value="full" ${m==="full"?"checked":""}> シナリオ文章をそのまま</label>
+     <label><input type="radio" name="${group}" data-reveal-mode value="summary" ${m==="summary"?"checked":""}> 要点だけ</label>
    </div>
    <div class="kp-reveal-summary" ${m==="summary"?"":"hidden"}>
      <div class="kp-reveal-summary-label">PL向け要点</div>
@@ -1250,6 +1252,14 @@ function renderEditor(){
    if(!radio)return;
    const section=radio.closest('.kp-special[data-kind="reveal"]');
    if(!section)return;
+
+   section.querySelectorAll("[data-reveal-mode]").forEach(r=>{
+     const on=r===radio;
+     r.checked=on;
+     if(on)r.setAttribute("checked","");
+     else r.removeAttribute("checked");
+   });
+
    const box=section.querySelector(".kp-reveal-summary");
    if(box)box.hidden=radio.value!=="summary";
    syncArticle();
@@ -1753,12 +1763,12 @@ function sharePayloadFor(participant=null){
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(id)}&type=kp-live`:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
  const arr=b.shareSessions||[];
- host.innerHTML=arr.length?arr.slice().reverse().map(x=>`<div style="margin:6px 0"><a href="https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(x.shareId)}&type=kp-live" target="_blank" rel="noopener">${esc(new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP"))}</a> <span class="muted">（${(x.items||[]).length}件）</span></div>`).join(""):"過去の共有セッションはありません。";
+ host.innerHTML=arr.length?arr.slice().reverse().map(x=>`<div style="margin:6px 0"><a href="${shareUrlById(x.shareId)}" target="_blank" rel="noopener">${esc(new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP"))}</a> <span class="muted">（${(x.items||[]).length}件）</span></div>`).join(""):"過去の共有セッションはありません。";
 }
 function renderTestShareBar(){
  shareTest=currentShare()||shareTest;
@@ -1825,24 +1835,71 @@ async function uploadShareImage(src,blockId,index){
  }
  return `${cfg.projectUrl}/storage/v1/object/public/kp-share-images/${path}`;
 }
+
+function normalizeRevealModeState(root=document){
+ root.querySelectorAll('.kp-special[data-kind="reveal"]').forEach(section=>{
+   const radios=[...section.querySelectorAll("[data-reveal-mode]")];
+   if(radios.length<2)return;
+   let selected=radios.find(r=>r.checked);
+   if(!selected)selected=radios.find(r=>r.value==="full")||radios[0];
+   radios.forEach(r=>{
+     const on=r===selected;
+     r.checked=on;
+     if(on)r.setAttribute("checked","");
+     else r.removeAttribute("checked");
+   });
+   const box=section.querySelector(".kp-reveal-summary");
+   if(box)box.hidden=selected.value!=="summary";
+ });
+}
+
 async function revealSnapshot(section){
  const id=section.dataset.blockId||crypto.randomUUID();
- const title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
- const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
- const mode=section.querySelector("[data-reveal-mode]:checked")?.value==="summary"?"summary":"full";
+ const target=[...section.querySelectorAll(":scope > .kp-special-head span")]
+   .map(x=>x.textContent||"").find(x=>x.startsWith("対象："))?.replace(/^対象：/,"").trim()||"全員";
+
+ const radios=[...section.querySelectorAll(":scope [data-reveal-mode]")];
+ let selected=radios.find(r=>r.checked);
+ if(!selected)selected=radios.find(r=>r.value==="full");
+ const mode=selected?.value==="summary"?"summary":"full";
+
  const source=mode==="summary"
-   ? section.querySelector("[data-reveal-summary]")
-   : section.querySelector(".kp-special-body");
+   ? section.querySelector(":scope [data-reveal-summary]")
+   : section.querySelector(":scope > .kp-special-body");
  const bodyRoot=source?.cloneNode(true)||document.createElement("div");
+
+ let title=(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim();
+
+ // 開示タイトルが未設定なら、本文の「最初の見出しだけ」をタイトルとして使う。
+ // 異常に長い見出しは本文全体を誤取得した可能性があるため採用しない。
+ if(mode==="full" && (!title || title==="開示情報")){
+   const heading=[...bodyRoot.children].find(el=>/^H[1-4]$/.test(el.tagName))
+     || bodyRoot.querySelector("h1,h2,h3,h4");
+   const headingText=(heading?.textContent||"").replace(/\s+/g," ").trim();
+   if(headingText && headingText.length<=120){
+     title=headingText;
+     heading.remove();
+   }
+ }
+ if(!title || title.length>120)title="開示情報";
+
  bodyRoot.querySelectorAll(".image-grid,[data-image-grid]").forEach(x=>x.remove());
  bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());
+
  const body=bodyRoot.innerHTML||"";
- if(mode==="summary"&&!plain(body))throw new Error("「要点だけ」を選んでいます。PL向け要点を入力してください。");
- const imageScope=mode==="summary" ? source : section.querySelector(".kp-special-body");
+ if(mode==="summary"&&!plain(body)){
+   throw new Error("「要点だけ」を選んでいます。PL向け要点を入力してください。");
+ }
+
+ const imageScope=mode==="summary" ? source : section.querySelector(":scope > .kp-special-body");
  const raw=[...(imageScope?.querySelectorAll?.(".image-grid img, img[data-full-image]")||[])]
-   .map(img=>img.getAttribute("src")||"").filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
- const images=[];for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
- return {id,title,target,body,images,shareMode:mode,revealedAt:new Date().toISOString()};
+   .map(img=>img.getAttribute("src")||"")
+   .filter(Boolean)
+   .filter((src,i,a)=>a.indexOf(src)===i);
+ const images=[];
+ for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
+
+ return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
 }
 function setRevealAction(section){
  shareTest=currentShare()||shareTest;
@@ -1856,6 +1913,7 @@ function setRevealAction(section){
  }
 }
 function refreshRevealActions(){
+ normalizeRevealModeState(q("#blogEditor")||document);
  const editor=q("#blogEditor");if(!editor)return;
  editor.querySelectorAll('.kp-special[data-kind="reveal"]').forEach(section=>{
    if(!section.dataset.blockId)section.dataset.blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
@@ -1968,7 +2026,7 @@ q("#manuscript").addEventListener("click",async e=>{
      const snap=await revealSnapshot(section);snap.revealedAt=old.revealedAt;snap.updatedAt=new Date().toISOString();
      const backup={...old,images:[...(old.images||[])]};Object.assign(old,snap);
      try{await syncTestShare()}catch(err){Object.keys(old).forEach(k=>delete old[k]);Object.assign(old,backup);throw err}
-     st.textContent=`「${snap.title}」の共有内容を更新しました。`;
+     st.textContent=snap.title&&snap.title!=="開示情報"?`「${snap.title}」の共有内容を更新しました。`:"共有内容を更新しました。";
    }else if(wd){
      const old=shareTest.items.find(x=>x.id===id);if(!old)return;
      if(!confirm(`「${old.title}」を共有から削除しますか？`))return;
