@@ -621,7 +621,13 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .production-banner{border-style:solid}
 @media(max-width:760px){.kp2-pcgrid{grid-template-columns:1fr}}
 .scene-title-row{display:flex;gap:8px;align-items:center}.scene-title-row .edit-title{flex:1}.scene-title-row .danger{white-space:nowrap}
-</style></head><body>
+</style>
+<style id="kpRevealSegmentFix0830">
+.kp-reveal-seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.kp-reveal-seg button{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}
+.kp-reveal-seg button.is-active{background:var(--accent);color:#111;border-color:var(--accent);font-weight:800}
+</style>
+</head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
  <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。</small></div>
@@ -638,7 +644,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
    <div class="element-tools" id="addbar">
-<span class="element-tools-label">自動保存</span>
+<span class="element-tools-label">自動保存 <span class="muted" style="font-size:10px">KP0830</span></span>
 <span class="element-tools-help" id="saveStatus">編集内容はこのKP BINDERへ自動保存されます。</span>
 </div>
    <section class="share-test-panel" id="shareTestPanel">
@@ -2214,4 +2220,5 @@ if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find
 renderPC();
 renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
-</script></body></html>
+</script>\n<script id="kpRevealRuntimeFix0830">\n(()=>{\n const qs=(s,r=document)=>r.querySelector(s);\n const qsa=(s,r=document)=>[...r.querySelectorAll(s)];\n\n function currentMode(section){\n   return section?.dataset?.revealMode==='summary'?'summary':'full';\n }\n function setMode(section,mode,doSync=true){\n   if(!section)return;\n   mode=mode==='summary'?'summary':'full';\n   section.dataset.revealMode=mode;\n   qsa('[data-kp-reveal-choice]',section).forEach(b=>{\n     const on=b.dataset.kpRevealChoice===mode;\n     b.classList.toggle('is-active',on);\n     b.setAttribute('aria-pressed',on?'true':'false');\n   });\n   const box=qs('.kp-reveal-summary',section);\n   if(box)box.hidden=mode!=='summary';\n   // Remove old radios entirely so a malformed checked state can never survive serialization.\n   qsa('[data-reveal-mode]',section).forEach(r=>r.remove());\n   if(doSync&&typeof syncArticle==='function')syncArticle();\n }\n function upgradeSection(section){\n   if(!section||section.dataset.revealSeg0830==='1')return;\n   section.dataset.revealSeg0830='1';\n   const oldChecked=qsa('[data-reveal-mode]',section).find(r=>r.checked);\n   const oldMode=oldChecked?.value==='summary'?'summary':(section.dataset.revealMode==='summary'?'summary':'full');\n   const row=qs('.kp-reveal-mode',section);\n   if(row){\n     row.innerHTML='<span>開示内容：</span><span class="kp-reveal-seg"><button type="button" data-kp-reveal-choice="full">シナリオ文章をそのまま</button><button type="button" data-kp-reveal-choice="summary">要点だけ</button></span>';
+   }\n   setMode(section,oldMode,false);\n }\n function upgradeAll(){qsa('.kp-special[data-kind="reveal"]').forEach(upgradeSection)}\n\n document.addEventListener('click',e=>{\n   const b=e.target.closest('[data-kp-reveal-choice]');\n   if(!b)return;\n   e.preventDefault();e.stopPropagation();\n   const section=b.closest('.kp-special[data-kind="reveal"]');\n   setMode(section,b.dataset.kpRevealChoice,true);\n },true);\n\n const mo=new MutationObserver(()=>upgradeAll());\n window.addEventListener('DOMContentLoaded',()=>{\n   upgradeAll();\n   const ed=qs('#blogEditor');if(ed)mo.observe(ed,{childList:true,subtree:true});\n });\n setTimeout(upgradeAll,0);\n\n // Force the snapshot used by the existing share/update handler.\n revealSnapshot=async function(section){\n   const id=section.dataset.blockId||crypto.randomUUID();\n   const target=qsa(':scope > .kp-special-head span',section).map(x=>x.textContent||'').find(x=>x.startsWith('対象：'))?.replace(/^対象：/,'').trim()||'全員';\n   const mode=currentMode(section);\n   const source=mode==='summary'?qs(':scope [data-reveal-summary]',section):qs(':scope > .kp-special-body',section);\n   const bodyRoot=source?.cloneNode(true)||document.createElement('div');\n\n   let title='';\n   if(mode==='full'){\n     const heading=[...bodyRoot.children].find(el=>/^H[1-4]$/.test(el.tagName))||bodyRoot.querySelector('h1,h2,h3,h4');\n     const ht=(heading?.textContent||'').replace(/\\s+/g,' ').trim();\n     if(ht&&ht.length<=80){title=ht;heading.remove();}\n   }\n   if(!title){\n     const own=(qs(':scope > .kp-special-title',section)?.textContent||'').replace(/\\s+/g,' ').trim();\n     if(own&&own!=='開示情報'&&own.length<=80)title=own;\n   }\n   if(!title)title='開示情報';\n\n   bodyRoot.querySelectorAll('.image-grid,[data-image-grid]').forEach(x=>x.remove());\n   bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());\n   const body=bodyRoot.innerHTML||'';\n   if(mode==='summary'&&typeof plain==='function'&&!plain(body))throw new Error('「要点だけ」を選んでいます。PL向け要点を入力してください。');\n\n   const imageScope=mode==='summary'?source:qs(':scope > .kp-special-body',section);\n   const raw=qsa('.image-grid img, img[data-full-image]',imageScope||document).map(img=>img.getAttribute('src')||'').filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);\n   const images=[];\n   for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));\n   return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};\n };\n})();\n</script>\n</body></html>
