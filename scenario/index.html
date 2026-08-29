@@ -168,6 +168,49 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 /* KP BINDER v0.3.29 */
 .kp-binder{max-width:1040px;width:calc(100% - 28px);border:1px solid var(--line);border-radius:14px;background:var(--panel);color:inherit;padding:0}.kp-binder::backdrop{background:rgba(0,0,0,.62)}.kp-binder-head{display:flex;justify-content:space-between;gap:12px;align-items:start;padding:18px;border-bottom:1px solid var(--line)}.kp-binder-head h2{margin:0}.kp-binder-body{padding:18px;display:grid;gap:18px}.kp-box{border:1px solid var(--line);border-radius:12px;padding:14px}.kp-box h3{margin:0 0 10px}.kp-pages{display:grid;grid-template-columns:240px minmax(0,1fr);gap:12px}.kp-page-list{display:grid;gap:7px;align-content:start}.kp-page-btn{display:flex;justify-content:space-between;gap:6px;align-items:center;text-align:left}.kp-page-btn.active{outline:2px solid var(--accent)}.kp-page-editor textarea{min-height:260px}.kp-row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.kp-row>div{flex:1;min-width:180px}.kp-participants{display:grid;gap:10px}.kp-person{border:1px solid var(--line);border-radius:10px;padding:10px}.kp-person-head{display:flex;justify-content:space-between;gap:8px;align-items:center}.kp-person-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:9px}.kp-person textarea{min-height:110px}.kp-compare{overflow:auto}.kp-compare table{border-collapse:collapse;width:100%;min-width:520px}.kp-compare th,.kp-compare td{border:1px solid var(--line);padding:7px;text-align:center}.kp-compare th:first-child,.kp-compare td:first-child{text-align:left;position:sticky;left:0;background:var(--panel)}@media(max-width:760px){.kp-pages,.kp-person-grid{grid-template-columns:1fr}}
 </style>
+
+<style>
+/* Friend scenario list: keep fallback SAKU+MERU cover in the same 16:10 thumbnail frame */
+.friend-card > .sc-brand-cover{
+  display:grid;
+  width:100%;
+  height:auto;
+  min-height:0;
+  aspect-ratio:16/10;
+  box-sizing:border-box;
+  border-radius:7px;
+  margin-bottom:7px;
+}
+.friend-card > .sc-brand-cover .sc-brand-cover-inner{
+  height:100%;
+  min-height:0;
+}
+.friend-person-item > .sc-brand-cover{
+  display:grid;
+  width:64px;
+  height:auto;
+  min-height:0;
+  aspect-ratio:16/10;
+  box-sizing:border-box;
+  border-radius:6px;
+  margin:0;
+}
+.friend-person-item > .sc-brand-cover .sc-brand-cover-inner{
+  width:100%;
+  height:100%;
+  min-height:0;
+  padding:2px 0;
+}
+.friend-person-item > .sc-brand-cover .sc-brand-cover-logo{
+  width:min(54%,32px);
+  margin-bottom:1px;
+}
+.friend-person-item > .sc-brand-cover .sc-brand-cover-wordmark{
+  font-size:7px;
+  letter-spacing:.12em;
+}
+</style>
+
 </head>
 <body>
 <div data-site-header data-active="scenario"></div>
