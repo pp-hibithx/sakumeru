@@ -1,5 +1,4 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="sakumeru-kp-binder-build" content="20260830-0824">
 <title>KP BINDER | SAKU+MERU</title>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
 <script defer src="../assets/js/theme-v0296.js"></script>
@@ -621,13 +620,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .production-banner{border-style:solid}
 @media(max-width:760px){.kp2-pcgrid{grid-template-columns:1fr}}
 .scene-title-row{display:flex;gap:8px;align-items:center}.scene-title-row .edit-title{flex:1}.scene-title-row .danger{white-space:nowrap}
-</style>
-<style id="kpRevealSegmentFix0830">
-.kp-reveal-seg{display:inline-flex;gap:6px;flex-wrap:wrap}
-.kp-reveal-seg button{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}
-.kp-reveal-seg button.is-active{background:var(--accent);color:#111;border-color:var(--accent);font-weight:800}
-</style>
-</head><body>
+</style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
  <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。</small></div>
@@ -644,7 +637,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
    <div class="element-tools" id="addbar">
-<span class="element-tools-label">自動保存 <span class="muted" style="font-size:10px">KP0830</span></span>
+<span class="element-tools-label">自動保存</span>
 <span class="element-tools-help" id="saveStatus">編集内容はこのKP BINDERへ自動保存されます。</span>
 </div>
    <section class="share-test-panel" id="shareTestPanel">
@@ -1841,70 +1834,33 @@ async function uploadShareImage(src,blockId,index){
  }
  return `${cfg.projectUrl}/storage/v1/object/public/kp-share-images/${path}`;
 }
-
-function normalizeRevealModeState(root=document){
- root.querySelectorAll('.kp-special[data-kind="reveal"]').forEach(section=>{
-   const radios=[...section.querySelectorAll("[data-reveal-mode]")];
-   if(radios.length<2)return;
-   let selected=radios.find(r=>r.checked);
-   if(!selected)selected=radios.find(r=>r.value==="full")||radios[0];
-   radios.forEach(r=>{
-     const on=r===selected;
-     r.checked=on;
-     if(on)r.setAttribute("checked","");
-     else r.removeAttribute("checked");
-   });
-   const box=section.querySelector(".kp-reveal-summary");
-   if(box)box.hidden=selected.value!=="summary";
- });
-}
-
 async function revealSnapshot(section){
  const id=section.dataset.blockId||crypto.randomUUID();
- const target=[...section.querySelectorAll(":scope > .kp-special-head span")]
-   .map(x=>x.textContent||"").find(x=>x.startsWith("対象："))?.replace(/^対象：/,"").trim()||"全員";
-
- const radios=[...section.querySelectorAll(":scope [data-reveal-mode]")];
- let selected=radios.find(r=>r.checked);
- if(!selected)selected=radios.find(r=>r.value==="full");
- const mode=selected?.value==="summary"?"summary":"full";
-
+ const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
+ const mode=section.querySelector("[data-reveal-mode]:checked")?.value==="summary"?"summary":"full";
  const source=mode==="summary"
-   ? section.querySelector(":scope [data-reveal-summary]")
-   : section.querySelector(":scope > .kp-special-body");
- const bodyRoot=source?.cloneNode(true)||document.createElement("div");
+   ? section.querySelector("[data-reveal-summary]")
+   : section.querySelector(".kp-special-body");
+ if(!source)throw new Error("共有する本文を取得できませんでした。");
 
- let title=(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim();
-
- // 開示タイトルが未設定なら、本文の「最初の見出しだけ」をタイトルとして使う。
- // 異常に長い見出しは本文全体を誤取得した可能性があるため採用しない。
- if(mode==="full" && (!title || title==="開示情報")){
-   const heading=[...bodyRoot.children].find(el=>/^H[1-4]$/.test(el.tagName))
-     || bodyRoot.querySelector("h1,h2,h3,h4");
-   const headingText=(heading?.textContent||"").replace(/\s+/g," ").trim();
-   if(headingText && headingText.length<=120){
-     title=headingText;
-     heading.remove();
-   }
- }
- if(!title || title.length>120)title="開示情報";
-
+ const bodyRoot=source.cloneNode(true);
  bodyRoot.querySelectorAll(".image-grid,[data-image-grid]").forEach(x=>x.remove());
  bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());
-
  const body=bodyRoot.innerHTML||"";
- if(mode==="summary"&&!plain(body)){
-   throw new Error("「要点だけ」を選んでいます。PL向け要点を入力してください。");
+ if(mode==="summary"&&!plain(body))throw new Error("「要点だけ」を選んでいます。PL向け要点を入力してください。");
+
+ let title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
+ if(mode==="full" && (!title || title==="開示情報")){
+   const heading=bodyRoot.querySelector("h1,h2,h3,h4");
+   const headingText=(heading?.textContent||"").replace(/\s+/g," ").trim();
+   if(headingText && headingText.length<=120)title=headingText;
  }
+ if(!title)title="開示情報";
 
- const imageScope=mode==="summary" ? source : section.querySelector(":scope > .kp-special-body");
+ const imageScope=mode==="summary" ? source : section.querySelector(".kp-special-body");
  const raw=[...(imageScope?.querySelectorAll?.(".image-grid img, img[data-full-image]")||[])]
-   .map(img=>img.getAttribute("src")||"")
-   .filter(Boolean)
-   .filter((src,i,a)=>a.indexOf(src)===i);
- const images=[];
- for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
-
+   .map(img=>img.getAttribute("src")||"").filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
+ const images=[];for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
  return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
 }
 function setRevealAction(section){
@@ -1919,7 +1875,6 @@ function setRevealAction(section){
  }
 }
 function refreshRevealActions(){
- normalizeRevealModeState(q("#blogEditor")||document);
  const editor=q("#blogEditor");if(!editor)return;
  editor.querySelectorAll('.kp-special[data-kind="reveal"]').forEach(section=>{
    if(!section.dataset.blockId)section.dataset.blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
@@ -1930,6 +1885,23 @@ function refreshRevealActions(){
      const box=holder.firstElementChild;
      section.insertBefore(box,action||null);
    }
+
+   // 古い保存データでは2つのradioが別groupだったため、
+   // 現在表示されている要点欄を基準に1つのgroupへ正規化する。
+   const radios=[...section.querySelectorAll("[data-reveal-mode]")];
+   if(radios.length){
+     const group=`reveal-mode-${section.dataset.blockId}`;
+     const summaryBox=section.querySelector(".kp-reveal-summary");
+     const wanted=(summaryBox && !summaryBox.hidden)?"summary":"full";
+     radios.forEach(r=>{
+       r.name=group;
+       const on=r.value===wanted;
+       r.checked=on;
+       if(on)r.setAttribute("checked","");
+       else r.removeAttribute("checked");
+     });
+   }
+
    setRevealAction(section);
  });
 }
@@ -2032,7 +2004,7 @@ q("#manuscript").addEventListener("click",async e=>{
      const snap=await revealSnapshot(section);snap.revealedAt=old.revealedAt;snap.updatedAt=new Date().toISOString();
      const backup={...old,images:[...(old.images||[])]};Object.assign(old,snap);
      try{await syncTestShare()}catch(err){Object.keys(old).forEach(k=>delete old[k]);Object.assign(old,backup);throw err}
-     st.textContent=snap.title&&snap.title!=="開示情報"?`「${snap.title}」の共有内容を更新しました。`:"共有内容を更新しました。";
+     st.textContent=`「${snap.title}」の共有内容を更新しました。`;
    }else if(wd){
      const old=shareTest.items.find(x=>x.id===id);if(!old)return;
      if(!confirm(`「${old.title}」を共有から削除しますか？`))return;
@@ -2220,87 +2192,4 @@ if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find
 renderPC();
 renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
-</script>\n<script id="kpRevealRuntimeFix0830">
-(()=>{
- const qs=(s,r=document)=>r.querySelector(s);
- const qsa=(s,r=document)=>[...r.querySelectorAll(s)];
-
- function currentMode(section){
-   return section?.dataset?.revealMode==='summary'?'summary':'full';
- }
- function setMode(section,mode,doSync=true){
-   if(!section)return;
-   mode=mode==='summary'?'summary':'full';
-   section.dataset.revealMode=mode;
-   qsa('[data-kp-reveal-choice]',section).forEach(b=>{
-     const on=b.dataset.kpRevealChoice===mode;
-     b.classList.toggle('is-active',on);
-     b.setAttribute('aria-pressed',on?'true':'false');
-   });
-   const box=qs('.kp-reveal-summary',section);
-   if(box)box.hidden=mode!=='summary';
-   // Remove old radios entirely so a malformed checked state can never survive serialization.
-   qsa('[data-reveal-mode]',section).forEach(r=>r.remove());
-   if(doSync&&typeof syncArticle==='function')syncArticle();
- }
- function upgradeSection(section){
-   if(!section||section.dataset.revealSeg0830==='1')return;
-   section.dataset.revealSeg0830='1';
-   const oldChecked=qsa('[data-reveal-mode]',section).find(r=>r.checked);
-   const oldMode=oldChecked?.value==='summary'?'summary':(section.dataset.revealMode==='summary'?'summary':'full');
-   const row=qs('.kp-reveal-mode',section);
-   if(row){
-     row.innerHTML='<span>開示内容：</span><span class="kp-reveal-seg"><button type="button" data-kp-reveal-choice="full">シナリオ文章をそのまま</button><button type="button" data-kp-reveal-choice="summary">要点だけ</button></span>';
-   }
-   setMode(section,oldMode,false);
- }
- function upgradeAll(){qsa('.kp-special[data-kind="reveal"]').forEach(upgradeSection)}
-
- document.addEventListener('click',e=>{
-   const b=e.target.closest('[data-kp-reveal-choice]');
-   if(!b)return;
-   e.preventDefault();e.stopPropagation();
-   const section=b.closest('.kp-special[data-kind="reveal"]');
-   setMode(section,b.dataset.kpRevealChoice,true);
- },true);
-
- const mo=new MutationObserver(()=>upgradeAll());
- window.addEventListener('DOMContentLoaded',()=>{
-   upgradeAll();
-   const ed=qs('#blogEditor');if(ed)mo.observe(ed,{childList:true,subtree:true});
- });
- setTimeout(upgradeAll,0);
-
- // Force the snapshot used by the existing share/update handler.
- revealSnapshot=async function(section){
-   const id=section.dataset.blockId||crypto.randomUUID();
-   const target=qsa(':scope > .kp-special-head span',section).map(x=>x.textContent||'').find(x=>x.startsWith('対象：'))?.replace(/^対象：/,'').trim()||'全員';
-   const mode=currentMode(section);
-   const source=mode==='summary'?qs(':scope [data-reveal-summary]',section):qs(':scope > .kp-special-body',section);
-   const bodyRoot=source?.cloneNode(true)||document.createElement('div');
-
-   let title='';
-   if(mode==='full'){
-     const heading=[...bodyRoot.children].find(el=>/^H[1-4]$/.test(el.tagName))||bodyRoot.querySelector('h1,h2,h3,h4');
-     const ht=(heading?.textContent||'').replace(/\\s+/g,' ').trim();
-     if(ht&&ht.length<=80){title=ht;heading.remove();}
-   }
-   if(!title){
-     const own=(qs(':scope > .kp-special-title',section)?.textContent||'').replace(/\\s+/g,' ').trim();
-     if(own&&own!=='開示情報'&&own.length<=80)title=own;
-   }
-   if(!title)title='開示情報';
-
-   bodyRoot.querySelectorAll('.image-grid,[data-image-grid]').forEach(x=>x.remove());
-   bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());
-   const body=bodyRoot.innerHTML||'';
-   if(mode==='summary'&&typeof plain==='function'&&!plain(body))throw new Error('「要点だけ」を選んでいます。PL向け要点を入力してください。');
-
-   const imageScope=mode==='summary'?source:qs(':scope > .kp-special-body',section);
-   const raw=qsa('.image-grid img, img[data-full-image]',imageScope||document).map(img=>img.getAttribute('src')||'').filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
-   const images=[];
-   for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
-   return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
- };
-})();
-</script>\n</body></html>
+</script></body></html>
