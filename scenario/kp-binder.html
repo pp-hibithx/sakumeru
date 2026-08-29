@@ -623,7 +623,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。Life Archive連携対応。</small></div>
+ <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <nav class="kp-prod-tabs"><button type="button" class="kp-prod-tab active" data-tab="session">シナリオ進行</button><button type="button" class="kp-prod-tab" data-tab="pc">陣・参加者</button></nav>
  <section class="kp-prod-pane" data-pane="session">
@@ -674,7 +674,6 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 <script>
 const q=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const params=new URLSearchParams(location.search);
-const LA_BRIDGE_NONCE=String(params.get("la_bridge")||"");
 const KEY="39x2_scenario_kp_binders_v1";
 let all={};try{all=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{}
 let sid=params.get("id")||"";
@@ -690,11 +689,6 @@ const sc=scenarios.find(x=>String(x.id)===String(sid))||{title:"シナリオ"};
 if(!sid){
  q("#scenarioName").textContent="シナリオを特定できません";
  throw new Error("KP BINDERのシナリオIDがありません。SCENARIOから開き直してください。");
-}
-if(!all[sid]&&LA_BRIDGE_NONCE){
- try{window.opener?.postMessage({type:"sakumeru:bridge-error",nonce:LA_BRIDGE_NONCE,message:"このIDのKP BINDER原本がSAKU+MERUに見つかりません。SCENARIOからKP BINDERを開いて確認してください。"},"*")}catch{}
- q("#scenarioName").textContent="KP BINDER原本が見つかりません";
- throw new Error("Life Archive連携：指定IDのKP BINDER原本がありません。");
 }
 if(!all[sid])all[sid]={overview:"",pages:[],participants:[],reveals:[],shareId:"",revealLog:[]};
 let b=all[sid];
@@ -1258,6 +1252,10 @@ function renderEditor(){
    if(!section)return;
    const box=section.querySelector(".kp-reveal-summary");
    if(box)box.hidden=radio.value!=="summary";
+   section.querySelectorAll("[data-reveal-mode]").forEach(r=>{
+     if(r.checked)r.setAttribute("checked","");
+     else r.removeAttribute("checked");
+   });
    syncArticle();
  });
 
@@ -1759,12 +1757,12 @@ function sharePayloadFor(participant=null){
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(id)}&type=kp-live`:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
  const arr=b.shareSessions||[];
- host.innerHTML=arr.length?arr.slice().reverse().map(x=>`<div style="margin:6px 0"><a href="https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(x.shareId)}&type=kp-live" target="_blank" rel="noopener">${esc(new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP"))}</a> <span class="muted">（${(x.items||[]).length}件）</span></div>`).join(""):"過去の共有セッションはありません。";
+ host.innerHTML=arr.length?arr.slice().reverse().map(x=>`<div style="margin:6px 0"><a href="${shareUrlById(x.shareId)}" target="_blank" rel="noopener">${esc(new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP"))}</a> <span class="muted">（${(x.items||[]).length}件）</span></div>`).join(""):"過去の共有セッションはありません。";
 }
 function renderTestShareBar(){
  shareTest=currentShare()||shareTest;
@@ -1833,22 +1831,34 @@ async function uploadShareImage(src,blockId,index){
 }
 async function revealSnapshot(section){
  const id=section.dataset.blockId||crypto.randomUUID();
- const title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
- const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
+ let title=section.querySelector(":scope > .kp-special-title")?.textContent?.trim()||"";
+ const target=[...section.querySelectorAll(":scope > .kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
  const mode=section.querySelector("[data-reveal-mode]:checked")?.value==="summary"?"summary":"full";
  const source=mode==="summary"
    ? section.querySelector("[data-reveal-summary]")
-   : section.querySelector(".kp-special-body");
+   : section.querySelector(":scope > .kp-special-body");
  const bodyRoot=source?.cloneNode(true)||document.createElement("div");
+
+ // 「開示情報」のような汎用タイトルの場合、本文先頭の見出しを共有タイトルへ昇格。
+ if(mode==="full" && (!title || title==="開示情報")){
+   const heading=bodyRoot.querySelector("h1,h2,h3,h4");
+   const headingText=heading?.textContent?.trim()||"";
+   if(headingText){
+     title=headingText;
+     heading.remove();
+   }
+ }
+ if(!title)title="開示情報";
+
  bodyRoot.querySelectorAll(".image-grid,[data-image-grid]").forEach(x=>x.remove());
  bodyRoot.querySelectorAll('img[src^="data:image/"]').forEach(x=>x.remove());
  const body=bodyRoot.innerHTML||"";
  if(mode==="summary"&&!plain(body))throw new Error("「要点だけ」を選んでいます。PL向け要点を入力してください。");
- const imageScope=mode==="summary" ? source : section.querySelector(".kp-special-body");
+ const imageScope=mode==="summary" ? source : section.querySelector(":scope > .kp-special-body");
  const raw=[...(imageScope?.querySelectorAll?.(".image-grid img, img[data-full-image]")||[])]
    .map(img=>img.getAttribute("src")||"").filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
  const images=[];for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
- return {id,title,target,body,images,shareMode:mode,revealedAt:new Date().toISOString()};
+ return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
 }
 function setRevealAction(section){
  shareTest=currentShare()||shareTest;
@@ -2160,84 +2170,6 @@ function renderCompare(){
 }
 if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find(v=>String(v.id)===String(id));if(!x)return;if(b.participants.some(v=>String(v.pcId)===String(id)))return alert("追加済みです。");b.participants.push({pcId:id,name:x.name||"",abilities:"",skills:""});save();renderPC()};
 renderPC();
-
-function laBridgeSanitizeHtml(raw){
- const tpl=document.createElement("template");tpl.innerHTML=String(raw||"");
- tpl.content.querySelectorAll("script,style,iframe,object,embed,form,input,button,textarea,select").forEach(n=>n.remove());
- tpl.content.querySelectorAll("*").forEach(el=>{
-   [...el.attributes].forEach(a=>{
-     const n=a.name.toLowerCase(),v=String(a.value||"");
-     if(n.startsWith("on")||n==="contenteditable"||n==="id")el.removeAttribute(a.name);
-     if((n==="href"||n==="src")&&/^\s*javascript:/i.test(v))el.removeAttribute(a.name);
-   });
- });
- return tpl.innerHTML;
-}
-function laBridgeSnapshot(){
- const pages=(b.pages||[]).map(p=>({
-   id:String(p.id||""),
-   title:String(p.title||"無題"),
-   characters:sceneChars(p)
- }));
- return {
-   scenarioId:String(sid),
-   scenarioTitle:String(b.scenarioTitle||"シナリオ"),
-   url:`${location.origin}${location.pathname}?id=${encodeURIComponent(sid)}`,
-   scenes:pages,
-   participantCount:Array.isArray(b.currentShareSession?.participants)?b.currentShareSession.participants.length:0,
-   hasCommonShare:!!b.currentShareSession?.shareId,
-   lastOpenedAt:String(b.lastOpenedAt||"")
- };
-}
-function laBridgeSend(type,extra={}){
- if(!LA_BRIDGE_NONCE||!window.opener)return;
- try{window.opener.postMessage({type,nonce:LA_BRIDGE_NONCE,...extra},"*")}catch(e){console.warn("LA bridge",e)}
-}
-function laBridgeImageGrid(images=[]){
- const safe=(images||[]).filter(Boolean).slice(0,4);
- if(!safe.length)return "";
- return `<div class="image-grid" data-image-grid contenteditable="false">${safe.map(src=>`<figure draggable="true" data-img-item contenteditable="false"><button type="button" class="img-remove" contenteditable="false">×</button><img src="${esc(src)}" alt="" data-full-image><figcaption contenteditable="true" spellcheck="false"></figcaption></figure>`).join("")}<div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`;
-}
-function laBridgeImportSharedScene(payload={}){
- const title=String(payload.title||"LA共有シーン").trim()||"LA共有シーン";
- const body=laBridgeSanitizeHtml(payload.body||"")||"<p><br></p>";
- const images=Array.isArray(payload.images)?payload.images.filter(src=>{
-   try{const u=new URL(String(src));return u.protocol==="https:"||u.protocol==="http:"}catch{return false}
- }).slice(0,4):[];
- const blockId=uid();
- const reveal=`<section class="kp-special" data-kind="reveal" data-block-id="${esc(blockId)}">
-   <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(FLOW_LABEL.reveal)}</span></div>
-   <div class="kp-special-title">${esc(title)}</div>
-   <div class="kp-special-body">${body}${laBridgeImageGrid(images)}</div>
-   ${revealShareBox("full","")}
-   <div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">開示する</button></div>
- </section><p><br></p>`;
- const page={id:uid(),title,blocks:[],images:[],__v11ArticleHtml:reveal,laImportedAt:new Date().toISOString()};
- b.pages.push(page);
- active=page.id;
- saveNow();renderScenes();renderEditor();
- return page;
-}
-window.addEventListener("message",e=>{
- if(!LA_BRIDGE_NONCE||e.source!==window.opener)return;
- const d=e.data;if(!d||d.nonce!==LA_BRIDGE_NONCE)return;
- if(d.type==="la:request-kp-snapshot"){
-   laBridgeSend("sakumeru:bridge-ready",{snapshot:laBridgeSnapshot()});
-   return;
- }
- if(d.type==="la:push-shared-scene"){
-   try{
-     const page=laBridgeImportSharedScene(d.payload||{});
-     laBridgeSend("sakumeru:scene-imported",{sceneId:String(page.id),sceneTitle:String(page.title),snapshot:laBridgeSnapshot()});
-   }catch(err){
-     laBridgeSend("sakumeru:bridge-error",{message:`共有シーンを追加できませんでした：${err?.message||err}`});
-   }
- }
-});
-if(LA_BRIDGE_NONCE&&window.opener){
- setTimeout(()=>laBridgeSend("sakumeru:bridge-ready",{snapshot:laBridgeSnapshot()}),180);
-}
-
 renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
 </script></body></html>
