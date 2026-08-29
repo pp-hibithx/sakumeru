@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KP共有｜SAKU+MERU</title>
+<meta name="sakumeru-kp-live-build" content="20260830-0813">
 <script>
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m}catch(e){}})();
 </script>
@@ -44,14 +45,14 @@
 <body>
 <div data-site-header></div>
 <main class="kp-share-wrap">
-  <div id="shareContent" class="share-card"><p>読み込み中...</p></div>
+  <div id="kpLiveContent" class="share-card"><p>読み込み中...</p></div>
 </main>
 <div data-site-footer></div>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-share.js?v=02307"></script>
 <script>
 (async()=>{
- const box=document.getElementById("shareContent");
+ const box=document.getElementById("kpLiveContent");
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const sanitizeRichHtml=input=>{
    const tpl=document.createElement("template");tpl.innerHTML=String(input||"");
