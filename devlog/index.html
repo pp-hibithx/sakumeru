@@ -22,32 +22,128 @@
 .dev-render{display:grid;gap:14px}.dev-render-text{line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere}.dev-render figure{margin:0}.dev-render figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);margin:auto}.dev-render figcaption{text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
 @media(max-width:760px){.dev-image-inputs{grid-template-columns:1fr}}
 </style>
+
+<style>
+/* v0.3.57 — SAKU+MERU Rich Editor for DEV LOG */
+.dev-rich-toolbar{position:sticky;top:8px;z-index:20;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;padding:10px;margin:8px 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.dev-rich-group{display:flex;gap:5px;flex-wrap:wrap;align-items:center;padding-right:8px;border-right:1px solid var(--line)}
+.dev-rich-group:last-child{border-right:0}.dev-rich-label{font-size:.72rem;color:var(--muted);align-self:center;margin-right:2px}
+.dev-rich-toolbar button,.dev-rich-toolbar select{width:auto;padding:5px 8px}
+.dev-rich-shell{position:relative}.dev-rich-editor{min-height:420px;padding:18px 22px 42px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.015);line-height:1.85;outline:none;overflow-wrap:anywhere}
+.dev-rich-editor:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent,#d7b557) 35%,transparent)}
+.dev-rich-editor p{margin:.55em 0}.dev-rich-editor h2{margin:1.15em 0 .45em}.dev-rich-editor h3{margin:1em 0 .4em}.dev-rich-editor blockquote{margin:.8em 0;padding:.45em .9em;border-left:3px solid var(--line);color:var(--muted)}
+.dev-rich-editor hr{margin:1.4em 0;border:0;border-top:1px solid var(--line)}
+.dev-rich-editor img{max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+.dev-rich-editor figure{margin:12px 0}.dev-rich-editor figcaption{text-align:center;font-size:.8rem;color:var(--muted);margin-top:5px}
+.dev-rich-editor .dev-image-grid{display:grid;grid-template-columns:repeat(min(4,var(--img-count,1)),minmax(0,1fr));gap:8px;margin:12px 0}
+.dev-rich-editor .dev-image-grid figure{margin:0;position:relative}.dev-rich-editor .dev-image-grid img{display:block;width:100%;height:220px;object-fit:contain;cursor:zoom-in}
+.dev-rich-editor .dev-image-remove{position:absolute;right:5px;top:5px;z-index:3;width:auto;padding:2px 7px}
+.dev-rich-editor .dev-media-card{margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:10px}
+.dev-rich-editor audio,.dev-rich-editor video{max-width:100%;width:100%}.dev-rich-editor iframe{max-width:100%;width:100%;aspect-ratio:16/9;border:0;border-radius:10px}
+.dev-lightbox{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:30px}
+.dev-lightbox.open{display:flex}.dev-lightbox img{max-width:94vw;max-height:90vh;object-fit:contain}.dev-lightbox button{position:absolute;right:18px;top:18px;width:auto}
+.dev-rich-note{font-size:.8rem;color:var(--muted);margin:0 0 8px}
+.dev-color-dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid currentColor;margin-right:3px}
+.dev-render-rich{line-height:1.85;overflow-wrap:anywhere}.dev-render-rich img{max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+.dev-render-rich .dev-image-grid{display:grid;grid-template-columns:repeat(min(4,var(--img-count,1)),minmax(0,1fr));gap:8px;margin:12px 0}
+.dev-render-rich .dev-image-grid figure{margin:0}.dev-render-rich .dev-image-grid img{width:100%;height:220px;object-fit:contain;cursor:zoom-in}
+.dev-render-rich figure{margin:12px 0}.dev-render-rich figcaption{text-align:center;font-size:.8rem;color:var(--muted);margin-top:5px}
+.dev-render-rich audio,.dev-render-rich video{max-width:100%;width:100%}.dev-render-rich iframe{max-width:100%;width:100%;aspect-ratio:16/9;border:0;border-radius:10px}
+@media(max-width:760px){.dev-rich-toolbar{position:static}.dev-rich-editor{padding:14px;min-height:320px}.dev-rich-editor .dev-image-grid,.dev-render-rich .dev-image-grid{grid-template-columns:repeat(min(2,var(--img-count,1)),minmax(0,1fr))}.dev-rich-editor .dev-image-grid img,.dev-render-rich .dev-image-grid img{height:180px}}
+</style>
+
 </head><body><div data-site-header></div><main><div class="wrap"><div class="hero"><h2>開発日記</h2><p>SAKU+MERUができていく途中の、開発室の記録です。</p></div><p><a href="../about/index.html">← ABOUTへ戻る</a></p>
 <section class="panel"><div class="dev-view-tabs"><button id="showPublic" type="button" class="active">公開画面を見る</button><button id="showEditor" type="button" class="text-action">記事を編集</button></div><div id="publicPanel" class="dev-public-panel"><div class="dev-public-head"><div><h3>公開画面</h3></div></div><div id="publicPosts" class="dev-public"></div></div><div id="editorPanel" class="dev-editor-panel" hidden><div class="dev-layout"><aside class="dev-side"><div class="dev-actions"><button id="newPost" type="button">＋ 新しい記事</button></div><div id="postList" class="dev-list" style="margin-top:12px"></div><hr><div class="small muted">記事データはこのブラウザに保存されます。</div><div class="dev-actions" style="margin-top:8px"><button id="exportPosts" type="button" class="text-action">記事を書き出す</button><label class="text-action" style="cursor:pointer">読み込む<input id="importPosts" type="file" accept="application/json" hidden></label></div></aside>
-<div class="dev-main"><div id="editor" class="dev-editor"><label>日付<input id="postDate" type="date"></label><label>タイトル<input id="postTitle"></label><label>タグ<input id="postTags" placeholder="PROFILE, UI, 開発日記"></label><label>状態<select id="postStatus"><option value="published">公開</option><option value="draft">下書き</option></select></label><div><div class="dev-article-toolbar"><button id="addTextBlock" type="button">＋ 文章</button><button id="addImageBlock" type="button">＋ 画像</button></div><div id="postBlocks" class="dev-blocks"></div></div><div class="dev-actions"><button id="savePost" type="button">保存</button><button id="deletePost" type="button" class="danger">削除</button></div></div><hr><h3>記事プレビュー</h3><div id="editorPreview" class="dev-public"></div></div></div></div></section></div></main><div data-site-footer></div><script src="../assets/js/main.js?v=0292"></script><script>
+<div class="dev-main"><div id="editor" class="dev-editor"><label>日付<input id="postDate" type="date"></label><label>タイトル<input id="postTitle"></label><label>タグ<input id="postTags" placeholder="PROFILE, UI, 開発日記"></label><label>状態<select id="postStatus"><option value="published">公開</option><option value="draft">下書き</option></select></label><div>
+<div class="dev-rich-note">SAKU+MERU共通リッチエディタ。Enterで段落、Shift+Enterで同じ段落内の改行です。</div>
+<div class="dev-rich-toolbar" id="devRichToolbar">
+  <div class="dev-rich-group"><span class="dev-rich-label">文字</span>
+    <select id="devFormat"><option value="p">本文</option><option value="h2">大見出し</option><option value="h3">小見出し</option><option value="blockquote">引用</option></select>
+    <button type="button" data-devcmd="bold"><b>B</b></button>
+    <button type="button" data-devcmd="italic"><i>I</i></button>
+    <button type="button" data-devcmd="underline"><u>U</u></button>
+    <button type="button" data-devcmd="strikeThrough"><s>S</s></button>
+    <button type="button" id="devTextColor"><span class="dev-color-dot" id="devTextDot"></span>文字色</button>
+    <input id="devForeColor" type="color" value="#d7b557" hidden>
+    <button type="button" id="devClearColor">文字色なし</button>
+    <button type="button" id="devBgColor"><span class="dev-color-dot" id="devBgDot"></span>背景色</button>
+    <input id="devBackColor" type="color" value="#725d18" hidden>
+    <button type="button" id="devClearBg">背景色なし</button>
+  </div>
+  <div class="dev-rich-group"><span class="dev-rich-label">配置</span>
+    <button type="button" data-devcmd="justifyLeft">左</button><button type="button" data-devcmd="justifyCenter">中</button><button type="button" data-devcmd="justifyRight">右</button>
+    <button type="button" data-devcmd="insertUnorderedList">• 箇条書き</button><button type="button" data-devcmd="insertOrderedList">1. 番号</button>
+    <button type="button" id="devLink">🔗</button><button type="button" id="devHr">― 区切り線</button>
+  </div>
+  <div class="dev-rich-group"><span class="dev-rich-label">メディア</span>
+    <button type="button" id="devImages">🖼 画像</button><button type="button" id="devAudio">🔊 音声</button><button type="button" id="devVideo">▶ 動画</button>
+  </div>
+</div>
+<div class="dev-rich-shell"><article id="devRichEditor" class="dev-rich-editor" contenteditable="true"><p><br></p></article></div>
+<div class="dev-lightbox" id="devLightbox" contenteditable="false"><button type="button" id="devLightboxClose">× 閉じる</button><img id="devLightboxImg" alt=""></div>
+</div><div class="dev-actions"><button id="savePost" type="button">保存</button><button id="deletePost" type="button" class="danger">削除</button></div></div><hr><h3>記事プレビュー</h3><div id="editorPreview" class="dev-public"></div></div></div></div></section></div></main><div data-site-footer></div><script src="../assets/js/main.js?v=0292"></script><script>
 (()=>{"use strict";
-const KEY="sakumeru_devlog_posts_v1",$=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));let current="";
+const KEY="sakumeru_devlog_posts_v1",$=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));let current="",savedRange=null;
 const seed=[{id:"first",date:"2026-08-26",title:"開発日記、はじめます。",tags:["開発日記","ABOUT"],status:"published",body:"更新内容だけでは残らない「なぜこの機能を作ったのか」や、開発中に気づいたことを置いておく場所を作りました。\n\n表のメニューには出さず、ABOUTからこっそり入れる開発室です。",image:"",caption:""}];
-function normalize(p){if(Array.isArray(p.blocks))return p;const blocks=[];if(p.body)blocks.push({type:"text",text:p.body});if(p.image)blocks.push({type:"image",url:p.image,caption:p.caption||""});return {...p,blocks}}
-function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||"null");return (Array.isArray(x)?x:seed).map(normalize)}catch{return seed.map(normalize)}}function saveAll(a){localStorage.setItem(KEY,JSON.stringify(a))}
-function rich(s){let h=esc(s||"");h=h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/__([^_]+)__/g,"<u>$1</u>");return h.replace(/\n/g,"<br>")}
-function wrap(ta,before,after=before){const a=ta.selectionStart,b=ta.selectionEnd,v=ta.value;ta.value=v.slice(0,a)+before+v.slice(a,b)+after+v.slice(b);ta.focus();ta.setSelectionRange(a+before.length,b+before.length);previewEditor()}
-function blockRow(b={type:"text"}){const row=document.createElement("div");row.className="dev-block";row.dataset.type=b.type||"text";const type=row.dataset.type;
- row.innerHTML=`<div class="dev-block-head"><span class="dev-block-label">${type==="image"?"画像":"文章"}</span><div class="dev-block-actions"><button type="button" class="up text-action">↑</button><button type="button" class="down text-action">↓</button><button type="button" class="danger del">削除</button></div></div>${type==="image"?`<div class="dev-image-inputs"><label>画像<input class="img-file" type="file" accept="image/*"></label><label>画像URL<input class="img-url" type="url" placeholder="https://..." value="${esc(b.url&&!String(b.url).startsWith("data:")?b.url:"")}"></label></div><input class="img-data" type="hidden" value="${esc(b.url&&String(b.url).startsWith("data:")?b.url:"")}"><input class="img-caption" placeholder="画像キャプション" value="${esc(b.caption||"")}"><img class="img-preview" ${b.url?`src="${esc(b.url)}"`:"hidden"}>`:`<div class="dev-text-toolbar"><button type="button" class="b"><b>B</b></button><button type="button" class="u"><u>U</u></button><button type="button" class="lnk">リンク</button></div><textarea class="txt" rows="7" placeholder="本文">${esc(b.text||"")}</textarea>`}`;
- row.querySelector('.del').onclick=()=>{row.remove();previewEditor()};row.querySelector('.up').onclick=()=>{const x=row.previousElementSibling;if(x)row.parentNode.insertBefore(row,x);previewEditor()};row.querySelector('.down').onclick=()=>{const x=row.nextElementSibling;if(x)row.parentNode.insertBefore(x,row);previewEditor()};
- if(type==="text"){const ta=row.querySelector('.txt');row.querySelector('.b').onclick=()=>wrap(ta,"**");row.querySelector('.u').onclick=()=>wrap(ta,"__");row.querySelector('.lnk').onclick=()=>{const u=prompt("リンク先URL","https://");if(u)wrap(ta,"[","]("+u+")")};ta.oninput=previewEditor}else{const url=row.querySelector('.img-url'),data=row.querySelector('.img-data'),img=row.querySelector('.img-preview');url.oninput=()=>{if(url.value.trim()){data.value="";img.src=url.value.trim();img.hidden=false}previewEditor()};row.querySelector('.img-caption').oninput=previewEditor;row.querySelector('.img-file').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;const d=await imageData(f);data.value=d;url.value="";img.src=d;img.hidden=false;previewEditor()}}
- return row}
-function addBlock(b){$("postBlocks").appendChild(blockRow(b));previewEditor()}
-function blocks(){return [...$("postBlocks").children].map(r=>r.dataset.type==="image"?{type:"image",url:r.querySelector('.img-data').value||r.querySelector('.img-url').value.trim(),caption:r.querySelector('.img-caption').value.trim()}:{type:"text",text:r.querySelector('.txt').value}).filter(b=>b.type==="image"?b.url:b.text.trim())}
-function blocksHtml(bs){return `<div class="dev-render">${(bs||[]).map(b=>b.type==="image"?(b.url?`<figure><img src="${esc(b.url)}" alt="${esc(b.caption||"")}">${b.caption?`<figcaption>${esc(b.caption)}</figcaption>`:""}</figure>`:""):`<div class="dev-render-text">${rich(b.text)}</div>`).join("")}</div>`}
-function render(){const a=load().sort((x,y)=>String(y.date).localeCompare(String(x.date)));$("postList").innerHTML=a.map(p=>`<div class="dev-item ${p.id===current?"active":""}" data-id="${esc(p.id)}"><b>${esc(p.title||"無題")}</b><div class="dev-meta">${esc(p.date)} / ${p.status==="draft"?"下書き":"公開"}</div></div>`).join("");document.querySelectorAll(".dev-item").forEach(x=>x.onclick=()=>edit(x.dataset.id));const pub=a.filter(p=>p.status==="published");$("publicPosts").innerHTML=pub.map(cardHtml).join("")||'<p class="muted">公開記事はまだありません。</p>';previewEditor()}
-function cardHtml(p){return `<article class="card devlog-entry"><div class="dev-meta">${esc(p.date)}</div><h3>${esc(p.title)}</h3>${blocksHtml(p.blocks)}<div class="devlog-tags">${(p.tags||[]).map(t=>`<span class="badge">${esc(t)}</span>`).join("")}</div></article>`}
-function previewEditor(){if(!$("editorPreview"))return;const p={date:$("postDate").value,title:$("postTitle").value||"無題",tags:$("postTags").value.split(/[,、]/).map(x=>x.trim()).filter(Boolean),blocks:blocks()};$("editorPreview").innerHTML=cardHtml(p)}
-function edit(id){const p=load().find(x=>x.id===id);if(!p)return;current=id;$("postDate").value=p.date||"";$("postTitle").value=p.title||"";$("postTags").value=(p.tags||[]).join(", ");$("postStatus").value=p.status||"published";$("postBlocks").innerHTML="";(p.blocks||[]).forEach(addBlock);render()}
-function blank(){current="";$("postDate").value=new Date().toISOString().slice(0,10);$("postTitle").value=$("postTags").value="";$("postStatus").value="published";$("postBlocks").innerHTML="";addBlock({type:"text",text:""});render()}
-async function imageData(file){const src=URL.createObjectURL(file);try{const im=await new Promise((r,j)=>{const x=new Image();x.onload=()=>r(x);x.onerror=j;x.src=src}),max=1280,sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*sc);c.height=Math.round(im.naturalHeight*sc);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/webp",.84)}finally{URL.revokeObjectURL(src)}}
-$("newPost").onclick=blank;$("addTextBlock").onclick=()=>addBlock({type:"text"});$("addImageBlock").onclick=()=>addBlock({type:"image"});["postDate","postTitle","postTags","postStatus"].forEach(id=>$(id).addEventListener(id==="postStatus"?"change":"input",previewEditor));
-$("savePost").onclick=()=>{const a=load(),id=current||("p"+Date.now().toString(36)),bs=blocks(),p={id,date:$("postDate").value,title:$("postTitle").value.trim(),tags:$("postTags").value.split(/[,、]/).map(x=>x.trim()).filter(Boolean),status:$("postStatus").value,blocks:bs,body:bs.filter(x=>x.type==="text").map(x=>x.text).join("\n\n"),image:"",caption:""};const i=a.findIndex(x=>x.id===id);if(i>=0)a[i]=p;else a.push(p);saveAll(a);current=id;render();alert("保存しました")};
-$("deletePost").onclick=()=>{if(!current||!confirm("この記事を削除しますか？"))return;saveAll(load().filter(x=>x.id!==current));blank()};const setView=mode=>{const pub=mode==="public";$("publicPanel").hidden=!pub;$("editorPanel").hidden=pub;$("showPublic").classList.toggle("active",pub);$("showEditor").classList.toggle("active",!pub)};$("showPublic").onclick=()=>setView("public");$("showEditor").onclick=()=>setView("editor");
-$("exportPosts").onclick=()=>{const b=new Blob([JSON.stringify(load(),null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="sakumeru-devlog.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};$("importPosts").onchange=async()=>{const f=$("importPosts").files?.[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x))throw 0;saveAll(x.map(normalize));blank()}catch{alert("記事データを読み込めませんでした")}};blank();render()})();
+
+function legacyRich(s){let h=esc(s||"");h=h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/__([^_]+)__/g,"<u>$1</u>");return h.split(/\n{2,}/).map(x=>`<p>${x.replace(/\n/g,"<br>")||"<br>"}</p>`).join("")}
+function blocksToHtml(bs=[]){return bs.map(b=>b.type==="image"?(b.url?`<figure><img src="${esc(b.url)}" alt="${esc(b.caption||"")}">${b.caption?`<figcaption>${esc(b.caption)}</figcaption>`:""}</figure>`:""):legacyRich(b.text||"")).join("")}
+function normalize(p){
+ if(p.richHtml!=null)return {...p,blocks:Array.isArray(p.blocks)?p.blocks:[]};
+ const blocks=Array.isArray(p.blocks)?p.blocks:[];let richHtml=blocks.length?blocksToHtml(blocks):legacyRich(p.body||"");
+ if(!richHtml&&p.image)richHtml=`<figure><img src="${esc(p.image)}" alt="${esc(p.caption||"")}">${p.caption?`<figcaption>${esc(p.caption)}</figcaption>`:""}</figure>`;
+ return {...p,blocks,richHtml:richHtml||"<p><br></p>"}
+}
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||"null");return (Array.isArray(x)?x:seed).map(normalize)}catch{return seed.map(normalize)}}
+function saveAll(a){localStorage.setItem(KEY,JSON.stringify(a))}
+function cleanEditorHtml(){
+ const c=$("devRichEditor").cloneNode(true);
+ c.querySelectorAll(".dev-image-remove").forEach(x=>x.remove());
+ c.querySelectorAll("[contenteditable]").forEach(x=>x.removeAttribute("contenteditable"));
+ return c.innerHTML||"<p><br></p>"
+}
+function saveRange(){const sel=getSelection();if(sel&&sel.rangeCount){const r=sel.getRangeAt(0);if($("devRichEditor").contains(r.commonAncestorContainer))savedRange=r.cloneRange()}}
+function restoreRange(){const ed=$("devRichEditor");ed.focus();const sel=getSelection();sel.removeAllRanges();if(savedRange)sel.addRange(savedRange);else{const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);sel.addRange(r)}}
+function exec(cmd,val=null){restoreRange();document.execCommand("styleWithCSS",false,true);document.execCommand(cmd,false,val);saveRange();previewEditor()}
+function insertHtml(h){restoreRange();document.execCommand("insertHTML",false,h);saveRange();initMediaUi();previewEditor()}
+function updateGridCounts(root=document){root.querySelectorAll(".dev-image-grid").forEach(g=>{const n=g.querySelectorAll(":scope > figure").length;g.style.setProperty("--img-count",Math.max(1,Math.min(4,n)));if(!n)g.remove()})}
+async function imageData(file,max=1600,quality=.84){const src=URL.createObjectURL(file);try{const im=await new Promise((r,j)=>{const x=new Image();x.onload=()=>r(x);x.onerror=j;x.src=src});const sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*sc);c.height=Math.round(im.naturalHeight*sc);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/webp",quality)}finally{URL.revokeObjectURL(src)}}
+function ytEmbed(u){try{const x=new URL(u);let id="";if(x.hostname.includes("youtu.be"))id=x.pathname.slice(1);else if(x.hostname.includes("youtube.com")){if(x.pathname==="/watch")id=x.searchParams.get("v")||"";else{const m=x.pathname.match(/\/(?:shorts|embed)\/([^/?]+)/);id=m?.[1]||""}}return id?`https://www.youtube.com/embed/${encodeURIComponent(id)}`:""}catch{return ""}}
+function initMediaUi(){
+ updateGridCounts($("devRichEditor"));
+ $("devRichEditor").querySelectorAll(".dev-image-grid figure").forEach(f=>{
+   if(!f.querySelector(".dev-image-remove")){const b=document.createElement("button");b.type="button";b.className="dev-image-remove danger";b.textContent="×";b.contentEditable="false";b.onclick=e=>{e.preventDefault();f.remove();updateGridCounts($("devRichEditor"));previewEditor()};f.appendChild(b)}
+ });
+}
+function openLightbox(src){$("devLightboxImg").src=src;$("devLightbox").classList.add("open")}
+function closeLightbox(){$("devLightbox").classList.remove("open");$("devLightboxImg").removeAttribute("src")}
+function render(){const a=load().sort((x,y)=>String(y.date).localeCompare(String(x.date)));$("postList").innerHTML=a.map(p=>`<div class="dev-item ${p.id===current?"active":""}" data-id="${esc(p.id)}"><b>${esc(p.title||"無題")}</b><div class="dev-meta">${esc(p.date)} / ${p.status==="draft"?"下書き":"公開"}</div></div>`).join("");document.querySelectorAll(".dev-item").forEach(x=>x.onclick=()=>edit(x.dataset.id));const pub=a.filter(p=>p.status==="published");$("publicPosts").innerHTML=pub.map(cardHtml).join("")||'<p class="muted">公開記事はまだありません。</p>';initPublicMedia();previewEditor()}
+function cardHtml(p){return `<article class="card devlog-entry"><div class="dev-meta">${esc(p.date)}</div><h3>${esc(p.title)}</h3><div class="dev-render-rich">${p.richHtml||"<p><br></p>"}</div><div class="devlog-tags">${(p.tags||[]).map(t=>`<span class="badge">${esc(t)}</span>`).join("")}</div></article>`}
+function previewEditor(){if(!$("editorPreview"))return;const p={date:$("postDate").value,title:$("postTitle").value||"無題",tags:$("postTags").value.split(/[,、]/).map(x=>x.trim()).filter(Boolean),richHtml:cleanEditorHtml()};$("editorPreview").innerHTML=cardHtml(p);initPublicMedia()}
+function initPublicMedia(){document.querySelectorAll(".dev-render-rich .dev-image-grid").forEach(updateGridCounts);document.querySelectorAll(".dev-render-rich img").forEach(img=>img.onclick=()=>openLightbox(img.src))}
+function edit(id){const p=load().find(x=>x.id===id);if(!p)return;current=id;$("postDate").value=p.date||"";$("postTitle").value=p.title||"";$("postTags").value=(p.tags||[]).join(", ");$("postStatus").value=p.status||"published";$("devRichEditor").innerHTML=p.richHtml||"<p><br></p>";savedRange=null;initMediaUi();render()}
+function blank(){current="";$("postDate").value=new Date().toISOString().slice(0,10);$("postTitle").value=$("postTags").value="";$("postStatus").value="published";$("devRichEditor").innerHTML="<p><br></p>";savedRange=null;initMediaUi();render()}
+
+$("devRichEditor").addEventListener("keyup",saveRange);$("devRichEditor").addEventListener("mouseup",saveRange);$("devRichEditor").addEventListener("input",()=>{saveRange();previewEditor()});$("devRichEditor").addEventListener("click",e=>{const img=e.target.closest("img");if(img)openLightbox(img.src)});
+$("devRichToolbar").addEventListener("mousedown",e=>{if(e.target.closest("button,input,select"))saveRange()});
+$("devRichToolbar").querySelectorAll("[data-devcmd]").forEach(b=>b.onclick=()=>exec(b.dataset.devcmd));
+$("devFormat").onchange=e=>exec("formatBlock",e.target.value);
+$("devTextDot").style.background=$("devForeColor").value;$("devTextColor").onclick=()=>$("devForeColor").click();$("devForeColor").oninput=e=>{$("devTextDot").style.background=e.target.value;exec("foreColor",e.target.value)};
+$("devClearColor").onclick=()=>{restoreRange();document.execCommand("styleWithCSS",false,true);if(!document.execCommand("foreColor",false,"inherit"))document.execCommand("foreColor",false,getComputedStyle($("devRichEditor")).color||"#000");saveRange();previewEditor()};
+$("devBgDot").style.background=$("devBackColor").value;$("devBgColor").onclick=()=>$("devBackColor").click();$("devBackColor").oninput=e=>{restoreRange();if(!document.execCommand("hiliteColor",false,e.target.value))document.execCommand("backColor",false,e.target.value);saveRange();$("devBgDot").style.background=e.target.value;previewEditor()};
+$("devClearBg").onclick=()=>{restoreRange();if(!document.execCommand("hiliteColor",false,"transparent"))document.execCommand("backColor",false,"transparent");saveRange();previewEditor()};
+$("devLink").onclick=()=>{const u=prompt("リンク先URL","https://");if(u)exec("createLink",u)};$("devHr").onclick=()=>insertHtml("<hr><p><br></p>");
+$("devImages").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept="image/*";i.multiple=true;i.onchange=async()=>{const fs=[...(i.files||[])];if(!fs.length)return;const items=[];for(const f of fs)items.push({src:await imageData(f),name:f.name});const figs=items.map(x=>`<figure contenteditable="false"><img src="${x.src}" alt="${esc(x.name)}"><figcaption contenteditable="true">${esc(x.name)}</figcaption></figure>`).join("");insertHtml(`<div class="dev-image-grid">${figs}</div><p><br></p>`)};i.click()};
+$("devAudio").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept="audio/*";i.onchange=()=>{const f=i.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>insertHtml(`<div class="dev-media-card" contenteditable="false"><audio controls src="${String(r.result||"")}"></audio><div>${esc(f.name)}</div></div><p><br></p>`);r.readAsDataURL(f)};i.click()};
+$("devVideo").onclick=()=>{const mode=confirm("OK：動画ファイルを選択\nキャンセル：URLを入力");if(mode){const i=document.createElement("input");i.type="file";i.accept="video/*";i.onchange=()=>{const f=i.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>insertHtml(`<div class="dev-media-card" contenteditable="false"><video controls src="${String(r.result||"")}"></video><div>${esc(f.name)}</div></div><p><br></p>`);r.readAsDataURL(f)};i.click()}else{const u=prompt("YouTube URL または動画URL");if(!u)return;const y=ytEmbed(u);insertHtml(y?`<div class="dev-media-card" contenteditable="false"><iframe src="${esc(y)}" allowfullscreen></iframe></div><p><br></p>`:`<div class="dev-media-card"><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a></div><p><br></p>`)}};
+$("devLightboxClose").onclick=closeLightbox;$("devLightbox").onclick=e=>{if(e.target===$("devLightbox"))closeLightbox()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeLightbox()});
+
+$("newPost").onclick=blank;["postDate","postTitle","postTags","postStatus"].forEach(id=>$(id).addEventListener(id==="postStatus"?"change":"input",previewEditor));
+$("savePost").onclick=()=>{const a=load(),id=current||("p"+Date.now().toString(36)),richHtml=cleanEditorHtml(),p={id,date:$("postDate").value,title:$("postTitle").value.trim(),tags:$("postTags").value.split(/[,、]/).map(x=>x.trim()).filter(Boolean),status:$("postStatus").value,richHtml,blocks:[],body:$("devRichEditor").innerText.trim(),image:"",caption:""};const i=a.findIndex(x=>x.id===id);if(i>=0)a[i]=p;else a.push(p);saveAll(a);current=id;render();alert("保存しました")};
+$("deletePost").onclick=()=>{if(!current||!confirm("この記事を削除しますか？"))return;saveAll(load().filter(x=>x.id!==current));blank()};
+const setView=mode=>{const pub=mode==="public";$("publicPanel").hidden=!pub;$("editorPanel").hidden=pub;$("showPublic").classList.toggle("active",pub);$("showEditor").classList.toggle("active",!pub)};$("showPublic").onclick=()=>setView("public");$("showEditor").onclick=()=>setView("editor");
+$("exportPosts").onclick=()=>{const b=new Blob([JSON.stringify(load(),null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="sakumeru-devlog.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+$("importPosts").onchange=async()=>{const f=$("importPosts").files?.[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x))throw 0;saveAll(x.map(normalize));blank()}catch{alert("記事データを読み込めませんでした")}};
+blank();render()
+})();
 </script></body></html>
