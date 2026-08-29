@@ -596,7 +596,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">共有実験版 v27 — 画像挿入時の開示ボタン保持修正版<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
+ <div class="test-banner">共有実験版 v28 — 開示ブロック作成フリーズ修正版<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -1096,18 +1096,9 @@ function renderEditor(){
 
 
  refreshRevealActions();
- if(window.MutationObserver){
-   let repairingRevealActions=false;
-   const revealObserver=new MutationObserver(()=>{
-     if(repairingRevealActions)return;
-     repairingRevealActions=true;
-     try{refreshRevealActions()}finally{repairingRevealActions=false}
-   });
-   revealObserver.observe(ed,{childList:true,subtree:true});
- }
 ed.addEventListener("keyup",saveRange);
  ed.addEventListener("mouseup",saveRange);
- ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();refreshRevealActions();syncArticle();refreshBlockHandles()});
+ ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle();refreshBlockHandles()});
  ed.addEventListener("blur",saveRange);
  q("#richToolbar").addEventListener("mousedown",e=>{
    if(e.target.closest("button,input,select"))saveRange();
@@ -1512,7 +1503,13 @@ function setRevealAction(section){
  const id=section.dataset.blockId,item=shareTest.items.find(x=>x.id===id);
  let host=section.querySelector(":scope > .kp-special-action");
  if(!host){host=document.createElement("div");host.className="kp-special-action";host.setAttribute("contenteditable","false");section.appendChild(host)}
- host.innerHTML=item?`<span class="shared-badge">✓ 共有済み</span><button type="button" class="share-update-btn" data-share-update="${esc(id)}">↻ 共有内容を更新</button><button type="button" class="secondary share-withdraw-btn" data-share-withdraw="${esc(id)}">共有から削除</button>`:`<button type="button" data-share-open="${esc(id)}">開示する</button>`;
+ if(item){
+   if(host.querySelector(`[data-share-update="${CSS.escape(id)}"]`)&&host.querySelector(`[data-share-withdraw="${CSS.escape(id)}"]`))return;
+   host.innerHTML=`<span class="shared-badge">✓ 共有済み</span><button type="button" class="share-update-btn" data-share-update="${esc(id)}">↻ 共有内容を更新</button><button type="button" class="secondary share-withdraw-btn" data-share-withdraw="${esc(id)}">共有から削除</button>`;
+ }else{
+   if(host.querySelector(`[data-share-open="${CSS.escape(id)}"]`))return;
+   host.innerHTML=`<button type="button" data-share-open="${esc(id)}">開示する</button>`;
+ }
 }
 function refreshRevealActions(){
  const editor=q("#blogEditor");if(!editor)return;
