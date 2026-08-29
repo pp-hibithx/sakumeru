@@ -575,10 +575,18 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .pdf-viewer{border-top:1px solid var(--line)}
 @media(max-width:820px){.pdf-canvas-frame{max-height:none}.pdf-original-wrap{padding:8px}}
 
+
+/* v24: collapsible PDF check panel */
+.pdf-check-title .spacer{flex:1}
+.pdf-fold-btn{margin-left:auto;white-space:nowrap}
+#pdfCheckBody[hidden]{display:none!important}
+.pdf-check-section.is-collapsed{padding-bottom:0}
+.pdf-check-section.is-collapsed .pdf-check-title{margin-bottom:0}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v23 — PDF原稿画像確認<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v24 — PDF原稿確認 折りたたみ対応<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -594,9 +602,16 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 <span class="element-tools-help">本文の追加・装飾はエディタ上部のツールバーから行います。</span>
 <button type="button" class="secondary" id="resetCopy">↶ コピーを元に戻す</button>
 </div>
-   <section class="pdf-check-section">
-    <div class="pdf-check-title"><strong>PDF原稿確認</strong><span class="muted-note">左のPDFページを選ぶと、元ページを画像のように表示します。</span></div>
-    <div id="pdfCurrent" class="pdf-current"><div class="pdf-current-head"><strong>PDF未選択</strong><span class="muted">左からPDFを選択できます</span></div></div>
+   <section class="pdf-check-section" id="pdfCheckSection">
+    <div class="pdf-check-title">
+      <strong>PDF原稿確認</strong>
+      <span class="muted-note">左のPDFページを選ぶと、元ページを画像のように表示します。</span>
+      <span class="spacer"></span>
+      <button type="button" class="secondary pdf-fold-btn" id="togglePdfCheck" aria-expanded="true">▾ PDFを畳む</button>
+    </div>
+    <div id="pdfCheckBody">
+      <div id="pdfCurrent" class="pdf-current"><div class="pdf-current-head"><strong>PDF未選択</strong><span class="muted">左からPDFを選択できます</span></div></div>
+    </div>
    </section>
    <p class="muted-note">※ テスト編集はできますが、本番保存・共有更新は行いません。再読み込みで破棄されます。</p>
   </section>
@@ -1587,6 +1602,17 @@ async function renderPdfPageCanvas(x){
    if(frame)frame.innerHTML=`<div class="pdf-render-status">このページの描画に失敗しました。</div>`;
  }
 }
+
+
+const pdfCheckSection=q("#pdfCheckSection"),pdfCheckBody=q("#pdfCheckBody"),togglePdfCheck=q("#togglePdfCheck");
+function setPdfCheckCollapsed(collapsed){
+ if(!pdfCheckSection||!pdfCheckBody||!togglePdfCheck)return;
+ pdfCheckBody.hidden=!!collapsed;
+ pdfCheckSection.classList.toggle("is-collapsed",!!collapsed);
+ togglePdfCheck.setAttribute("aria-expanded",collapsed?"false":"true");
+ togglePdfCheck.textContent=collapsed?"▸ PDFを開く":"▾ PDFを畳む";
+}
+togglePdfCheck?.addEventListener("click",()=>setPdfCheckCollapsed(!pdfCheckBody.hidden));
 
 q("#pickPdf").onclick=()=>q("#pdfFile").click();
 q("#pdfFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)readPdf(f)};
