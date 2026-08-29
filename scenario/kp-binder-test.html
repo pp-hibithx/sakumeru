@@ -596,7 +596,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">共有実験版 v30 — 開示画像共有対応<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
+ <div class="test-banner">共有実験版 v31 — 共有画像圧縮＋失敗時ロールバック<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -1510,15 +1510,36 @@ function testSharePayload(){return {kind:"kp-live-share",title:(b.scenarioTitle|
 function testShareUrl(){return shareTest.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(shareTest.shareId)}&type=kp-live`:""}
 function renderTestShareBar(){const u=testShareUrl(),inp=q("#testShareUrl"),op=q("#openTestShare");if(inp)inp.value=u;if(op){op.href=u||"#";op.hidden=!u}}
 async function syncTestShare(){if(!shareTest.shareId)throw new Error("先に共有URLを作成してください。");await TRPG39Cloud.updateSharedPage(shareTest.shareId,testSharePayload());renderTestShareBar()}
-function revealSnapshot(section){
+async function compressShareImage(src){
+ src=String(src||"");
+ if(!src.startsWith("data:image/"))return src;
+ return await new Promise(resolve=>{
+   const img=new Image();
+   img.onload=()=>{
+     try{
+       const max=1600,scale=Math.min(1,max/Math.max(img.naturalWidth||1,img.naturalHeight||1));
+       const w=Math.max(1,Math.round((img.naturalWidth||1)*scale)),h=Math.max(1,Math.round((img.naturalHeight||1)*scale));
+       const c=document.createElement("canvas");c.width=w;c.height=h;
+       c.getContext("2d").drawImage(img,0,0,w,h);
+       const out=c.toDataURL("image/webp",0.84);
+       resolve(out&&out.length<src.length?out:src);
+     }catch(_){resolve(src)}
+   };
+   img.onerror=()=>resolve(src);
+   img.src=src;
+ });
+}
+async function revealSnapshot(section){
  const id=section.dataset.blockId||crypto.randomUUID();
  const title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
  const body=section.querySelector(".kp-special-body")?.innerHTML||"";
  const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
- const images=[...section.querySelectorAll(".image-grid img, img[data-full-image]")]
+ const raw=[...section.querySelectorAll(".image-grid img, img[data-full-image]")]
    .map(img=>img.getAttribute("src")||"")
    .filter(Boolean)
    .filter((src,i,a)=>a.indexOf(src)===i);
+ const images=[];
+ for(const src of raw)images.push(await compressShareImage(src));
  return {id,title,target,body,images,revealedAt:new Date().toISOString()};
 }
 function setRevealAction(section){
@@ -1542,7 +1563,39 @@ function refreshRevealActions(){
 }
 q("#makeTestShare").onclick=async()=>{const st=q("#testShareStatus");try{if(!window.TRPG39Cloud)throw new Error("共有機能を読み込めませんでした。");if(!shareTest.shareId)shareTest.shareId=await TRPG39Cloud.createSharedPage(testSharePayload());else await syncTestShare();renderTestShareBar();st.textContent="テスト用セッション共有URLを作成しました。開示情報の「開示する」でこのURLへ反映されます。"}catch(e){st.textContent=e.message||String(e)}};
 q("#copyTestShare").onclick=async()=>{const u=testShareUrl();if(!u)return;q("#testShareStatus").textContent="共有URLをコピーしました。";await navigator.clipboard.writeText(u)};
-q("#manuscript").addEventListener("click",async e=>{const open=e.target.closest("[data-share-open]"),upd=e.target.closest("[data-share-update]"),wd=e.target.closest("[data-share-withdraw]");if(!open&&!upd&&!wd)return;e.preventDefault();const section=e.target.closest('.kp-special[data-kind="reveal"]');if(!section)return;const id=section.dataset.blockId,st=q("#testShareStatus");try{if(!shareTest.shareId)throw new Error("先に「共有URLを作成」を押してください。");if(open){const snap=revealSnapshot(section);if(!confirm(`「${snap.title}」をテスト共有しますか？`))return;shareTest.items.push(snap);await syncTestShare();st.textContent=`「${snap.title}」を共有しました。`}else if(upd){const old=shareTest.items.find(x=>x.id===id);if(!old)return;const snap=revealSnapshot(section);snap.revealedAt=old.revealedAt;snap.updatedAt=new Date().toISOString();Object.assign(old,snap);await syncTestShare();st.textContent=`「${snap.title}」の共有内容を更新しました。`}else if(wd){const old=shareTest.items.find(x=>x.id===id);if(!old)return;if(!confirm(`「${old.title}」をテスト共有から削除しますか？`))return;shareTest.items=shareTest.items.filter(x=>x.id!==id);await syncTestShare();st.textContent=`「${old.title}」を共有から削除しました。`}setRevealAction(section)}catch(err){st.textContent=err.message||String(err)}});
+q("#manuscript").addEventListener("click",async e=>{
+ const open=e.target.closest("[data-share-open]"),upd=e.target.closest("[data-share-update]"),wd=e.target.closest("[data-share-withdraw]");if(!open&&!upd&&!wd)return;
+ e.preventDefault();const section=e.target.closest('.kp-special[data-kind="reveal"]');if(!section)return;
+ const id=section.dataset.blockId,st=q("#testShareStatus");
+ try{
+   if(!shareTest.shareId)throw new Error("先に「共有URLを作成」を押してください。");
+   if(open){
+     st.textContent="開示データを準備中…画像がある場合は共有用に圧縮します。";
+     const snap=await revealSnapshot(section);
+     if(!confirm(`「${snap.title}」をテスト共有しますか？`))return;
+     shareTest.items.push(snap);
+     try{await syncTestShare()}catch(err){shareTest.items=shareTest.items.filter(x=>x!==snap);throw err}
+     st.textContent=`「${snap.title}」を共有しました。`;
+   }else if(upd){
+     const old=shareTest.items.find(x=>x.id===id);if(!old)return;
+     st.textContent="共有内容を準備中…画像がある場合は共有用に圧縮します。";
+     const snap=await revealSnapshot(section);snap.revealedAt=old.revealedAt;snap.updatedAt=new Date().toISOString();
+     const backup={...old,images:[...(old.images||[])]};Object.assign(old,snap);
+     try{await syncTestShare()}catch(err){Object.keys(old).forEach(k=>delete old[k]);Object.assign(old,backup);throw err}
+     st.textContent=`「${snap.title}」の共有内容を更新しました。`;
+   }else if(wd){
+     const old=shareTest.items.find(x=>x.id===id);if(!old)return;if(!confirm(`「${old.title}」をテスト共有から削除しますか？`))return;
+     const before=[...shareTest.items];shareTest.items=shareTest.items.filter(x=>x.id!==id);
+     try{await syncTestShare()}catch(err){shareTest.items=before;throw err}
+     st.textContent=`「${old.title}」を共有から削除しました。`;
+   }
+   setRevealAction(section);
+ }catch(err){
+   console.error("共有エラー",err);
+   st.textContent=`共有できませんでした：${err?.message||String(err)}`;
+   setRevealAction(section);
+ }
+});
 renderTestShareBar();
 
 async function readPdf(file){
