@@ -583,10 +583,20 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .pdf-check-section.is-collapsed{padding-bottom:0}
 .pdf-check-section.is-collapsed .pdf-check-title{margin-bottom:0}
 
+
+/* v25: isolated session-share experiment */
+.share-test-panel{max-width:900px;margin:18px auto 0;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.share-test-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.share-test-actions{display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;gap:8px;margin-top:10px;align-items:center}
+.share-test-actions input{width:100%;min-width:0}
+.kp-special-action .share-update-btn,.kp-special-action .share-withdraw-btn{margin-left:6px}
+.shared-badge{font-size:12px;font-weight:800;margin-right:3px}
+@media(max-width:820px){.share-test-actions{grid-template-columns:1fr}.share-test-actions input{width:100%}}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v24 — PDF原稿確認 折りたたみ対応<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">共有実験版 v25 — セッション共有接続テスト<small>既存KPバインダーの本文はコピー編集のままです。この実験版では、開示情報だけをテスト用セッション共有URLへ送信できます。本番KPバインダー本文は上書きしません。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -602,7 +612,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 <span class="element-tools-help">本文の追加・装飾はエディタ上部のツールバーから行います。</span>
 <button type="button" class="secondary" id="resetCopy">↶ コピーを元に戻す</button>
 </div>
-   <section class="pdf-check-section" id="pdfCheckSection">
+   <section class="share-test-panel" id="shareTestPanel">
+  <div class="share-test-head"><div><strong>セッション共有テスト</strong><div class="muted-note">この実験版専用の共有URLです。開示情報だけが送信されます。</div></div></div>
+  <div class="share-test-actions"><button type="button" id="makeTestShare">共有URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共有URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共有ページを開く</a></div>
+  <div class="muted-note" id="testShareStatus">まず共有URLを作成してください。作成後、本文内の「開示する」から反映テストできます。</div>
+</section>
+<section class="pdf-check-section" id="pdfCheckSection">
     <div class="pdf-check-title">
       <strong>PDF原稿確認</strong>
       <span class="muted-note">左のPDFページを選ぶと、元ページを画像のように表示します。</span>
@@ -613,12 +628,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
       <div id="pdfCurrent" class="pdf-current"><div class="pdf-current-head"><strong>PDF未選択</strong><span class="muted">左からPDFを選択できます</span></div></div>
     </div>
    </section>
-   <p class="muted-note">※ テスト編集はできますが、本番保存・共有更新は行いません。再読み込みで破棄されます。</p>
+   <p class="muted-note">※ 本文編集はコピーのままです。共有操作だけがクラウド上のテスト共有ページへ反映されます。</p>
   </section>
  </div>
 </main>
 <div data-site-footer></div>
-<script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
+<script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
 <script>
 const q=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const params=new URLSearchParams(location.search);
@@ -654,6 +669,7 @@ if(!b.pages.length && new URLSearchParams(location.search).get("preview")==="1")
  b={pages:[{id:"demo1",title:"導入",blocks:[{kind:"heading",title:"依頼の始まり",body:""},{kind:"normal",title:"",body:"<p>依頼人から事情を聞く。ここは通常本文の段落です。</p>"},{kind:"memo",title:"KPメモ",body:"<p>ここで聞き耳を振らせてもよい。</p>"},{kind:"reveal",title:"部屋の様子",target:"全員",body:"<p>机の上に古い手紙が置かれている。</p>",revealed:true},{kind:"secret",title:"HO1のみ",target:"HO1",body:"<p>あなたには筆跡に見覚えがある。</p>"}],images:[]}]} }
 const FLOW_LABEL={heading:"小見出し",normal:"段落",memo:"KPメモ",rp:"RP",reveal:"開示情報",secret:"秘匿",note:"進行メモ",image:"画像"};
 let active=b.pages[0]?.id||"",pdfPages=[],activePdf=-1,pdfDoc=null,pdfRenderToken=0;
+const shareTest={shareId:"",sessionId:(crypto.randomUUID?.()||String(Date.now())),startedAt:new Date().toISOString(),items:[]};
 function plain(html){const d=document.createElement("div");d.innerHTML=html||"";return (d.textContent||"").replace(/\s+/g," ").trim()}
 function chars(x){return (x?.title||"").length+plain(x?.body||"").length}
 function sceneChars(p){return (p?.blocks||[]).reduce((n,x)=>n+chars(x),0)}
@@ -677,8 +693,9 @@ function blocksToArticle(p){
    if(kind==="normal")return x.body||"<p><br></p>";
    if(kind==="image"&&x.image)return `<div class="image-grid" data-image-grid contenteditable="false"><figure draggable="true" data-img-item contenteditable="false"><button type="button" class="img-remove" contenteditable="false">×</button><img src="${x.image}" alt="" data-full-image><figcaption contenteditable="true" spellcheck="false"></figcaption></figure><div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`;
    const label=FLOW_LABEL[kind]||kind;
-   const action=kind==="reveal"?`<div class="kp-special-action" contenteditable="false"><button type="button" disabled>${x.revealed?"✓ 元データでは共有済み":"開示する"}</button></div>`:"";
-   return `<section class="kp-special" data-kind="${esc(kind)}">
+   const blockId=x.id||crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);x.id=blockId;
+   const action=kind==="reveal"?`<div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">開示する</button></div>`:"";
+   return `<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}">
      <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${x.target?`<span>対象：${esc(x.target)}</span>`:""}</div>
      ${x.title?`<div class="kp-special-title">${esc(x.title)}</div>`:""}
      <div class="kp-special-body">${x.body||"<p><br></p>"}</div>
@@ -1472,6 +1489,19 @@ q("#insertBgm").onclick=()=>{
    input.click();
  };
 }
+
+function testSharePayload(){return {kind:"kp-live-share",title:(b.scenarioTitle||q("#scenarioName")?.textContent||"セッション共有").replace(/\s*／.*$/,""),scenarioId:String(sid||""),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,updatedAt:new Date().toISOString(),items:[...shareTest.items].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}}
+function testShareUrl(){return shareTest.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(shareTest.shareId)}&type=kp-live`:""}
+function renderTestShareBar(){const u=testShareUrl(),inp=q("#testShareUrl"),op=q("#openTestShare");if(inp)inp.value=u;if(op){op.href=u||"#";op.hidden=!u}}
+async function syncTestShare(){if(!shareTest.shareId)throw new Error("先に共有URLを作成してください。");await TRPG39Cloud.updateSharedPage(shareTest.shareId,testSharePayload());renderTestShareBar()}
+function revealSnapshot(section){const id=section.dataset.blockId||crypto.randomUUID();const title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";const body=section.querySelector(".kp-special-body")?.innerHTML||"";const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";return {id,title,target,body,images:[],revealedAt:new Date().toISOString()}}
+function setRevealAction(section){const id=section.dataset.blockId,item=shareTest.items.find(x=>x.id===id),host=section.querySelector(".kp-special-action");if(!host)return;host.innerHTML=item?`<span class="shared-badge">✓ 共有済み</span><button type="button" class="share-update-btn" data-share-update="${esc(id)}">↻ 共有内容を更新</button><button type="button" class="secondary share-withdraw-btn" data-share-withdraw="${esc(id)}">共有から削除</button>`:`<button type="button" data-share-open="${esc(id)}">開示する</button>`}
+function refreshRevealActions(){q("#blogEditor")?.querySelectorAll('.kp-special[data-kind="reveal"]').forEach(setRevealAction)}
+q("#makeTestShare").onclick=async()=>{const st=q("#testShareStatus");try{if(!window.TRPG39Cloud)throw new Error("共有機能を読み込めませんでした。");if(!shareTest.shareId)shareTest.shareId=await TRPG39Cloud.createSharedPage(testSharePayload());else await syncTestShare();renderTestShareBar();st.textContent="テスト用セッション共有URLを作成しました。開示情報の「開示する」でこのURLへ反映されます。"}catch(e){st.textContent=e.message||String(e)}};
+q("#copyTestShare").onclick=async()=>{const u=testShareUrl();if(!u)return;q("#testShareStatus").textContent="共有URLをコピーしました。";await navigator.clipboard.writeText(u)};
+q("#manuscript").addEventListener("click",async e=>{const open=e.target.closest("[data-share-open]"),upd=e.target.closest("[data-share-update]"),wd=e.target.closest("[data-share-withdraw]");if(!open&&!upd&&!wd)return;e.preventDefault();const section=e.target.closest('.kp-special[data-kind="reveal"]');if(!section)return;const id=section.dataset.blockId,st=q("#testShareStatus");try{if(!shareTest.shareId)throw new Error("先に「共有URLを作成」を押してください。");if(open){const snap=revealSnapshot(section);if(!confirm(`「${snap.title}」をテスト共有しますか？`))return;shareTest.items.push(snap);await syncTestShare();st.textContent=`「${snap.title}」を共有しました。`}else if(upd){const old=shareTest.items.find(x=>x.id===id);if(!old)return;const snap=revealSnapshot(section);snap.revealedAt=old.revealedAt;snap.updatedAt=new Date().toISOString();Object.assign(old,snap);await syncTestShare();st.textContent=`「${snap.title}」の共有内容を更新しました。`}else if(wd){const old=shareTest.items.find(x=>x.id===id);if(!old)return;if(!confirm(`「${old.title}」をテスト共有から削除しますか？`))return;shareTest.items=shareTest.items.filter(x=>x.id!==id);await syncTestShare();st.textContent=`「${old.title}」を共有から削除しました。`}setRevealAction(section)}catch(err){st.textContent=err.message||String(err)}});
+renderTestShareBar();
+
 async function readPdf(file){
  const st=q("#pdfStatus");
  st.textContent="PDFを読み込み中…";
