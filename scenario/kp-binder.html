@@ -613,7 +613,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 <main class="kptest">
  <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
- <nav class="kp-prod-tabs"><button type="button" class="kp-prod-tab active" data-tab="session">シナリオ進行</button><button type="button" class="kp-prod-tab" data-tab="pc">参加PC・技能</button></nav>
+ <nav class="kp-prod-tabs"><button type="button" class="kp-prod-tab active" data-tab="session">シナリオ進行</button><button type="button" class="kp-prod-tab" data-tab="pc">陣・参加者</button></nav>
  <section class="kp-prod-pane" data-pane="session">
  <div class="layout">
   <aside class="side">
@@ -629,10 +629,10 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 <span class="element-tools-help" id="saveStatus">編集内容はこのKP BINDERへ自動保存されます。</span>
 </div>
    <section class="share-test-panel" id="shareTestPanel">
-  <div class="share-test-head"><div><strong>セッション共有</strong><div class="muted-note">共有URLはセッション単位です。新しいセッションを始めると、前のURLはその時点の内容で残ります。</div></div><button type="button" class="secondary" id="newShareSession">＋ 新しい共有セッション</button></div>
-  <div class="share-test-actions"><button type="button" id="makeTestShare">共有URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共有URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共有ページを開く</a></div>
-  <div class="muted-note" id="testShareStatus">共有URLを作成後、本文内の「開示する」から反映できます。</div>
-  <details class="share-history"><summary>過去の共有セッション</summary><div id="shareSessionHistory" class="muted-note"></div></details>
+  <div class="share-test-head"><div><strong>この陣の共有</strong><div class="muted-note">共通URLはHO未定でも使えます。PLを追加するとPL専用URLを発行でき、HO決定後は同じURLへ該当HOの開示情報が届きます。</div></div><button type="button" class="secondary" id="newShareSession">＋ 新しい陣</button></div>
+  <div class="share-test-actions"><button type="button" id="makeTestShare">共通URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共通URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共通ページを開く</a></div>
+  <div class="muted-note" id="testShareStatus">共通URLには「全員」向けの開示情報だけが表示されます。</div>
+  <details class="share-history"><summary>過去の陣</summary><div id="shareSessionHistory" class="muted-note"></div></details>
 </section>
 <section class="pdf-check-section" id="pdfCheckSection">
     <div class="pdf-check-title">
@@ -651,10 +651,10 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
  </section>
  <section class="kp-prod-pane" data-pane="pc" hidden>
    <section class="box pc-prod-box">
-     <div class="pc-prod-actions"><div style="flex:1"><h2 style="margin:0">参加PC管理</h2><div class="muted-note">参加PCと技能値はこれまでのKP BINDERデータをそのまま利用します。</div></div><select id="pcSelect"><option value="">PCを選択…</option></select><button type="button" id="addPc">追加</button></div>
-     <div id="participants"></div>
+     <div class="pc-prod-actions"><div style="flex:1"><h2 style="margin:0">陣・参加者</h2><div class="muted-note">まずPLを登録して専用URLを発行できます。HOとPCは後から設定できます。</div></div><input id="plName" placeholder="PL名" style="max-width:220px"><button type="button" id="addPl">＋ PL追加</button></div>
+     <div id="shareParticipants"></div>
    </section>
-   <section class="box pc-prod-box"><h2>技能比較</h2><div id="compare" style="overflow:auto"></div></section>
+   <section class="box pc-prod-box"><h2>技能比較</h2><div class="muted-note">PC・キャラシURL連携後、この陣の技能を比較します。</div><div id="compare" style="overflow:auto"></div></section>
  </section>
 </main>
 <div data-site-footer></div>
@@ -709,10 +709,11 @@ let active=b.pages[0]?.id||"",pdfPages=[],activePdf=-1,pdfDoc=null,pdfRenderToke
 function currentShare(){
  if(!b.currentShareSession)return null;
  b.currentShareSession.items??=[];
+ b.currentShareSession.participants??=[];
  return b.currentShareSession;
 }
 function freshShareSession(){
- return {shareId:"",sessionId:(crypto.randomUUID?.()||String(Date.now())),startedAt:new Date().toISOString(),items:[]};
+ return {shareId:"",sessionId:(crypto.randomUUID?.()||String(Date.now())),startedAt:new Date().toISOString(),items:[],participants:[]};
 }
 if(!b.currentShareSession)b.currentShareSession=freshShareSession();
 let shareTest=b.currentShareSession;
@@ -1609,11 +1610,20 @@ q("#insertBgm").onclick=()=>{
  };
 }
 
-function testSharePayload(){
- shareTest=currentShare()||shareTest;
- return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,updatedAt:new Date().toISOString(),items:[...(shareTest.items||[])].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
+function targetMatches(itemTarget,ho){
+ const t=String(itemTarget||"全員").trim();
+ if(t==="全員")return true;
+ if(!ho)return false;
+ return t.split(/[、,／\/・\s]+/).filter(Boolean).includes(String(ho).trim());
 }
-function testShareUrl(){shareTest=currentShare()||shareTest;return shareTest?.shareId?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(shareTest.shareId)}&type=kp-live`:""}
+function sharePayloadFor(participant=null){
+ shareTest=currentShare()||shareTest;
+ const items=(shareTest.items||[]).filter(x=>participant?targetMatches(x.target,participant.ho):String(x.target||"全員").trim()==="全員");
+ return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
+}
+function testSharePayload(){return sharePayloadFor(null)}
+function shareUrlById(id){return id?`https://sakumeru-share.sakumeru.workers.dev/?id=${encodeURIComponent(id)}&type=kp-live`:""}
+function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
  const arr=b.shareSessions||[];
@@ -1627,9 +1637,12 @@ function renderTestShareBar(){
 }
 async function syncTestShare(){
  shareTest=currentShare()||shareTest;
- if(!shareTest?.shareId)throw new Error("先に共有URLを作成してください。");
- await TRPG39Cloud.updateSharedPage(shareTest.shareId,testSharePayload());
- save();renderTestShareBar()
+ if(!shareTest?.shareId)throw new Error("先に共通URLを作成してください。");
+ await TRPG39Cloud.updateSharedPage(shareTest.shareId,sharePayloadFor(null));
+ for(const p of (shareTest.participants||[])){
+   if(p.shareId)await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));
+ }
+ save();renderTestShareBar();renderShareParticipants();
 }
 async function compressShareImage(src){
  src=String(src||"");
@@ -1712,6 +1725,44 @@ function refreshRevealActions(){
    setRevealAction(section);
  });
 }
+function renderShareParticipants(){
+ shareTest=currentShare()||shareTest;
+ const host=q("#shareParticipants");if(!host)return;
+ const ps=shareTest.participants||[];
+ if(!ps.length){host.innerHTML='<div class="muted-note" style="margin-top:12px">参加PLはまだ登録されていません。</div>';return}
+ host.innerHTML=ps.map((p,i)=>{
+   const u=shareUrlById(p.shareId);
+   return `<div class="kp2-person" data-pl-row="${i}">
+    <div class="kp2-actions" style="justify-content:space-between;align-items:center"><b>${esc(p.name||"PL")}</b><button type="button" class="danger" data-pl-remove="${i}">削除</button></div>
+    <div class="kp2-pcgrid">
+      <label>HO<input data-pl-ho="${i}" value="${esc(p.ho||"")}" placeholder="未定 / HO1 など"></label>
+      <label>PC名<input data-pl-pc="${i}" value="${esc(p.pcName||"")}" placeholder="未定"></label>
+    </div>
+    <label style="display:block;margin-top:8px">キャラシURL<input data-pl-sheet="${i}" value="${esc(p.sheetUrl||"")}" placeholder="PC決定後に登録"></label>
+    <div class="share-test-actions" style="margin-top:8px"><button type="button" data-pl-make="${i}">${p.shareId?"専用URLを更新":"専用URLを発行"}</button><input readonly value="${esc(u)}" placeholder="まだ専用URLはありません"><button type="button" class="secondary" data-pl-copy="${i}" ${u?"":"disabled"}>コピー</button>${u?`<a class="button secondary" href="${esc(u)}" target="_blank" rel="noopener">開く</a>`:""}</div>
+   </div>`
+ }).join("");
+}
+q("#addPl").onclick=()=>{
+ shareTest=currentShare()||shareTest;const inp=q("#plName"),name=String(inp.value||"").trim();if(!name)return;
+ shareTest.participants??=[];shareTest.participants.push({id:crypto.randomUUID?.()||String(Date.now()),name,ho:"",pcName:"",sheetUrl:"",shareId:""});inp.value="";saveNow();renderShareParticipants();
+};
+q("#shareParticipants").addEventListener("input",e=>{
+ shareTest=currentShare()||shareTest;const el=e.target;let i=-1,key="";
+ if(el.matches("[data-pl-ho]")){i=+el.dataset.plHo;key="ho"}
+ else if(el.matches("[data-pl-pc]")){i=+el.dataset.plPc;key="pcName"}
+ else if(el.matches("[data-pl-sheet]")){i=+el.dataset.plSheet;key="sheetUrl"}
+ if(i<0||!key||!shareTest.participants?.[i])return;shareTest.participants[i][key]=el.value;save();
+});
+q("#shareParticipants").addEventListener("change",async e=>{
+ if(!e.target.matches("[data-pl-ho]"))return;shareTest=currentShare()||shareTest;const p=shareTest.participants?.[+e.target.dataset.plHo];if(p?.shareId){try{await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));q("#testShareStatus").textContent=`${p.name}さんのHO設定を共有先へ反映しました。`}catch(err){q("#testShareStatus").textContent=`HO設定を反映できませんでした：${err?.message||err}`}}
+});
+q("#shareParticipants").addEventListener("click",async e=>{
+ shareTest=currentShare()||shareTest;const make=e.target.closest("[data-pl-make]"),copy=e.target.closest("[data-pl-copy]"),rem=e.target.closest("[data-pl-remove]");
+ if(rem){const i=+rem.dataset.plRemove,p=shareTest.participants?.[i];if(p&&confirm(`${p.name}さんをこの陣から削除しますか？`)){shareTest.participants.splice(i,1);saveNow();renderShareParticipants()}return}
+ if(make){const p=shareTest.participants?.[+make.dataset.plMake];if(!p)return;try{if(!window.TRPG39Cloud)throw new Error("共有機能を読み込めませんでした。");if(!p.shareId)p.shareId=await TRPG39Cloud.createSharedPage(sharePayloadFor(p));else await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));saveNow();renderShareParticipants();q("#testShareStatus").textContent=`${p.name}さんの専用URLを用意しました。`}catch(err){q("#testShareStatus").textContent=`専用URLを作成できませんでした：${err?.message||err}`}return}
+ if(copy){const p=shareTest.participants?.[+copy.dataset.plCopy],u=shareUrlById(p?.shareId);if(u){await navigator.clipboard.writeText(u);q("#testShareStatus").textContent=`${p.name}さんの専用URLをコピーしました。`}}
+});
 q("#makeTestShare").onclick=async()=>{
  const st=q("#testShareStatus");
  try{
@@ -1719,27 +1770,27 @@ q("#makeTestShare").onclick=async()=>{
    shareTest=currentShare()||shareTest;
    if(!shareTest.shareId){shareTest.shareId=await TRPG39Cloud.createSharedPage(testSharePayload());saveNow()}
    else await syncTestShare();
-   renderTestShareBar();st.textContent="このセッションの共有URLを用意しました。";
+   renderTestShareBar();st.textContent="この陣の共通URLを用意しました。";
  }catch(e){st.textContent=e.message||String(e)}
 };
 q("#newShareSession").onclick=()=>{
  shareTest=currentShare()||shareTest;
  const hasCurrent=!!shareTest?.shareId;
- if(hasCurrent&&!confirm("現在の共有URLをこの時点で残し、新しいセッション共有URLを開始しますか？"))return;
+ if(hasCurrent&&!confirm("現在の陣をこの時点で残し、新しい陣を開始しますか？"))return;
  if(hasCurrent){
    b.shareSessions.push({...shareTest,endedAt:new Date().toISOString(),items:[...(shareTest.items||[])]});
  }
  b.currentShareSession=freshShareSession();shareTest=b.currentShareSession;saveNow();renderTestShareBar();
- q("#testShareStatus").textContent="新しい共有セッションを開始しました。「共有URLを作成」を押してください。";
+ q("#testShareStatus").textContent="新しい陣を開始しました。「共通URLを作成」を押してください。";
 };
-q("#copyTestShare").onclick=async()=>{const u=testShareUrl();if(!u)return;await navigator.clipboard.writeText(u);q("#testShareStatus").textContent="共有URLをコピーしました。"};
+q("#copyTestShare").onclick=async()=>{const u=testShareUrl();if(!u)return;await navigator.clipboard.writeText(u);q("#testShareStatus").textContent="共通URLをコピーしました。"};
 q("#manuscript").addEventListener("click",async e=>{
  const open=e.target.closest("[data-share-open]"),upd=e.target.closest("[data-share-update]"),wd=e.target.closest("[data-share-withdraw]");if(!open&&!upd&&!wd)return;
  e.preventDefault();const section=e.target.closest('.kp-special[data-kind="reveal"]');if(!section)return;
  shareTest=currentShare()||shareTest;
  const id=section.dataset.blockId,st=q("#testShareStatus");
  try{
-   if(!shareTest?.shareId)throw new Error("先に「共有URLを作成」を押してください。");
+   if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");
    if(open){
      st.textContent="開示データを準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
@@ -1766,7 +1817,7 @@ q("#manuscript").addEventListener("click",async e=>{
    console.error("共有エラー",err);st.textContent=`共有できませんでした：${err?.message||String(err)}`;setRevealAction(section);
  }
 });
-renderTestShareBar();
+renderTestShareBar();renderShareParticipants();
 
 async function readPdf(file){
  const st=q("#pdfStatus");
@@ -1920,7 +1971,7 @@ document.querySelectorAll(".kp-prod-tab").forEach(t=>t.onclick=()=>{
 });
 
 const pcs=window.TRPG39?.loadPCs?.()||[];
-q("#pcSelect").innerHTML='<option value="">PCを選択…</option>'+pcs.map(x=>`<option value="${esc(x.id)}">${esc(x.name||"PC")}</option>`).join("");
+if(q("#pcSelect"))q("#pcSelect").innerHTML='<option value="">PCを選択…</option>'+pcs.map(x=>`<option value="${esc(x.id)}">${esc(x.name||"PC")}</option>`).join("");
 function parseSkills(t){const m={};String(t||"").split(/\\n/).forEach(l=>{const x=l.match(/^\\s*([^:：]+)[:：]\\s*(\\d+)/);if(x)m[x[1].trim()]=+x[2]});return m}
 function renderPC(){
  q("#participants").innerHTML=b.participants.length?b.participants.map((p,i)=>`<div class="kp2-person"><div class="kp2-actions" style="justify-content:space-between"><b>${esc(p.name||"PC")}</b><button type="button" class="danger" data-prm="${i}">削除</button></div><div class="kp2-pcgrid"><label>能力値・主要数値<textarea data-ab="${i}">${esc(p.abilities||"")}</textarea></label><label>技能値（技能名：値）<textarea data-sk="${i}">${esc(p.skills||"")}</textarea></label></div></div>`).join(""):'<div class="muted-note">参加PCはまだ登録されていません。</div>';
@@ -1933,7 +1984,7 @@ function renderCompare(){
  const maps=b.participants.map(x=>parseSkills(x.skills)),names=[...new Set(maps.flatMap(x=>Object.keys(x)))].sort((a,z)=>a.localeCompare(z,"ja"));
  q("#compare").innerHTML=names.length?`<table><thead><tr><th>技能</th>${b.participants.map(x=>`<th>${esc(x.name||"PC")}</th>`).join("")}</tr></thead><tbody>${names.map(n=>`<tr><td>${esc(n)}</td>${maps.map(m=>`<td>${m[n]??"—"}</td>`).join("")}</tr>`).join("")}</tbody></table>`:'<div class="muted-note">技能値を入力すると比較できます。</div>';
 }
-q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find(v=>String(v.id)===String(id));if(!x)return;if(b.participants.some(v=>String(v.pcId)===String(id)))return alert("追加済みです。");b.participants.push({pcId:id,name:x.name||"",abilities:"",skills:""});save();renderPC()};
+if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find(v=>String(v.id)===String(id));if(!x)return;if(b.participants.some(v=>String(v.pcId)===String(id)))return alert("追加済みです。");b.participants.push({pcId:id,name:x.name||"",abilities:"",skills:""});save();renderPC()};
 renderPC();
 renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
