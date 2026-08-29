@@ -102,7 +102,8 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .rich-toolbar button:hover{border-color:var(--accent)}
 .rich-toolbar input[type="color"]{width:32px;height:30px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .rich-toolbar .tb-label{font-size:11px;color:var(--muted);font-weight:700}
-.blog-editor{min-height:560px;padding:24px 26px;background:var(--bg);line-height:1.85;outline:none;font-size:15px}
+.blog-editor{
+  padding-left:42px!important;min-height:560px;padding:24px 26px;background:var(--bg);line-height:1.85;outline:none;font-size:15px}
 .blog-editor:focus{box-shadow:inset 0 0 0 1px var(--accent)}
 .blog-editor h2{font-size:24px;margin:1.4em 0 .55em}
 .blog-editor h3{font-size:19px;margin:1.25em 0 .45em}
@@ -528,10 +529,42 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .blog-editor > .sm-block.sm-drop-before::before{top:-5px}
 .blog-editor > .sm-block.sm-drop-after::after{bottom:-5px}
 
+
+/* v22: handles beside content + sticky rich toolbar */
+.rich-toolbar{
+  position:sticky!important;
+  top:0!important;
+  z-index:120!important;
+  background:var(--panel)!important;
+  border-bottom:1px solid var(--line)!important;
+  box-shadow:0 6px 14px rgba(0,0,0,.18)!important;
+}
+.blog-shell{
+  position:relative!important;
+}
+.blog-editor{
+  position:relative!important;
+}
+.block-handle-layer{
+  position:absolute!important;
+  inset:0!important;
+  z-index:60!important;
+  pointer-events:none!important;
+  overflow:visible!important;
+}
+.block-handle-layer .sm-drag-handle{
+  pointer-events:auto!important;
+  opacity:.72!important;
+}
+.block-handle-layer .sm-drag-handle:hover,
+.block-handle-layer .sm-drag-handle.active{
+  opacity:1!important;
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v21 — 外付けドラッグハンドル修正版<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v22 — ハンドル寄せ＋固定ツールバー<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -799,8 +832,8 @@ function renderEditor(){
        h.textContent="⋮⋮";
        h.title="ここをつかんでブロックを移動";
        h.setAttribute("aria-label","ブロックを移動");
-       h.style.left=`${edRect.left-shellRect.left-34}px`;
-       h.style.top=`${r.top-shellRect.top+Math.min(6,Math.max(0,r.height/2-15))}px`;
+       h.style.left=`${edRect.left-shellRect.left+6}px`;
+       h.style.top=`${r.top-shellRect.top+Math.min(8,Math.max(2,r.height/2-15))}px`;
        h._smBlock=block;
        h.addEventListener("mousedown",startPointerBlockDrag);
        handleLayer.appendChild(h);
