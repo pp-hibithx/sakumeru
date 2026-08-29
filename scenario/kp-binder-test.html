@@ -561,18 +561,31 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   opacity:1!important;
 }
 
+
+/* v23: PDF original-page visual check */
+.pdf-check-section{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.pdf-check-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.pdf-current{margin-bottom:0}
+.pdf-original-wrap{padding:12px;border-top:1px solid var(--line);background:var(--bg)}
+.pdf-original-label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+.pdf-original-label .spacer{flex:1}
+.pdf-canvas-frame{display:flex;justify-content:center;align-items:flex-start;overflow:auto;max-height:72vh;padding:10px;border:1px solid var(--line);border-radius:9px;background:#7772}
+.pdf-page-canvas{display:block;max-width:100%;height:auto;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.22)}
+.pdf-render-status{padding:24px;text-align:center;color:var(--muted)}
+.pdf-viewer{border-top:1px solid var(--line)}
+@media(max-width:820px){.pdf-canvas-frame{max-height:none}.pdf-original-wrap{padding:8px}}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v22 — ハンドル寄せ＋固定ツールバー<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v23 — PDF原稿画像確認<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
    <section class="box"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3>シーン</h3><button type="button" id="addScene">＋</button></div><div id="sceneList" class="scene-list"></div></section>
-   <section class="box"><h3>PDF</h3><div class="muted-note">PDFページは左で選択。本文は中央上部で必要なときだけ開いて参照します。</div><div style="margin:8px 0"><button type="button" id="pickPdf">PDFを選択</button><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden></div><div id="pdfStatus" class="muted-note"></div><div id="pdfList" class="pdf-list"></div></section>
+   <section class="box"><h3>PDF</h3><div class="muted-note">PDFページは左で選択。選んだ原稿ページは本文の下で画像として確認できます。</div><div style="margin:8px 0"><button type="button" id="pickPdf">PDFを選択</button><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden></div><div id="pdfStatus" class="muted-note"></div><div id="pdfList" class="pdf-list"></div></section>
   </aside>
   <section class="editor">
-   <div id="pdfCurrent" class="pdf-current"><strong>PDF 未選択</strong><span class="muted">左からPDFを選択できます</span></div>
    <h2 id="sceneTitle" class="scene-title"></h2>
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
@@ -581,6 +594,10 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 <span class="element-tools-help">本文の追加・装飾はエディタ上部のツールバーから行います。</span>
 <button type="button" class="secondary" id="resetCopy">↶ コピーを元に戻す</button>
 </div>
+   <section class="pdf-check-section">
+    <div class="pdf-check-title"><strong>PDF原稿確認</strong><span class="muted-note">左のPDFページを選ぶと、元ページを画像のように表示します。</span></div>
+    <div id="pdfCurrent" class="pdf-current"><div class="pdf-current-head"><strong>PDF未選択</strong><span class="muted">左からPDFを選択できます</span></div></div>
+   </section>
    <p class="muted-note">※ テスト編集はできますが、本番保存・共有更新は行いません。再読み込みで破棄されます。</p>
   </section>
  </div>
@@ -621,7 +638,7 @@ const originalCopy=cloneData(b);
 if(!b.pages.length && new URLSearchParams(location.search).get("preview")==="1"){
  b={pages:[{id:"demo1",title:"導入",blocks:[{kind:"heading",title:"依頼の始まり",body:""},{kind:"normal",title:"",body:"<p>依頼人から事情を聞く。ここは通常本文の段落です。</p>"},{kind:"memo",title:"KPメモ",body:"<p>ここで聞き耳を振らせてもよい。</p>"},{kind:"reveal",title:"部屋の様子",target:"全員",body:"<p>机の上に古い手紙が置かれている。</p>",revealed:true},{kind:"secret",title:"HO1のみ",target:"HO1",body:"<p>あなたには筆跡に見覚えがある。</p>"}],images:[]}]} }
 const FLOW_LABEL={heading:"小見出し",normal:"段落",memo:"KPメモ",rp:"RP",reveal:"開示情報",secret:"秘匿",note:"進行メモ",image:"画像"};
-let active=b.pages[0]?.id||"",pdfPages=[],activePdf=-1;
+let active=b.pages[0]?.id||"",pdfPages=[],activePdf=-1,pdfDoc=null,pdfRenderToken=0;
 function plain(html){const d=document.createElement("div");d.innerHTML=html||"";return (d.textContent||"").replace(/\s+/g," ").trim()}
 function chars(x){return (x?.title||"").length+plain(x?.body||"").length}
 function sceneChars(p){return (p?.blocks||[]).reduce((n,x)=>n+chars(x),0)}
@@ -1440,7 +1457,36 @@ q("#insertBgm").onclick=()=>{
    input.click();
  };
 }
-async function readPdf(file){const st=q("#pdfStatus");st.textContent="PDFを読み込み中…";pdfPages=[];activePdf=-1;q("#pdfList").innerHTML="";try{const pdfjsLib=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs");pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";const bytes=new Uint8Array(await file.arrayBuffer());const pdf=await pdfjsLib.getDocument({data:bytes}).promise;for(let n=1;n<=pdf.numPages;n++){st.textContent=`文字を抽出中… ${n}/${pdf.numPages}`;const page=await pdf.getPage(n),tc=await page.getTextContent();let text="",lastY=null;for(const item of tc.items||[]){const y=item.transform?.[5];if(lastY!==null&&y!==undefined&&Math.abs(y-lastY)>4)text+="\n";else if(text&&!text.endsWith("\n"))text+=" ";text+=item.str||"";lastY=y}pdfPages.push({page:n,text:text.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim()})}st.textContent=`${pdf.numPages}ページを読み込みました。`;activePdf=pdfPages.length?0:-1;renderPdf();renderPdfCurrent(false)}catch(e){console.error(e);st.textContent="PDFの読み込みに失敗しました。"}}
+async function readPdf(file){
+ const st=q("#pdfStatus");
+ st.textContent="PDFを読み込み中…";
+ pdfPages=[];activePdf=-1;pdfDoc=null;q("#pdfList").innerHTML="";
+ try{
+   const pdfjsLib=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs");
+   pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+   const bytes=new Uint8Array(await file.arrayBuffer());
+   pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+   for(let n=1;n<=pdfDoc.numPages;n++){
+     st.textContent=`文字を抽出中… ${n}/${pdfDoc.numPages}`;
+     const page=await pdfDoc.getPage(n),tc=await page.getTextContent();
+     let text="",lastY=null;
+     for(const item of tc.items||[]){
+       const y=item.transform?.[5];
+       if(lastY!==null&&y!==undefined&&Math.abs(y-lastY)>4)text+="\n";
+       else if(text&&!text.endsWith("\n"))text+=" ";
+       text+=item.str||"";lastY=y;
+     }
+     pdfPages.push({page:n,text:text.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim(),renderScale:1.35});
+   }
+   st.textContent=`${pdfDoc.numPages}ページを読み込みました。`;
+   activePdf=pdfPages.length?0:-1;
+   renderPdf();
+   renderPdfCurrent(false);
+ }catch(e){
+   console.error(e);pdfDoc=null;
+   st.textContent="PDFの読み込みに失敗しました。";
+ }
+}
 function renderPdf(){
  const list=q("#pdfList");
  list.innerHTML=pdfPages.map((x,i)=>`<button type="button" class="pdf-page-btn ${i===activePdf?"active":""}" data-pdf="${i}"><span>PDF p.${x.page}</span><span class="muted-note">${x.text.length.toLocaleString()}文字</span></button>`).join("");
@@ -1453,15 +1499,25 @@ function renderPdf(){
 function renderPdfCurrent(open=false){
  const host=q("#pdfCurrent");
  if(activePdf<0||!pdfPages[activePdf]){
-   host.innerHTML=`<div class="pdf-current-head"><strong>PDF未選択</strong><span class="muted">左のPDFページを選ぶとここで参照できます。</span></div>`;
+   host.innerHTML=`<div class="pdf-current-head"><strong>PDF未選択</strong><span class="muted">左のPDFページを選ぶと、ここに元ページが表示されます。</span></div>`;
    return;
  }
  const x=pdfPages[activePdf];
  host.innerHTML=`<div class="pdf-current-head">
    <strong>PDF p.${x.page}</strong>
-   <span>${x.text.length.toLocaleString()}文字</span>
+   <span>${x.text.length.toLocaleString()}文字抽出</span>
    <span class="spacer"></span>
-   <button type="button" class="secondary" id="togglePdfText">${open?"本文を閉じる":"本文を開く"}</button>
+   <button type="button" class="secondary" id="togglePdfText">${open?"抽出テキストを閉じる":"抽出テキストを開く"}</button>
+ </div>
+ <div class="pdf-original-wrap">
+   <div class="pdf-original-label">
+     <strong>原稿ページ</strong><span class="muted-note">PDFをブラウザ内で描画しています。外部変換サイトへのアップロードはありません。</span>
+     <span class="spacer"></span>
+     <button type="button" class="secondary" id="pdfZoomOut">−</button>
+     <span class="muted-note" id="pdfZoomLabel">${Math.round((x.renderScale||1.35)/1.35*100)}%</span>
+     <button type="button" class="secondary" id="pdfZoomIn">＋</button>
+   </div>
+   <div class="pdf-canvas-frame" id="pdfCanvasFrame"><div class="pdf-render-status">原稿ページを描画中…</div></div>
  </div>
  <div class="pdf-viewer" id="pdfViewer" ${open?"":"hidden"}>
    <div class="annotation-bar" aria-label="PDF注釈ツール">
@@ -1469,7 +1525,7 @@ function renderPdfCurrent(open=false){
      <button type="button" id="pdfMarker" title="選択した文字にマーカー">▰ マーカー</button>
      <button type="button" id="pdfSticky" title="選択した文字にKP用の付箋">🗒 付箋</button>
      <button type="button" id="pdfClearAnno" title="選択範囲にあるマーカー・付箋を外す">× 注釈解除</button>
-     <span class="annotation-help">文字を選択して使用</span>
+     <span class="annotation-help">抽出テキストを選択して使用</span>
    </div>
    <div class="pdf-viewer-text" id="pdfViewerText">${x.annotatedHtml||esc(x.text)}</div>
    <div class="pdf-viewer-actions">
@@ -1478,7 +1534,12 @@ function renderPdfCurrent(open=false){
      <span class="muted-note">※ コピー編集領域にだけ追加されます。</span>
    </div>
  </div>`;
+
  q("#togglePdfText").onclick=()=>renderPdfCurrent(!open);
+ q("#pdfZoomOut").onclick=()=>{x.renderScale=Math.max(.7,(x.renderScale||1.35)-.2);renderPdfCurrent(open)};
+ q("#pdfZoomIn").onclick=()=>{x.renderScale=Math.min(2.75,(x.renderScale||1.35)+.2);renderPdfCurrent(open)};
+ renderPdfPageCanvas(x);
+
  const pv=q("#pdfViewerText");
  function pdfSync(){x.annotatedHtml=pv.innerHTML}
  function pdfWrap(tag,attrs={}){
@@ -1501,6 +1562,32 @@ function renderPdfCurrent(open=false){
    addBlock("normal",tmp.innerHTML||esc(String(sel)).replace(/\n/g,"<br>"));
  };
 }
+async function renderPdfPageCanvas(x){
+ const frame=q("#pdfCanvasFrame");
+ if(!frame||!pdfDoc)return;
+ const token=++pdfRenderToken;
+ try{
+   const page=await pdfDoc.getPage(x.page);
+   if(token!==pdfRenderToken)return;
+   const viewport=page.getViewport({scale:x.renderScale||1.35});
+   const canvas=document.createElement("canvas");
+   canvas.className="pdf-page-canvas";
+   const ratio=Math.max(1,window.devicePixelRatio||1);
+   canvas.width=Math.floor(viewport.width*ratio);
+   canvas.height=Math.floor(viewport.height*ratio);
+   canvas.style.width=`${Math.floor(viewport.width)}px`;
+   canvas.style.height=`${Math.floor(viewport.height)}px`;
+   const ctx=canvas.getContext("2d",{alpha:false});
+   ctx.setTransform(ratio,0,0,ratio,0,0);
+   await page.render({canvasContext:ctx,viewport}).promise;
+   if(token!==pdfRenderToken)return;
+   frame.replaceChildren(canvas);
+ }catch(e){
+   console.error(e);
+   if(frame)frame.innerHTML=`<div class="pdf-render-status">このページの描画に失敗しました。</div>`;
+ }
+}
+
 q("#pickPdf").onclick=()=>q("#pdfFile").click();
 q("#pdfFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)readPdf(f)};
 q("#addScene").onclick=addScene;
