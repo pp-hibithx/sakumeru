@@ -895,8 +895,12 @@ document.addEventListener("click",e=>{
  if(!box||!big)return;big.src=img.currentSrc||img.src;box.hidden=false;
 });
 const closeKpImageLightbox=()=>{const box=document.getElementById("kpImageLightbox"),big=document.getElementById("kpImageLightboxImg");if(box)box.hidden=true;if(big)big.removeAttribute("src")};
-document.getElementById("kpImageLightbox")?.addEventListener("click",e=>{if(e.target===e.currentTarget)closeKpImageLightbox()});
-document.getElementById("kpImageLightboxClose")?.addEventListener("click",e=>{e.stopPropagation();closeKpImageLightbox()});
+document.addEventListener("click",e=>{
+ const close=e.target.closest?.("#kpImageLightboxClose");
+ if(close){e.preventDefault();e.stopPropagation();closeKpImageLightbox();return}
+ const box=e.target.closest?.("#kpImageLightbox");
+ if(box&&e.target===box){e.preventDefault();closeKpImageLightbox()}
+});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){const box=document.getElementById("kpImageLightbox");if(box&&!box.hidden){closeKpImageLightbox()}}});
 </script>
 <!-- PROFILE attached-page SHARE fix v0.3.64 -->
