@@ -1974,15 +1974,18 @@ const pcs=window.TRPG39?.loadPCs?.()||[];
 if(q("#pcSelect"))q("#pcSelect").innerHTML='<option value="">PCを選択…</option>'+pcs.map(x=>`<option value="${esc(x.id)}">${esc(x.name||"PC")}</option>`).join("");
 function parseSkills(t){const m={};String(t||"").split(/\\n/).forEach(l=>{const x=l.match(/^\\s*([^:：]+)[:：]\\s*(\\d+)/);if(x)m[x[1].trim()]=+x[2]});return m}
 function renderPC(){
- q("#participants").innerHTML=b.participants.length?b.participants.map((p,i)=>`<div class="kp2-person"><div class="kp2-actions" style="justify-content:space-between"><b>${esc(p.name||"PC")}</b><button type="button" class="danger" data-prm="${i}">削除</button></div><div class="kp2-pcgrid"><label>能力値・主要数値<textarea data-ab="${i}">${esc(p.abilities||"")}</textarea></label><label>技能値（技能名：値）<textarea data-sk="${i}">${esc(p.skills||"")}</textarea></label></div></div>`).join(""):'<div class="muted-note">参加PCはまだ登録されていません。</div>';
- q("#participants").querySelectorAll("[data-prm]").forEach(x=>x.onclick=()=>{b.participants.splice(+x.dataset.prm,1);save();renderPC()});
- q("#participants").querySelectorAll("[data-ab]").forEach(x=>x.oninput=()=>{b.participants[+x.dataset.ab].abilities=x.value;save()});
- q("#participants").querySelectorAll("[data-sk]").forEach(x=>x.oninput=()=>{b.participants[+x.dataset.sk].skills=x.value;save();renderCompare()});
+ const host=q("#participants");
+ if(!host){renderCompare();return}
+ host.innerHTML=b.participants.length?b.participants.map((p,i)=>`<div class="kp2-person"><div class="kp2-actions" style="justify-content:space-between"><b>${esc(p.name||"PC")}</b><button type="button" class="danger" data-prm="${i}">削除</button></div><div class="kp2-pcgrid"><label>能力値・主要数値<textarea data-ab="${i}">${esc(p.abilities||"")}</textarea></label><label>技能値（技能名：値）<textarea data-sk="${i}">${esc(p.skills||"")}</textarea></label></div></div>`).join(""):'<div class="muted-note">参加PCはまだ登録されていません。</div>';
+ host.querySelectorAll("[data-prm]").forEach(x=>x.onclick=()=>{b.participants.splice(+x.dataset.prm,1);save();renderPC()});
+ host.querySelectorAll("[data-ab]").forEach(x=>x.oninput=()=>{b.participants[+x.dataset.ab].abilities=x.value;save()});
+ host.querySelectorAll("[data-sk]").forEach(x=>x.oninput=()=>{b.participants[+x.dataset.sk].skills=x.value;save();renderCompare()});
  renderCompare()
 }
 function renderCompare(){
+ const host=q("#compare");if(!host)return;
  const maps=b.participants.map(x=>parseSkills(x.skills)),names=[...new Set(maps.flatMap(x=>Object.keys(x)))].sort((a,z)=>a.localeCompare(z,"ja"));
- q("#compare").innerHTML=names.length?`<table><thead><tr><th>技能</th>${b.participants.map(x=>`<th>${esc(x.name||"PC")}</th>`).join("")}</tr></thead><tbody>${names.map(n=>`<tr><td>${esc(n)}</td>${maps.map(m=>`<td>${m[n]??"—"}</td>`).join("")}</tr>`).join("")}</tbody></table>`:'<div class="muted-note">技能値を入力すると比較できます。</div>';
+ host.innerHTML=names.length?`<table><thead><tr><th>技能</th>${b.participants.map(x=>`<th>${esc(x.name||"PC")}</th>`).join("")}</tr></thead><tbody>${names.map(n=>`<tr><td>${esc(n)}</td>${maps.map(m=>`<td>${m[n]??"—"}</td>`).join("")}</tr>`).join("")}</tbody></table>`:'<div class="muted-note">技能値を入力すると比較できます。</div>';
 }
 if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find(v=>String(v.id)===String(id));if(!x)return;if(b.participants.some(v=>String(v.pcId)===String(id)))return alert("追加済みです。");b.participants.push({pcId:id,name:x.name||"",abilities:"",skills:""});save();renderPC()};
 renderPC();
