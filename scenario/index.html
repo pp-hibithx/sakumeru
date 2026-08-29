@@ -32,8 +32,8 @@
 .sc-brand-cover::before{content:"";position:absolute;inset:8px;border:1px solid rgba(205,151,35,.62);border-radius:8px;pointer-events:none}
 /* 表紙の4要素を一塊にする。タイトルの長さでロゴや罫線の位置を動かさない */
 .sc-brand-cover-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(84%,520px);height:100%;min-height:0;box-sizing:border-box;padding:4px 0;transform:none}
-.sc-brand-cover-logo{flex:0 0 auto;width:min(34%,104px);max-height:70px;object-fit:contain;display:block;margin:0 0 8px}
-.sc-brand-cover-wordmark{flex:0 0 auto;font-size:10px;letter-spacing:.24em;color:#d7ad4a;font-weight:700;line-height:1.1;margin:0 0 12px}
+.sc-brand-cover-logo{flex:0 0 auto;width:min(34%,104px);max-height:70px;object-fit:contain;display:block;margin:0 0 3px}
+.sc-brand-cover-wordmark{flex:0 0 auto;font-size:10px;letter-spacing:.24em;color:#d7ad4a;font-weight:700;line-height:1.1;margin:0}
 .sc-brand-cover-line{flex:0 0 auto;position:relative;width:min(78%,260px);height:1px;background:rgba(205,151,35,.58);margin:0} /* line only: center ornament removed */
 .sc-brand-cover-title{flex:0 0 auto;width:100%;min-width:0;height:4.05em;max-height:4.05em;padding:0 5px;box-sizing:border-box;font-weight:700;font-size:clamp(.78rem,1.85vw,1.05rem);line-height:1.35;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;text-shadow:0 1px 2px rgba(0,0,0,.38);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3}
 .sc-brand-cover-title.is-medium{font-size:clamp(.72rem,1.65vw,.94rem)}
@@ -303,7 +303,7 @@ function brandCoverHtml(title="",extraClass=""){
  const label=String(title||"シナリオ").trim()||"シナリオ";
  const length=Array.from(label).length;
  const sizeClass=length>44?"is-xlong":length>30?"is-long":length>18?"is-medium":"";
- return `<div class="sc-brand-cover ${extraClass}" aria-label="${esc(label)}"><div class="sc-brand-cover-inner"><img class="sc-brand-cover-logo" src="../assets/img/sakumeru-symbol-dark.png" alt=""><div class="sc-brand-cover-wordmark">SAKU+MERU</div><div class="sc-brand-cover-line"></div></div></div>`;
+ return `<div class="sc-brand-cover ${extraClass}" aria-label="${esc(label)}"><div class="sc-brand-cover-inner"><img class="sc-brand-cover-logo" src="../assets/img/sakumeru-symbol-dark.png" alt=""><div class="sc-brand-cover-wordmark">SAKU+MERU</div></div></div>`;
 }
 function scenarioRepresentativeHtml(x={},kind="card"){
  if(scenarioDisplayMode(x)==="thumbnail"&&x.thumbnailUrl){
@@ -1425,3 +1425,12 @@ q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=rese
 })();
 </script>
 </body></html>
+
+<style>
+/* Final brand cover: symbol + wordmark only */
+.sc-brand-cover-line{display:none!important}
+.sc-detail-brand-cover .sc-brand-cover-logo{margin-bottom:4px}
+.sc-detail-brand-cover .sc-brand-cover-wordmark{margin-bottom:0}
+.sc-cover-choice-preview .sc-brand-cover-logo{margin-bottom:2px}
+.sc-cover-choice-preview .sc-brand-cover-wordmark{margin-bottom:0}
+</style>
