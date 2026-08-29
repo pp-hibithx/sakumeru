@@ -480,28 +480,28 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 }
 
 
-/* v19: stable delegated block dragging */
-.blog-editor > .sm-block{
-  position:relative!important;
-}
+/* v20: stable, visible block handles */
+.blog-editor > .sm-block{position:relative!important}
 .blog-editor > .sm-block > .sm-drag-handle{
+  display:flex!important;
+  left:-36px!important;
+  top:5px!important;
+  width:28px!important;
+  height:30px!important;
+  opacity:.72!important;
   pointer-events:auto!important;
-}
-.blog-editor.sm-drag-active{
-  user-select:none!important;
-}
-.blog-editor > .sm-block.sm-block-dragging{
-  opacity:.32!important;
-}
-.blog-editor > .sm-block.sm-drop-before::before,
-.blog-editor > .sm-block.sm-drop-after::after{
   z-index:40!important;
 }
+.blog-editor > .sm-block:hover > .sm-drag-handle,
+.blog-editor > .sm-block > .sm-drag-handle:hover{
+  opacity:1!important;
+}
+.blog-editor.sm-drag-active{user-select:none!important}
 
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v19 — ブロックドラッグ機構再構築<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v20 — ブロックドラッグ修正版<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -730,32 +730,26 @@ function renderEditor(){
  </div>`;
 
  const ed=q("#blogEditor");
-
  const MOVABLE_SELECTOR="p,h1,h2,h3,h4,blockquote,ul,ol,hr,section.kp-special,div.image-grid,div.media-card,div.kp-cue";
- let draggedBlock=null;
 
  function directEditorBlocks(){
-   return [...ed.children].filter(el=>el.matches?.(MOVABLE_SELECTOR));
+   return [...ed.children].filter(el=>{
+     if(el.id==="imageLightbox"||el.id==="videoChoicePop")return false;
+     return el.matches?.(MOVABLE_SELECTOR);
+   });
  }
 
- function clearBlockDropMarks(){
-   ed.querySelectorAll(":scope > .sm-drop-before,:scope > .sm-drop-after")
-     .forEach(x=>x.classList.remove("sm-drop-before","sm-drop-after"));
- }
-
- function ensureBlockId(block){
-   if(!block.dataset.smBlockId){
-     block.dataset.smBlockId="sm-"+Math.random().toString(36).slice(2,9)+Date.now().toString(36);
-   }
+ function removeBlockHandles(){
+   ed.querySelectorAll(":scope > .sm-block > .sm-drag-handle").forEach(h=>h.remove());
+   ed.querySelectorAll(":scope > .sm-block").forEach(b=>b.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after"));
  }
 
  function decorateBlocks(){
    directEditorBlocks().forEach(block=>{
-     ensureBlockId(block);
      block.classList.add("sm-block");
      block.draggable=false;
-
-     let h=block.querySelector(":scope > .sm-drag-handle");
+     // The handle is UI, never part of editable/shared content.
+     let h=[...block.children].find(x=>x.classList?.contains("sm-drag-handle"));
      if(!h){
        h=document.createElement("button");
        h.type="button";
@@ -766,20 +760,170 @@ function renderEditor(){
        h.setAttribute("aria-label","ブロックを移動");
        h.textContent="⋮⋮";
        block.insertBefore(h,block.firstChild);
-     }else{
-       h.draggable=true;
+     }
+     h.draggable=true;
+   });
+ }
+
+
+ let draggedBlock=null;
+ function clearBlockDropMarks(){
+   ed.querySelectorAll(":scope > .sm-drop-before,:scope > .sm-drop-after")
+     .forEach(x=>x.classList.remove("sm-drop-before","sm-drop-after"));
+ }
+
+ function blockFromHandle(handle){
+   const block=handle?.parentElement;
+   return block && block.parentElement===ed && block.classList.contains("sm-block") ? block : null;
+ }
+
+ // Delegated handlers: newly inserted blocks work without rebinding events.
+ ed.addEventListener("dragstart",e=>{
+   const handle=e.target.closest?.(".sm-drag-handle");
+   if(handle){
+     const block=blockFromHandle(handle);
+     if(!block)return;
+     draggedBlock=block;
+     ed.classList.add("sm-drag-active");
+     block.classList.add("sm-block-dragging");
+     e.dataTransfer.effectAllowed="move";
+     try{e.dataTransfer.setData("text/plain","sakumeru-block")}catch(_){}
+     e.stopPropagation();
+     return;
+   }
+
+   // Image thumbnails use their own reorder handler.
+   if(e.target.closest?.("[data-img-item]"))return;
+
+   // Never allow browser-native contenteditable drag/copy.
+   e.preventDefault();
+ }, true);
+
+ ed.addEventListener("dragover",e=>{
+   if(!draggedBlock)return;
+   const target=e.target.closest?.(".sm-block");
+   if(!target || target===draggedBlock || target.parentElement!==ed)return;
+   e.preventDefault();
+   e.stopPropagation();
+   clearBlockDropMarks();
+   const r=target.getBoundingClientRect();
+   const before=e.clientY < r.top + r.height/2;
+   target.classList.add(before?"sm-drop-before":"sm-drop-after");
+   e.dataTransfer.dropEffect="move";
+ }, true);
+
+ ed.addEventListener("drop",e=>{
+   if(!draggedBlock)return;
+   const target=e.target.closest?.(".sm-block");
+   if(!target || target===draggedBlock || target.parentElement!==ed)return;
+   e.preventDefault();
+   e.stopPropagation();
+
+   const r=target.getBoundingClientRect();
+   const before=e.clientY < r.top + r.height/2;
+   if(before)ed.insertBefore(draggedBlock,target);
+   else ed.insertBefore(draggedBlock,target.nextSibling);
+
+   draggedBlock.classList.remove("sm-block-dragging");
+   ed.classList.remove("sm-drag-active");
+   clearBlockDropMarks();
+   draggedBlock=null;
+   decorateBlocks();
+   syncArticle();
+ }, true);
+
+ ed.addEventListener("dragend",()=>{
+   if(draggedBlock)draggedBlock.classList.remove("sm-block-dragging");
+   ed.classList.remove("sm-drag-active");
+   clearBlockDropMarks();
+   draggedBlock=null;
+ }, true);
+
+ ed.addEventListener("mousedown",e=>{
+   if(e.target.closest?.(".sm-drag-handle")){
+     e.preventDefault();
+     e.stopPropagation();
+   }
+ }, true);
+
+ function cleanEditorHtml(){
+   const clone=ed.cloneNode(true);
+   clone.querySelectorAll(".sm-drag-handle").forEach(h=>h.remove());
+   clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after").forEach(el=>{
+     el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after");
+     if(!el.className)el.removeAttribute("class");
+   });
+   return clone.innerHTML;
+ }
+
+ function ensureParagraphBlocks(){
+   // Browsers sometimes leave bare text nodes in contenteditable. Wrap them so Enter-based
+   // paragraphs consistently become movable blocks.
+   [...ed.childNodes].forEach(n=>{
+     if(n.nodeType===3 && n.textContent.trim()){
+       const p=document.createElement("p");
+       p.textContent=n.textContent;
+       ed.replaceChild(p,n);
      }
    });
  }
 
- function blockFromHandle(handle){
-   const block=handle?.closest?.(":scope > .sm-block");
-   if(block&&block.parentElement===ed)return block;
-   const fallback=handle?.parentElement;
-   return fallback&&fallback.parentElement===ed?fallback:null;
- }
 
- // Event delegation means newly inserted blocks work immediately after decorateBlocks().
+ let savedRange=null;
+
+ function saveRange(){
+   const sel=window.getSelection?.();
+   if(sel&&sel.rangeCount){
+     const r=sel.getRangeAt(0);
+     if(ed.contains(r.commonAncestorContainer))savedRange=r.cloneRange();
+   }
+ }
+ function restoreRange(){
+   ed.focus();
+   const sel=window.getSelection();
+   sel.removeAllRanges();
+   if(savedRange)sel.addRange(savedRange);
+   else{
+     const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);sel.addRange(r);
+   }
+ }
+ function syncArticle(){
+   p.__v11ArticleHtml=cleanEditorHtml();
+   refreshStats();
+ }
+ function insertHtml(html){
+   restoreRange();
+   document.execCommand("insertHTML",false,html);
+   saveRange();ensureParagraphBlocks();decorateBlocks();requestAnimationFrame(decorateBlocks);syncArticle();
+ }
+ function insertSpecial(kind,body=""){
+   const labels={reveal:"開示情報",memo:"KPメモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
+   const label=labels[kind]||FLOW_LABEL[kind]||kind;
+   const target=(kind==="reveal"||kind==="secret")?"全員":"";
+   const title=kind==="reveal"?"開示情報":label;
+   const action=kind==="reveal"?`<div class="kp-special-action" contenteditable="false"><button type="button" disabled>開示する</button></div>`:"";
+   const inner=kind==="dialogue"
+     ? `<div class="dialogue-lines"><div class="dialogue-row"><div class="dialogue-name">KP：</div><div class="dialogue-text">ここに会話ログを入力</div></div></div>`
+     : (body||"<p><br></p>");
+   insertHtml(`<section class="kp-special" data-kind="${esc(kind)}">
+     <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${target?`<span>対象：${esc(target)}</span>`:""}</div>
+     <div class="kp-special-title">${esc(title)}</div>
+     <div class="kp-special-body">${inner}</div>
+     ${action}
+   </section><p><br></p>`);
+ }
+ decorateBlocks();
+ window.__v11Insert=insertHtml;
+ window.__v11InsertSpecial=insertSpecial;
+
+ 
+ ed.addEventListener("dragstart",e=>{
+   const handle=e.target.closest?.(".sm-drag-handle");
+   const imageItem=e.target.closest?.("[data-img-item]");
+   if(handle||imageItem)return;
+   // Text/content dragging inside contenteditable otherwise creates copies.
+   e.preventDefault();
+ });
 
 ed.addEventListener("keyup",saveRange);
  ed.addEventListener("mouseup",saveRange);
@@ -1027,6 +1171,8 @@ q("#closeLightbox").onclick=()=>q("#imageLightbox").classList.remove("open");
  q("#imageLightbox").onclick=e=>{if(e.target.id==="imageLightbox")e.currentTarget.classList.remove("open")};
  document.addEventListener("keydown",e=>{if(e.key==="Escape")q("#imageLightbox")?.classList.remove("open")});
  initImageUi();
+ decorateBlocks();
+ requestAnimationFrame(decorateBlocks);
 
 q("#insertAudio").onclick=()=>{
    const input=document.createElement("input");input.type="file";input.accept="audio/*";
