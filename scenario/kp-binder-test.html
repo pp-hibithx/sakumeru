@@ -295,10 +295,66 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   .image-grid.cols-1,.image-grid.cols-2,.image-grid.cols-3,.image-grid.cols-4{grid-template-columns:1fr!important}
 }
 
+
+/* v15: independent image items; four thumbnails per row */
+.image-grid{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:flex-start!important;
+  gap:8px!important;
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  margin:12px 0!important;
+}
+.image-grid figure[data-img-item]{
+  flex:0 0 calc((100% - 24px)/4)!important;
+  width:calc((100% - 24px)/4)!important;
+  max-width:calc((100% - 24px)/4)!important;
+  min-width:0!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+}
+.image-grid figure[data-img-item] img{
+  display:block!important;
+  width:100%!important;
+  height:125px!important;
+  object-fit:cover!important;
+  max-width:none!important;
+}
+.image-grid .grid-help{
+  flex:0 0 100%!important;
+  width:100%!important;
+  order:9999!important;
+}
+.image-grid figcaption{
+  min-height:1.4em;
+  cursor:text;
+}
+.image-grid figcaption:empty::before{
+  content:"画像名（任意）";
+  color:var(--muted);
+  opacity:.65;
+}
+@media(max-width:760px){
+  .image-grid figure[data-img-item]{
+    flex-basis:calc((100% - 8px)/2)!important;
+    width:calc((100% - 8px)/2)!important;
+    max-width:calc((100% - 8px)/2)!important;
+  }
+}
+@media(max-width:460px){
+  .image-grid figure[data-img-item]{
+    flex-basis:100%!important;
+    width:100%!important;
+    max-width:100%!important;
+  }
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v14 — 画像ギャラリー＋動画URL対応<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v15 — 独立画像＋文字背景色<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -377,7 +433,7 @@ function blocksToArticle(p){
    const kind=x.kind||"normal";
    if(kind==="heading")return `<h3>${esc(x.title||"小見出し")}</h3>${x.body||""}`;
    if(kind==="normal")return x.body||"<p><br></p>";
-   if(kind==="image"&&x.image)return `<div class="image-grid cols-1" data-image-grid><figure draggable="true" data-img-item><button type="button" class="img-remove" contenteditable="false">×</button><img src="${x.image}" alt="" data-full-image></figure><div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`;
+   if(kind==="image"&&x.image)return `<div class="image-grid" data-image-grid contenteditable="false"><figure draggable="true" data-img-item contenteditable="false"><button type="button" class="img-remove" contenteditable="false">×</button><img src="${x.image}" alt="" data-full-image><figcaption contenteditable="true" spellcheck="false"></figcaption></figure><div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`;
    const label=FLOW_LABEL[kind]||kind;
    const action=kind==="reveal"?`<div class="kp-special-action" contenteditable="false"><button type="button" disabled>${x.revealed?"✓ 元データでは共有済み":"開示する"}</button></div>`:"";
    return `<section class="kp-special" data-kind="${esc(kind)}">
@@ -465,6 +521,9 @@ function renderEditor(){
        <button type="button" data-cmd="strikeThrough"><s>S</s></button>
        <button type="button" class="color-btn" id="colorButton" title="文字色"><span class="color-dot" id="colorDot"></span>文字色</button>
        <input type="color" id="foreColor" value="#d7b557" title="文字色" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+       <button type="button" class="color-btn" id="bgColorButton" title="文字の背景色"><span class="color-dot" id="bgColorDot"></span>背景色</button>
+       <input type="color" id="backColor" value="#725d18" title="文字の背景色" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+       <button type="button" id="clearTextBg" title="文字の背景色を解除">背景なし</button>
        <button type="button" id="insertHr" title="区切り線">― 区切り線</button>
      </div>
      <div class="tb-group">
@@ -603,7 +662,30 @@ function renderEditor(){
  });
  q("#colorDot").style.background=q("#foreColor").value;
  q("#colorButton").onclick=()=>q("#foreColor").click();
- q("#foreColor").oninput=e=>{q("#colorDot").style.background=e.target.value;restoreRange();document.execCommand("foreColor",false,e.target.value);saveRange();syncArticle()};
+ q("#foreColor").oninput=e=>{
+   q("#colorDot").style.background=e.target.value;
+   restoreRange();
+   document.execCommand("foreColor",false,e.target.value);
+   saveRange();syncArticle()
+ };
+ q("#bgColorDot").style.background=q("#backColor").value;
+ q("#bgColorButton").onclick=()=>q("#backColor").click();
+ q("#backColor").oninput=e=>{
+   q("#bgColorDot").style.background=e.target.value;
+   restoreRange();
+   // hiliteColor is preferred; backColor is kept as a fallback.
+   if(!document.execCommand("hiliteColor",false,e.target.value)){
+     document.execCommand("backColor",false,e.target.value);
+   }
+   saveRange();syncArticle()
+ };
+ q("#clearTextBg").onclick=()=>{
+   restoreRange();
+   if(!document.execCommand("hiliteColor",false,"transparent")){
+     document.execCommand("backColor",false,"transparent");
+   }
+   saveRange();syncArticle()
+ };
  q("#insertHr").onclick=()=>insertHtml("<hr><p><br></p>");
  q("#insertLink").onclick=()=>{
    const url=prompt("リンク先URL");if(!url)return;
@@ -642,30 +724,50 @@ function renderEditor(){
      const files=[...(input.files||[])];if(!files.length)return;
      const read=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res({src:String(r.result||""),name:f.name});r.readAsDataURL(f)});
      Promise.all(files.map(read)).then(items=>{
-       for(let i=0;i<items.length;i+=4){
-         const group=items.slice(i,i+4);
-         const figures=group.map(it=>`<figure draggable="true" data-img-item>
-           <button type="button" class="img-remove" contenteditable="false" title="画像を外す">×</button>
-           <img src="${it.src}" alt="${esc(it.name)}" data-full-image>
-           <figcaption>${esc(it.name)}</figcaption>
-         </figure>`).join("");
-         insertHtml(`<div class="image-grid cols-${group.length}" data-image-grid>${figures}<div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`);
-       }
+       const figures=items.map(it=>`<figure draggable="true" data-img-item contenteditable="false">
+         <button type="button" class="img-remove" contenteditable="false" title="画像を外す">×</button>
+         <img src="${it.src}" alt="${esc(it.name)}" data-full-image>
+         <figcaption contenteditable="true" spellcheck="false">${esc(it.name)}</figcaption>
+       </figure>`).join("");
+       insertHtml(`<div class="image-grid" data-image-grid contenteditable="false">${figures}<div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`);
+       mergeAdjacentImageGrids();
        initImageUi();
+       syncArticle();
      });
    };
    input.click();
  };
 
- 
  function normalizeGrid(grid){
    if(!grid)return;
-   const figures=[...grid.children].filter(el=>el.matches?.("figure[data-img-item]"));
+   const figures=[...grid.querySelectorAll(":scope > figure[data-img-item]")];
    grid.classList.remove("cols-1","cols-2","cols-3","cols-4");
    if(!figures.length){ grid.remove(); return; }
-   grid.classList.add(`cols-${Math.min(4,figures.length)}`);
  }
 
+ function isBlankParagraph(el){
+   return !!el && el.tagName==="P" && !String(el.textContent||"").trim() &&
+     !el.querySelector("img,video,audio,iframe,hr,.kp-special,.media-card");
+ }
+
+ function mergeAdjacentImageGrids(){
+   const grids=[...ed.querySelectorAll("[data-image-grid]")];
+   grids.forEach(grid=>{
+     if(!grid.isConnected)return;
+     let spacer=grid.nextElementSibling;
+     let next=spacer;
+     if(isBlankParagraph(spacer))next=spacer.nextElementSibling;
+     if(next?.matches?.("[data-image-grid]")){
+       const help=grid.querySelector(":scope > .grid-help");
+       [...next.querySelectorAll(":scope > figure[data-img-item]")].forEach(fig=>{
+         grid.insertBefore(fig,help||null);
+       });
+       next.remove();
+       if(spacer!==next && isBlankParagraph(spacer))spacer.remove();
+       normalizeGrid(grid);
+     }
+   });
+ }
  function bindImageFigure(fig){
    const img=fig.querySelector("[data-full-image]");
    const remove=fig.querySelector(".img-remove");
@@ -691,6 +793,13 @@ function renderEditor(){
    }
 
    fig.setAttribute("draggable","true");
+   const cap=fig.querySelector("figcaption");
+   if(cap){
+     cap.onmousedown=e=>e.stopPropagation();
+     cap.oninput=()=>syncArticle();
+     cap.onfocus=()=>fig.setAttribute("draggable","false");
+     cap.onblur=()=>{fig.setAttribute("draggable","true");syncArticle()};
+   }
    fig.ondragstart=e=>{
      fig.classList.add("dragging");
      e.dataTransfer.effectAllowed="move";
@@ -729,12 +838,14 @@ function renderEditor(){
 
      normalizeGrid(srcGrid);
      normalizeGrid(dstGrid);
+     mergeAdjacentImageGrids();
      initImageUi();
      syncArticle();
    };
  }
 
  function initImageUi(){
+   mergeAdjacentImageGrids();
    ed.querySelectorAll("[data-image-grid]").forEach(grid=>{
      normalizeGrid(grid);
      [...grid.children].filter(el=>el.matches?.("figure[data-img-item]")).forEach(bindImageFigure);
