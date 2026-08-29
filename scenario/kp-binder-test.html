@@ -140,10 +140,44 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
  .image-grid.cols-2,.image-grid.cols-3,.image-grid.cols-4{grid-template-columns:1fr}
 }
 
+
+/* v12: image grid / lightbox / drag sort / stage cues */
+.image-grid{position:relative}
+.image-grid figure{position:relative;cursor:grab}
+.image-grid figure:active{cursor:grabbing}
+.image-grid figure.dragging{opacity:.45}
+.image-grid figure.drag-over{outline:2px solid var(--accent);outline-offset:2px}
+.image-grid img{cursor:zoom-in}
+.image-grid .img-remove{
+ position:absolute;top:5px;right:5px;z-index:2;
+ border:1px solid rgba(255,255,255,.35);border-radius:999px;
+ background:rgba(0,0,0,.65);color:#fff;padding:2px 7px;font-size:11px;cursor:pointer
+}
+.image-grid .grid-help{grid-column:1/-1;font-size:11px;color:var(--muted);text-align:right;margin-top:-2px}
+.image-lightbox{
+ position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;
+ background:rgba(0,0,0,.88);padding:24px
+}
+.image-lightbox.open{display:flex}
+.image-lightbox img{max-width:94vw;max-height:90vh;object-fit:contain;border-radius:8px}
+.image-lightbox button{
+ position:absolute;top:18px;right:20px;border:1px solid rgba(255,255,255,.35);
+ background:rgba(0,0,0,.45);color:#fff;border-radius:999px;padding:7px 11px;font-size:14px
+}
+.kp-cue{
+ margin:14px 0;padding:9px 12px;border:1px dashed var(--line);border-left:4px solid var(--accent);
+ border-radius:7px;background:rgba(255,255,255,.018)
+}
+.kp-cue[data-cue="bgm"]{border-left-style:solid}
+.kp-cue[data-cue="background"]{border-left-style:double}
+.kp-cue-head{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px}
+.kp-cue-line{font-weight:700}
+.kp-cue small{display:block;margin-top:4px;color:var(--muted)}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v11 — ブログ型リッチテキスト<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v12 — 画像操作＋演出指示<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -222,7 +256,7 @@ function blocksToArticle(p){
    const kind=x.kind||"normal";
    if(kind==="heading")return `<h3>${esc(x.title||"小見出し")}</h3>${x.body||""}`;
    if(kind==="normal")return x.body||"<p><br></p>";
-   if(kind==="image"&&x.image)return `<div class="image-grid cols-1"><figure><img src="${x.image}" alt=""></figure></div><p><br></p>`;
+   if(kind==="image"&&x.image)return `<div class="image-grid cols-1" data-image-grid><figure draggable="true" data-img-item><button type="button" class="img-remove" contenteditable="false">×</button><img src="${x.image}" alt="" data-full-image></figure><div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`;
    const label=FLOW_LABEL[kind]||kind;
    const action=kind==="reveal"?`<div class="kp-special-action" contenteditable="false"><button type="button" disabled>${x.revealed?"✓ 元データでは共有済み":"開示する"}</button></div>`:"";
    return `<section class="kp-special" data-kind="${esc(kind)}">
@@ -332,9 +366,15 @@ function renderEditor(){
        <button type="button" data-special="memo">＋ KPメモ</button>
        <button type="button" data-special="rp">＋ RP</button>
        <button type="button" data-special="secret">＋ 秘匿</button>
+       <button type="button" id="insertBgm">♪ BGM</button>
+       <button type="button" id="insertBackground">▧ 背景</button>
      </div>
    </div>
    <article id="blogEditor" class="blog-editor editor-placeholder" contenteditable="true">${p.__v11ArticleHtml}</article>
+ </div>
+ <div class="image-lightbox" id="imageLightbox" contenteditable="false">
+   <button type="button" id="closeLightbox">× 閉じる</button>
+   <img id="lightboxImage" alt="">
  </div>`;
 
  const ed=q("#blogEditor");
@@ -391,7 +431,26 @@ function renderEditor(){
  q("#sceneTitleInput").oninput=e=>{p.title=e.target.value;renderScenes();refreshStats()};
 
  q("#formatBlock").onchange=e=>{restoreRange();document.execCommand("formatBlock",false,e.target.value);saveRange();syncArticle()};
- q("#richToolbar").querySelectorAll("[data-cmd]").forEach(btn=>btn.onclick=()=>{restoreRange();document.execCommand(btn.dataset.cmd,false,null);saveRange();syncArticle()});
+ q("#richToolbar").querySelectorAll("[data-cmd]").forEach(btn=>btn.onclick=()=>{
+   const cmd=btn.dataset.cmd;
+   restoreRange();
+   if(cmd==="justifyLeft"||cmd==="justifyCenter"||cmd==="justifyRight"){
+     const sel=window.getSelection();
+     if(sel&&sel.rangeCount){
+       let node=sel.anchorNode;
+       if(node&&node.nodeType===3)node=node.parentElement;
+       const block=node?.closest?.("p,h1,h2,h3,h4,blockquote,li,div.kp-special-body,div.kp-special-title");
+       if(block&&ed.contains(block)){
+         block.style.textAlign=cmd==="justifyLeft"?"left":cmd==="justifyCenter"?"center":"right";
+       }else{
+         document.execCommand(cmd,false,null);
+       }
+     }
+   }else{
+     document.execCommand(cmd,false,null);
+   }
+   saveRange();syncArticle()
+ });
  q("#foreColor").oninput=e=>{restoreRange();document.execCommand("foreColor",false,e.target.value);saveRange();syncArticle()};
  q("#insertLink").onclick=()=>{
    const url=prompt("リンク先URL");if(!url)return;
@@ -432,10 +491,88 @@ function renderEditor(){
      Promise.all(files.map(read)).then(items=>{
        for(let i=0;i<items.length;i+=4){
          const group=items.slice(i,i+4);
-         const figures=group.map(it=>`<figure><img src="${it.src}" alt="${esc(it.name)}"><figcaption>${esc(it.name)}</figcaption></figure>`).join("");
-         insertHtml(`<div class="image-grid cols-${group.length}">${figures}</div><p><br></p>`);
+         const figures=group.map(it=>`<figure draggable="true" data-img-item>
+           <button type="button" class="img-remove" contenteditable="false" title="画像を外す">×</button>
+           <img src="${it.src}" alt="${esc(it.name)}" data-full-image>
+           <figcaption>${esc(it.name)}</figcaption>
+         </figure>`).join("");
+         insertHtml(`<div class="image-grid cols-${group.length}" data-image-grid>${figures}<div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`);
        }
+       initImageUi();
      });
+   };
+   input.click();
+ };
+
+ function normalizeGrid(grid){
+   const figures=[...grid.querySelectorAll(":scope > figure[data-img-item]")];
+   grid.classList.remove("cols-1","cols-2","cols-3","cols-4");
+   grid.classList.add(`cols-${Math.max(1,Math.min(4,figures.length))}`);
+   if(!figures.length)grid.remove();
+ }
+ function initImageUi(){
+   const lb=q("#imageLightbox"),lbImg=q("#lightboxImage");
+   ed.querySelectorAll("[data-full-image]").forEach(img=>{
+     img.onclick=e=>{
+       e.preventDefault();e.stopPropagation();
+       lbImg.src=img.src;lb.classList.add("open");
+     };
+   });
+   ed.querySelectorAll(".img-remove").forEach(btn=>{
+     btn.onclick=e=>{
+       e.preventDefault();e.stopPropagation();
+       const fig=btn.closest("figure"),grid=btn.closest("[data-image-grid]");
+       fig?.remove();if(grid)normalizeGrid(grid);syncArticle();
+     };
+   });
+   ed.querySelectorAll("[data-img-item]").forEach(fig=>{
+     fig.ondragstart=e=>{fig.classList.add("dragging");e.dataTransfer.effectAllowed="move";};
+     fig.ondragend=()=>{fig.classList.remove("dragging");ed.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));syncArticle();};
+     fig.ondragover=e=>{e.preventDefault();fig.classList.add("drag-over");e.dataTransfer.dropEffect="move";};
+     fig.ondragleave=()=>fig.classList.remove("drag-over");
+     fig.ondrop=e=>{
+       e.preventDefault();fig.classList.remove("drag-over");
+       const dragging=ed.querySelector("[data-img-item].dragging");
+       if(!dragging||dragging===fig)return;
+       const srcGrid=dragging.closest("[data-image-grid]"),dstGrid=fig.closest("[data-image-grid]");
+       const rect=fig.getBoundingClientRect();
+       const before=e.clientX < rect.left + rect.width/2;
+       dstGrid.insertBefore(dragging,before?fig:fig.nextSibling);
+       if(srcGrid!==dstGrid){
+         const dstItems=[...dstGrid.querySelectorAll(":scope > figure[data-img-item]")];
+         if(dstItems.length>4){ srcGrid.appendChild(dragging); return; }
+       }
+       normalizeGrid(dstGrid);if(srcGrid&&srcGrid!==dstGrid)normalizeGrid(srcGrid);
+       syncArticle();
+     };
+   });
+ }
+ q("#closeLightbox").onclick=()=>q("#imageLightbox").classList.remove("open");
+ q("#imageLightbox").onclick=e=>{if(e.target.id==="imageLightbox")e.currentTarget.classList.remove("open")};
+ initImageUi();
+
+ q("#insertBgm").onclick=()=>{
+   const input=document.createElement("input");input.type="file";input.accept="audio/*";
+   input.onchange=()=>{
+     const f=input.files?.[0];if(!f)return;
+     insertHtml(`<div class="kp-cue" data-cue="bgm" contenteditable="false">
+       <div class="kp-cue-head">♪ BGM切り替え</div>
+       <div class="kp-cue-line">＜ここでBGM切り替え【${esc(f.name)}】＞</div>
+       <small>KP用演出指示・共有されません</small>
+     </div><p><br></p>`);
+   };
+   input.click();
+ };
+
+ q("#insertBackground").onclick=()=>{
+   const input=document.createElement("input");input.type="file";input.accept="image/*";
+   input.onchange=()=>{
+     const f=input.files?.[0];if(!f)return;
+     insertHtml(`<div class="kp-cue" data-cue="background" contenteditable="false">
+       <div class="kp-cue-head">▧ 背景切り替え</div>
+       <div class="kp-cue-line">＜ここで背景切り替え【${esc(f.name)}】＞</div>
+       <small>KP用演出指示・共有されません</small>
+     </div><p><br></p>`);
    };
    input.click();
  };
