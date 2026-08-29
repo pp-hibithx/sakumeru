@@ -432,10 +432,57 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
  .blog-editor > .sm-block > .sm-drag-handle{width:21px;font-size:15px}
 }
 
+
+/* v18: visible unified drag handles */
+.blog-editor{overflow:visible!important}
+.blog-editor > .sm-block > .sm-drag-handle{
+  left:-34px!important;
+  top:4px!important;
+  width:27px!important;
+  height:28px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:1px solid var(--line)!important;
+  background:var(--panel)!important;
+  color:var(--muted)!important;
+  opacity:.58!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.22)!important;
+  border-radius:6px!important;
+  font-size:18px!important;
+  font-weight:800!important;
+  z-index:25!important;
+}
+.blog-editor > .sm-block:hover > .sm-drag-handle,
+.blog-editor > .sm-block > .sm-drag-handle:hover,
+.blog-editor > .sm-block > .sm-drag-handle:focus{
+  opacity:1!important;
+  color:var(--text)!important;
+  border-color:var(--accent)!important;
+  background:var(--panel2,var(--panel))!important;
+  transform:scale(1.04);
+}
+.blog-editor > section.kp-special > .sm-drag-handle,
+.blog-editor > div.image-grid > .sm-drag-handle,
+.blog-editor > div.media-card > .sm-drag-handle{
+  top:8px!important;
+}
+.blog-editor > .kp-cue > .sm-drag-handle{
+  left:-34px!important;
+  top:7px!important;
+  opacity:.72!important;
+}
+.blog-editor > hr.sm-block > .sm-drag-handle{top:-13px!important}
+.sm-drag-handle::after{
+  content:"";
+  position:absolute;
+  inset:-5px;
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
- <div class="test-banner">移行テスト版 v17 — Notion風ブロック移動<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
+ <div class="test-banner">移行テスト版 v18 — 明確なドラッグハンドル＋演出キュー独立<small>既存のKPバインダーをメモリ上へコピーして編集します。元データ・共有URL・開示状態は一切更新しません。ページを再読み込みするとコピー編集内容は消えます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <div class="layout">
   <aside class="side">
@@ -681,6 +728,7 @@ function renderEditor(){
  function decorateBlocks(){
    directEditorBlocks().forEach(block=>{
      block.classList.add("sm-block");
+     block.draggable=false;
      // The handle is UI, never part of editable/shared content.
      let h=[...block.children].find(x=>x.classList?.contains("sm-drag-handle"));
      if(!h){
@@ -689,9 +737,9 @@ function renderEditor(){
        h.className="sm-drag-handle";
        h.contentEditable="false";
        h.draggable=true;
-       h.title="ドラッグしてブロックを移動";
+       h.title="ここをつかんでブロックを移動";
        h.setAttribute("aria-label","ブロックを移動");
-       h.textContent="⠿";
+       h.textContent="⋮⋮";
        block.insertBefore(h,block.firstChild);
      }
      bindBlockHandle(block,h);
@@ -812,7 +860,16 @@ function renderEditor(){
  window.__v11Insert=insertHtml;
  window.__v11InsertSpecial=insertSpecial;
 
- ed.addEventListener("keyup",saveRange);
+ 
+ ed.addEventListener("dragstart",e=>{
+   const handle=e.target.closest?.(".sm-drag-handle");
+   const imageItem=e.target.closest?.("[data-img-item]");
+   if(handle||imageItem)return;
+   // Text/content dragging inside contenteditable otherwise creates copies.
+   e.preventDefault();
+ });
+
+ed.addEventListener("keyup",saveRange);
  ed.addEventListener("mouseup",saveRange);
  ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle()});
  ed.addEventListener("blur",saveRange);
@@ -1147,19 +1204,34 @@ q("#insertAudio").onclick=()=>{
 
  
  function ensureCueInsertPoint(){
+   // Use the saved editor caret first: clicking the toolbar/file picker steals focus.
+   let base=savedRange?.commonAncestorContainer||null;
+   if(base&&base.nodeType===3)base=base.parentElement;
+   let special=base?.closest?.(".kp-special")||null;
+
+   if(!special){
+     const sel=window.getSelection();
+     if(sel&&sel.rangeCount){
+       let node=sel.anchorNode;
+       if(node&&node.nodeType===3)node=node.parentElement;
+       special=node?.closest?.(".kp-special")||null;
+     }
+   }
+
+   if(special&&ed.contains(special)){
+     const r=document.createRange();
+     r.setStartAfter(special);
+     r.collapse(true);
+     savedRange=r.cloneRange();
+     const sel=window.getSelection();
+     sel.removeAllRanges();
+     sel.addRange(r);
+     return;
+   }
+
+   // Otherwise keep the current saved caret as-is.
    restoreRange();
-   const sel=window.getSelection();
-   if(!sel||!sel.rangeCount)return;
-   let node=sel.anchorNode;
-   if(node&&node.nodeType===3)node=node.parentElement;
-   const special=node?.closest?.(".kp-special");
-   if(!special||!ed.contains(special))return;
-   const r=document.createRange();
-   r.setStartAfter(special);
-   r.collapse(true);
-   sel.removeAllRanges();
-   sel.addRange(r);
-   lastRange=r.cloneRange();
+   saveRange();
  }
 
 q("#insertBgm").onclick=()=>{
@@ -1167,6 +1239,7 @@ q("#insertBgm").onclick=()=>{
    const input=document.createElement("input");input.type="file";input.accept="audio/*";
    input.onchange=()=>{
      const f=input.files?.[0];if(!f)return;
+     ensureCueInsertPoint();
      insertHtml(`<div class="kp-cue" data-cue="bgm" contenteditable="false">
        <div class="kp-cue-head">♪ BGM切り替え</div>
        <div class="kp-cue-line">＜ここでBGM切り替え【${esc(f.name)}】＞</div>
@@ -1181,6 +1254,7 @@ q("#insertBgm").onclick=()=>{
    const input=document.createElement("input");input.type="file";input.accept="image/*";
    input.onchange=()=>{
      const f=input.files?.[0];if(!f)return;
+     ensureCueInsertPoint();
      insertHtml(`<div class="kp-cue" data-cue="background" contenteditable="false">
        <div class="kp-cue-head">▧ 背景切り替え</div>
        <div class="kp-cue-line">＜ここで背景切り替え【${esc(f.name)}】＞</div>
