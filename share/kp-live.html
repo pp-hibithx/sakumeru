@@ -269,7 +269,11 @@
        }).join("");
    };
    const renderOutlineScene=x=>{
-     const groups=Array.isArray(x.outlineGroups)?x.outlineGroups:[];
+     const groups=(Array.isArray(x.outlineGroups)?[...x.outlineGroups]:[]).sort((a,z)=>{
+       const ao=Number.isFinite(Number(a?.displayOrder))?Number(a.displayOrder):Number.MAX_SAFE_INTEGER;
+       const zo=Number.isFinite(Number(z?.displayOrder))?Number(z.displayOrder):Number.MAX_SAFE_INTEGER;
+       return ao-zo;
+     });
      const sceneTitle=normLabel(x.title);
      const legacy=renderSceneLegacyItems(x.legacyItems,groups);
      const seenGroups=new Set();
