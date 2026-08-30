@@ -2240,8 +2240,26 @@ async function applyOutlineRevealToShare(){
    ...((old?.legacyItems)||[]),
    ...items.filter(x=>x?.kind!=="outline-scene"&&String(x?.sceneId||"")===sceneId)
  ];
+ const outlineSpecialIds=new Set((fresh.outlineGroups||[])
+   .map(g=>String(g?.id||""))
+   .filter(id=>id.startsWith("special:"))
+   .map(id=>id.slice("special:".length)));
+ const outlineTitles=new Map();
+ for(const group of (fresh.outlineGroups||[])){
+   const title=String(group?.title||"").replace(/\s+/g," ").trim();
+   if(title)outlineTitles.set(title,(outlineTitles.get(title)||0)+1);
+ }
  const legacyById=new Map();
- migratedLegacy.forEach(x=>legacyById.set(String(x?.id||crypto.randomUUID()),x));
+ migratedLegacy.forEach(x=>{
+   const id=String(x?.id||"");
+   const title=String(x?.title||"").replace(/\s+/g," ").trim();
+   // Once the modern outline contains the same special block, keeping its old snapshot
+   // would make KPlive render the exact reveal twice. Keep legacy data only when it has
+   // no modern counterpart (for old shares that cannot be migrated yet).
+   if(id && outlineSpecialIds.has(id))return;
+   if(!id && title && outlineTitles.get(title)===1)return;
+   legacyById.set(id||String(crypto.randomUUID()),x);
+ });
  fresh.legacyItems=[...legacyById.values()];
  let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
  const now=new Date().toISOString();fresh.revealedAt=old?.revealedAt||now;fresh.updatedAt=now;
