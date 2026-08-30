@@ -1244,7 +1244,7 @@ function renderEditor(){
    const labels={reveal:"開示情報",memo:"KPメモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
    const label=labels[kind]||FLOW_LABEL[kind]||kind;
    const target=(kind==="reveal"||kind==="secret")?"全員":"";
-   const title=kind==="reveal"?"開示情報":label;
+   const title=kind==="reveal"?"":label;
    const blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
    const action=kind==="reveal"?`${revealShareBox("full","")}<div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">開示する</button></div>`:"";
    const inner=kind==="dialogue"
