@@ -1886,7 +1886,6 @@ function resolveRevealBody(section,mode){
 
 async function revealSnapshot(section){
  const id=section.dataset.blockId||crypto.randomUUID();
- let title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
  const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
  const mode=section.querySelector("[data-reveal-mode]:checked")?.value==="summary"?"summary":"full";
  section=normalizeRevealSection(section)||section;
@@ -1899,10 +1898,16 @@ async function revealSnapshot(section){
  const body=bodyRoot.innerHTML||"";
  if(mode==="summary"&&!plain(body))throw new Error("「要点だけ」を選んでいます。PL向け要点を入力してください。");
 
+ // Existing legacy blocks can have the body swallowed into .kp-special-title.
+ // Accept that field only when it is actually a short title.
+ const rawTitle=(section.querySelector(":scope > .kp-special-title")?.textContent||"")
+   .replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ let title=(rawTitle && rawTitle.length<=80) ? rawTitle : "";
+
  if(mode==="full" && (!title || title==="開示情報")){
    const heading=bodyRoot.querySelector("h1,h2,h3,h4");
-   const headingText=(heading?.textContent||"").replace(/\s+/g," ").trim();
-   if(headingText&&headingText.length<=120)title=headingText;
+   const headingText=(heading?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+   if(headingText && headingText.length<=80)title=headingText;
  }
  if(!title)title="開示情報";
 
