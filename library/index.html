@@ -2434,9 +2434,25 @@ function nextRunLabelForScenario(scenarioId,title=""){
  }
  return `${maxNo+1}陣目`;
 }
+function applyCrossPageRecordPrefill(){
+ const params=new URLSearchParams(location.search);
+ const participantName=String(params.get("participantName")||"").trim();
+ const selfPcId=String(params.get("selfPcId")||"").trim();
+ const selfPcName=String(params.get("selfPcName")||"").trim();
+ if(participantName){
+   q("participantRows").innerHTML="";
+   addParticipantRow({role:"PL",plName:participantName,pcs:[]},{placeholder:false});
+ }
+ if(selfPcId||selfPcName){
+   const own=TRPG39.loadPCs?TRPG39.loadPCs():pcs;
+   const found=own.find(x=>String(x.id||"")===selfPcId)||own.find(x=>String(x.name||"")===selfPcName);
+   setSelfPcRows([{pcId:found?.id||selfPcId,pcName:found?.name||selfPcName,ho:""}]);
+ }
+}
 function addForScenario(id){
  const s=scenarioById(id);
  reset(id);
+ applyCrossPageRecordPrefill();
  applyParticipantHoTemplate(id,s?.title||q("title").value||"");
  q("runId").value=TRPG39.uuid();
  q("runLabel").value=nextRunLabelForScenario(id,s?.title||"");
