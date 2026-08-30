@@ -188,11 +188,33 @@
    const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
    const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
    const renderImages=images=>Array.isArray(images)&&images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,images.length)}">${images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:"";
-   const renderOutlineChildren=children=>(Array.isArray(children)?children:[]).map(child=>{
-     const blocks=Array.isArray(child.blocks)?child.blocks:[];
-     const title=String(child.title||"").trim();
-     return `<section class="kp-live-outline-child">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
-   }).join("");
+   const normalizedBlockKey=block=>{
+     const id=String(block?.id||"").trim();
+     if(id)return `id:${id}`;
+     const html=String(block?.bodyHtml||"").replace(/\s+/g," ").trim();
+     const images=(Array.isArray(block?.images)?block.images:[]).map(String).join("|");
+     return `body:${html}|images:${images}`;
+   };
+   const dedupeBlocks=blocks=>{
+     const seen=new Set();
+     return (Array.isArray(blocks)?blocks:[]).filter(block=>{
+       const key=normalizedBlockKey(block);
+       if(seen.has(key))return false;
+       seen.add(key);
+       return true;
+     });
+   };
+   const renderOutlineChildren=children=>{
+     const seenChildren=new Set();
+     return (Array.isArray(children)?children:[]).map(child=>{
+       const blocks=dedupeBlocks(child.blocks);
+       const title=String(child.title||"").trim();
+       const childKey=`${title}::${blocks.map(normalizedBlockKey).join("||")}`;
+       if(seenChildren.has(childKey))return "";
+       seenChildren.add(childKey);
+       return `<section class="kp-live-outline-child">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
+     }).join("");
+   };
    const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
    const normLabel=s=>String(s||"").replace(/\s+/g," ").trim();
    const renderSceneLegacyItems=(legacyItems,outlineGroups=[])=>{
@@ -226,12 +248,17 @@
      const groups=Array.isArray(x.outlineGroups)?x.outlineGroups:[];
      const sceneTitle=normLabel(x.title);
      const legacy=renderSceneLegacyItems(x.legacyItems,groups);
+     const seenGroups=new Set();
      const outline=groups.map(group=>{
        const title=normLabel(group.title);
+       const childrenHtml=renderOutlineChildren(group.outlineChildren);
+       const groupKey=`${title}::${childrenHtml.replace(/\s+/g," ").trim()}`;
+       if(seenGroups.has(groupKey))return "";
+       seenGroups.add(groupKey);
        // The details summary already displays the scene name. Repeating the same H2 immediately below it
        // adds no information and looked like a duplicated scene to PLs.
        const showTitle=title && title!==sceneTitle;
-       return `<section class="kp-live-scene-group">${showTitle?`<h2>${esc(title)}</h2>`:""}${renderOutlineChildren(group.outlineChildren)}</section>`;
+       return `<section class="kp-live-scene-group">${showTitle?`<h2>${esc(title)}</h2>`:""}${childrenHtml}</section>`;
      }).join("");
      return legacy+outline;
    };
