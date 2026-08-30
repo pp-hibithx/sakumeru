@@ -1231,6 +1231,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
   </div>
 </dialog>
 <dialog id="xPreviewDialog" class="x-preview"><h2>X卓報告プレビュー</h2><p class="small muted">投稿前に自由に編集できます。SNS表示名が設定されている人は短縮名で表示します。</p><textarea id="xPreviewText"></textarea><div class="x-preview-actions"><span id="xPreviewCount" class="small muted"></span><div class="row"><button id="xPreviewCancel" type="button">戻る</button><button id="xPreviewPost" type="button">X投稿画面へ</button></div></div></dialog>
+<dialog id="postSaveDialog" class="x-preview"><h2 id="postSaveTitle">保存しました</h2><p class="small muted">このまま次の操作へ進めます。</p><div class="row" style="justify-content:flex-end;gap:8px"><button id="postSaveClose" type="button">閉じる</button><button id="postSaveArticle" type="button">卓記事を書く</button><button id="postSaveX" type="button">Xで卓報告</button></div></dialog>
 
 <dialog id="bgmLibraryDialog" class="bgm-library-dialog"><div class="bgm-library-panel">
   <div class="bgm-library-head"><div><h2 style="margin:0">BGM LIBRARY</h2><div class="small muted">登録した曲を卓記事で何度でも再利用できます。</div></div><button type="button" id="bgmLibraryClose">閉じる</button></div>
@@ -1921,14 +1922,14 @@ function addParticipantRow(v={},opts={}){
    <button type="button" class="danger participant-pc-remove">削除</button>`;
    pcBox.appendChild(pr);
    const inp=pr.querySelector(".partPcName"),res=pr.querySelector(".partPcResults");
-   const render=()=>{const term=inp.value.trim().normalize("NFKC").toLowerCase(),names=playerPcCandidates().filter(n=>!term||n.normalize("NFKC").toLowerCase().includes(term));res.innerHTML=names.length?names.map(n=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(n)}">${esc(n)}</button>`).join(""):'<div class="participant-picker-empty">候補がありません。新しいPC名をそのまま入力できます。</div>';res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;res.classList.remove("open")})};
+   const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),names=playerPcCandidates().filter(n=>!term||n.normalize("NFKC").toLowerCase().includes(term));if(names.length){res.innerHTML=names.map(n=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(n)}">${esc(n)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;res.classList.remove("open")})};
    inp.addEventListener("focus",render);inp.addEventListener("input",render);
    pr.querySelector(".participant-pc-remove").onclick=()=>pr.remove();
  }
  const pcs0=Array.isArray(v.pcs)?v.pcs:((v.pcName||v.ho)?[{pcName:v.pcName||"",ho:v.ho||""}]:[]);
  pcs0.forEach(addPc);
  row.querySelector(".participant-pc-add").onclick=()=>addPc({});
- function renderPl(){const term=plInput.value.trim().normalize("NFKC").toLowerCase(),rows=currentPlayers().filter(p=>!term||[p.name,p.publicName,p.socialName].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term)).slice(0,40);plResults.innerHTML=rows.length?rows.map(p=>`<button type="button" class="participant-picker-item" data-pl-choice="${esc(p.name)}">${esc(p.name)}</button>`).join(""):'<div class="participant-picker-empty">一致する参加者がいません。新しい名前をそのまま入力できます。</div>';plResults.classList.add("open");plResults.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plChoice;plResults.classList.remove("open")})}
+ function renderPl(){const raw=plInput.value.trim(),term=raw.normalize("NFKC").toLowerCase(),rows=currentPlayers().filter(p=>!term||[p.name,p.publicName,p.socialName].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term)).slice(0,40);if(rows.length){plResults.innerHTML=rows.map(p=>`<button type="button" class="participant-picker-item" data-pl-choice="${esc(p.name)}">${esc(p.name)}</button>`).join("")}else if(raw){plResults.innerHTML=`<button type="button" class="participant-picker-item" data-pl-create="${esc(raw)}">＋「${esc(raw)}」を新しい参加者として使う</button><div class="participant-picker-empty">保存時にPLAYERSへ登録されます。</div>`}else{plResults.innerHTML='<div class="participant-picker-empty">名前を入力すると既存の参加者を検索できます。未登録ならそのまま新規入力できます。</div>'}plResults.classList.add("open");plResults.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plChoice;plResults.classList.remove("open")});plResults.querySelectorAll("[data-pl-create]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plCreate;if(TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){TRPG39.ensurePlayer(plInput.value);players=TRPG39.loadPlayers()}plResults.classList.remove("open")})}
  plInput.addEventListener("focus",renderPl);plInput.addEventListener("input",renderPl);
  row.querySelector(".participant-remove").onclick=()=>row.remove();
  q("participantRows").appendChild(row);
@@ -2105,9 +2106,13 @@ function save(){
    if(created){scenarioId=created.id;title=created.title;fillScenarioSelect();q("scenarioSelect").value=created.id;}
  }
  let id=q("editId").value||TRPG39.uuid(),old=data.find(x=>x.id===id);
- const runId=old?.runId||q("runId").value||TRPG39.uuid(),runLabel=q("runLabel").value.trim()||old?.runLabel||nextRunLabelForScenario(scenarioId,title);
  const date=q("date").value;
  if(!date)return alert("日付を入力してください。");
+ if(!old&&!q("editId").value){
+   const linked=data.filter(x=>x.eventId&&String(x.date||x.start||"").slice(0,10)===date&&((scenarioId&&x.scenarioId===scenarioId)||(!scenarioId&&normTitle(x.title)===normTitle(title))));
+   if(linked.length===1&&confirm("CALENDARに同じシナリオ・日付の予定があります。\n\nこの予定に卓報告を追加しますか？\n［OK］既存予定を使う ／ ［キャンセル］別の記録として作成")){old=linked[0];id=old.id}
+ }
+ const runId=old?.runId||q("runId").value||TRPG39.uuid(),runLabel=q("runLabel").value.trim()||old?.runLabel||nextRunLabelForScenario(scenarioId,title);
  const start=combineLibraryDateTime(date,q("startTime").value);
  const end=combineLibraryDateTime(date,q("endTime").value);
  const rows=getParticipantRows().map(r=>{
@@ -2157,7 +2162,7 @@ function save(){
    if(q("rememberParticipantHo").checked)setParticipantHoTemplate(item.scenarioId,item.title,getParticipantRows());
    else setParticipantHoTemplate(item.scenarioId,item.title,[]);
  }
- persist();reset();render();hideEditor();
+ persist();const savedItem=item;reset();render();hideEditor();showPostSaveActions(savedItem);
 }
 function edit(id){
  let x=data.find(v=>v.id===id);if(!x)return;fillScenarioSelect();
@@ -2167,6 +2172,14 @@ function edit(id){
  q("externalLinks").innerHTML="";(x.externalLinks||[]).forEach(addLinkRow);if(!(x.externalLinks||[]).length)addLinkRow();
  q("formHeading").textContent="開催記録を編集";q("cancel").hidden=false;showEditor();q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"});
 }
+function openLibraryFromCalendarEvent(){
+ const params=new URLSearchParams(location.search),eventId=params.get("event");if(!eventId)return;
+ const rec=data.find(x=>String(x.eventId||"")===String(eventId));
+ if(!rec)return;
+ edit(rec.id);
+ if(params.get("action")==="report"){q("formHeading").textContent="この予定から卓報告";q("status").value="done";}
+}
+
 function setRunArchived(runId,archived){
  data=data.map(x=>x.runId===runId?TRPG39.normalizeAlbum({...x,archived:!!archived}):x);persist();render();
 }
@@ -2396,6 +2409,13 @@ async function confirmPostAlbumToX(){
    const result=await prepareShareUrl(id),intent=new URL("https://x.com/intent/tweet");intent.searchParams.set("text",q("xPreviewText").value);intent.searchParams.set("url",result.url);intent.searchParams.set("lang","ja");
    if(popup){popup.opener=null;popup.location.replace(intent.href)}else location.href=intent.href;
  }catch(e){if(popup)popup.close();console.error(e);alert(e.message||e)}
+}
+let postSaveContext=null;
+function showPostSaveActions(item){
+ if(!item||!q("postSaveDialog"))return;
+ postSaveContext={id:item.id,runId:item.runId};
+ q("postSaveTitle").textContent=item.status==="done"?"卓報告を保存しました":"開催記録を保存しました";
+ q("postSaveDialog").showModal();
 }
 function nextRunLabelForScenario(scenarioId,title=""){
  const same=data.filter(x=>{
@@ -5541,7 +5561,7 @@ document.addEventListener("click",e=>{
 });
 q("articleImageViewerClose").onclick=()=>q("articleImageViewer").close();
 q("articleImageViewer").addEventListener("click",e=>{if(e.target===q("articleImageViewer"))q("articleImageViewer").close()});
-q("xPreviewText").oninput=updateXPreviewCount;q("xPreviewCancel").onclick=()=>q("xPreviewDialog").close();q("xPreviewPost").onclick=confirmPostAlbumToX;
+q("xPreviewText").oninput=updateXPreviewCount;q("xPreviewCancel").onclick=()=>q("xPreviewDialog").close();q("xPreviewPost").onclick=confirmPostAlbumToX;q("postSaveClose").onclick=()=>q("postSaveDialog").close();q("postSaveX").onclick=()=>{const c=postSaveContext;q("postSaveDialog").close();if(c?.id)postAlbumToX(c.id)};q("postSaveArticle").onclick=()=>{const c=postSaveContext;q("postSaveDialog").close();if(c?.runId)openArticleEditor(c.runId)};
 q("search").oninput=()=>{focusedScenarioKey="";focusedRunId="";focusedPlayerId="";render()};
 q("playerListSort").onchange=()=>{playerListSort=q("playerListSort").value;render()};
 q("playerArchiveFilter").onchange=()=>{playerArchiveFilter=q("playerArchiveFilter").value;focusedPlayerId="";render()};q("filter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};q("archiveFilter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};
@@ -5610,7 +5630,7 @@ q("pcLibraryEditorCancel").onclick=closePcLibraryEditor;
 q("pcLibraryEditorSave").onclick=savePcLibraryEditor;
 q("pcLibraryEditor").addEventListener("click",e=>{if(e.target===q("pcLibraryEditor"))closePcLibraryEditor()});
 
-reset();hideEditor();render();{const p=new URLSearchParams(location.search),sid=p.get("scenario")||"";if(p.get("new")==="1"){addForScenario(sid)}}
+reset();hideEditor();render();openLibraryFromCalendarEvent();{const p=new URLSearchParams(location.search),sid=p.get("scenario")||"";if(p.get("new")==="1"){addForScenario(sid)}}
 })();
 </script>
 
