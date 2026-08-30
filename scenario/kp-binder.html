@@ -668,6 +668,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .blog-editor > [data-kp-reveal-state="open"]{box-shadow:inset 3px 0 0 rgba(86,150,92,.72)}
 .blog-editor > [data-kp-reveal-state="fail"]{box-shadow:inset 3px 0 0 rgba(199,91,91,.62);opacity:.78}
 .kp-outline-share-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.scene-share-quick{display:flex;gap:8px;align-items:center;margin:-4px 0 10px}
+.block-handle-layer .kp-nested-state-control{transform:translateY(-1px);padding:1px;background:color-mix(in srgb,var(--panel) 94%,transparent)}
+.block-handle-layer .kp-nested-state-control button{width:25px;height:24px;min-width:25px;font-size:.9em}
+.blog-editor [data-kp-reveal-state="open"]:not(:scope > *){box-shadow:inset 3px 0 0 rgba(86,150,92,.58)}
+.blog-editor [data-kp-reveal-state="fail"]:not(:scope > *){box-shadow:inset 3px 0 0 rgba(199,91,91,.48);opacity:.82}
+
 
 /* 2026-08-30 reveal selector contrast */
 .blog-editor .kp-reveal-mode label{
@@ -702,6 +708,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   </aside>
   <section class="editor">
    <h2 id="sceneTitle" class="scene-title"></h2>
+   <div class="scene-share-quick"><button type="button" id="applyOutlineRevealTop">○をKPliveへ反映</button><span class="muted-note">現在のシーンだけ更新</span></div>
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
    <div class="element-tools" id="addbar">
@@ -715,7 +722,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   <div class="kp-outline-share-actions" style="margin-top:10px">
     <button type="button" id="applyOutlineReveal">このシーンの○をKPliveへ反映</button>
     <button type="button" class="secondary" id="toggleKpLiveOrder">↕ KPlive表示順を編集</button>
-    <span class="muted-note">このシーン内の「○」だけを、大見出し／小見出しごとにまとめて更新します。他のシーンの共有内容は残ります。</span>
+    <span class="muted-note">このシーン内の「○」だけを反映します。通常本文だけでなく、PL向け要点・特殊ブロック内の本文／箇条書きも対象です。</span>
   </div>
   <section class="kp-live-order-wrap" id="kpLiveOrderWrap" hidden>
     <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">共有済み情報だけを並び替えます。開示した時刻や共有URLは変わりません。</div></div></div>
@@ -1018,8 +1025,24 @@ function renderEditor(){
  const OUTLINE_OPTIONS={rootHeading:"h2",childHeading:"h3",specialSelector:"section.kp-special"};
 
  const KP_STATEABLE_SELECTOR="p,blockquote,ul,ol,div.image-grid";
+ const KP_NESTED_STATE_SELECTOR="p,blockquote,li,div.image-grid";
+ function specialStateContainerFor(block){
+   return block?.closest?.(".kp-special-body,[data-reveal-summary]")||null;
+ }
+ function isNestedKpStateableBlock(block){
+   if(!block?.matches?.(KP_NESTED_STATE_SELECTOR))return false;
+   const container=specialStateContainerFor(block);
+   if(!container||!ed.contains(container))return false;
+   if(block.matches("li"))return !!block.parentElement?.matches?.("ul,ol");
+   return block.parentElement===container;
+ }
  function isKpStateableBlock(block){
-   return !!block && block.parentElement===ed && block.matches?.(KP_STATEABLE_SELECTOR);
+   if(!block)return false;
+   if(block.parentElement===ed&&block.matches?.(KP_STATEABLE_SELECTOR))return true;
+   return isNestedKpStateableBlock(block);
+ }
+ function nestedKpStateableBlocks(){
+   return [...ed.querySelectorAll(".kp-special-body p,.kp-special-body blockquote,.kp-special-body li,.kp-special-body div.image-grid,[data-reveal-summary] p,[data-reveal-summary] blockquote,[data-reveal-summary] li,[data-reveal-summary] div.image-grid")].filter(isNestedKpStateableBlock);
  }
  function kpRevealState(block){
    const v=String(block?.dataset?.kpRevealState||"none");
@@ -1039,7 +1062,7 @@ function renderEditor(){
    if(saveState){syncArticle();refreshBlockHandles()}
  }
  function decorateKpRevealStates(){
-   directEditorBlocks().forEach(block=>{
+   [...directEditorBlocks(),...nestedKpStateableBlocks()].forEach(block=>{
      if(!isKpStateableBlock(block))return;
      ensureKpRevealBlockId(block);
      if(!block.dataset.kpRevealState)block.dataset.kpRevealState="none";
@@ -1055,6 +1078,14 @@ function renderEditor(){
    while(node&&node.parentElement!==ed)node=node.parentElement;
    return node&&node.parentElement===ed?node:null;
  }
+ function currentSelectionStateBlock(){
+   const sel=getSelection();if(!sel?.rangeCount)return null;
+   let node=sel.anchorNode;if(node?.nodeType===3)node=node.parentElement;
+   if(!node)return null;
+   const nested=node.closest?.("li,p,blockquote,div.image-grid");
+   if(nested&&isKpStateableBlock(nested))return nested;
+   return currentSelectionDirectBlock();
+ }
 
  function kpBlockHasMeaningfulContent(block){
    if(!block)return false;
@@ -1062,25 +1093,24 @@ function renderEditor(){
    return !!String(block.textContent||"").replace(/\u200B/g,"").trim();
  }
  function removeKpStateableBlock(block,{focusNeighbor=true}={}){
-   if(!isKpStateableBlock(block)||block.parentElement!==ed)return false;
-   const prev=block.previousElementSibling,next=block.nextElementSibling;
+   if(!isKpStateableBlock(block))return false;
+   const parent=block.parentElement,prev=block.previousElementSibling,next=block.nextElementSibling;
+   const nested=isNestedKpStateableBlock(block);
    block.remove();
-   if(!ed.children.length){
-     const p=document.createElement("p");p.innerHTML="<br>";ed.appendChild(p);
-   }
+   if(nested && parent?.matches?.("ul,ol") && !parent.querySelector("li"))parent.remove();
+   if(!ed.children.length){const p=document.createElement("p");p.innerHTML="<br>";ed.appendChild(p)}
    ensureParagraphBlocks();decorateBlocks();syncArticle();
    if(focusNeighbor){
-     const target=(next&&next.isConnected?next:(prev&&prev.isConnected?prev:ed.lastElementChild));
-     if(target){
-       const range=document.createRange(),sel=getSelection();
-       range.selectNodeContents(target);range.collapse(false);
+     const target=(next&&next.isConnected?next:(prev&&prev.isConnected?prev:(nested?parent:ed.lastElementChild)));
+     if(target&&target.isConnected){
+       const range=document.createRange(),sel=getSelection();range.selectNodeContents(target);range.collapse(false);
        sel.removeAllRanges();sel.addRange(range);saveRange();
      }
    }
    return true;
  }
  function deleteEmptyKpBlockFromCaret(){
-   const block=currentSelectionDirectBlock();
+   const block=currentSelectionStateBlock();
    if(!isKpStateableBlock(block)||kpBlockHasMeaningfulContent(block))return false;
    return removeKpStateableBlock(block);
  }
@@ -1102,6 +1132,22 @@ function renderEditor(){
  }
 
  let handleFrame=0;
+ function appendKpStateControl(block,{left,top,nested=false}={}){
+   const stateWrap=document.createElement("span");
+   stateWrap.className=`kp-block-state-control sm-outline-ui${nested?" kp-nested-state-control":""}`;
+   stateWrap.style.left=`${left}px`;stateWrap.style.top=`${top}px`;stateWrap._smBlock=block;
+   [["none","－","開示不要"],["open","○","取得済み・KPliveへ開示"],["fail","×","判定失敗・未取得"]].forEach(([state,label,title])=>{
+     const btn=document.createElement("button");btn.type="button";btn.dataset.kpState=state;btn.textContent=label;btn.title=title;
+     btn.setAttribute("aria-label",title);btn.setAttribute("aria-pressed",String(kpRevealState(block)===state));
+     btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+     btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();setKpRevealState(block,state)});
+     stateWrap.appendChild(btn);
+   });
+   const del=document.createElement("button");del.type="button";del.className="kp-block-delete";del.textContent="⌫";del.title="この本文ブロックを削除";del.setAttribute("aria-label",del.title);
+   del.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+   del.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(kpBlockHasMeaningfulContent(block)&&!confirm("この本文ブロックを削除しますか？"))return;removeKpStateableBlock(block)});
+   stateWrap.appendChild(del);handleLayer.appendChild(stateWrap);
+ }
  function refreshBlockHandles(){
    cancelAnimationFrame(handleFrame);
    handleFrame=requestAnimationFrame(()=>{
@@ -1132,34 +1178,7 @@ function renderEditor(){
        handleLayer.appendChild(h);
 
        if(isKpStateableBlock(block)){
-         const stateWrap=document.createElement("span");
-         stateWrap.className="kp-block-state-control sm-outline-ui";
-         stateWrap.style.left=`${edRect.left-shellRect.left+37}px`;
-         stateWrap.style.top=h.style.top;
-         stateWrap._smBlock=block;
-         [["none","－","開示不要"],["open","○","取得済み・KPliveへ開示"],["fail","×","判定失敗・未取得"]].forEach(([state,label,title])=>{
-           const btn=document.createElement("button");
-           btn.type="button";btn.dataset.kpState=state;btn.textContent=label;btn.title=title;
-           btn.setAttribute("aria-label",title);
-           btn.setAttribute("aria-pressed",String(kpRevealState(block)===state));
-           btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
-           btn.addEventListener("click",e=>{
-             e.preventDefault();e.stopPropagation();
-             setKpRevealState(block,state);
-           });
-           stateWrap.appendChild(btn);
-         });
-         const del=document.createElement("button");
-         del.type="button";del.className="kp-block-delete";del.textContent="⌫";del.title="この本文ブロックを削除";
-         del.setAttribute("aria-label","この本文ブロックを削除");
-         del.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
-         del.addEventListener("click",e=>{
-           e.preventDefault();e.stopPropagation();
-           if(kpBlockHasMeaningfulContent(block)&&!confirm("この本文ブロックを削除しますか？"))return;
-           removeKpStateableBlock(block);
-         });
-         stateWrap.appendChild(del);
-         handleLayer.appendChild(stateWrap);
+         appendKpStateControl(block,{left:edRect.left-shellRect.left+37,top:parseFloat(h.style.top)||0});
        }
 
        if(richOutline?.isCollapsible(block,OUTLINE_OPTIONS)){
@@ -1181,6 +1200,15 @@ function renderEditor(){
          });
          handleLayer.appendChild(t);
        }
+     });
+
+     nestedKpStateableBlocks().forEach(block=>{
+       if(block.closest("[hidden],.sm-outline-hidden"))return;
+       const r=block.getBoundingClientRect();
+       if(!r.height)return;
+       const left=Math.max(edRect.left-shellRect.left+37,r.left-shellRect.left-104);
+       const top=r.top-shellRect.top+Math.min(4,Math.max(0,r.height/2-13));
+       appendKpStateControl(block,{left,top,nested:true});
      });
    });
  }
@@ -2025,6 +2053,7 @@ async function outlineShareBlockSnapshot(block){
  clone.querySelectorAll("img").forEach(img=>img.remove());
  let html="";
  if(block.matches("div.image-grid"))html=clone.innerHTML||"";
+ else if(block.matches("li"))html=`<ul>${clone.outerHTML}</ul>`;
  else html=clone.outerHTML||clone.innerHTML||"";
  return {id:blockId,bodyHtml:html,images};
 }
@@ -2032,29 +2061,48 @@ async function collectOutlineShareScene(){
  const page=b.pages.find(x=>String(x.id)===String(active));
  if(!page)throw new Error("シーンを選択してください。");
  const roots=[];let root=null,child=null;
- const makeRoot=(heading=null)=>{
-   const id=ensureHeadingShareId(heading,"root");
-   root={id,title:headingText(heading,"共有情報"),outlineChildren:[]};
-   roots.push(root);child=null;return root;
+ const makeRoot=(heading=null,titleOverride="")=>{
+   const id=heading?ensureHeadingShareId(heading,"root"):(crypto.randomUUID?.()||`root-${Date.now()}-${Math.random()}`);
+   root={id,title:titleOverride||headingText(heading,"共有情報"),outlineChildren:[]};roots.push(root);child=null;return root;
  };
- const makeChild=(heading=null)=>{
-   if(!root)makeRoot(null);
-   const id=ensureHeadingShareId(heading,"child");
-   child={id,title:headingText(heading,""),blocks:[]};
-   root.outlineChildren.push(child);return child;
+ const makeChild=(heading=null,titleOverride="")=>{
+   if(!root)makeRoot(null);const id=heading?ensureHeadingShareId(heading,"child"):(crypto.randomUUID?.()||`child-${Date.now()}-${Math.random()}`);
+   child={id,title:titleOverride||headingText(heading,""),blocks:[]};root.outlineChildren.push(child);return child;
+ };
+ const appendSpecialStates=async section=>{
+   const specialTitle=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim() ||
+     String(section.querySelector(":scope > .kp-special-head .kind-chip")?.textContent||"開示情報").trim();
+   const containers=[...section.querySelectorAll(":scope > .kp-special-body, :scope > .kp-reveal-sharebox [data-reveal-summary]")];
+   const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>isNestedKpStateableBlock(x)&&kpRevealState(x)==="open"));
+   if(!openUnits.length)return false;
+   const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[]};
+   for(const container of containers){
+     let subgroup=null;
+     const nodes=[...container.querySelectorAll("h1,h2,h3,h4,p,blockquote,li,div.image-grid")];
+     for(const node of nodes){
+       if(node.matches("h1,h2,h3,h4")){subgroup={id:ensureHeadingShareId(node,"inner"),title:headingText(node,""),blocks:[]};specialRoot.outlineChildren.push(subgroup);continue}
+       if(!isNestedKpStateableBlock(node)||kpRevealState(node)!=="open")continue;
+       if(!subgroup){subgroup={id:`inner:${ensureKpRevealBlockId(node)}`,title:"",blocks:[]};specialRoot.outlineChildren.push(subgroup)}
+       subgroup.blocks.push(await outlineShareBlockSnapshot(node));
+     }
+   }
+   specialRoot.outlineChildren=specialRoot.outlineChildren.filter(c=>c.blocks.length);
+   if(specialRoot.outlineChildren.length)roots.push(specialRoot);
+   return !!specialRoot.outlineChildren.length;
  };
  for(const block of [...ed.children]){
    if(block.matches?.("h2")){root=makeRoot(block);continue}
    if(block.matches?.("h3")){child=makeChild(block);continue}
+   if(block.matches?.("section.kp-special")){await appendSpecialStates(block);root=null;child=null;continue}
    if(!isKpStateableBlock(block)||kpRevealState(block)!=="open")continue;
    if(!root)makeRoot(null);if(!child)makeChild(null);
    child.blocks.push(await outlineShareBlockSnapshot(block));
  }
  roots.forEach(g=>g.outlineChildren=g.outlineChildren.filter(c=>c.blocks.length));
  return {id:`outline-scene:${page.id}`,kind:"outline-scene",source:"outline",sceneId:String(page.id),
-   title:String(page.title||"無題のシーン").trim()||"無題のシーン",target:"全員",
-   outlineGroups:roots.filter(g=>g.outlineChildren.length)};
+   title:String(page.title||"無題のシーン").trim()||"無題のシーン",target:"全員",outlineGroups:roots.filter(g=>g.outlineChildren.length)};
 }
+
 async function applyOutlineRevealToShare(){
  shareTest=currentShare()||shareTest;
  if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");
@@ -2069,8 +2117,10 @@ async function applyOutlineRevealToShare(){
  // Existing special reveal blocks from this scene are also children of the scene.
  // Old data may not have sceneId yet, so match by the block IDs currently present in this editor.
  const currentRevealIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
+ const nestedManagedRevealIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].filter(sec=>[...sec.querySelectorAll(".kp-special-body [data-kp-reveal-state='open'],[data-reveal-summary] [data-kp-reveal-state='open']")].some(isNestedKpStateableBlock)).map(sec=>String(sec.dataset.blockId||"")));
  fresh.legacyItems=(shareTest.items||[]).filter(x=>{
    if(x.kind==="outline-scene"||x.kind==="outline-group")return false;
+   if(nestedManagedRevealIds.has(String(x.id||"")))return false;
    if(String(x.sceneId||"")===String(fresh.sceneId))return true;
    return currentRevealIds.has(String(x.id||""));
  }).map(x=>({...x,sceneId:String(fresh.sceneId),sceneTitle:fresh.title}));
@@ -2176,30 +2226,18 @@ async function syncTestShare(){
  shareTest=currentShare()||shareTest;
  if(!shareTest?.shareId)throw new Error("先に共通URLを作成してください。");
  await TRPG39Cloud.updateSharedPage(shareTest.shareId,sharePayloadFor(null));
- for(const p of (shareTest.participants||[])){
-   if(p.shareId)await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));
- }
- save();q("#toggleKpLiveOrder")?.addEventListener("click",()=>{
- const wrap=q("#kpLiveOrderWrap");if(!wrap)return;
- wrap.hidden=!wrap.hidden;
- if(!wrap.hidden)renderKpLiveOrder();
-});
-q("#cancelKpLiveOrder")?.addEventListener("click",()=>{const wrap=q("#kpLiveOrderWrap");if(wrap)wrap.hidden=true});
-q("#applyKpLiveOrder")?.addEventListener("click",async()=>{
- const st=q("#testShareStatus");
- try{
-   shareTest=currentShare()||shareTest;
-   if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");
-   commitKpLiveOrderFromDom();
-   st.textContent="KPliveの表示順を更新中…";
-   await syncTestShare();
-   renderKpLiveOrder();
-   st.textContent="KPliveの表示順を更新しました。";
- }catch(err){st.textContent=`表示順を更新できませんでした：${err?.message||String(err)}`}
-});
-setupKpLiveOrderDnD();
-renderTestShareBar();renderShareParticipants();
+ for(const p of (shareTest.participants||[])){if(p.shareId)await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p))}
+ save();renderTestShareBar();renderShareParticipants();
 }
+function wireKpLiveOrderControls(){
+ const toggle=q("#toggleKpLiveOrder"),cancel=q("#cancelKpLiveOrder"),apply=q("#applyKpLiveOrder");
+ if(toggle)toggle.onclick=()=>{const wrap=q("#kpLiveOrderWrap");if(!wrap)return;wrap.hidden=!wrap.hidden;if(!wrap.hidden)renderKpLiveOrder()};
+ if(cancel)cancel.onclick=()=>{const wrap=q("#kpLiveOrderWrap");if(wrap)wrap.hidden=true};
+ if(apply)apply.onclick=async()=>{const st=q("#testShareStatus");try{shareTest=currentShare()||shareTest;if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");commitKpLiveOrderFromDom();st.textContent="KPliveの表示順を更新中…";await syncTestShare();renderKpLiveOrder();st.textContent="KPliveの表示順を更新しました。"}catch(err){st.textContent=`表示順を更新できませんでした：${err?.message||String(err)}`}};
+ setupKpLiveOrderDnD();
+}
+wireKpLiveOrderControls();
+
 async function compressShareImage(src){
  src=String(src||"");
  if(!src.startsWith("data:image/"))return {src,mime:"image/webp"};
@@ -2579,16 +2617,16 @@ q("#makeTestShare").onclick=async()=>{
    renderTestShareBar();st.textContent="この陣の共通URLを用意しました。";
  }catch(e){st.textContent=e.message||String(e)}
 };
-q("#applyOutlineReveal")?.addEventListener("click",async()=>{
+async function runApplyOutlineReveal(){
  const st=q("#testShareStatus");
  try{
-   st.textContent="このシーンの○をKPlive用に準備中…画像がある場合はStorageへアップロードします。";
+   if(st)st.textContent="このシーンの○をKPlive用に準備中…画像がある場合はStorageへアップロードします。";
    const count=await applyOutlineRevealToShare();
-   st.textContent=count?`このシーンの○ ${count}ブロックをKPliveへ反映しました。`:"このシーンに○がないため、このシーンの共有をKPliveから外しました。";
- }catch(err){
-   console.error(err);st.textContent=`このシーンをKPliveへ反映できませんでした：${err?.message||String(err)}`;
- }
-});
+   if(st)st.textContent=count?`このシーンの○ ${count}ブロックをKPliveへ反映しました。`:"このシーンに○がないため、このシーンの共有をKPliveから外しました。";
+ }catch(err){console.error(err);if(st)st.textContent=`このシーンをKPliveへ反映できませんでした：${err?.message||String(err)}`}
+}
+q("#applyOutlineReveal")?.addEventListener("click",runApplyOutlineReveal);
+q("#applyOutlineRevealTop")?.addEventListener("click",runApplyOutlineReveal);
 q("#newShareSession").onclick=()=>{
  shareTest=currentShare()||shareTest;
  const hasCurrent=!!shareTest?.shareId;
