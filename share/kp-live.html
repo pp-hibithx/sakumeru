@@ -173,20 +173,9 @@
        if(!prev||String(x.updatedAt||x.revealedAt||"")>=String(prev.updatedAt||prev.revealedAt||""))byScene.set(key,x);
      }
      const sceneIds=new Set(byScene.keys());
+     const sceneTitles=new Set([...byScene.values()].map(x=>String(x.title||"").trim()).filter(Boolean));
      items=items.filter(x=>{
        if(x?.kind==="outline-scene"&&x?.sceneId)return byScene.get(String(x.sceneId))===x;
-       if(x?.sceneId&&sceneIds.has(String(x.sceneId)))return false;
-       return true;
-     });
-   }
-   // Scene is the top-level unit. If a scene payload exists, do not also show
-   // older top-level cards that belong to that same scene.
-   const sceneItems=items.filter(x=>x?.kind==="outline-scene");
-   if(sceneItems.length){
-     const sceneIds=new Set(sceneItems.map(x=>String(x.sceneId||"")).filter(Boolean));
-     const sceneTitles=new Set(sceneItems.map(x=>String(x.title||"").trim()).filter(Boolean));
-     items=items.filter(x=>{
-       if(x?.kind==="outline-scene")return true;
        if(x?.kind==="outline-group"&&x?.source==="outline")return false;
        if(x?.sceneId&&sceneIds.has(String(x.sceneId)))return false;
        if(!x?.sceneId&&x?.sceneTitle&&sceneTitles.has(String(x.sceneTitle).trim()))return false;
