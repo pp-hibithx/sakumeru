@@ -610,6 +610,20 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .kp-special-action .share-update-btn,.kp-special-action .share-withdraw-btn{margin-left:6px}
 .shared-badge{font-size:12px;font-weight:800;margin-right:3px}
 @media(max-width:820px){.share-test-actions{grid-template-columns:1fr}.share-test-actions input{width:100%}}
+.kp-live-order-wrap{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.018)}
+.kp-live-order-head{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.kp-live-order-list{display:grid;gap:7px;margin-top:9px}
+.kp-live-order-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.kp-live-order-row.dragging{opacity:.45}
+.kp-live-order-row.drag-over{outline:2px solid var(--accent);outline-offset:1px}
+.kp-live-order-handle{cursor:grab;user-select:none;color:var(--muted);font-weight:900;font-size:16px;line-height:1}
+.kp-live-order-handle:active{cursor:grabbing}
+.kp-live-order-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.kp-live-order-target{font-size:11px;color:var(--muted);font-weight:600}
+.kp-live-order-moves{display:flex;gap:4px}
+.kp-live-order-moves button{padding:4px 7px;min-width:30px}
+.kp-live-order-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:9px;flex-wrap:wrap}
+@media(max-width:620px){.kp-live-order-row{grid-template-columns:auto minmax(0,1fr)}.kp-live-order-moves{grid-column:1/-1;justify-content:flex-end}}
 
 
 .kp-prod-tabs{display:flex;gap:7px;flex-wrap:wrap;position:sticky;top:0;z-index:45;padding:9px 0;background:var(--bg)}
@@ -671,6 +685,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   <div class="share-test-head"><div><strong>この陣の共有</strong><div class="muted-note">共通URLはHO未定でも使えます。PLを追加するとPL専用URLを発行でき、HO決定後は同じURLへ該当HOの開示情報が届きます。</div></div><button type="button" class="secondary" id="newShareSession">＋ 新しい陣</button></div>
   <div class="share-test-actions"><button type="button" id="makeTestShare">共通URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共通URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共通ページを開く</a></div>
   <div class="muted-note" id="testShareStatus">共通URLには「全員」向けの開示情報だけが表示されます。</div>
+  <div style="margin-top:10px"><button type="button" class="secondary" id="toggleKpLiveOrder">↕ KPlive表示順を編集</button></div>
+  <section class="kp-live-order-wrap" id="kpLiveOrderWrap" hidden>
+    <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">共有済み情報だけを並び替えます。開示した時刻や共有URLは変わりません。</div></div></div>
+    <div class="kp-live-order-list" id="kpLiveOrderList"></div>
+    <div class="kp-live-order-actions"><button type="button" class="secondary" id="cancelKpLiveOrder">閉じる</button><button type="button" id="applyKpLiveOrder">この順番をKPliveへ反映</button></div>
+  </section>
   <details class="share-history"><summary>過去の陣</summary><div id="shareSessionHistory" class="muted-note"></div></details>
 </section>
 <section class="pdf-check-section" id="pdfCheckSection">
@@ -1829,24 +1849,84 @@ function targetMatches(itemTarget,ho){
  if(!ho)return false;
  return t.split(/[、,／\/・\s]+/).filter(Boolean).includes(String(ho).trim());
 }
+function ensureShareDisplayOrder(){
+ shareTest=currentShare()||shareTest;
+ const items=shareTest?.items||[];
+ const sorted=[...items].sort((a,z)=>new Date(a.revealedAt||0)-new Date(z.revealedAt||0));
+ let changed=false;
+ sorted.forEach((item,i)=>{
+   if(!Number.isFinite(Number(item.displayOrder))){item.displayOrder=i;changed=true}
+ });
+ return changed;
+}
+function compareShareDisplayOrder(a,z){
+ const ao=Number.isFinite(Number(a?.displayOrder))?Number(a.displayOrder):Number.MAX_SAFE_INTEGER;
+ const zo=Number.isFinite(Number(z?.displayOrder))?Number(z.displayOrder):Number.MAX_SAFE_INTEGER;
+ if(ao!==zo)return ao-zo;
+ return new Date(a?.revealedAt||0)-new Date(z?.revealedAt||0);
+}
 function sharePayloadFor(participant=null){
  shareTest=currentShare()||shareTest;
+ ensureShareDisplayOrder();
  const items=(shareTest.items||[]).filter(x=>participant?targetMatches(x.target,participant.ho):String(x.target||"全員").trim()==="全員");
- return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
+ return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort(compareShareDisplayOrder)}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830e`,location.href).href:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830f`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
  const arr=b.shareSessions||[];
  host.innerHTML=arr.length?arr.slice().reverse().map(x=>{const u=shareUrlById(x.shareId);return `<div style="margin:6px 0"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP"))}</a> <span class="muted">（${(x.items||[]).length}件）</span></div>`}).join(""):"過去の共有セッションはありません。";
 }
+function shareOrderTitle(item){
+ const t=String(item?.title||"").replace(/\s+/g," ").trim();
+ return t&&t!=="開示情報"?t:"タイトルなしの開示";
+}
+function orderedShareItems(){
+ shareTest=currentShare()||shareTest;
+ ensureShareDisplayOrder();
+ return [...(shareTest?.items||[])].sort(compareShareDisplayOrder);
+}
+function renderKpLiveOrder(){
+ const host=q("#kpLiveOrderList");if(!host)return;
+ const items=orderedShareItems();
+ host.innerHTML=items.length?items.map((item,i)=>`<div class="kp-live-order-row" draggable="true" data-order-id="${esc(item.id)}">
+   <span class="kp-live-order-handle" title="ドラッグして並び替え">☰</span>
+   <div><div class="kp-live-order-title">${esc(shareOrderTitle(item))}</div><div class="kp-live-order-target">対象：${esc(item.target||"全員")}</div></div>
+   <div class="kp-live-order-moves"><button type="button" class="secondary" data-order-up="${esc(item.id)}" ${i===0?"disabled":""}>↑</button><button type="button" class="secondary" data-order-down="${esc(item.id)}" ${i===items.length-1?"disabled":""}>↓</button></div>
+ </div>`).join(""):'<div class="muted-note">まだ共有済みの情報はありません。</div>';
+}
+function commitKpLiveOrderFromDom(){
+ shareTest=currentShare()||shareTest;
+ const ids=[...q("#kpLiveOrderList")?.querySelectorAll("[data-order-id]")||[]].map(el=>el.dataset.orderId);
+ const map=new Map((shareTest.items||[]).map(x=>[String(x.id),x]));
+ ids.forEach((id,i)=>{const item=map.get(String(id));if(item)item.displayOrder=i});
+ saveNow();
+}
+function moveKpLiveOrder(id,delta){
+ const list=q("#kpLiveOrderList");if(!list)return;
+ const row=list.querySelector(`[data-order-id="${CSS.escape(String(id))}"]`);if(!row)return;
+ if(delta<0&&row.previousElementSibling)list.insertBefore(row,row.previousElementSibling);
+ if(delta>0&&row.nextElementSibling)list.insertBefore(row.nextElementSibling,row);
+ commitKpLiveOrderFromDom();renderKpLiveOrder();
+}
+let orderDragId="";
+function setupKpLiveOrderDnD(){
+ const list=q("#kpLiveOrderList");if(!list)return;
+ list.addEventListener("dragstart",e=>{const row=e.target.closest?.("[data-order-id]");if(!row)return;orderDragId=row.dataset.orderId;row.classList.add("dragging");e.dataTransfer.effectAllowed="move"});
+ list.addEventListener("dragend",e=>{e.target.closest?.("[data-order-id]")?.classList.remove("dragging");list.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));orderDragId=""});
+ list.addEventListener("dragover",e=>{const row=e.target.closest?.("[data-order-id]");if(!row||!orderDragId||row.dataset.orderId===orderDragId)return;e.preventDefault();list.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));row.classList.add("drag-over")});
+ list.addEventListener("drop",e=>{const target=e.target.closest?.("[data-order-id]");const source=orderDragId?list.querySelector(`[data-order-id="${CSS.escape(orderDragId)}"]`):null;if(!target||!source||target===source)return;e.preventDefault();const rect=target.getBoundingClientRect();const after=e.clientY>rect.top+rect.height/2;list.insertBefore(source,after?target.nextSibling:target);commitKpLiveOrderFromDom();renderKpLiveOrder()});
+ list.addEventListener("click",e=>{const up=e.target.closest?.("[data-order-up]"),down=e.target.closest?.("[data-order-down]");if(up)moveKpLiveOrder(up.dataset.orderUp,-1);if(down)moveKpLiveOrder(down.dataset.orderDown,1)});
+}
+
 function renderTestShareBar(){
  shareTest=currentShare()||shareTest;
  const u=testShareUrl(),inp=q("#testShareUrl"),op=q("#openTestShare");
  if(inp)inp.value=u;if(op){op.href=u||"#";op.hidden=!u}
  renderShareHistory();refreshRevealActions();
+ if(!q("#kpLiveOrderWrap")?.hidden)renderKpLiveOrder();
 }
 async function syncTestShare(){
  shareTest=currentShare()||shareTest;
@@ -1855,7 +1935,26 @@ async function syncTestShare(){
  for(const p of (shareTest.participants||[])){
    if(p.shareId)await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));
  }
- save();renderTestShareBar();renderShareParticipants();
+ save();q("#toggleKpLiveOrder")?.addEventListener("click",()=>{
+ const wrap=q("#kpLiveOrderWrap");if(!wrap)return;
+ wrap.hidden=!wrap.hidden;
+ if(!wrap.hidden)renderKpLiveOrder();
+});
+q("#cancelKpLiveOrder")?.addEventListener("click",()=>{const wrap=q("#kpLiveOrderWrap");if(wrap)wrap.hidden=true});
+q("#applyKpLiveOrder")?.addEventListener("click",async()=>{
+ const st=q("#testShareStatus");
+ try{
+   shareTest=currentShare()||shareTest;
+   if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");
+   commitKpLiveOrderFromDom();
+   st.textContent="KPliveの表示順を更新中…";
+   await syncTestShare();
+   renderKpLiveOrder();
+   st.textContent="KPliveの表示順を更新しました。";
+ }catch(err){st.textContent=`表示順を更新できませんでした：${err?.message||String(err)}`}
+});
+setupKpLiveOrderDnD();
+renderTestShareBar();renderShareParticipants();
 }
 async function compressShareImage(src){
  src=String(src||"");
@@ -2218,6 +2317,9 @@ document.addEventListener("click",async e=>{
      st.textContent="開示データを準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
      if(!confirm(`「${snap.title}」を共有しますか？`))return;
+     ensureShareDisplayOrder();
+     const maxOrder=(shareTest.items||[]).reduce((m,x)=>Math.max(m,Number.isFinite(Number(x.displayOrder))?Number(x.displayOrder):-1),-1);
+     snap.displayOrder=maxOrder+1;
      shareTest.items.push(snap);
      try{await syncTestShare()}catch(err){shareTest.items=shareTest.items.filter(x=>x!==snap);throw err}
      st.textContent=`「${snap.title}」を共有しました。`;
@@ -2227,6 +2329,7 @@ document.addEventListener("click",async e=>{
      st.textContent="共有内容を準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
      snap.revealedAt=old.revealedAt||snap.revealedAt;
+     snap.displayOrder=Number.isFinite(Number(old.displayOrder))?Number(old.displayOrder):snap.displayOrder;
      snap.updatedAt=new Date().toISOString();
      const backup=old;
      shareTest.items[idx]=snap;
