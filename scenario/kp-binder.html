@@ -1782,7 +1782,7 @@ function sharePayloadFor(participant=null){
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}`,location.href).href:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830c`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
