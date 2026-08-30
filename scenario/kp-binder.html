@@ -1921,7 +1921,18 @@ async function revealSnapshot(section){
  if(mode==="full" && (!title || title==="開示情報")){
    const heading=bodyRoot.querySelector("h1,h2,h3,h4");
    const headingText=(heading?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
-   if(headingText && headingText.length<=80)title=headingText;
+   if(headingText && headingText.length<=80){
+     title=headingText;
+   }else{
+     // PDF/シナリオ本文では「【見出し】」表記も見出しとして使われる。
+     // hタグでなくても、本文内の最初の短い【...】を共有タイトルとして採用する。
+     const bodyText=(bodyRoot.textContent||"").replace(/\u200B/g,"").trim();
+     const bracket=bodyText.match(/【\s*([^【】\r\n]{1,80}?)\s*】/);
+     if(bracket){
+       const bracketTitle=String(bracket[1]||"").replace(/\s+/g," ").trim();
+       if(bracketTitle)title=bracketTitle;
+     }
+   }
  }
  if(!title)title="開示情報";
 
