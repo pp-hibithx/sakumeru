@@ -4,18 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KP共有｜SAKU+MERU</title>
-<meta name="sakumeru-kp-live-build" content="20260830-1042">
+<meta name="sakumeru-kp-live-build" content="20260830-1426-checkshare">
 <script>
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0303.css">
-<link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0830a">
+<link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0830b">
 <script defer src="../assets/js/common-layout.js?v=0303"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .kp-share-wrap{max-width:1180px;margin:0 auto;padding:20px}
 .kp-live-layout{display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:18px;align-items:start}
 .kp-live-sidebar{position:sticky;top:12px}
+.kp-live-sidebar:empty{display:none}
+.kp-live-layout:has(.kp-live-sidebar:empty){grid-template-columns:1fr}
 .kp-live-toc{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:var(--panel);max-height:calc(100vh - 24px);overflow:auto}
 .kp-live-toc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .kp-live-toc ol{margin:10px 0 0;padding-left:1.35em;display:grid;gap:6px}
@@ -77,7 +79,7 @@
        const rawKind=child.getAttribute("data-kind")||"";
        [...child.attributes].forEach(a=>child.removeAttribute(a.name));
        if(child.tagName==="A"&&/^https?:\/\//i.test(href)){child.setAttribute("href",href);child.setAttribute("target","_blank");child.setAttribute("rel","noopener noreferrer")}
-       const classAllow=new Set(["kp-special","kp-special-head","kp-special-title","kp-special-body","kind-chip","dialogue-lines","dialogue-row","dialogue-name","dialogue-text"]);
+       const classAllow=new Set(["kp-special","kp-special-head","kp-special-title","kp-special-body","kind-chip","dialogue-lines","dialogue-row","dialogue-name","dialogue-text","kp-live-selected-item"]);
        const keptClasses=rawClass.split(/\s+/).filter(c=>classAllow.has(c));
        if(keptClasses.length)child.setAttribute("class",keptClasses.join(" "));
        if(child.tagName==="SECTION"&&keptClasses.includes("kp-special")&&/^(reveal|memo|rp|secret|dialogue)$/.test(rawKind))child.setAttribute("data-kind",rawKind);
@@ -139,13 +141,15 @@
    if(!Array.isArray(items))items=[];
 
    const itemId=(x,i)=>"kp-item-"+String(x?.id||i+1).replace(/[^a-zA-Z0-9_-]/g,"-");
-   const toc=items.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${items.map((x,i)=>`<li><a href="#${itemId(x,i)}">${esc(x.title||`開示 ${i+1}`)}${x.target?` <span class="small muted">（${esc(x.target)}）</span>`:""}</a></li>`).join("")}</ol></nav>`:"";
+   const meaningfulTitle=x=>{const t=String(x?.title||"").trim();return t&&t!=="開示情報"?t:""};
+   const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
+   const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
    const cards=items.length?items.map((x,i)=>{
      const latest=i===items.length-1;
-     const title=String(x.title||`開示 ${i+1}`).trim();
+     const title=meaningfulTitle(x)||"開示情報";
      const html=x.bodyHtml??x.body??"";
      return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" id="${itemId(x,i)}" ${latest?"open":""}>
-       <summary><span class="kp-live-summary-main"><span class="kp-live-meta">開示 ${i+1}${x.target?` ／ ${esc(x.target)}`:""}</span><strong>${esc(title)}</strong></span></summary>
+       <summary><span class="kp-live-summary-main"><strong>${esc(title)}</strong></span></summary>
        <div class="kp-live-body">${richText(html)}${Array.isArray(x.images)&&x.images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,x.images.length)}">${x.images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy">`).join("")}</div>`:""}</div>
      </details>`;
    }).join(""):'<div class="kp-share-empty">まだ開示された情報はありません。</div>';
