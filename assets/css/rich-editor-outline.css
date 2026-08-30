@@ -67,3 +67,15 @@
 }
 .kp-live-body .kp-special-title{font-weight:800}
 .kp-live-body .kp-special-body{min-height:1em}
+
+
+/* Reveal checklist: KP can keep related clues together and publish only checked rows. */
+.kp-reveal-checked-help{margin-top:8px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;color:var(--muted);font-size:12px}
+.kp-reveal-checked-help[hidden]{display:none!important}
+.kp-reveal-check-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:start;margin:8px 0;padding:8px 9px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--sm-kind,#c6a84d) 5%,var(--bg))}
+.kp-reveal-check-toggle{display:inline-flex;gap:5px;align-items:center;padding-top:3px;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.kp-reveal-check-toggle input{width:16px;height:16px;accent-color:var(--sm-kind,#c6a84d)}
+.kp-reveal-check-text{min-height:1.6em;line-height:1.7;outline:none}
+.kp-reveal-check-text>p:first-child{margin-top:0}.kp-reveal-check-text>p:last-child{margin-bottom:0}
+.kp-reveal-check-remove{padding:2px 7px!important;min-width:0!important;font-size:14px!important;line-height:1.25}
+.kp-live-selected-item+.kp-live-selected-item{margin-top:.8em;padding-top:.8em;border-top:1px dashed var(--line)}
