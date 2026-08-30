@@ -810,6 +810,8 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .kp-special[data-kind="reveal"] [data-add-reveal-check],
 .kp-special[data-kind="reveal"] [data-reveal-checked-help]{display:none!important}
 
+
+.kp-live-order-scene{margin-bottom:8px}.kp-live-order-children{margin:4px 0 8px 26px;border-left:2px solid #343b46;padding-left:10px}.kp-live-order-child{background:rgba(255,255,255,.025);margin-top:4px}.kp-live-order-child .kp-live-order-handle{cursor:default;opacity:.7}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
@@ -841,7 +843,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
     <span class="muted-note">このシーン内の「○」だけを反映します。通常本文だけでなく、PL向け要点・特殊ブロック内の本文／箇条書きも対象です。</span>
   </div>
   <section class="kp-live-order-wrap" id="kpLiveOrderWrap" hidden>
-    <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">共有済み情報だけを並び替えます。開示した時刻や共有URLは変わりません。</div></div></div>
+    <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">シーンと、その中の大見出しの表示順を並び替えます。開示した時刻や共有URLは変わりません。</div></div></div>
     <div class="kp-live-order-list" id="kpLiveOrderList"></div>
     <div class="kp-live-order-actions"><button type="button" class="secondary" id="cancelKpLiveOrder">閉じる</button><button type="button" id="applyKpLiveOrder">この順番をKPliveへ反映</button></div>
   </section>
@@ -2159,7 +2161,7 @@ function cleanOutlineBlockClone(block){
  return clone;
 }
 async function outlineShareBlockSnapshot(block){
- const blockId=ensureKpRevealBlockId(block);
+ const blockId=shareEnsureRevealBlockId(block);
  const clone=cleanOutlineBlockClone(block);
  const imgs=[...clone.querySelectorAll("img")];
  const images=[];
@@ -2180,7 +2182,27 @@ async function outlineShareBlockSnapshot(block){
  else html=clone.outerHTML||clone.innerHTML||"";
  return {id:blockId,bodyHtml:html,images};
 }
+function shareRevealState(block){
+ const v=String(block?.dataset?.kpRevealState||"none");
+ return ["none","open","fail"].includes(v)?v:"none";
+}
+function shareEnsureRevealBlockId(block){
+ if(!block.dataset.kpRevealId)block.dataset.kpRevealId=crypto.randomUUID?.()||(`kpblk-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+ return block.dataset.kpRevealId;
+}
+function shareIsNestedStateable(block,editor){
+ if(!block?.matches?.("p,blockquote,li,div.image-grid"))return false;
+ const container=block.closest?.(".kp-special-body,[data-reveal-summary]");
+ if(!container||!editor?.contains(container))return false;
+ if(block.matches("li"))return !!block.parentElement?.matches?.("ul,ol");
+ return block.parentElement===container;
+}
+function shareIsTopStateable(block,editor){
+ return !!(block&&block.parentElement===editor&&block.matches?.("p,blockquote,ul,ol,div.image-grid"));
+}
 async function collectOutlineShareScene(){
+ const ed=q("#blogEditor");
+ if(!ed)throw new Error("現在のシーン本文を読み込めませんでした。");
  const page=b.pages.find(x=>String(x.id)===String(active))||b.pages[0];
  if(!page)throw new Error("シーンを選択してください。");
  const roots=[];let root=null,child=null;
@@ -2202,7 +2224,7 @@ async function collectOutlineShareScene(){
      ? section.querySelector(":scope > .kp-reveal-sharebox [data-reveal-summary]")
      : section.querySelector(":scope > .kp-special-body");
    const containers=selectedContainer?[selectedContainer]:[];
-   const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>isNestedKpStateableBlock(x)&&kpRevealState(x)==="open"));
+   const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>shareIsNestedStateable(x,ed)&&shareRevealState(x)==="open"));
    if(!openUnits.length)return false;
    const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[]};
    for(const container of containers){
@@ -2210,8 +2232,8 @@ async function collectOutlineShareScene(){
      const nodes=[...container.querySelectorAll("h1,h2,h3,h4,p,blockquote,li,div.image-grid")];
      for(const node of nodes){
        if(node.matches("h1,h2,h3,h4")){subgroup={id:ensureHeadingShareId(node,"inner"),title:headingText(node,""),blocks:[]};specialRoot.outlineChildren.push(subgroup);continue}
-       if(!isNestedKpStateableBlock(node)||kpRevealState(node)!=="open")continue;
-       if(!subgroup){subgroup={id:`inner:${ensureKpRevealBlockId(node)}`,title:"",blocks:[]};specialRoot.outlineChildren.push(subgroup)}
+       if(!shareIsNestedStateable(node,ed)||shareRevealState(node)!=="open")continue;
+       if(!subgroup){subgroup={id:`inner:${shareEnsureRevealBlockId(node)}`,title:"",blocks:[]};specialRoot.outlineChildren.push(subgroup)}
        subgroup.blocks.push(await outlineShareBlockSnapshot(node));
      }
    }
@@ -2223,7 +2245,7 @@ async function collectOutlineShareScene(){
    if(block.matches?.("h2")){root=makeRoot(block);continue}
    if(block.matches?.("h3")){child=makeChild(block);continue}
    if(block.matches?.("section.kp-special")){await appendSpecialStates(block);root=null;child=null;continue}
-   if(!isKpStateableBlock(block)||kpRevealState(block)!=="open")continue;
+   if(!shareIsTopStateable(block,ed)||shareRevealState(block)!=="open")continue;
    if(!root)makeRoot(null);if(!child)makeChild(null);
    child.blocks.push(await outlineShareBlockSnapshot(block));
  }
@@ -2242,6 +2264,15 @@ async function applyOutlineRevealToShare(){
  fresh.title=String(page?.title||fresh.title||"無題のシーン").trim()||"無題のシーン";
  const items=Array.isArray(shareTest.items)?shareTest.items:[];
  const old=items.find(x=>x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId);
+ const oldGroups=Array.isArray(old?.outlineGroups)?old.outlineGroups:[];
+ const oldGroupById=new Map(oldGroups.map((g,i)=>[String(g?.id||""),{g,i}]));
+ const oldGroupByTitle=new Map();
+ oldGroups.forEach((g,i)=>{const t=String(g?.title||"").replace(/\s+/g," ").trim();if(t&&!oldGroupByTitle.has(t))oldGroupByTitle.set(t,{g,i})});
+ (fresh.outlineGroups||[]).forEach((g,i)=>{
+   const t=String(g?.title||"").replace(/\s+/g," ").trim();
+   const prev=oldGroupById.get(String(g?.id||""))||oldGroupByTitle.get(t);
+   g.displayOrder=Number.isFinite(Number(prev?.g?.displayOrder))?Number(prev.g.displayOrder):(prev?.i??i);
+ });
  const migratedLegacy=[
    ...((old?.legacyItems)||[]),
    ...items.filter(x=>x?.kind!=="outline-scene"&&String(x?.sceneId||"")===sceneId)
@@ -2270,7 +2301,8 @@ async function applyOutlineRevealToShare(){
  let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
  const now=new Date().toISOString();fresh.revealedAt=old?.revealedAt||now;fresh.updatedAt=now;
  fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
- const specialIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
+ const editor=q("#blogEditor");
+ const specialIds=new Set([...(editor?.querySelectorAll(":scope > section.kp-special[data-block-id]")||[])].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
  const keep=items.filter(x=>{
    if(x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId)return false;
    if(String(x?.sceneId||"")===sceneId)return false;
@@ -2326,37 +2358,71 @@ function orderedShareItems(){
  ensureShareDisplayOrder();
  return [...(shareTest?.items||[])].sort(compareShareDisplayOrder);
 }
+function orderedOutlineGroups(item){
+ const groups=Array.isArray(item?.outlineGroups)?item.outlineGroups:[];
+ return [...groups].sort((a,z)=>{
+   const ao=Number.isFinite(Number(a?.displayOrder))?Number(a.displayOrder):Number.MAX_SAFE_INTEGER;
+   const zo=Number.isFinite(Number(z?.displayOrder))?Number(z.displayOrder):Number.MAX_SAFE_INTEGER;
+   return ao-zo;
+ });
+}
 function renderKpLiveOrder(){
  const host=q("#kpLiveOrderList");if(!host)return;
  const items=orderedShareItems();
- host.innerHTML=items.length?items.map((item,i)=>`<div class="kp-live-order-row" draggable="true" data-order-id="${esc(item.id)}">
-   <span class="kp-live-order-handle" title="ドラッグして並び替え">☰</span>
-   <div><div class="kp-live-order-title">${esc(shareOrderTitle(item))}</div><div class="kp-live-order-target">対象：${esc(item.target||"全員")}</div></div>
-   <div class="kp-live-order-moves"><button type="button" class="secondary" data-order-up="${esc(item.id)}" ${i===0?"disabled":""}>↑</button><button type="button" class="secondary" data-order-down="${esc(item.id)}" ${i===items.length-1?"disabled":""}>↓</button></div>
- </div>`).join(""):'<div class="muted-note">まだ共有済みの情報はありません。</div>';
+ host.innerHTML=items.length?items.map((item,i)=>{
+   const sceneId=String(item.id||"");
+   const groups=item.kind==="outline-scene"?orderedOutlineGroups(item):[];
+   const children=groups.length?`<div class="kp-live-order-children" data-order-groups-for="${esc(sceneId)}">${groups.map((g,gi)=>`<div class="kp-live-order-row kp-live-order-child" data-group-id="${esc(g.id||"")}">
+     <span class="kp-live-order-handle">└</span><div><div class="kp-live-order-title">${esc(shareOrderTitle(g))}</div><div class="kp-live-order-target">大見出し</div></div>
+     <div class="kp-live-order-moves"><button type="button" class="secondary" data-group-up="${esc(g.id||"")}" data-scene="${esc(sceneId)}" ${gi===0?"disabled":""}>↑</button><button type="button" class="secondary" data-group-down="${esc(g.id||"")}" data-scene="${esc(sceneId)}" ${gi===groups.length-1?"disabled":""}>↓</button></div>
+   </div>`).join("")}</div>`:"";
+   return `<div class="kp-live-order-scene" data-order-scene="${esc(sceneId)}"><div class="kp-live-order-row" draggable="true" data-order-id="${esc(sceneId)}">
+     <span class="kp-live-order-handle" title="ドラッグしてシーンを並び替え">☰</span>
+     <div><div class="kp-live-order-title">${esc(shareOrderTitle(item))}</div><div class="kp-live-order-target">シーン ／ 対象：${esc(item.target||"全員")}</div></div>
+     <div class="kp-live-order-moves"><button type="button" class="secondary" data-order-up="${esc(sceneId)}" ${i===0?"disabled":""}>↑</button><button type="button" class="secondary" data-order-down="${esc(sceneId)}" ${i===items.length-1?"disabled":""}>↓</button></div>
+   </div>${children}</div>`;
+ }).join(""):'<div class="muted-note">まだ共有済みの情報はありません。</div>';
 }
 function commitKpLiveOrderFromDom(){
  shareTest=currentShare()||shareTest;
- const ids=[...q("#kpLiveOrderList")?.querySelectorAll("[data-order-id]")||[]].map(el=>el.dataset.orderId);
- const map=new Map((shareTest.items||[]).map(x=>[String(x.id),x]));
- ids.forEach((id,i)=>{const item=map.get(String(id));if(item)item.displayOrder=i});
+ const sceneEls=[...q("#kpLiveOrderList")?.querySelectorAll(":scope > [data-order-scene]")||[]];
+ const itemMap=new Map((shareTest.items||[]).map(x=>[String(x.id),x]));
+ sceneEls.forEach((sceneEl,i)=>{
+   const item=itemMap.get(String(sceneEl.dataset.orderScene));if(!item)return;
+   item.displayOrder=i;
+   const groupIds=[...sceneEl.querySelectorAll("[data-group-id]")].map(el=>String(el.dataset.groupId));
+   const groupMap=new Map((item.outlineGroups||[]).map(g=>[String(g.id),g]));
+   groupIds.forEach((id,gi)=>{const g=groupMap.get(id);if(g)g.displayOrder=gi});
+ });
  saveNow();
 }
 function moveKpLiveOrder(id,delta){
  const list=q("#kpLiveOrderList");if(!list)return;
- const row=list.querySelector(`[data-order-id="${CSS.escape(String(id))}"]`);if(!row)return;
- if(delta<0&&row.previousElementSibling)list.insertBefore(row,row.previousElementSibling);
- if(delta>0&&row.nextElementSibling)list.insertBefore(row.nextElementSibling,row);
+ const scene=list.querySelector(`[data-order-scene="${CSS.escape(String(id))}"]`);if(!scene)return;
+ if(delta<0&&scene.previousElementSibling)list.insertBefore(scene,scene.previousElementSibling);
+ if(delta>0&&scene.nextElementSibling)list.insertBefore(scene.nextElementSibling,scene);
+ commitKpLiveOrderFromDom();renderKpLiveOrder();
+}
+function moveKpLiveGroup(sceneId,groupId,delta){
+ const scene=q("#kpLiveOrderList")?.querySelector(`[data-order-scene="${CSS.escape(String(sceneId))}"]`);if(!scene)return;
+ const row=scene.querySelector(`[data-group-id="${CSS.escape(String(groupId))}"]`);if(!row)return;
+ if(delta<0&&row.previousElementSibling)row.parentElement.insertBefore(row,row.previousElementSibling);
+ if(delta>0&&row.nextElementSibling)row.parentElement.insertBefore(row.nextElementSibling,row);
  commitKpLiveOrderFromDom();renderKpLiveOrder();
 }
 let orderDragId="";
 function setupKpLiveOrderDnD(){
- const list=q("#kpLiveOrderList");if(!list)return;
+ const list=q("#kpLiveOrderList");if(!list||list.dataset.orderWired==="1")return;list.dataset.orderWired="1";
  list.addEventListener("dragstart",e=>{const row=e.target.closest?.("[data-order-id]");if(!row)return;orderDragId=row.dataset.orderId;row.classList.add("dragging");e.dataTransfer.effectAllowed="move"});
  list.addEventListener("dragend",e=>{e.target.closest?.("[data-order-id]")?.classList.remove("dragging");list.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));orderDragId=""});
  list.addEventListener("dragover",e=>{const row=e.target.closest?.("[data-order-id]");if(!row||!orderDragId||row.dataset.orderId===orderDragId)return;e.preventDefault();list.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));row.classList.add("drag-over")});
- list.addEventListener("drop",e=>{const target=e.target.closest?.("[data-order-id]");const source=orderDragId?list.querySelector(`[data-order-id="${CSS.escape(orderDragId)}"]`):null;if(!target||!source||target===source)return;e.preventDefault();const rect=target.getBoundingClientRect();const after=e.clientY>rect.top+rect.height/2;list.insertBefore(source,after?target.nextSibling:target);commitKpLiveOrderFromDom();renderKpLiveOrder()});
- list.addEventListener("click",e=>{const up=e.target.closest?.("[data-order-up]"),down=e.target.closest?.("[data-order-down]");if(up)moveKpLiveOrder(up.dataset.orderUp,-1);if(down)moveKpLiveOrder(down.dataset.orderDown,1)});
+ list.addEventListener("drop",e=>{const targetRow=e.target.closest?.("[data-order-id]");const sourceScene=orderDragId?list.querySelector(`[data-order-scene="${CSS.escape(orderDragId)}"]`):null;const targetScene=targetRow?.closest?.("[data-order-scene]");if(!targetScene||!sourceScene||targetScene===sourceScene)return;e.preventDefault();const rect=targetRow.getBoundingClientRect();const after=e.clientY>rect.top+rect.height/2;list.insertBefore(sourceScene,after?targetScene.nextSibling:targetScene);commitKpLiveOrderFromDom();renderKpLiveOrder()});
+ list.addEventListener("click",e=>{
+   const up=e.target.closest?.("[data-order-up]"),down=e.target.closest?.("[data-order-down]");
+   const gup=e.target.closest?.("[data-group-up]"),gdown=e.target.closest?.("[data-group-down]");
+   if(up)moveKpLiveOrder(up.dataset.orderUp,-1);else if(down)moveKpLiveOrder(down.dataset.orderDown,1);
+   else if(gup)moveKpLiveGroup(gup.dataset.scene,gup.dataset.groupUp,-1);else if(gdown)moveKpLiveGroup(gdown.dataset.scene,gdown.dataset.groupDown,1);
+ });
 }
 
 function renderTestShareBar(){
