@@ -85,8 +85,7 @@ function specialSummary(section){
   const heading=section.querySelector(":scope > .kp-special-body h2,:scope > .kp-special-body h3");
   const h=(heading?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
   if(h)return h.slice(0,60);
-  const body=(section.querySelector(":scope > .kp-special-body")?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
-  return body.slice(0,60);
+  return "";
 }
 function ensureSpecialSummary(section){
   if(!section)return;
