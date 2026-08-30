@@ -1908,32 +1908,43 @@ async function revealSnapshot(section){
  const body=bodyRoot.innerHTML||"";
  if(mode==="summary"&&!plain(body))throw new Error("「要点だけ」を選んでいます。PL向け要点を入力してください。");
 
- // Existing legacy blocks can have the body swallowed into .kp-special-title.
- // Accept that field only when it is actually a short title.
+ // Resolve the visible reveal title. "開示情報" is only a final fallback,
+ // never a preferred title candidate.
  const titleEl=section.querySelector(":scope > .kp-special-title");
  const legacyBodyEl=section.querySelector(":scope > .kp-special-body")||section.querySelector(".kp-special-body");
- const rawTitle=(titleEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
- const legacyBodyText=(legacyBodyEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ const norm=s=>String(s||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ const validTitle=s=>{
+   const v=norm(s);
+   return v && v!=="開示情報" && v.length<=80 ? v : "";
+ };
+
+ const rawTitle=norm(titleEl?.textContent);
+ const legacyBodyText=norm(legacyBodyEl?.textContent);
  const reversedLegacy=rawTitle.length>120 && legacyBodyText && legacyBodyText.length<=80;
 
- let title=reversedLegacy ? legacyBodyText : ((rawTitle && rawTitle.length<=80) ? rawTitle : "");
+ let title="";
 
- if(mode==="full" && (!title || title==="開示情報")){
+ // 1. The title visibly entered in the reveal block.
+ if(!reversedLegacy)title=validTitle(rawTitle);
+
+ // 2. A real heading inside the shared body.
+ if(!title && mode==="full"){
    const heading=bodyRoot.querySelector("h1,h2,h3,h4");
-   const headingText=(heading?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
-   if(headingText && headingText.length<=80){
-     title=headingText;
-   }else{
-     // PDF/シナリオ本文では「【見出し】」表記も見出しとして使われる。
-     // hタグでなくても、本文内の最初の短い【...】を共有タイトルとして採用する。
-     const bodyText=(bodyRoot.textContent||"").replace(/\u200B/g,"").trim();
-     const bracket=bodyText.match(/【\s*([^【】\r\n]{1,80}?)\s*】/);
-     if(bracket){
-       const bracketTitle=String(bracket[1]||"").replace(/\s+/g," ").trim();
-       if(bracketTitle)title=bracketTitle;
-     }
-   }
+   title=validTitle(heading?.textContent);
  }
+
+ // 3. Old reversed blocks: the short .kp-special-body was actually the title.
+ if(!title && reversedLegacy){
+   title=validTitle(legacyBodyText);
+ }
+
+ // 4. PDF-style bracket headings are only a compatibility fallback.
+ if(!title && mode==="full"){
+   const bodyText=(bodyRoot.textContent||"").replace(/\u200B/g,"").trim();
+   const bracket=bodyText.match(/【\s*([^【】\r\n]{1,80}?)\s*】/);
+   if(bracket)title=validTitle(bracket[1]);
+ }
+
  if(!title)title="開示情報";
 
  const raw=[...(source.querySelectorAll?.(".image-grid img, img[data-full-image]")||[])]
