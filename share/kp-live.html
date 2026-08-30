@@ -165,6 +165,20 @@
 
    let items=parseMaybeJson(p.items);
    if(!Array.isArray(items))items=[];
+   const sceneItems=items.filter(x=>x?.kind==="outline-scene"&&x?.sceneId);
+   if(sceneItems.length){
+     const byScene=new Map();
+     for(const x of sceneItems){
+       const key=String(x.sceneId),prev=byScene.get(key);
+       if(!prev||String(x.updatedAt||x.revealedAt||"")>=String(prev.updatedAt||prev.revealedAt||""))byScene.set(key,x);
+     }
+     const sceneIds=new Set(byScene.keys());
+     items=items.filter(x=>{
+       if(x?.kind==="outline-scene"&&x?.sceneId)return byScene.get(String(x.sceneId))===x;
+       if(x?.sceneId&&sceneIds.has(String(x.sceneId)))return false;
+       return true;
+     });
+   }
    // Scene is the top-level unit. If a scene payload exists, do not also show
    // older top-level cards that belong to that same scene.
    const sceneItems=items.filter(x=>x?.kind==="outline-scene");
@@ -207,7 +221,7 @@
      const latest=i===items.length-1;
      const title=meaningfulTitle(x)||(["outline-group","outline-scene"].includes(x.kind)?"共有情報":"開示情報");
      const html=x.kind==="outline-scene"?renderOutlineScene(x):x.kind==="outline-group"?renderOutlineGroup(x):richText(x.bodyHtml??x.body??"")+renderImages(x.images);
-     return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" id="${itemId(x,i)}" ${latest?"open":""}>
+     return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" data-scene-id="${esc(x.sceneId||"")}" id="${itemId(x,i)}" ${latest?"open":""}>
        <summary><span class="kp-live-summary-main"><strong>${esc(title)}</strong></span></summary>
        <div class="kp-live-body">${html}</div>
      </details>`;
