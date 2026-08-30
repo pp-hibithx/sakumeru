@@ -2019,7 +2019,23 @@ function normalizeRevealSection(section){
  if(!isRevealSection(section))return null;
  section.dataset.kind="reveal";
  if(!section.dataset.blockId)section.dataset.blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
+ ensureRevealChecklist(section);
  return section;
+}
+function ensureRevealChecklist(section){
+ if(!section||!isRevealSection(section))return false;
+ const body=section.querySelector(":scope > .kp-special-body")||section.querySelector(".kp-special-body");
+ if(!body||body.querySelector("[data-reveal-check-item]"))return false;
+
+ // Existing reveal blocks predate checklist sharing. Preserve the entire old body
+ // as the first checklist row instead of leaving legacy blocks without a checkbox.
+ const legacyHtml=body.innerHTML;
+ const meaningful=(body.textContent||"").replace(/\u200B/g,"").trim() ||
+   body.querySelector("img,table,ul,ol,blockquote,hr");
+ body.innerHTML="";
+ const row=makeRevealCheckItem(meaningful?legacyHtml:"<p>ここに開示情報を入力</p>");
+ body.appendChild(row);
+ return true;
 }
 function resolveRevealBody(section,mode){
  if(mode==="summary")return section.querySelector("[data-reveal-summary]");
@@ -2040,6 +2056,21 @@ function resolveRevealBody(section,mode){
 
  const titleEl=section.querySelector(":scope > .kp-special-title");
  const bodyEl=section.querySelector(":scope > .kp-special-body")||section.querySelector(".kp-special-body");
+
+ // In checklist-enabled blocks, "全文" means all checklist text, not the KP-only
+ // checkbox / remove controls themselves.
+ if(bodyEl?.querySelector("[data-reveal-check-item]")){
+   const wrapper=document.createElement("div");
+   [...bodyEl.querySelectorAll(":scope > [data-reveal-check-item]")].forEach(row=>{
+     const text=row.querySelector("[data-reveal-check-text]");
+     if(!text)return;
+     const item=document.createElement("div");
+     item.className="kp-live-selected-item";
+     item.innerHTML=text.innerHTML||"";
+     wrapper.appendChild(item);
+   });
+   if(wrapper.children.length)return wrapper;
+ }
  const titleText=(titleEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
  const bodyText=(bodyEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
 
