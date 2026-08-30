@@ -2224,30 +2224,20 @@ async function applyOutlineRevealToShare(){
  fresh.revealedAt=old?.revealedAt||now;
  fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
  fresh.updatedAt=now;
-
- // Existing special reveal blocks from this scene are also children of the scene.
- // Old data may not have sceneId yet, so match by the block IDs currently present in this editor.
- const currentRevealIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
- const nestedManagedRevealIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].filter(sec=>[...sec.querySelectorAll(".kp-special-body [data-kp-reveal-state='open'],[data-reveal-summary] [data-kp-reveal-state='open']")].some(isNestedKpStateableBlock)).map(sec=>String(sec.dataset.blockId||"")));
- fresh.legacyItems=(shareTest.items||[]).filter(x=>{
-   if(x.kind==="outline-scene"||x.kind==="outline-group")return false;
-   if(nestedManagedRevealIds.has(String(x.id||"")))return false;
-   if(String(x.sceneId||"")===String(fresh.sceneId))return true;
-   return currentRevealIds.has(String(x.id||""));
- }).map(x=>({...x,sceneId:String(fresh.sceneId),sceneTitle:fresh.title}));
-
- const foldedIds=new Set(fresh.legacyItems.map(x=>String(x.id||"")));
+ const currentSpecialIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
+ const currentSceneTitle=String(fresh.title||"").trim();
  const keep=(shareTest.items||[]).filter(x=>{
    if(x.kind==="outline-scene"&&String(x.sceneId)===String(fresh.sceneId))return false;
-   if(foldedIds.has(String(x.id||"")))return false;
    if(x.kind==="outline-group"&&x.source==="outline")return false;
+   if(currentSpecialIds.has(String(x.id||"")))return false;
+   if(String(x.sceneId||"")===String(fresh.sceneId)&&x.kind!=="outline-scene")return false;
+   if(!x.sceneId&&currentSceneTitle&&String(x.sceneTitle||"").trim()===currentSceneTitle)return false;
    return true;
  });
- shareTest.items=(fresh.outlineGroups.length||fresh.legacyItems.length)?[...keep,fresh]:keep;
+ shareTest.items=fresh.outlineGroups.length?[...keep,fresh]:keep;
  saveNow();await syncTestShare();renderTestShareBar();
- return fresh.outlineGroups.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0)+fresh.legacyItems.length;
+ return fresh.outlineGroups.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
 }
-
 function targetMatches(itemTarget,ho){
  const t=String(itemTarget||"全員").trim();
  if(t==="全員")return true;
@@ -2277,7 +2267,7 @@ function sharePayloadFor(participant=null){
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort(compareShareDisplayOrder)}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830h`,location.href).href:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830i`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
