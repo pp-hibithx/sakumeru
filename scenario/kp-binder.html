@@ -659,6 +659,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .block-handle-layer .kp-block-state-control button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 .block-handle-layer .kp-block-state-control button[data-kp-state="open"][aria-pressed="true"]{background:rgba(86,150,92,.18);color:#5fbd69}
 .block-handle-layer .kp-block-state-control button[data-kp-state="fail"][aria-pressed="true"]{background:rgba(199,91,91,.15);color:#d16a6a}
+.block-handle-layer .kp-block-state-control .kp-block-delete{
+  margin-left:4px;width:30px;min-width:30px;border-left:1px solid var(--line);
+  color:var(--muted)
+}
+.block-handle-layer .kp-block-state-control .kp-block-delete:hover{color:#d16a6a;border-color:#d16a6a}
+
 .blog-editor > [data-kp-reveal-state="open"]{box-shadow:inset 3px 0 0 rgba(86,150,92,.72)}
 .blog-editor > [data-kp-reveal-state="fail"]{box-shadow:inset 3px 0 0 rgba(199,91,91,.62);opacity:.78}
 .kp-outline-share-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -1050,6 +1056,35 @@ function renderEditor(){
    return node&&node.parentElement===ed?node:null;
  }
 
+ function kpBlockHasMeaningfulContent(block){
+   if(!block)return false;
+   if(block.querySelector?.("img,video,audio,iframe,table,hr"))return true;
+   return !!String(block.textContent||"").replace(/\u200B/g,"").trim();
+ }
+ function removeKpStateableBlock(block,{focusNeighbor=true}={}){
+   if(!isKpStateableBlock(block)||block.parentElement!==ed)return false;
+   const prev=block.previousElementSibling,next=block.nextElementSibling;
+   block.remove();
+   if(!ed.children.length){
+     const p=document.createElement("p");p.innerHTML="<br>";ed.appendChild(p);
+   }
+   ensureParagraphBlocks();decorateBlocks();syncArticle();
+   if(focusNeighbor){
+     const target=(next&&next.isConnected?next:(prev&&prev.isConnected?prev:ed.lastElementChild));
+     if(target){
+       const range=document.createRange(),sel=getSelection();
+       range.selectNodeContents(target);range.collapse(false);
+       sel.removeAllRanges();sel.addRange(range);saveRange();
+     }
+   }
+   return true;
+ }
+ function deleteEmptyKpBlockFromCaret(){
+   const block=currentSelectionDirectBlock();
+   if(!isKpStateableBlock(block)||kpBlockHasMeaningfulContent(block))return false;
+   return removeKpStateableBlock(block);
+ }
+
  function directEditorBlocks(){
    return [...ed.children].filter(el=>el.matches?.(MOVABLE_SELECTOR));
  }
@@ -1114,6 +1149,16 @@ function renderEditor(){
            });
            stateWrap.appendChild(btn);
          });
+         const del=document.createElement("button");
+         del.type="button";del.className="kp-block-delete";del.textContent="⌫";del.title="この本文ブロックを削除";
+         del.setAttribute("aria-label","この本文ブロックを削除");
+         del.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+         del.addEventListener("click",e=>{
+           e.preventDefault();e.stopPropagation();
+           if(kpBlockHasMeaningfulContent(block)&&!confirm("この本文ブロックを削除しますか？"))return;
+           removeKpStateableBlock(block);
+         });
+         stateWrap.appendChild(del);
          handleLayer.appendChild(stateWrap);
        }
 
@@ -1752,6 +1797,10 @@ ed.addEventListener("keyup",saveRange);
  }
 
  ed.addEventListener("keydown",e=>{
+   if((e.key==="Backspace"||e.key==="Delete")&&deleteEmptyKpBlockFromCaret()){
+     e.preventDefault();
+     return;
+   }
    if(e.key==="Backspace"&&(deleteEmptySpecialFromCaret()||deleteEmptyNormalFromCaret())){
      e.preventDefault();
      return;
@@ -2016,14 +2065,26 @@ async function applyOutlineRevealToShare(){
  fresh.revealedAt=old?.revealedAt||now;
  fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
  fresh.updatedAt=now;
+
+ // Existing special reveal blocks from this scene are also children of the scene.
+ // Old data may not have sceneId yet, so match by the block IDs currently present in this editor.
+ const currentRevealIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
+ fresh.legacyItems=(shareTest.items||[]).filter(x=>{
+   if(x.kind==="outline-scene"||x.kind==="outline-group")return false;
+   if(String(x.sceneId||"")===String(fresh.sceneId))return true;
+   return currentRevealIds.has(String(x.id||""));
+ }).map(x=>({...x,sceneId:String(fresh.sceneId),sceneTitle:fresh.title}));
+
+ const foldedIds=new Set(fresh.legacyItems.map(x=>String(x.id||"")));
  const keep=(shareTest.items||[]).filter(x=>{
    if(x.kind==="outline-scene"&&String(x.sceneId)===String(fresh.sceneId))return false;
+   if(foldedIds.has(String(x.id||"")))return false;
    if(x.kind==="outline-group"&&x.source==="outline")return false;
    return true;
  });
- shareTest.items=fresh.outlineGroups.length?[...keep,fresh]:keep;
+ shareTest.items=(fresh.outlineGroups.length||fresh.legacyItems.length)?[...keep,fresh]:keep;
  saveNow();await syncTestShare();renderTestShareBar();
- return fresh.outlineGroups.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
+ return fresh.outlineGroups.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0)+fresh.legacyItems.length;
 }
 
 function targetMatches(itemTarget,ho){
@@ -2298,6 +2359,7 @@ function resolveRevealBody(section,mode){
 }
 
 async function revealSnapshot(section){
+ const page=b.pages.find(x=>String(x.id)===String(active));
  const id=section.dataset.blockId||crypto.randomUUID();
  const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
  const modeValue=section.querySelector("[data-reveal-mode]:checked")?.value||"full";
@@ -2359,7 +2421,7 @@ async function revealSnapshot(section){
    .map(img=>img.getAttribute("src")||"").filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
  const images=[];for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
  const selectedItemIds=mode==="checked"?[...section.querySelectorAll("[data-reveal-check-item]")].filter(row=>row.querySelector("[data-reveal-check]")?.checked).map(row=>row.dataset.itemId||"").filter(Boolean):[];
- return {id,title,target,kind:section.dataset.kind||"reveal",body,bodyHtml:body,images,shareMode:mode,selectedItemIds,revealedAt:new Date().toISOString()};
+ return {id,title,target,kind:section.dataset.kind||"reveal",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,revealedAt:new Date().toISOString()};
 }
 function makeRevealCheckItem(html=""){
  const row=document.createElement("div");
