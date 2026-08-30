@@ -779,6 +779,20 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   margin-left:0!important;
 }
 
+
+/* 2026-08-30 pull-tab reveal controls */
+.kp-special{margin-left:0!important}
+.kp-nested-state-control{width:31px!important;overflow:hidden!important;gap:3px!important;transition:width .14s ease!important;white-space:nowrap!important}
+.kp-nested-state-control.kp-tab-open,.blog-shell.kp-reveal-edit-mode .kp-nested-state-control{width:150px!important}
+.kp-nested-state-control .kp-reveal-tab{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:27px!important;min-width:27px!important;height:27px!important;padding:0!important;border:1px solid var(--accent)!important;border-radius:6px!important;background:var(--panel)!important;color:var(--muted)!important;font-weight:900!important}
+.kp-nested-state-control .kp-reveal-tab[data-current-state="open"]{color:#69c873!important;background:rgba(86,150,92,.18)!important}
+.kp-nested-state-control .kp-reveal-tab[data-current-state="fail"]{color:#d16a6a!important;background:rgba(199,91,91,.15)!important}
+.kp-nested-state-control:not(.kp-tab-open) button:not(.kp-reveal-tab){visibility:hidden!important;pointer-events:none!important}
+.blog-shell.kp-reveal-edit-mode .kp-nested-state-control button{visibility:visible!important;pointer-events:auto!important}
+.kp-nested-state-control .kp-block-delete{margin-left:4px!important}
+.scene-share-quick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#toggleRevealEditMode.active{box-shadow:0 0 0 1px var(--accent) inset}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
@@ -793,7 +807,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   </aside>
   <section class="editor">
    <h2 id="sceneTitle" class="scene-title"></h2>
-   <div class="scene-share-quick"><button type="button" id="applyOutlineRevealTop">○をKPliveへ反映</button><span class="muted-note">現在のシーンだけ更新</span></div>
+   <div class="scene-share-quick"><button type="button" id="applyOutlineRevealTop">○をKPliveへ反映</button><button type="button" class="secondary" id="toggleRevealEditMode">状態編集モード</button><span class="muted-note">現在のシーンだけ更新</span></div>
    <div id="stats" class="stats"></div>
    <div id="manuscript" class="manuscript"></div>
    <div class="element-tools" id="addbar">
@@ -1221,11 +1235,23 @@ function renderEditor(){
    const stateWrap=document.createElement("span");
    stateWrap.className=`kp-block-state-control sm-outline-ui${nested?" kp-nested-state-control":""}`;
    stateWrap.style.left=`${left}px`;stateWrap.style.top=`${top}px`;stateWrap._smBlock=block;
+   const updateTab=()=>{
+     if(!nested)return;
+     const tab=stateWrap.querySelector(".kp-reveal-tab");if(!tab)return;
+     const state=kpRevealState(block);tab.dataset.currentState=state;
+     tab.textContent=state==="open"?"○":state==="fail"?"×":"－";tab.title="開示状態を変更";
+   };
+   if(nested){
+     const tab=document.createElement("button");tab.type="button";tab.className="kp-reveal-tab";
+     tab.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+     tab.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(q(".blog-shell")?.classList.contains("kp-reveal-edit-mode"))return;stateWrap.classList.toggle("kp-tab-open")});
+     stateWrap.appendChild(tab);updateTab();
+   }
    [["none","－","開示不要"],["open","○","取得済み・KPliveへ開示"],["fail","×","判定失敗・未取得"]].forEach(([state,label,title])=>{
      const btn=document.createElement("button");btn.type="button";btn.dataset.kpState=state;btn.textContent=label;btn.title=title;
      btn.setAttribute("aria-label",title);btn.setAttribute("aria-pressed",String(kpRevealState(block)===state));
      btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
-     btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();setKpRevealState(block,state)});
+     btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();setKpRevealState(block,state);updateTab();if(nested&&!q(".blog-shell")?.classList.contains("kp-reveal-edit-mode"))stateWrap.classList.remove("kp-tab-open")});
      stateWrap.appendChild(btn);
    });
    const del=document.createElement("button");del.type="button";del.className="kp-block-delete";del.textContent="⌫";del.title="この本文ブロックを削除";del.setAttribute("aria-label",del.title);
@@ -1291,7 +1317,7 @@ function renderEditor(){
        if(block.closest("[hidden],.sm-outline-hidden"))return;
        const r=block.getBoundingClientRect();
        if(!r.height)return;
-       const left=Math.max(edRect.left-shellRect.left+37,r.left-shellRect.left-104);
+       const left=Math.max(edRect.left-shellRect.left+6,r.left-shellRect.left-36);
        const top=r.top-shellRect.top+Math.min(4,Math.max(0,r.height/2-13));
        appendKpStateControl(block,{left,top,nested:true});
      });
@@ -2712,6 +2738,16 @@ async function runApplyOutlineReveal(){
 }
 q("#applyOutlineReveal")?.addEventListener("click",runApplyOutlineReveal);
 q("#applyOutlineRevealTop")?.addEventListener("click",runApplyOutlineReveal);
+q("#toggleRevealEditMode")?.addEventListener("click",e=>{
+ const shell=q(".blog-shell");if(!shell)return;
+ const on=!shell.classList.contains("kp-reveal-edit-mode");
+ shell.classList.toggle("kp-reveal-edit-mode",on);e.currentTarget.classList.toggle("active",on);
+ e.currentTarget.textContent=on?"状態編集モード：ON":"状態編集モード";refreshBlockHandles();
+});
+document.addEventListener("pointerdown",e=>{
+ if(e.target.closest?.(".kp-nested-state-control"))return;
+ handleLayer?.querySelectorAll(".kp-nested-state-control.kp-tab-open").forEach(x=>x.classList.remove("kp-tab-open"));
+});
 q("#newShareSession").onclick=()=>{
  shareTest=currentShare()||shareTest;
  const hasCurrent=!!shareTest?.shareId;
