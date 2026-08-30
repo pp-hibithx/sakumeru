@@ -694,6 +694,91 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 }
 .blog-editor .kp-reveal-mode label:has(input:checked) *{color:#111!important}
 
+
+/* 2026-08-30 nested reveal UI lane fix:
+   keep - / ○ / × / delete outside the editable text flow */
+.kp-special,
+.kp-special-body,
+.kp-special-body > ul,
+.kp-special-body > ol{
+  overflow:visible!important;
+}
+.kp-special-body{
+  position:relative;
+}
+.kp-special-body > p,
+.kp-special-body > blockquote,
+.kp-special-body > ul > li,
+.kp-special-body > ol > li{
+  position:relative;
+}
+.kp-nested-state-row,
+.kp-nested-reveal-control,
+.kp-inline-state-control{
+  position:absolute!important;
+  left:-122px!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:3px!important;
+  width:auto!important;
+  margin:0!important;
+  padding:2px!important;
+  z-index:8!important;
+  pointer-events:auto!important;
+  background:var(--panel)!important;
+  border:1px solid var(--line)!important;
+  border-radius:7px!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.16)!important;
+  white-space:nowrap!important;
+}
+.kp-nested-state-row button,
+.kp-nested-reveal-control button,
+.kp-inline-state-control button{
+  width:25px!important;
+  min-width:25px!important;
+  height:25px!important;
+  padding:0!important;
+  margin:0!important;
+  line-height:1!important;
+}
+.kp-nested-state-row .kp-block-delete,
+.kp-nested-reveal-control .kp-block-delete,
+.kp-inline-state-control .kp-block-delete{
+  margin-left:4px!important;
+  border-left:1px solid var(--line)!important;
+  color:var(--muted)!important;
+}
+
+/* Reserve one UI gutter for nested state controls without touching text/list flow. */
+.kp-special{
+  margin-left:126px!important;
+}
+.kp-special-body > ul,
+.kp-special-body > ol{
+  padding-left:1.65em!important;
+}
+.kp-special-body > ul > li,
+.kp-special-body > ol > li{
+  
+}
+.kp-special-body > ul > li::marker,
+.kp-special-body > ol > li::marker{
+  color:inherit;
+}
+
+/* Do not show the nested control lane for headings. */
+.kp-special-body h1,
+.kp-special-body h2,
+.kp-special-body h3,
+.kp-special-body h4,
+.kp-special-body h5,
+.kp-special-body h6{
+  position:relative;
+  margin-left:0!important;
+}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
