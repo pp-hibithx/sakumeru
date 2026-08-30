@@ -49,6 +49,14 @@
 .kp-image-lightbox img{display:block;max-width:min(96vw,1600px);max-height:92vh;width:auto;height:auto;object-fit:contain;border-radius:10px;box-shadow:0 16px 48px rgba(0,0,0,.45)}
 .kp-image-lightbox-close{position:fixed;top:14px;right:18px;z-index:10001;width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,20,.72);color:#fff;font-size:30px;line-height:1;cursor:pointer}
 .kp-image-lightbox-close:hover{background:rgba(20,20,20,.92)}
+
+.kp-live-outline-child{margin:14px 0 4px;padding-top:4px}
+.kp-live-outline-child>h3{margin:0 0 8px;font-size:1.02rem}
+.kp-live-outline-block{padding:8px 0;line-height:1.8}
+.kp-live-outline-block+.kp-live-outline-block{border-top:1px dashed var(--line)}
+.kp-live-outline-block>p:first-child,.kp-live-outline-block>blockquote:first-child,.kp-live-outline-block>ul:first-child,.kp-live-outline-block>ol:first-child{margin-top:0}
+.kp-live-outline-block>p:last-child,.kp-live-outline-block>blockquote:last-child,.kp-live-outline-block>ul:last-child,.kp-live-outline-block>ol:last-child{margin-bottom:0}
+
 .kp-share-empty{padding:24px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
 @media(max-width:760px){.kp-live-layout{grid-template-columns:1fr}.kp-live-sidebar{position:static}.kp-live-toc{max-height:none}}
 </style>
@@ -153,13 +161,22 @@
    const meaningfulTitle=x=>{const t=String(x?.title||"").trim();return t&&t!=="開示情報"?t:""};
    const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
    const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
+   const renderImages=images=>Array.isArray(images)&&images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,images.length)}">${images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:"";
+   const renderOutlineGroup=x=>{
+     const children=Array.isArray(x.outlineChildren)?x.outlineChildren:[];
+     return children.map(child=>{
+       const blocks=Array.isArray(child.blocks)?child.blocks:[];
+       const title=String(child.title||"").trim();
+       return `<section class="kp-live-outline-child">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
+     }).join("");
+   };
    const cards=items.length?items.map((x,i)=>{
      const latest=i===items.length-1;
-     const title=meaningfulTitle(x)||"開示情報";
-     const html=x.bodyHtml??x.body??"";
+     const title=meaningfulTitle(x)||(x.kind==="outline-group"?"共有情報":"開示情報");
+     const html=x.kind==="outline-group"?renderOutlineGroup(x):richText(x.bodyHtml??x.body??"")+renderImages(x.images);
      return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" id="${itemId(x,i)}" ${latest?"open":""}>
        <summary><span class="kp-live-summary-main"><strong>${esc(title)}</strong></span></summary>
-       <div class="kp-live-body">${richText(html)}${Array.isArray(x.images)&&x.images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,x.images.length)}">${x.images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:""}</div>
+       <div class="kp-live-body">${html}</div>
      </details>`;
    }).join(""):'<div class="kp-share-empty">まだ開示された情報はありません。</div>';
    box.innerHTML=`<article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報です。左の目次から情報へ移動できます。</p><div class="kp-live-layout"><aside class="kp-live-sidebar">${toc}</aside><main class="kp-live-main">${cards}</main></div></article>`;
