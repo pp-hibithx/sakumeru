@@ -707,9 +707,9 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   <div class="share-test-actions"><button type="button" id="makeTestShare">共通URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共通URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共通ページを開く</a></div>
   <div class="muted-note" id="testShareStatus">共通URLには「全員」向けの開示情報だけが表示されます。</div>
   <div class="kp-outline-share-actions" style="margin-top:10px">
-    <button type="button" id="applyOutlineReveal">○の本文をKPliveへ反映</button>
+    <button type="button" id="applyOutlineReveal">このシーンの○をKPliveへ反映</button>
     <button type="button" class="secondary" id="toggleKpLiveOrder">↕ KPlive表示順を編集</button>
-    <span class="muted-note">本文・画像ブロックの「○」だけを、大見出し／小見出しごとにまとめて更新します。</span>
+    <span class="muted-note">このシーン内の「○」だけを、大見出し／小見出しごとにまとめて更新します。他のシーンの共有内容は残ります。</span>
   </div>
   <section class="kp-live-order-wrap" id="kpLiveOrderWrap" hidden>
     <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">共有済み情報だけを並び替えます。開示した時刻や共有URLは変わりません。</div></div></div>
@@ -1979,14 +1979,14 @@ async function outlineShareBlockSnapshot(block){
  else html=clone.outerHTML||clone.innerHTML||"";
  return {id:blockId,bodyHtml:html,images};
 }
-async function collectOutlineShareGroups(){
- const groups=[];
- let root=null,child=null;
+async function collectOutlineShareScene(){
+ const page=b.pages.find(x=>String(x.id)===String(active));
+ if(!page)throw new Error("シーンを選択してください。");
+ const roots=[];let root=null,child=null;
  const makeRoot=(heading=null)=>{
    const id=ensureHeadingShareId(heading,"root");
-   const title=headingText(heading,"共有情報");
-   root={id:`outline-group:${id}`,kind:"outline-group",source:"outline",title,target:"全員",outlineChildren:[]};
-   groups.push(root);child=null;return root;
+   root={id,title:headingText(heading,"共有情報"),outlineChildren:[]};
+   roots.push(root);child=null;return root;
  };
  const makeChild=(heading=null)=>{
    if(!root)makeRoot(null);
@@ -1998,38 +1998,32 @@ async function collectOutlineShareGroups(){
    if(block.matches?.("h2")){root=makeRoot(block);continue}
    if(block.matches?.("h3")){child=makeChild(block);continue}
    if(!isKpStateableBlock(block)||kpRevealState(block)!=="open")continue;
-   if(!root)makeRoot(null);
-   if(!child)makeChild(null);
+   if(!root)makeRoot(null);if(!child)makeChild(null);
    child.blocks.push(await outlineShareBlockSnapshot(block));
  }
- groups.forEach(g=>g.outlineChildren=g.outlineChildren.filter(c=>c.blocks.length));
- return groups.filter(g=>g.outlineChildren.length);
+ roots.forEach(g=>g.outlineChildren=g.outlineChildren.filter(c=>c.blocks.length));
+ return {id:`outline-scene:${page.id}`,kind:"outline-scene",source:"outline",sceneId:String(page.id),
+   title:String(page.title||"無題のシーン").trim()||"無題のシーン",target:"全員",
+   outlineGroups:roots.filter(g=>g.outlineChildren.length)};
 }
 async function applyOutlineRevealToShare(){
  shareTest=currentShare()||shareTest;
  if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");
- const fresh=await collectOutlineShareGroups();
- ensureShareDisplayOrder();
- const oldOutline=new Map((shareTest.items||[]).filter(x=>x.kind==="outline-group").map(x=>[String(x.id),x]));
+ const fresh=await collectOutlineShareScene();ensureShareDisplayOrder();
+ const old=(shareTest.items||[]).find(x=>x.kind==="outline-scene"&&String(x.sceneId)===String(fresh.sceneId));
  let maxOrder=(shareTest.items||[]).reduce((m,x)=>Math.max(m,Number.isFinite(Number(x.displayOrder))?Number(x.displayOrder):-1),-1);
  const now=new Date().toISOString();
- fresh.forEach(item=>{
-   const old=oldOutline.get(String(item.id));
-   if(old){
-     item.revealedAt=old.revealedAt||now;
-     item.displayOrder=Number.isFinite(Number(old.displayOrder))?Number(old.displayOrder):++maxOrder;
-   }else{
-     item.revealedAt=now;
-     item.displayOrder=++maxOrder;
-   }
-   item.updatedAt=now;
+ fresh.revealedAt=old?.revealedAt||now;
+ fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
+ fresh.updatedAt=now;
+ const keep=(shareTest.items||[]).filter(x=>{
+   if(x.kind==="outline-scene"&&String(x.sceneId)===String(fresh.sceneId))return false;
+   if(x.kind==="outline-group"&&x.source==="outline")return false;
+   return true;
  });
- const legacy=(shareTest.items||[]).filter(x=>x.kind!=="outline-group");
- shareTest.items=[...legacy,...fresh];
- saveNow();
- await syncTestShare();
- renderTestShareBar();
- return fresh.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
+ shareTest.items=fresh.outlineGroups.length?[...keep,fresh]:keep;
+ saveNow();await syncTestShare();renderTestShareBar();
+ return fresh.outlineGroups.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
 }
 
 function targetMatches(itemTarget,ho){
@@ -2061,7 +2055,7 @@ function sharePayloadFor(participant=null){
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort(compareShareDisplayOrder)}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830g`,location.href).href:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830h`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
@@ -2526,11 +2520,11 @@ q("#makeTestShare").onclick=async()=>{
 q("#applyOutlineReveal")?.addEventListener("click",async()=>{
  const st=q("#testShareStatus");
  try{
-   st.textContent="○の本文をKPlive用に準備中…画像がある場合はStorageへアップロードします。";
+   st.textContent="このシーンの○をKPlive用に準備中…画像がある場合はStorageへアップロードします。";
    const count=await applyOutlineRevealToShare();
-   st.textContent=count?`○の本文 ${count}ブロックをKPliveへ反映しました。`:"○の本文がないため、本文グループの共有を空に更新しました。";
+   st.textContent=count?`このシーンの○ ${count}ブロックをKPliveへ反映しました。`:"このシーンに○がないため、このシーンの共有をKPliveから外しました。";
  }catch(err){
-   console.error(err);st.textContent=`本文をKPliveへ反映できませんでした：${err?.message||String(err)}`;
+   console.error(err);st.textContent=`このシーンをKPliveへ反映できませんでした：${err?.message||String(err)}`;
  }
 });
 q("#newShareSession").onclick=()=>{
