@@ -36,6 +36,9 @@
 .kp-live-body li{margin:.28em 0}
 .kp-live-body hr{border:0;border-top:1px solid var(--line);margin:1.5em 0}
 .kp-live-body a{text-decoration:underline}
+.kp-live-body pre{white-space:pre-wrap;overflow:auto}
+.kp-live-body table{width:100%;border-collapse:collapse;margin:.8em 0}
+.kp-live-body th,.kp-live-body td{border:1px solid var(--line);padding:6px 8px;vertical-align:top}
 .kp-live-images{display:grid;gap:10px;align-items:start;margin-top:12px;grid-template-columns:repeat(var(--image-cols,1),minmax(0,1fr))}
 .kp-live-images img{display:block;width:100%;height:auto;max-height:440px;object-fit:contain;border-radius:8px}
 .kp-share-empty{padding:24px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
@@ -56,7 +59,7 @@
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const sanitizeRichHtml=input=>{
    const tpl=document.createElement("template");tpl.innerHTML=String(input||"");
-   const allowed=new Set(["DIV","P","BR","STRONG","B","EM","I","U","S","UL","OL","LI","BLOCKQUOTE","A","SPAN","H1","H2","H3","H4","HR","FONT"]);
+   const allowed=new Set(["DIV","P","BR","STRONG","B","EM","I","U","S","UL","OL","LI","BLOCKQUOTE","A","SPAN","H1","H2","H3","H4","HR","FONT","MARK","CODE","PRE","TABLE","THEAD","TBODY","TR","TH","TD"]);
    const safeColor=v=>{v=String(v||"").trim();return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\)|[a-z]{3,20})$/i.test(v)?v:""};
    const safeAlign=v=>["left","center","right","justify"].includes(String(v||"").toLowerCase())?String(v).toLowerCase():"";
    const clean=node=>{
@@ -79,6 +82,11 @@
          if(prop==="color"){const x=safeColor(val);if(x)keep.push(`color:${x}`)}
          else if(prop==="background-color"||prop==="background"){const x=safeColor(val);if(x)keep.push(`background-color:${x}`)}
          else if(prop==="text-align"){const x=safeAlign(val);if(x)keep.push(`text-align:${x}`)}
+         else if(prop==="font-weight" && /^(normal|bold|[1-9]00)$/i.test(val))keep.push(`font-weight:${val}`)
+         else if(prop==="font-style" && /^(normal|italic|oblique)$/i.test(val))keep.push(`font-style:${val}`)
+         else if(prop==="text-decoration" && /^(none|underline|line-through|underline line-through|line-through underline)$/i.test(val))keep.push(`text-decoration:${val}`)
+         else if(prop==="font-size" && /^(\d+(?:\.\d+)?)(px|em|rem|%)$/i.test(val))keep.push(`font-size:${val}`)
+         else if(prop==="line-height" && /^(\d+(?:\.\d+)?)(px|em|rem|%)?$/i.test(val))keep.push(`line-height:${val}`)
        });
        if(keep.length)child.setAttribute("style",keep.join(";"));
        clean(child);
@@ -88,7 +96,7 @@
  };
  const richText=s=>{
    const raw=String(s||"");
-   if(/<\s*\/?\s*(div|p|br|strong|b|em|i|u|s|ul|ol|li|blockquote|a|span|h1|h2|h3|h4|hr|font)\b/i.test(raw))return sanitizeRichHtml(raw);
+   if(/<\s*\/?\s*(div|p|br|strong|b|em|i|u|s|ul|ol|li|blockquote|a|span|h1|h2|h3|h4|hr|font|mark|code|pre|table|thead|tbody|tr|th|td)\b/i.test(raw))return sanitizeRichHtml(raw);
    return esc(raw).replace(/\n/g,"<br>");
  };
  const id=new URLSearchParams(location.search).get("id")||location.hash.replace(/^#/,"");
