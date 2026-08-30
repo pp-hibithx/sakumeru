@@ -79,3 +79,8 @@
 .kp-reveal-check-text>p:first-child{margin-top:0}.kp-reveal-check-text>p:last-child{margin-bottom:0}
 .kp-reveal-check-remove{padding:2px 7px!important;min-width:0!important;font-size:14px!important;line-height:1.25}
 .kp-live-selected-item+.kp-live-selected-item{margin-top:.8em;padding-top:.8em;border-top:1px dashed var(--line)}
+
+
+/* RichEditor baseline: H2/H3 are structural groups. KP-specific reveal state is layered separately. */
+.blog-editor > h2.sm-outline-heading{scroll-margin-top:18px}
+.blog-editor > h3.sm-outline-heading{scroll-margin-top:18px}
