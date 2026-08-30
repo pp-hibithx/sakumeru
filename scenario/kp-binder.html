@@ -2020,6 +2020,7 @@ function normalizeRevealSection(section){
  section.dataset.kind="reveal";
  if(!section.dataset.blockId)section.dataset.blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
  ensureRevealChecklist(section);
+ normalizeRevealItemStates(section);
  return section;
 }
 function ensureRevealChecklist(section){
@@ -2037,10 +2038,32 @@ function ensureRevealChecklist(section){
  body.appendChild(row);
  return true;
 }
+function setRevealItemState(row,state,{silent=false}={}){
+ if(!row)return;
+ if(!["pending","open","fail"].includes(state))state="pending";
+ row.dataset.revealState=state;
+ const legacy=row.querySelector("[data-reveal-check]");
+ if(legacy)legacy.checked=(state==="open");
+ row.querySelectorAll("[data-reveal-status] button[data-state]").forEach(btn=>{
+   btn.setAttribute("aria-pressed",String(btn.dataset.state===state));
+ });
+ if(!silent){
+   row.dispatchEvent(new Event("input",{bubbles:true}));
+ }
+}
+function normalizeRevealItemStates(section){
+ section?.querySelectorAll("[data-reveal-check-item]").forEach(row=>{
+   let state=row.dataset.revealState;
+   if(!state){
+     state=row.querySelector("[data-reveal-check]")?.checked?"open":"pending";
+   }
+   setRevealItemState(row,state,{silent:true});
+ });
+}
 function resolveRevealBody(section,mode){
  if(mode==="summary")return section.querySelector("[data-reveal-summary]");
  if(mode==="checked"){
-   const selected=[...section.querySelectorAll("[data-reveal-check-item]")].filter(row=>row.querySelector("[data-reveal-check]")?.checked);
+   const selected=[...section.querySelectorAll("[data-reveal-check-item]")].filter(row=>(row.dataset.revealState||"pending")==="open");
    if(!selected.length)return null;
    const wrapper=document.createElement("div");
    selected.forEach(row=>{
@@ -2156,13 +2179,19 @@ async function revealSnapshot(section){
  return {id,title,target,kind:section.dataset.kind||"reveal",body,bodyHtml:body,images,shareMode:mode,selectedItemIds,revealedAt:new Date().toISOString()};
 }
 function makeRevealCheckItem(html=""){
- const itemId=crypto.randomUUID?.()||(`check-${Date.now()}-${Math.random().toString(36).slice(2)}`);
  const row=document.createElement("div");
  row.className="kp-reveal-check-item";
- row.dataset.revealCheckItem="";
- row.dataset.itemId=itemId;
- row.setAttribute("contenteditable","false");
- row.innerHTML=`<label class="kp-reveal-check-toggle" contenteditable="false"><input type="checkbox" data-reveal-check> <span>開示</span></label><div class="kp-reveal-check-text" data-reveal-check-text contenteditable="true">${html||"<p>ここに開示情報を入力</p>"}</div><button type="button" class="kp-reveal-check-remove" data-remove-reveal-check title="この項目を削除">×</button>`;
+ row.dataset.revealCheckItem="1";
+ row.dataset.revealState="pending";
+ row.innerHTML=`
+   <input type="checkbox" data-reveal-check hidden>
+   <span class="kp-reveal-status" data-reveal-status role="group" aria-label="開示状態">
+     <button type="button" data-state="pending" aria-pressed="true" title="未判定・未開示">－</button>
+     <button type="button" data-state="open" aria-pressed="false" title="取得・開示済み">○</button>
+     <button type="button" data-state="fail" aria-pressed="false" title="判定失敗・非開示">×</button>
+   </span>
+   <div class="kp-reveal-check-text" data-reveal-check-text contenteditable="true">${html||""}</div>
+   <button type="button" class="kp-reveal-check-remove" data-reveal-check-remove title="この項目を削除">×</button>`;
  return row;
 }
 function addRevealCheckItem(section){
