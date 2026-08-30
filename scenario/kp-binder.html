@@ -1,6 +1,8 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KP BINDER | SAKU+MERU</title>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
+<link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0830a">
+<script src="../assets/js/rich-editor-outline.js?v=0830a"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/beta-gate.js?v=02315"></script><script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 <style>
@@ -871,7 +873,7 @@ function renderEditor(){
  refreshStats();
 
  q("#manuscript").innerHTML=`<div class="blog-shell">
-   <div class="blog-note">1シーン＝1つの記事として編集します。Enterで段落、Shift+Enterで同じ段落内の改行。左のハンドルでブロックを移動できます。</div>
+   <div class="blog-note">1シーン＝1つの記事として編集します。Enterで段落、Shift+Enterで同じ段落内の改行。左の▸/▾で折りたたみ、⋮⋮で見出し配下ごと移動できます。</div>
    <div class="rich-toolbar" id="richToolbar">
      <div class="tb-group">
        <span class="tb-label">履歴</span>
@@ -956,6 +958,8 @@ function renderEditor(){
 
  const MOVABLE_SELECTOR="p,h1,h2,h3,h4,blockquote,ul,ol,hr,section.kp-special,div.image-grid,div.media-card,div.kp-cue";
  const handleLayer=q("#blockHandleLayer");
+ const richOutline=window.SAKUMERichOutline||null;
+ const OUTLINE_OPTIONS={rootHeading:"h2",childHeading:"h3",specialSelector:"section.kp-special"};
 
  function directEditorBlocks(){
    return [...ed.children].filter(el=>el.matches?.(MOVABLE_SELECTOR));
@@ -968,6 +972,7 @@ function renderEditor(){
 
  function decorateBlocks(){
    directEditorBlocks().forEach(block=>block.classList.add("sm-block"));
+   richOutline?.refresh(ed,OUTLINE_OPTIONS);
    refreshBlockHandles();
  }
 
@@ -976,30 +981,53 @@ function renderEditor(){
    cancelAnimationFrame(handleFrame);
    handleFrame=requestAnimationFrame(()=>{
      if(!handleLayer?.isConnected||!ed?.isConnected)return;
+     richOutline?.refresh(ed,OUTLINE_OPTIONS);
      handleLayer.innerHTML="";
      const shell=q(".blog-shell");
      if(!shell)return;
      const shellRect=shell.getBoundingClientRect();
      const edRect=ed.getBoundingClientRect();
 
-     directEditorBlocks().forEach((block,index)=>{
+     directEditorBlocks().forEach(block=>{
        block.classList.add("sm-block");
+       if(richOutline?.isHidden(block))return;
        const r=block.getBoundingClientRect();
+
        const h=document.createElement("button");
        h.type="button";
        h.className="sm-drag-handle";
        h.textContent="⋮⋮";
-       h.title="ここをつかんでブロックを移動";
-       h.setAttribute("aria-label","ブロックを移動");
+       const groupLevel=richOutline?.levelOf(block,OUTLINE_OPTIONS)||0;
+       h.title=groupLevel?"ここをつかんで見出し配下ごと移動":"ここをつかんでブロックを移動";
+       h.setAttribute("aria-label",h.title);
        h.style.left=`${edRect.left-shellRect.left+6}px`;
        h.style.top=`${r.top-shellRect.top+Math.min(8,Math.max(2,r.height/2-15))}px`;
        h._smBlock=block;
        h.addEventListener("mousedown",startPointerBlockDrag);
        handleLayer.appendChild(h);
+
+       if(richOutline?.isCollapsible(block,OUTLINE_OPTIONS)){
+         const t=document.createElement("button");
+         t.type="button";
+         t.className="sm-outline-toggle sm-outline-ui";
+         const closed=richOutline.isCollapsed(block);
+         t.textContent=closed?"▸":"▾";
+         t.title=closed?"展開":"折りたたむ";
+         t.setAttribute("aria-label",t.title);
+         t.style.left=`${edRect.left-shellRect.left+37}px`;
+         t.style.top=h.style.top;
+         t._smBlock=block;
+         t.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+         t.addEventListener("click",e=>{
+           e.preventDefault();e.stopPropagation();
+           richOutline.toggle(block,ed,OUTLINE_OPTIONS);
+           refreshBlockHandles();
+         });
+         handleLayer.appendChild(t);
+       }
      });
    });
  }
-
  let pointerDrag=null;
  function startPointerBlockDrag(e){
    if(e.button!==0)return;
@@ -1007,8 +1035,9 @@ function renderEditor(){
    if(!block||block.parentElement!==ed)return;
    e.preventDefault();e.stopPropagation();
 
+   const group=richOutline?.groupFor(block,ed,OUTLINE_OPTIONS)||[block];
    pointerDrag={
-     block,
+     block,group,
      handle:e.currentTarget,
      startX:e.clientX,
      startY:e.clientY,
@@ -1017,7 +1046,7 @@ function renderEditor(){
      before:true
    };
    pointerDrag.handle.classList.add("active");
-   block.classList.add("sm-block-dragging");
+   group.forEach(x=>x.classList.add("sm-block-dragging"));
    document.addEventListener("mousemove",movePointerBlockDrag,true);
    document.addEventListener("mouseup",endPointerBlockDrag,true);
  }
@@ -1031,7 +1060,7 @@ function renderEditor(){
    clearBlockDropMarks();
    const hit=document.elementFromPoint(e.clientX,e.clientY);
    const target=hit?.closest?.(".sm-block");
-   if(!target||target===pointerDrag.block||target.parentElement!==ed){
+   if(!target||target===pointerDrag.block||target.parentElement!==ed||pointerDrag.group?.includes(target)){
      pointerDrag.target=null;
      return;
    }
@@ -1046,14 +1075,15 @@ function renderEditor(){
  function endPointerBlockDrag(e){
    if(!pointerDrag)return;
    e.preventDefault();e.stopPropagation();
-   const {block,handle,target,before,moved}=pointerDrag;
+   const {block,group,handle,target,before,moved}=pointerDrag;
 
    if(moved&&target&&block.parentElement===ed&&target.parentElement===ed){
-     if(before)ed.insertBefore(block,target);
+     if(richOutline)richOutline.moveGroup(ed,block,target,before,OUTLINE_OPTIONS);
+     else if(before)ed.insertBefore(block,target);
      else ed.insertBefore(block,target.nextSibling);
    }
 
-   block.classList.remove("sm-block-dragging");
+   (group||[block]).forEach(x=>x.classList.remove("sm-block-dragging"));
    handle.classList.remove("active");
    clearBlockDropMarks();
    pointerDrag=null;
@@ -1094,6 +1124,7 @@ function renderEditor(){
      el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after");
      if(!el.className)el.removeAttribute("class");
    });
+   richOutline?.cleanupClone(clone);
    return clone.innerHTML;
  }
 
@@ -1950,7 +1981,7 @@ async function revealSnapshot(section){
  const raw=[...(source.querySelectorAll?.(".image-grid img, img[data-full-image]")||[])]
    .map(img=>img.getAttribute("src")||"").filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
  const images=[];for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
- return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
+ return {id,title,target,kind:section.dataset.kind||"reveal",body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
 }
 function setRevealAction(section){
  section=normalizeRevealSection(section)||section;
