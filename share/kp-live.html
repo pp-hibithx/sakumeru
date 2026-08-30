@@ -50,7 +50,7 @@
 .kp-image-lightbox-close{position:fixed;top:14px;right:18px;z-index:10001;width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,20,.72);color:#fff;font-size:30px;line-height:1;cursor:pointer}
 .kp-image-lightbox-close:hover{background:rgba(20,20,20,.92)}
 
-.kp-live-scene-group{margin:18px 0 8px}
+.kp-live-scene-group{margin:18px 0 8px;padding-left:14px;border-left:2px solid color-mix(in srgb,var(--line) 80%,transparent)}
 .kp-live-scene-group>h2{font-size:1.12rem;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .kp-live-outline-child{margin:14px 0 4px;padding-top:4px}
 .kp-live-outline-child>h3{margin:0 0 8px;font-size:1.02rem}
@@ -170,10 +170,18 @@
      return `<section class="kp-live-outline-child">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
    }).join("");
    const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
-   const renderOutlineScene=x=>(Array.isArray(x.outlineGroups)?x.outlineGroups:[]).map(group=>{
-     const title=String(group.title||"").trim();
-     return `<section class="kp-live-scene-group">${title?`<h2>${esc(title)}</h2>`:""}${renderOutlineChildren(group.outlineChildren)}</section>`;
+   const renderSceneLegacyItems=items=>(Array.isArray(items)?items:[]).map(item=>{
+     const title=meaningfulTitle(item)||"開示情報";
+     return `<section class="kp-live-scene-group"><h2>${esc(title)}</h2><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></section>`;
    }).join("");
+   const renderOutlineScene=x=>{
+     const legacy=renderSceneLegacyItems(x.legacyItems);
+     const outline=(Array.isArray(x.outlineGroups)?x.outlineGroups:[]).map(group=>{
+       const title=String(group.title||"").trim();
+       return `<section class="kp-live-scene-group">${title?`<h2>${esc(title)}</h2>`:""}${renderOutlineChildren(group.outlineChildren)}</section>`;
+     }).join("");
+     return legacy+outline;
+   };
    const cards=items.length?items.map((x,i)=>{
      const latest=i===items.length-1;
      const title=meaningfulTitle(x)||(["outline-group","outline-scene"].includes(x.kind)?"共有情報":"開示情報");
