@@ -94,10 +94,35 @@
  const id=new URLSearchParams(location.search).get("id")||location.hash.replace(/^#/,"");
  if(!id){box.innerHTML='<div class="kp-share-empty">共有IDがありません。</div>';return}
  try{
-   const p=await TRPG39Cloud.getSharedPage(id);
-   if(!p)throw new Error("共有データが見つかりません");
+   const raw=await TRPG39Cloud.getSharedPage(id);
+   if(raw==null)throw new Error("共有データが見つかりません");
+
+   const parseMaybeJson=v=>{
+     if(typeof v!=="string")return v;
+     try{return JSON.parse(v)}catch(_){return v}
+   };
+   let p=parseMaybeJson(raw);
+
+   // Supabase RPC / old share implementations may wrap JSON differently.
+   // Unwrap only known container shapes; keep the actual KP payload unchanged.
+   for(let n=0;n<4;n++){
+     if(Array.isArray(p) && p.length===1){p=parseMaybeJson(p[0]);continue}
+     if(p && typeof p==="object"){
+       if(p.kind==="kp-live-share")break;
+       if("data" in p && p.data!=null){p=parseMaybeJson(p.data);continue}
+       if("p_data" in p && p.p_data!=null){p=parseMaybeJson(p.p_data);continue}
+       if("payload" in p && p.payload!=null){p=parseMaybeJson(p.payload);continue}
+       if("result" in p && p.result!=null){p=parseMaybeJson(p.result);continue}
+     }
+     break;
+   }
+
+   if(!p || typeof p!=="object")throw new Error("共有データを読み取れませんでした");
    if(p.kind!=="kp-live-share")throw new Error("KP共有データではありません");
-   const items=Array.isArray(p.items)?p.items:[];
+
+   let items=parseMaybeJson(p.items);
+   if(!Array.isArray(items))items=[];
+
    const itemId=(x,i)=>"kp-item-"+String(x?.id||i+1).replace(/[^a-zA-Z0-9_-]/g,"-");
    const toc=items.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${items.map((x,i)=>`<li><a href="#${itemId(x,i)}">${esc(x.title||`開示 ${i+1}`)}${x.target?` <span class="small muted">（${esc(x.target)}）</span>`:""}</a></li>`).join("")}</ol></nav>`:"";
    const cards=items.length?items.map((x,i)=>{
