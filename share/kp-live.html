@@ -50,6 +50,8 @@
 .kp-image-lightbox-close{position:fixed;top:14px;right:18px;z-index:10001;width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,20,.72);color:#fff;font-size:30px;line-height:1;cursor:pointer}
 .kp-image-lightbox-close:hover{background:rgba(20,20,20,.92)}
 
+.kp-live-scene-group{margin:18px 0 8px}
+.kp-live-scene-group>h2{font-size:1.12rem;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .kp-live-outline-child{margin:14px 0 4px;padding-top:4px}
 .kp-live-outline-child>h3{margin:0 0 8px;font-size:1.02rem}
 .kp-live-outline-block{padding:8px 0;line-height:1.8}
@@ -162,18 +164,20 @@
    const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
    const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
    const renderImages=images=>Array.isArray(images)&&images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,images.length)}">${images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:"";
-   const renderOutlineGroup=x=>{
-     const children=Array.isArray(x.outlineChildren)?x.outlineChildren:[];
-     return children.map(child=>{
-       const blocks=Array.isArray(child.blocks)?child.blocks:[];
-       const title=String(child.title||"").trim();
-       return `<section class="kp-live-outline-child">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
-     }).join("");
-   };
+   const renderOutlineChildren=children=>(Array.isArray(children)?children:[]).map(child=>{
+     const blocks=Array.isArray(child.blocks)?child.blocks:[];
+     const title=String(child.title||"").trim();
+     return `<section class="kp-live-outline-child">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
+   }).join("");
+   const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
+   const renderOutlineScene=x=>(Array.isArray(x.outlineGroups)?x.outlineGroups:[]).map(group=>{
+     const title=String(group.title||"").trim();
+     return `<section class="kp-live-scene-group">${title?`<h2>${esc(title)}</h2>`:""}${renderOutlineChildren(group.outlineChildren)}</section>`;
+   }).join("");
    const cards=items.length?items.map((x,i)=>{
      const latest=i===items.length-1;
-     const title=meaningfulTitle(x)||(x.kind==="outline-group"?"共有情報":"開示情報");
-     const html=x.kind==="outline-group"?renderOutlineGroup(x):richText(x.bodyHtml??x.body??"")+renderImages(x.images);
+     const title=meaningfulTitle(x)||(["outline-group","outline-scene"].includes(x.kind)?"共有情報":"開示情報");
+     const html=x.kind==="outline-scene"?renderOutlineScene(x):x.kind==="outline-group"?renderOutlineGroup(x):richText(x.bodyHtml??x.body??"")+renderImages(x.images);
      return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" id="${itemId(x,i)}" ${latest?"open":""}>
        <summary><span class="kp-live-summary-main"><strong>${esc(title)}</strong></span></summary>
        <div class="kp-live-body">${html}</div>
