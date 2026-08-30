@@ -767,7 +767,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 <section class="lib-panel">
   <div class="row">
     <div><h2>同卓名簿</h2><div id="summary" class="small"></div></div>
-    <button id="openLibraryEditor" type="button">＋ 記録を追加</button>
+    <div class="row"><button id="addPlayerDirect" type="button">＋ PLAYERを追加</button><button id="openLibraryEditor" type="button">＋ 記録を追加</button></div>
   </div>
   <div class="library-view-tabs" role="tablist">
 <button type="button" class="library-view-tab active" data-library-view="scenario">シナリオ</button>
@@ -910,6 +910,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
   </div>
 </div>
 
+<dialog id="playerAddDialog" class="x-preview"><h2>PLAYERを追加</h2><p class="small muted">LIBRARYの参加者入力と同じPLAYERS名簿へ登録します。</p><label>名前</label><input id="playerAddName" placeholder="参加者名"><div class="row" style="justify-content:flex-end;margin-top:12px"><button id="playerAddCancel" type="button">キャンセル</button><button id="playerAddSave" type="button">追加</button></div></dialog>
 <div id="pcRelationModal" class="pc-rel-modal" hidden>
   <div class="pc-rel-panel">
     <div class="pc-rel-head">
@@ -3176,6 +3177,8 @@ function renderPcView(){
 
 function playerById(id){return players.find(p=>p.id===id)}
 function savePlayersState(){if(TRPG39.savePlayers)TRPG39.savePlayers(players)}
+function addPlayerDirect(){const dlg=q("playerAddDialog"),inp=q("playerAddName");inp.value="";dlg.showModal();setTimeout(()=>inp.focus(),0)}
+function commitPlayerDirect(){const name=String(q("playerAddName").value||"").trim();if(!name)return alert("名前を入力してください。");const found=players.find(p=>String(p.name||"").normalize("NFKC").trim().toLowerCase()===name.normalize("NFKC").trim().toLowerCase());if(found){q("playerAddDialog").close();focusedPlayerId=found.id;render();return}const p=TRPG39.ensurePlayer?TRPG39.ensurePlayer(name):null;players=TRPG39.loadPlayers();q("playerAddDialog").close();if(p)focusedPlayerId=p.id;render()}
 function setPlayerArchived(id,archived){players=players.map(p=>p.id===id?{...p,archived:!!archived}:p);savePlayersState();render()}
 function deletePlayerFromDirectory(id){
  const p=playerById(id);if(!p)return;
@@ -4051,7 +4054,7 @@ q("pcLibraryEditorCancel").onclick=closePcLibraryEditor;
 q("pcLibraryEditorSave").onclick=savePcLibraryEditor;
 q("pcLibraryEditor").addEventListener("click",e=>{if(e.target===q("pcLibraryEditor"))closePcLibraryEditor()});
 
-reset();hideEditor();render();{const p=new URLSearchParams(location.search),sid=p.get("scenario")||"";if(p.get("new")==="1"){addForScenario(sid)}}
+reset();hideEditor();q("addPlayerDirect").onclick=addPlayerDirect;q("playerAddCancel").onclick=()=>q("playerAddDialog").close();q("playerAddSave").onclick=commitPlayerDirect;q("playerAddName").onkeydown=e=>{if(e.key==="Enter")commitPlayerDirect()};render();{const p=new URLSearchParams(location.search),sid=p.get("scenario")||"";if(p.get("new")==="1"){addForScenario(sid)}}
 })();
 </script>
 
