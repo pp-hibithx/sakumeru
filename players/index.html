@@ -3692,7 +3692,7 @@ function renderPlayerDetail(player){
  q("summary").textContent=`${player.name}視点の記録`;
  q("list").classList.remove("library-grid");
  q("list").innerHTML=`<div class="player-detail">
-   <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="backToPlayers" type="button">← 同卓者一覧へ</button><button id="openPlayerRelationFromDetail" class="player-rel-open" type="button">同卓者関係図</button></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="backToPlayers" type="button">← 同卓者一覧へ</button><button id="addRecordForPlayer" type="button">＋ このPLAYERを含む卓記録を追加</button><button id="openPlayerRelationFromDetail" class="player-rel-open" type="button">同卓者関係図</button></div>
 
    <section class="player-section">
      <h3>${esc(player.name)}の連絡先</h3>
@@ -3743,6 +3743,7 @@ function renderPlayerDetail(player){
 
  q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");history.replaceState(null,"",u);render()};
  q("openPlayerRelationFromDetail").onclick=()=>openPlayerRelationshipGraph(player.id);
+ q("addRecordForPlayer").onclick=()=>{location.href=`../library/index.html?new=1&participantName=${encodeURIComponent(player.name||"")}`};
  q("savePlayerContact").onclick=()=>{const value=String(q("playerXAccount").value||"").trim();const shareUrl=String(q("playerShareUrl").value||"").trim();players=players.map(p=>p.id===player.id?{...p,xAccount:value,shareUrl}:p);savePlayersState();const updated=players.find(p=>p.id===player.id)||player;renderPlayerDetail(updated)};
  q("playerDetailRole").onchange=()=>{playerDetailRoleFilter=q("playerDetailRole").value;renderPlayerDetail(player)};
  q("playerDetailSystem").onchange=()=>{playerDetailSystemFilter=q("playerDetailSystem").value;renderPlayerDetail(player)};
