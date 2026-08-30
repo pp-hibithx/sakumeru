@@ -1929,7 +1929,7 @@ async function revealSnapshot(section){
 
  // 2. A real heading inside the shared body.
  if(!title && mode==="full"){
-   const heading=bodyRoot.querySelector("h1,h2,h3,h4");
+   const heading=bodyRoot.querySelector("h2");
    title=validTitle(heading?.textContent);
  }
 
