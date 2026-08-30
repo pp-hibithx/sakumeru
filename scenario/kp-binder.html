@@ -625,10 +625,25 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 @media(max-width:760px){.kp2-pcgrid{grid-template-columns:1fr}}
 .scene-title-row{display:flex;gap:8px;align-items:center}.scene-title-row .edit-title{flex:1}.scene-title-row .danger{white-space:nowrap}
 
-.kp-history-tools{display:inline-flex!important;gap:6px;align-items:center;flex-wrap:wrap}
-.kp-history-tools #editorUndo,.kp-history-tools #editorRedo{display:inline-flex!important;visibility:visible!important;opacity:1}
 
-#editorUndo,#editorRedo{display:inline-flex!important;visibility:visible!important}
+/* 2026-08-30 reveal selector contrast */
+.blog-editor .kp-reveal-mode label{
+  background:#12151b!important;
+  border-color:#8b7130!important;
+  color:#d7d9df!important;
+}
+.blog-editor .kp-reveal-mode label:hover{
+  background:#1d1a10!important;
+  border-color:#d6b243!important;
+  color:#fff!important;
+}
+.blog-editor .kp-reveal-mode label:has(input:checked){
+  background:#d6b243!important;
+  border-color:#f0d36a!important;
+  color:#111!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.12) inset!important;
+}
+.blog-editor .kp-reveal-mode label:has(input:checked) *{color:#111!important}
 
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
@@ -1119,9 +1134,6 @@ function renderEditor(){
    if(!h){
      h={past:[],present:current,future:[],lastTypingAt:0};
      editorHistoryByScene.set(String(p.id),h);
-   }else if(h.present!==current && !h.applying){
-     // The scene may have been re-rendered after another operation. Keep the visible HTML as current.
-     h.present=current;
    }
    return h;
  }
