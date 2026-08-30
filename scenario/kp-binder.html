@@ -2234,6 +2234,13 @@ async function applyOutlineRevealToShare(){
  fresh.title=String(page?.title||fresh.title||"無題のシーン").trim()||"無題のシーン";
  const items=Array.isArray(shareTest.items)?shareTest.items:[];
  const old=items.find(x=>x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId);
+ const migratedLegacy=[
+   ...((old?.legacyItems)||[]),
+   ...items.filter(x=>x?.kind!=="outline-scene"&&String(x?.sceneId||"")===sceneId)
+ ];
+ const legacyById=new Map();
+ migratedLegacy.forEach(x=>legacyById.set(String(x?.id||crypto.randomUUID()),x));
+ fresh.legacyItems=[...legacyById.values()];
  let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
  const now=new Date().toISOString();fresh.revealedAt=old?.revealedAt||now;fresh.updatedAt=now;
  fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
@@ -2606,10 +2613,85 @@ function syncRevealCheckState(input){
  q("#blogEditor")?.dispatchEvent(new Event("input",{bubbles:true}));
 }
 
+
+function findSharedRevealById(id){
+ shareTest=currentShare()||shareTest;
+ for(const item of (shareTest?.items||[])){
+   if(String(item?.id||"")===String(id))return {item,scene:null};
+   if(item?.kind==="outline-scene"){
+     const child=(item.legacyItems||[]).find(x=>String(x?.id||"")===String(id));
+     if(child)return {item:child,scene:item};
+   }
+ }
+ return null;
+}
+function ensureSceneShareContainer(sceneId,sceneTitle){
+ shareTest=currentShare()||shareTest;ensureShareDisplayOrder();
+ sceneId=String(sceneId||"");sceneTitle=String(sceneTitle||"").trim()||"無題のシーン";
+ const items=Array.isArray(shareTest.items)?shareTest.items:[];
+ let scene=items.find(x=>x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId);
+ const migrate=items.filter(x=>x?.kind!=="outline-scene"&&String(x?.sceneId||"")===sceneId);
+ if(!scene){
+   let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
+   scene={
+     id:`outline-scene:${sceneId}`,kind:"outline-scene",source:"outline",
+     sceneId,title:sceneTitle,target:"全員",outlineGroups:[],legacyItems:[],
+     revealedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
+     displayOrder:++maxOrder
+   };
+   shareTest.items.push(scene);
+ }
+ scene.title=sceneTitle;
+ scene.outlineGroups=Array.isArray(scene.outlineGroups)?scene.outlineGroups:[];
+ scene.legacyItems=Array.isArray(scene.legacyItems)?scene.legacyItems:[];
+ for(const old of migrate){
+   const idx=scene.legacyItems.findIndex(x=>String(x?.id||"")===String(old?.id||""));
+   if(idx>=0)scene.legacyItems[idx]=old;else scene.legacyItems.push(old);
+ }
+ if(migrate.length){
+   const moved=new Set(migrate);
+   shareTest.items=shareTest.items.filter(x=>!moved.has(x));
+ }
+ return scene;
+}
+function upsertRevealIntoScene(snap){
+ const scene=ensureSceneShareContainer(snap.sceneId,snap.sceneTitle);
+ const idx=scene.legacyItems.findIndex(x=>String(x?.id||"")===String(snap.id||""));
+ if(idx>=0){
+   const old=scene.legacyItems[idx];
+   snap.revealedAt=old.revealedAt||snap.revealedAt;
+   snap.displayOrder=Number.isFinite(Number(old.displayOrder))?Number(old.displayOrder):snap.displayOrder;
+   snap.updatedAt=new Date().toISOString();
+   scene.legacyItems[idx]=snap;
+ }else{
+   snap.updatedAt=new Date().toISOString();
+   scene.legacyItems.push(snap);
+ }
+ scene.updatedAt=new Date().toISOString();
+ return scene;
+}
+function removeRevealFromScene(id){
+ shareTest=currentShare()||shareTest;
+ for(const scene of (shareTest?.items||[]).filter(x=>x?.kind==="outline-scene")){
+   const before=(scene.legacyItems||[]).length;
+   scene.legacyItems=(scene.legacyItems||[]).filter(x=>String(x?.id||"")!==String(id));
+   if(scene.legacyItems.length!==before){
+     scene.updatedAt=new Date().toISOString();
+     if(!(scene.legacyItems||[]).length&&!(scene.outlineGroups||[]).length){
+       shareTest.items=(shareTest.items||[]).filter(x=>x!==scene);
+     }
+     return true;
+   }
+ }
+ const before=(shareTest?.items||[]).length;
+ shareTest.items=(shareTest?.items||[]).filter(x=>String(x?.id||"")!==String(id));
+ return shareTest.items.length!==before;
+}
+
 function setRevealAction(section){
  section=normalizeRevealSection(section)||section;
  shareTest=currentShare()||shareTest;
- const id=section.dataset.blockId,item=(shareTest?.items||[]).find(x=>x.id===id);
+ const id=section.dataset.blockId,item=findSharedRevealById(id)?.item;
  let host=section.querySelector(":scope > .kp-special-action");
  if(!host){host=document.createElement("div");host.className="kp-special-action";host.setAttribute("contenteditable","false");section.appendChild(host)}
  if(item){
@@ -2791,31 +2873,25 @@ document.addEventListener("click",async e=>{
      st.textContent="開示データを準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
      if(!confirm(`「${snap.title}」を共有しますか？`))return;
-     ensureShareDisplayOrder();
-     const maxOrder=(shareTest.items||[]).reduce((m,x)=>Math.max(m,Number.isFinite(Number(x.displayOrder))?Number(x.displayOrder):-1),-1);
-     snap.displayOrder=maxOrder+1;
-     shareTest.items.push(snap);
-     try{await syncTestShare()}catch(err){shareTest.items=shareTest.items.filter(x=>x!==snap);throw err}
-     st.textContent=`「${snap.title}」を共有しました。`;
+     const before=structuredClone(shareTest.items||[]);
+     upsertRevealIntoScene(snap);saveNow();
+     try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
+     st.textContent=`「${snap.sceneTitle}」シーンに「${snap.title}」を共有しました。`;
    }else if(upd){
-     const idx=shareTest.items.findIndex(x=>x.id===id);if(idx<0)return;
-     const old=shareTest.items[idx];
+     const found=findSharedRevealById(id);if(!found)return;
      st.textContent="共有内容を準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
-     snap.revealedAt=old.revealedAt||snap.revealedAt;
-     snap.displayOrder=Number.isFinite(Number(old.displayOrder))?Number(old.displayOrder):snap.displayOrder;
-     snap.updatedAt=new Date().toISOString();
-     const backup=old;
-     shareTest.items[idx]=snap;
-     saveNow();
-     try{await syncTestShare()}catch(err){shareTest.items[idx]=backup;saveNow();throw err}
-     st.textContent=`「${snap.title}」の共有内容を更新しました。`;
+     const before=structuredClone(shareTest.items||[]);
+     upsertRevealIntoScene(snap);saveNow();
+     try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
+     st.textContent=`「${snap.sceneTitle}」シーンの「${snap.title}」を更新しました。`;
    }else if(wd){
-     const old=shareTest.items.find(x=>x.id===id);if(!old)return;
-     if(!confirm(`「${old.title}」を共有から削除しますか？`))return;
-     const before=[...shareTest.items];shareTest.items=shareTest.items.filter(x=>x.id!==id);
-     try{await syncTestShare()}catch(err){shareTest.items=before;throw err}
-     st.textContent=`「${old.title}」を共有から削除しました。`;
+     const found=findSharedRevealById(id);if(!found)return;
+     if(!confirm(`「${found.item.title}」を共有から削除しますか？`))return;
+     const before=structuredClone(shareTest.items||[]);
+     removeRevealFromScene(id);saveNow();
+     try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
+     st.textContent=`「${found.item.title}」を共有から削除しました。`;
    }
    saveNow();setRevealAction(section);
  }catch(err){
