@@ -2195,7 +2195,13 @@ async function collectOutlineShareScene(){
  const appendSpecialStates=async section=>{
    const specialTitle=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim() ||
      String(section.querySelector(":scope > .kp-special-head .kind-chip")?.textContent||"開示情報").trim();
-   const containers=[...section.querySelectorAll(":scope > .kp-special-body, :scope > .kp-reveal-sharebox [data-reveal-summary]")];
+   // A reveal block has two editable representations: the scenario text and the optional PL summary.
+   // Only the currently selected reveal mode is shareable. Collecting both made every open unit appear twice in KPlive.
+   const revealMode=section.querySelector("[data-reveal-mode]:checked")?.value==="summary"?"summary":"full";
+   const selectedContainer=revealMode==="summary"
+     ? section.querySelector(":scope > .kp-reveal-sharebox [data-reveal-summary]")
+     : section.querySelector(":scope > .kp-special-body");
+   const containers=selectedContainer?[selectedContainer]:[];
    const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>isNestedKpStateableBlock(x)&&kpRevealState(x)==="open"));
    if(!openUnits.length)return false;
    const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[]};
