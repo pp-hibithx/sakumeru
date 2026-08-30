@@ -1782,7 +1782,7 @@ function sharePayloadFor(participant=null){
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort((a,z)=>new Date(a.revealedAt)-new Date(z.revealedAt))}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830c`,location.href).href:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830d`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
@@ -1871,11 +1871,21 @@ function normalizeRevealSection(section){
 }
 function resolveRevealBody(section,mode){
  if(mode==="summary")return section.querySelector("[data-reveal-summary]");
- const direct=section.querySelector(":scope > .kp-special-body")||section.querySelector(".kp-special-body");
- if(direct)return direct;
+
+ const titleEl=section.querySelector(":scope > .kp-special-title");
+ const bodyEl=section.querySelector(":scope > .kp-special-body")||section.querySelector(".kp-special-body");
+ const titleText=(titleEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ const bodyText=(bodyEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+
+ // Legacy saved blocks from the earlier importer can have these reversed:
+ // long scenario text in .kp-special-title and the short heading in .kp-special-body.
+ if(titleEl && bodyEl && titleText.length>120 && bodyText && bodyText.length<=80){
+   return titleEl;
+ }
+ if(bodyEl)return bodyEl;
 
  const clone=section.cloneNode(true);
- clone.querySelectorAll(".kp-special-head,.kp-special-title,.kp-reveal-sharebox,.kp-special-action,[data-share-open],[data-share-update],[data-share-withdraw]").forEach(el=>el.remove());
+ clone.querySelectorAll(".kp-special-head,.kp-reveal-sharebox,.kp-special-action,[data-share-open],[data-share-update],[data-share-withdraw]").forEach(el=>el.remove());
  const wrapper=document.createElement("div");
  wrapper.innerHTML=clone.innerHTML;
  if((wrapper.textContent||"").replace(/\u200B/g,"").trim() || wrapper.querySelector("img,table,ul,ol,blockquote,hr")){
@@ -1900,9 +1910,13 @@ async function revealSnapshot(section){
 
  // Existing legacy blocks can have the body swallowed into .kp-special-title.
  // Accept that field only when it is actually a short title.
- const rawTitle=(section.querySelector(":scope > .kp-special-title")?.textContent||"")
-   .replace(/\u200B/g,"").replace(/\s+/g," ").trim();
- let title=(rawTitle && rawTitle.length<=80) ? rawTitle : "";
+ const titleEl=section.querySelector(":scope > .kp-special-title");
+ const legacyBodyEl=section.querySelector(":scope > .kp-special-body")||section.querySelector(".kp-special-body");
+ const rawTitle=(titleEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ const legacyBodyText=(legacyBodyEl?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ const reversedLegacy=rawTitle.length>120 && legacyBodyText && legacyBodyText.length<=80;
+
+ let title=reversedLegacy ? legacyBodyText : ((rawTitle && rawTitle.length<=80) ? rawTitle : "");
 
  if(mode==="full" && (!title || title==="開示情報")){
    const heading=bodyRoot.querySelector("h1,h2,h3,h4");
@@ -2059,11 +2073,16 @@ document.addEventListener("click",async e=>{
      try{await syncTestShare()}catch(err){shareTest.items=shareTest.items.filter(x=>x!==snap);throw err}
      st.textContent=`「${snap.title}」を共有しました。`;
    }else if(upd){
-     const old=shareTest.items.find(x=>x.id===id);if(!old)return;
+     const idx=shareTest.items.findIndex(x=>x.id===id);if(idx<0)return;
+     const old=shareTest.items[idx];
      st.textContent="共有内容を準備中…画像がある場合はStorageへアップロードします。";
-     const snap=await revealSnapshot(section);snap.revealedAt=old.revealedAt;snap.updatedAt=new Date().toISOString();
-     const backup={...old,images:[...(old.images||[])]};Object.assign(old,snap);
-     try{await syncTestShare()}catch(err){Object.keys(old).forEach(k=>delete old[k]);Object.assign(old,backup);throw err}
+     const snap=await revealSnapshot(section);
+     snap.revealedAt=old.revealedAt||snap.revealedAt;
+     snap.updatedAt=new Date().toISOString();
+     const backup=old;
+     shareTest.items[idx]=snap;
+     saveNow();
+     try{await syncTestShare()}catch(err){shareTest.items[idx]=backup;saveNow();throw err}
      st.textContent=`「${snap.title}」の共有内容を更新しました。`;
    }else if(wd){
      const old=shareTest.items.find(x=>x.id===id);if(!old)return;
