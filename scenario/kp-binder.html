@@ -1271,7 +1271,7 @@ function renderEditor(){
  ed.addEventListener("change",e=>{
    const radio=e.target.closest("[data-reveal-mode]");
    if(!radio)return;
-   const section=radio.closest('.kp-special[data-kind="reveal"]');
+   const section=normalizeRevealSection(radio.closest(".kp-special"));
    if(!section)return;
    section.querySelectorAll("[data-reveal-mode]").forEach(r=>{
      const on=r===radio;
@@ -1854,14 +1854,43 @@ async function uploadShareImage(src,blockId,index){
  }
  return `${cfg.projectUrl}/storage/v1/object/public/kp-share-images/${path}`;
 }
+
+function isRevealSection(section){
+ if(!section?.classList?.contains("kp-special"))return false;
+ if(section.dataset.kind==="reveal")return true;
+ if(section.querySelector("[data-share-open],[data-share-update],[data-share-withdraw],.kp-reveal-sharebox"))return true;
+ const headText=(section.querySelector(".kp-special-head")?.textContent||"").trim();
+ const titleText=(section.querySelector(".kp-special-title")?.textContent||"").trim();
+ return /開示情報/.test(headText)||titleText==="開示情報";
+}
+function normalizeRevealSection(section){
+ if(!isRevealSection(section))return null;
+ section.dataset.kind="reveal";
+ if(!section.dataset.blockId)section.dataset.blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
+ return section;
+}
+function resolveRevealBody(section,mode){
+ if(mode==="summary")return section.querySelector("[data-reveal-summary]");
+ const direct=section.querySelector(":scope > .kp-special-body")||section.querySelector(".kp-special-body");
+ if(direct)return direct;
+
+ const clone=section.cloneNode(true);
+ clone.querySelectorAll(".kp-special-head,.kp-special-title,.kp-reveal-sharebox,.kp-special-action,[data-share-open],[data-share-update],[data-share-withdraw]").forEach(el=>el.remove());
+ const wrapper=document.createElement("div");
+ wrapper.innerHTML=clone.innerHTML;
+ if((wrapper.textContent||"").replace(/\u200B/g,"").trim() || wrapper.querySelector("img,table,ul,ol,blockquote,hr")){
+   return wrapper;
+ }
+ return null;
+}
+
 async function revealSnapshot(section){
  const id=section.dataset.blockId||crypto.randomUUID();
  let title=section.querySelector(".kp-special-title")?.textContent?.trim()||"開示情報";
  const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
  const mode=section.querySelector("[data-reveal-mode]:checked")?.value==="summary"?"summary":"full";
- const source=mode==="summary"
-   ? section.querySelector("[data-reveal-summary]")
-   : section.querySelector(".kp-special-body");
+ section=normalizeRevealSection(section)||section;
+ const source=resolveRevealBody(section,mode);
  if(!source)throw new Error("共有する本文を取得できませんでした。");
 
  const bodyRoot=source.cloneNode(true);
@@ -1883,6 +1912,7 @@ async function revealSnapshot(section){
  return {id,title,target,body,bodyHtml:body,images,shareMode:mode,revealedAt:new Date().toISOString()};
 }
 function setRevealAction(section){
+ section=normalizeRevealSection(section)||section;
  shareTest=currentShare()||shareTest;
  const id=section.dataset.blockId,item=(shareTest?.items||[]).find(x=>x.id===id);
  let host=section.querySelector(":scope > .kp-special-action");
@@ -1895,8 +1925,9 @@ function setRevealAction(section){
 }
 function refreshRevealActions(){
  const editor=q("#blogEditor");if(!editor)return;
- editor.querySelectorAll('.kp-special[data-kind="reveal"]').forEach(section=>{
-   if(!section.dataset.blockId)section.dataset.blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
+ editor.querySelectorAll(".kp-special").forEach(rawSection=>{
+   const section=normalizeRevealSection(rawSection);
+   if(!section)return;
    if(!section.querySelector(".kp-reveal-sharebox")){
      const action=section.querySelector(":scope > .kp-special-action");
      const holder=document.createElement("div");
@@ -2008,9 +2039,9 @@ q("#newShareSession").onclick=()=>{
  q("#testShareStatus").textContent="新しい陣を開始しました。「共通URLを作成」を押してください。";
 };
 q("#copyTestShare").onclick=async()=>{const u=testShareUrl();if(!u)return;await navigator.clipboard.writeText(u);q("#testShareStatus").textContent="共通URLをコピーしました。"};
-q("#manuscript").addEventListener("click",async e=>{
+document.addEventListener("click",async e=>{
  const open=e.target.closest("[data-share-open]"),upd=e.target.closest("[data-share-update]"),wd=e.target.closest("[data-share-withdraw]");if(!open&&!upd&&!wd)return;
- e.preventDefault();const section=e.target.closest('.kp-special[data-kind="reveal"]');if(!section)return;
+ e.preventDefault();const section=normalizeRevealSection(e.target.closest(".kp-special"));if(!section)return;
  shareTest=currentShare()||shareTest;
  const id=section.dataset.blockId,st=q("#testShareStatus");
  try{
@@ -2040,7 +2071,7 @@ q("#manuscript").addEventListener("click",async e=>{
  }catch(err){
    console.error("共有エラー",err);st.textContent=`共有できませんでした：${err?.message||String(err)}`;setRevealAction(section);
  }
-});
+},true);
 renderTestShareBar();renderShareParticipants();
 
 async function readPdf(file){
