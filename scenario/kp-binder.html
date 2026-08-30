@@ -2179,7 +2179,7 @@ async function outlineShareBlockSnapshot(block){
  return {id:blockId,bodyHtml:html,images};
 }
 async function collectOutlineShareScene(){
- const page=b.pages.find(x=>String(x.id)===String(active));
+ const page=b.pages.find(x=>String(x.id)===String(active))||b.pages[0];
  if(!page)throw new Error("シーンを選択してください。");
  const roots=[];let root=null,child=null;
  const makeRoot=(heading=null,titleOverride="")=>{
@@ -2228,25 +2228,25 @@ async function applyOutlineRevealToShare(){
  shareTest=currentShare()||shareTest;
  if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");
  const fresh=await collectOutlineShareScene();ensureShareDisplayOrder();
- const old=(shareTest.items||[]).find(x=>x.kind==="outline-scene"&&String(x.sceneId)===String(fresh.sceneId));
- let maxOrder=(shareTest.items||[]).reduce((m,x)=>Math.max(m,Number.isFinite(Number(x.displayOrder))?Number(x.displayOrder):-1),-1);
- const now=new Date().toISOString();
- fresh.revealedAt=old?.revealedAt||now;
+ const sceneId=String(active||fresh.sceneId||"");
+ const page=b.pages.find(x=>String(x.id)===sceneId);
+ fresh.kind="outline-scene";fresh.source="outline";fresh.sceneId=sceneId;
+ fresh.title=String(page?.title||fresh.title||"無題のシーン").trim()||"無題のシーン";
+ const items=Array.isArray(shareTest.items)?shareTest.items:[];
+ const old=items.find(x=>x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId);
+ let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
+ const now=new Date().toISOString();fresh.revealedAt=old?.revealedAt||now;fresh.updatedAt=now;
  fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
- fresh.updatedAt=now;
- const currentSpecialIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
- const currentSceneTitle=String(fresh.title||"").trim();
- const keep=(shareTest.items||[]).filter(x=>{
-   if(x.kind==="outline-scene"&&String(x.sceneId)===String(fresh.sceneId))return false;
-   if(x.kind==="outline-group"&&x.source==="outline")return false;
-   if(currentSpecialIds.has(String(x.id||"")))return false;
-   if(String(x.sceneId||"")===String(fresh.sceneId)&&x.kind!=="outline-scene")return false;
-   if(!x.sceneId&&currentSceneTitle&&String(x.sceneTitle||"").trim()===currentSceneTitle)return false;
+ const specialIds=new Set([...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
+ const keep=items.filter(x=>{
+   if(x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId)return false;
+   if(String(x?.sceneId||"")===sceneId)return false;
+   if(specialIds.has(String(x?.id||"")))return false;
    return true;
  });
- shareTest.items=fresh.outlineGroups.length?[...keep,fresh]:keep;
+ shareTest.items=fresh.outlineGroups?.length?[...keep,fresh]:keep;
  saveNow();await syncTestShare();renderTestShareBar();
- return fresh.outlineGroups.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
+ return (fresh.outlineGroups||[]).reduce((n,g)=>n+(g.outlineChildren||[]).reduce((m,c)=>m+(c.blocks||[]).length,0),0);
 }
 function targetMatches(itemTarget,ho){
  const t=String(itemTarget||"全員").trim();
