@@ -1,8 +1,8 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KP BINDER | SAKU+MERU</title>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0830b">
-<script src="../assets/js/rich-editor-outline.js?v=0830b"></script>
+<link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0830c">
+<script src="../assets/js/rich-editor-outline.js?v=0830c"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/beta-gate.js?v=02315"></script><script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 <style>
@@ -642,6 +642,27 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .scene-title-row{display:flex;gap:8px;align-items:center}.scene-title-row .edit-title{flex:1}.scene-title-row .danger{white-space:nowrap}
 
 
+
+/* 2026-08-30 outline reveal state: normal body/image blocks can be marked -, ○, × */
+.block-handle-layer .kp-block-state-control{
+  position:absolute;display:inline-flex;gap:3px;align-items:center;
+  pointer-events:auto;z-index:5;padding:2px;
+  border:1px solid var(--line);border-radius:8px;background:var(--panel);
+  box-shadow:0 2px 8px rgba(0,0,0,.16)
+}
+.block-handle-layer .kp-block-state-control button{
+  width:28px;height:27px;min-width:28px;padding:0!important;
+  border:1px solid transparent;border-radius:6px;background:transparent;
+  color:var(--muted);font-weight:900;line-height:1;cursor:pointer
+}
+.block-handle-layer .kp-block-state-control button:hover{border-color:var(--accent);color:var(--text)}
+.block-handle-layer .kp-block-state-control button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.block-handle-layer .kp-block-state-control button[data-kp-state="open"][aria-pressed="true"]{background:rgba(86,150,92,.18);color:#5fbd69}
+.block-handle-layer .kp-block-state-control button[data-kp-state="fail"][aria-pressed="true"]{background:rgba(199,91,91,.15);color:#d16a6a}
+.blog-editor > [data-kp-reveal-state="open"]{box-shadow:inset 3px 0 0 rgba(86,150,92,.72)}
+.blog-editor > [data-kp-reveal-state="fail"]{box-shadow:inset 3px 0 0 rgba(199,91,91,.62);opacity:.78}
+.kp-outline-share-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
 /* 2026-08-30 reveal selector contrast */
 .blog-editor .kp-reveal-mode label{
   background:#12151b!important;
@@ -685,7 +706,11 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   <div class="share-test-head"><div><strong>この陣の共有</strong><div class="muted-note">共通URLはHO未定でも使えます。PLを追加するとPL専用URLを発行でき、HO決定後は同じURLへ該当HOの開示情報が届きます。</div></div><button type="button" class="secondary" id="newShareSession">＋ 新しい陣</button></div>
   <div class="share-test-actions"><button type="button" id="makeTestShare">共通URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共通URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共通ページを開く</a></div>
   <div class="muted-note" id="testShareStatus">共通URLには「全員」向けの開示情報だけが表示されます。</div>
-  <div style="margin-top:10px"><button type="button" class="secondary" id="toggleKpLiveOrder">↕ KPlive表示順を編集</button></div>
+  <div class="kp-outline-share-actions" style="margin-top:10px">
+    <button type="button" id="applyOutlineReveal">○の本文をKPliveへ反映</button>
+    <button type="button" class="secondary" id="toggleKpLiveOrder">↕ KPlive表示順を編集</button>
+    <span class="muted-note">本文・画像ブロックの「○」だけを、大見出し／小見出しごとにまとめて更新します。</span>
+  </div>
   <section class="kp-live-order-wrap" id="kpLiveOrderWrap" hidden>
     <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">共有済み情報だけを並び替えます。開示した時刻や共有URLは変わりません。</div></div></div>
     <div class="kp-live-order-list" id="kpLiveOrderList"></div>
@@ -986,6 +1011,45 @@ function renderEditor(){
  const richOutline=window.SAKUMERichOutline||null;
  const OUTLINE_OPTIONS={rootHeading:"h2",childHeading:"h3",specialSelector:"section.kp-special"};
 
+ const KP_STATEABLE_SELECTOR="p,blockquote,ul,ol,div.image-grid";
+ function isKpStateableBlock(block){
+   return !!block && block.parentElement===ed && block.matches?.(KP_STATEABLE_SELECTOR);
+ }
+ function kpRevealState(block){
+   const v=String(block?.dataset?.kpRevealState||"none");
+   return ["none","open","fail"].includes(v)?v:"none";
+ }
+ function ensureKpRevealBlockId(block){
+   if(!block.dataset.kpRevealId)block.dataset.kpRevealId=crypto.randomUUID?.()||(`kpblk-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+   return block.dataset.kpRevealId;
+ }
+ function setKpRevealState(block,state,{saveState=true}={}){
+   if(!isKpStateableBlock(block))return;
+   state=["none","open","fail"].includes(state)?state:"none";
+   ensureKpRevealBlockId(block);
+   block.dataset.kpRevealState=state;
+   block.classList.toggle("kp-state-open",state==="open");
+   block.classList.toggle("kp-state-fail",state==="fail");
+   if(saveState){syncArticle();refreshBlockHandles()}
+ }
+ function decorateKpRevealStates(){
+   directEditorBlocks().forEach(block=>{
+     if(!isKpStateableBlock(block))return;
+     ensureKpRevealBlockId(block);
+     if(!block.dataset.kpRevealState)block.dataset.kpRevealState="none";
+     const state=kpRevealState(block);
+     block.classList.toggle("kp-state-open",state==="open");
+     block.classList.toggle("kp-state-fail",state==="fail");
+   });
+ }
+ function currentSelectionDirectBlock(){
+   const sel=getSelection();if(!sel?.rangeCount)return null;
+   let node=sel.anchorNode;
+   if(node?.nodeType===3)node=node.parentElement;
+   while(node&&node.parentElement!==ed)node=node.parentElement;
+   return node&&node.parentElement===ed?node:null;
+ }
+
  function directEditorBlocks(){
    return [...ed.children].filter(el=>el.matches?.(MOVABLE_SELECTOR));
  }
@@ -997,6 +1061,7 @@ function renderEditor(){
 
  function decorateBlocks(){
    directEditorBlocks().forEach(block=>block.classList.add("sm-block"));
+   decorateKpRevealStates();
    richOutline?.refresh(ed,OUTLINE_OPTIONS);
    refreshBlockHandles();
  }
@@ -1030,6 +1095,27 @@ function renderEditor(){
        h._smBlock=block;
        h.addEventListener("mousedown",startPointerBlockDrag);
        handleLayer.appendChild(h);
+
+       if(isKpStateableBlock(block)){
+         const stateWrap=document.createElement("span");
+         stateWrap.className="kp-block-state-control sm-outline-ui";
+         stateWrap.style.left=`${edRect.left-shellRect.left+37}px`;
+         stateWrap.style.top=h.style.top;
+         stateWrap._smBlock=block;
+         [["none","－","開示不要"],["open","○","取得済み・KPliveへ開示"],["fail","×","判定失敗・未取得"]].forEach(([state,label,title])=>{
+           const btn=document.createElement("button");
+           btn.type="button";btn.dataset.kpState=state;btn.textContent=label;btn.title=title;
+           btn.setAttribute("aria-label",title);
+           btn.setAttribute("aria-pressed",String(kpRevealState(block)===state));
+           btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+           btn.addEventListener("click",e=>{
+             e.preventDefault();e.stopPropagation();
+             setKpRevealState(block,state);
+           });
+           stateWrap.appendChild(btn);
+         });
+         handleLayer.appendChild(stateWrap);
+       }
 
        if(richOutline?.isCollapsible(block,OUTLINE_OPTIONS)){
          const t=document.createElement("button");
@@ -1145,8 +1231,8 @@ function renderEditor(){
  function cleanEditorHtml(){
    const clone=ed.cloneNode(true);
    clone.querySelectorAll(".sm-drag-handle").forEach(h=>h.remove());
-   clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after").forEach(el=>{
-     el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after");
+   clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail").forEach(el=>{
+     el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail");
      if(!el.className)el.removeAttribute("class");
    });
    richOutline?.cleanupClone(clone);
@@ -1679,9 +1765,19 @@ ed.addEventListener("keyup",saveRange);
    // execCommand keeps the caret behavior reliable in this prototype.
    e.preventDefault();
    restoreRange();
+   const beforeBlock=currentSelectionDirectBlock();
+   const beforeId=beforeBlock?.dataset?.kpRevealId||"";
    document.execCommand("insertParagraph",false,null);
    requestAnimationFrame(()=>{
      ensureParagraphBlocks();
+     const now=currentSelectionDirectBlock();
+     if(now&&isKpStateableBlock(now)){
+       // Enter means "next information block": never inherit the previous block's result.
+       if(!now.dataset.kpRevealId || (beforeId&&now.dataset.kpRevealId===beforeId)){
+         now.dataset.kpRevealId=crypto.randomUUID?.()||(`kpblk-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+       }
+       now.dataset.kpRevealState="none";
+     }
      decorateBlocks();
      saveRange();syncArticle();
    });
@@ -1843,6 +1939,99 @@ q("#insertBgm").onclick=()=>{
  };
 }
 
+
+function headingText(el,fallback=""){
+ return String(el?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim()||fallback;
+}
+function ensureHeadingShareId(el,prefix){
+ if(!el)return `${prefix}-ungrouped`;
+ if(!el.dataset.kpGroupId)el.dataset.kpGroupId=crypto.randomUUID?.()||(`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+ return el.dataset.kpGroupId;
+}
+function cleanOutlineBlockClone(block){
+ const clone=block.cloneNode(true);
+ clone.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail","sm-outline-hidden");
+ clone.querySelectorAll(".sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help").forEach(x=>x.remove());
+ clone.removeAttribute("data-kp-reveal-state");
+ clone.removeAttribute("data-kp-reveal-id");
+ clone.removeAttribute("contenteditable");
+ clone.querySelectorAll("[contenteditable]").forEach(x=>x.removeAttribute("contenteditable"));
+ return clone;
+}
+async function outlineShareBlockSnapshot(block){
+ const blockId=ensureKpRevealBlockId(block);
+ const clone=cleanOutlineBlockClone(block);
+ const imgs=[...clone.querySelectorAll("img")];
+ const images=[];
+ for(let i=0;i<imgs.length;i++){
+   const src=imgs[i].getAttribute("src")||"";
+   if(src)images.push(await uploadShareImage(src,blockId,i));
+ }
+ clone.querySelectorAll("figure").forEach(fig=>{
+   const cap=fig.querySelector("figcaption");
+   if(cap && String(cap.textContent||"").trim()){
+     const p=document.createElement("p");p.innerHTML=cap.innerHTML;fig.replaceWith(p);
+   }else fig.remove();
+ });
+ clone.querySelectorAll("img").forEach(img=>img.remove());
+ let html="";
+ if(block.matches("div.image-grid"))html=clone.innerHTML||"";
+ else html=clone.outerHTML||clone.innerHTML||"";
+ return {id:blockId,bodyHtml:html,images};
+}
+async function collectOutlineShareGroups(){
+ const groups=[];
+ let root=null,child=null;
+ const makeRoot=(heading=null)=>{
+   const id=ensureHeadingShareId(heading,"root");
+   const title=headingText(heading,"共有情報");
+   root={id:`outline-group:${id}`,kind:"outline-group",source:"outline",title,target:"全員",outlineChildren:[]};
+   groups.push(root);child=null;return root;
+ };
+ const makeChild=(heading=null)=>{
+   if(!root)makeRoot(null);
+   const id=ensureHeadingShareId(heading,"child");
+   child={id,title:headingText(heading,""),blocks:[]};
+   root.outlineChildren.push(child);return child;
+ };
+ for(const block of [...ed.children]){
+   if(block.matches?.("h2")){root=makeRoot(block);continue}
+   if(block.matches?.("h3")){child=makeChild(block);continue}
+   if(!isKpStateableBlock(block)||kpRevealState(block)!=="open")continue;
+   if(!root)makeRoot(null);
+   if(!child)makeChild(null);
+   child.blocks.push(await outlineShareBlockSnapshot(block));
+ }
+ groups.forEach(g=>g.outlineChildren=g.outlineChildren.filter(c=>c.blocks.length));
+ return groups.filter(g=>g.outlineChildren.length);
+}
+async function applyOutlineRevealToShare(){
+ shareTest=currentShare()||shareTest;
+ if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");
+ const fresh=await collectOutlineShareGroups();
+ ensureShareDisplayOrder();
+ const oldOutline=new Map((shareTest.items||[]).filter(x=>x.kind==="outline-group").map(x=>[String(x.id),x]));
+ let maxOrder=(shareTest.items||[]).reduce((m,x)=>Math.max(m,Number.isFinite(Number(x.displayOrder))?Number(x.displayOrder):-1),-1);
+ const now=new Date().toISOString();
+ fresh.forEach(item=>{
+   const old=oldOutline.get(String(item.id));
+   if(old){
+     item.revealedAt=old.revealedAt||now;
+     item.displayOrder=Number.isFinite(Number(old.displayOrder))?Number(old.displayOrder):++maxOrder;
+   }else{
+     item.revealedAt=now;
+     item.displayOrder=++maxOrder;
+   }
+   item.updatedAt=now;
+ });
+ const legacy=(shareTest.items||[]).filter(x=>x.kind!=="outline-group");
+ shareTest.items=[...legacy,...fresh];
+ saveNow();
+ await syncTestShare();
+ renderTestShareBar();
+ return fresh.reduce((n,g)=>n+g.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
+}
+
 function targetMatches(itemTarget,ho){
  const t=String(itemTarget||"全員").trim();
  if(t==="全員")return true;
@@ -1872,7 +2061,7 @@ function sharePayloadFor(participant=null){
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort(compareShareDisplayOrder)}
 }
 function testSharePayload(){return sharePayloadFor(null)}
-function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830f`,location.href).href:""}
+function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0830g`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
@@ -2334,6 +2523,16 @@ q("#makeTestShare").onclick=async()=>{
    renderTestShareBar();st.textContent="この陣の共通URLを用意しました。";
  }catch(e){st.textContent=e.message||String(e)}
 };
+q("#applyOutlineReveal")?.addEventListener("click",async()=>{
+ const st=q("#testShareStatus");
+ try{
+   st.textContent="○の本文をKPlive用に準備中…画像がある場合はStorageへアップロードします。";
+   const count=await applyOutlineRevealToShare();
+   st.textContent=count?`○の本文 ${count}ブロックをKPliveへ反映しました。`:"○の本文がないため、本文グループの共有を空に更新しました。";
+ }catch(err){
+   console.error(err);st.textContent=`本文をKPliveへ反映できませんでした：${err?.message||String(err)}`;
+ }
+});
 q("#newShareSession").onclick=()=>{
  shareTest=currentShare()||shareTest;
  const hasCurrent=!!shareTest?.shareId;
