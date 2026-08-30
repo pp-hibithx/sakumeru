@@ -50,8 +50,10 @@
 .kp-image-lightbox-close{position:fixed;top:14px;right:18px;z-index:10001;width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,20,.72);color:#fff;font-size:30px;line-height:1;cursor:pointer}
 .kp-image-lightbox-close:hover{background:rgba(20,20,20,.92)}
 
-.kp-live-scene-group{margin:18px 0 8px;padding-left:14px;border-left:2px solid color-mix(in srgb,var(--line) 80%,transparent)}
-.kp-live-scene-group>h2{font-size:1.12rem;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.kp-live-scene-group{margin:14px 0 8px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:color-mix(in srgb,var(--panel) 94%,var(--line))}
+.kp-live-group-toggle>summary{cursor:pointer;padding:10px 12px;list-style-position:inside;font-size:1.04rem;font-weight:700}
+.kp-live-group-toggle[open]>summary{border-bottom:1px solid var(--line)}
+.kp-live-group-content{padding:2px 12px 10px 14px;border-left:2px solid color-mix(in srgb,var(--line) 80%,transparent)}
 .kp-live-outline-child{margin:14px 0 4px;padding-top:4px}
 .kp-live-outline-child>h3{margin:0 0 8px;font-size:1.02rem}
 .kp-live-outline-block{padding:8px 0;line-height:1.8}
@@ -65,8 +67,8 @@
 /* 2026-08-30 scene-first KPlive */
 .kp-live-item[data-kind="outline-scene"]>summary{font-size:1.08rem}
 .kp-live-item[data-kind="outline-scene"] .kp-live-body{padding-top:4px}
-.kp-live-item[data-kind="outline-scene"] .kp-live-scene-group{margin:16px 0 6px;padding-left:14px;border-left:2px solid var(--line)}
-.kp-live-item[data-kind="outline-scene"] .kp-live-scene-group>h2{font-size:1.06rem;margin:0 0 9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.kp-live-item[data-kind="outline-scene"] .kp-live-scene-group{margin:12px 0 8px}
+.kp-live-item[data-kind="outline-scene"] .kp-live-group-toggle>summary{font-size:1.03rem}
 
 </style>
 </head>
@@ -263,7 +265,7 @@
        })
        .map(item=>{
          const title=meaningfulTitle(item)||"開示情報";
-         return `<section class="kp-live-scene-group kp-live-scene-legacy"><h2>${esc(title)}</h2><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></section>`;
+         return `<details class="kp-live-scene-group kp-live-group-toggle kp-live-scene-legacy"><summary>${esc(title)}</summary><div class="kp-live-group-content"><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></div></details>`;
        }).join("");
    };
    const renderOutlineScene=x=>{
@@ -277,10 +279,11 @@
        const groupKey=`${title}::${childrenHtml.replace(/\s+/g," ").trim()}`;
        if(seenGroups.has(groupKey))return "";
        seenGroups.add(groupKey);
-       // The details summary already displays the scene name. Repeating the same H2 immediately below it
-       // adds no information and looked like a duplicated scene to PLs.
-       const showTitle=title && title!==sceneTitle;
-       return `<section class="kp-live-scene-group">${showTitle?`<h2>${esc(title)}</h2>`:""}${childrenHtml}</section>`;
+       // Scene and H2 are deliberately separate disclosure levels on KPlive:
+       // scene -> big heading/title -> child content.  Even when their labels match,
+       // the nested toggle makes the hierarchy explicit instead of looking duplicated.
+       const groupTitle=title||"開示情報";
+       return `<details class="kp-live-scene-group kp-live-group-toggle"><summary>${esc(groupTitle)}</summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
      }).join("");
      return legacy+outline;
    };
@@ -294,8 +297,8 @@
      </details>`;
    }).join(""):'<div class="kp-share-empty">まだ開示された情報はありません。</div>';
    box.innerHTML=`<article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報です。左の目次から情報へ移動できます。</p><div class="kp-live-layout"><aside class="kp-live-sidebar">${toc}</aside><main class="kp-live-main">${cards}</main></div></article>`;
-   document.getElementById("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=true));
-   document.getElementById("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=false));
+   document.getElementById("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle").forEach(d=>d.open=true));
+   document.getElementById("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle").forEach(d=>d.open=false));
 
    const lightbox=document.getElementById("kpImageLightbox");
    const lightboxImg=document.getElementById("kpImageLightboxImg");
