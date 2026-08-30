@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KP共有｜SAKU+MERU</title>
-<meta name="sakumeru-kp-live-build" content="20260830-1426-checkshare">
+<meta name="sakumeru-kp-live-build" content="20260830-1553-imagezoomfix">
 <script>
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m}catch(e){}})();
 </script>
@@ -43,7 +43,12 @@
 .kp-live-body table{width:100%;border-collapse:collapse;margin:.8em 0}
 .kp-live-body th,.kp-live-body td{border:1px solid var(--line);padding:6px 8px;vertical-align:top}
 .kp-live-images{display:grid;gap:10px;align-items:start;margin-top:12px;grid-template-columns:repeat(var(--image-cols,1),minmax(0,1fr))}
-.kp-live-images img{display:block;width:100%;height:auto;max-height:440px;object-fit:contain;border-radius:8px}
+.kp-live-images img{display:block;width:100%;height:auto;max-height:440px;object-fit:contain;border-radius:8px;cursor:zoom-in}
+.kp-image-lightbox{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:28px}
+.kp-image-lightbox[hidden]{display:none}
+.kp-image-lightbox img{display:block;max-width:min(96vw,1600px);max-height:92vh;width:auto;height:auto;object-fit:contain;border-radius:10px;box-shadow:0 16px 48px rgba(0,0,0,.45)}
+.kp-image-lightbox-close{position:fixed;top:14px;right:18px;z-index:10001;width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,20,.72);color:#fff;font-size:30px;line-height:1;cursor:pointer}
+.kp-image-lightbox-close:hover{background:rgba(20,20,20,.92)}
 .kp-share-empty{padding:24px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
 @media(max-width:760px){.kp-live-layout{grid-template-columns:1fr}.kp-live-sidebar{position:static}.kp-live-toc{max-height:none}}
 </style>
@@ -53,6 +58,10 @@
 <main class="kp-share-wrap">
   <div id="kpLiveContent" class="share-card"><p>読み込み中...</p></div>
 </main>
+<div class="kp-image-lightbox" id="kpImageLightbox" hidden>
+  <button type="button" class="kp-image-lightbox-close" id="kpImageLightboxClose" aria-label="画像を閉じる" title="閉じる">×</button>
+  <img id="kpImageLightboxImg" alt="拡大画像">
+</div>
 <div data-site-footer></div>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-share.js?v=02307"></script>
@@ -150,12 +159,25 @@
      const html=x.bodyHtml??x.body??"";
      return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" id="${itemId(x,i)}" ${latest?"open":""}>
        <summary><span class="kp-live-summary-main"><strong>${esc(title)}</strong></span></summary>
-       <div class="kp-live-body">${richText(html)}${Array.isArray(x.images)&&x.images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,x.images.length)}">${x.images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy">`).join("")}</div>`:""}</div>
+       <div class="kp-live-body">${richText(html)}${Array.isArray(x.images)&&x.images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,x.images.length)}">${x.images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:""}</div>
      </details>`;
    }).join(""):'<div class="kp-share-empty">まだ開示された情報はありません。</div>';
    box.innerHTML=`<article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報です。左の目次から情報へ移動できます。</p><div class="kp-live-layout"><aside class="kp-live-sidebar">${toc}</aside><main class="kp-live-main">${cards}</main></div></article>`;
    document.getElementById("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=true));
    document.getElementById("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item").forEach(d=>d.open=false));
+
+   const lightbox=document.getElementById("kpImageLightbox");
+   const lightboxImg=document.getElementById("kpImageLightboxImg");
+   const closeLightbox=()=>{if(lightbox)lightbox.hidden=true;if(lightboxImg)lightboxImg.removeAttribute("src")};
+   box.addEventListener("click",e=>{
+     const img=e.target.closest?.(".kp-live-images img,[data-kp-zoom]");
+     if(!img||!lightbox||!lightboxImg)return;
+     lightboxImg.src=img.currentSrc||img.src;
+     lightbox.hidden=false;
+   });
+   document.getElementById("kpImageLightboxClose")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();closeLightbox()});
+   lightbox?.addEventListener("click",e=>{if(e.target===lightbox)closeLightbox()});
+   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&lightbox&&!lightbox.hidden)closeLightbox()});
  }catch(e){
    console.error(e);box.innerHTML=`<div class="kp-share-empty">共有ページを読み込めませんでした。<br><span class="small">${esc(e.message||e)}</span></div>`;
  }
