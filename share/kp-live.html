@@ -188,12 +188,18 @@
    const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
    const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
    const renderImages=images=>Array.isArray(images)&&images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,images.length)}">${images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:"";
+   const normalizeShareHtml=html=>String(html||"")
+     .replace(/\s+/g," ")
+     .replace(/>\s+</g,"><")
+     .trim();
    const normalizedBlockKey=block=>{
-     const id=String(block?.id||"").trim();
-     if(id)return `id:${id}`;
-     const html=String(block?.bodyHtml||"").replace(/\s+/g," ").trim();
+     // IDs can legitimately differ when the same editor content has passed through
+     // the old and new reveal collectors.  KPlive is a PL-facing view, so content
+     // is the authoritative dedupe key; use the id only when the block is empty.
+     const html=normalizeShareHtml(block?.bodyHtml||"");
      const images=(Array.isArray(block?.images)?block.images:[]).map(String).join("|");
-     return `body:${html}|images:${images}`;
+     if(html||images)return `body:${html}|images:${images}`;
+     return `id:${String(block?.id||"").trim()}`;
    };
    const dedupeBlocks=blocks=>{
      const seen=new Set();
@@ -224,6 +230,15 @@
      const outlineTitles=new Set((Array.isArray(outlineGroups)?outlineGroups:[])
        .map(g=>normLabel(g?.title))
        .filter(Boolean));
+     const outlineContent=new Set();
+     for(const group of (Array.isArray(outlineGroups)?outlineGroups:[])){
+       for(const child of (Array.isArray(group?.outlineChildren)?group.outlineChildren:[])){
+         for(const block of (Array.isArray(child?.blocks)?child.blocks:[])){
+           outlineContent.add(normalizedBlockKey(block));
+         }
+       }
+     }
+     const legacySeen=new Set();
      return (Array.isArray(legacyItems)?legacyItems:[])
        .filter(item=>{
          const id=String(item?.id||"");
@@ -237,6 +252,13 @@
            const matches=(Array.isArray(outlineGroups)?outlineGroups:[]).filter(g=>normLabel(g?.title)===title);
            if(matches.length===1 && outlineTitles.has(title))return false;
          }
+         // Old snapshots and modern outline blocks may have unrelated IDs/titles even
+         // though their actual PL-visible body is identical.  Compare the rendered
+         // content as a final compatibility guard.
+         const contentKey=normalizedBlockKey({bodyHtml:item?.bodyHtml??item?.body??"",images:item?.images});
+         if(outlineContent.has(contentKey))return false;
+         if(legacySeen.has(contentKey))return false;
+         legacySeen.add(contentKey);
          return true;
        })
        .map(item=>{
