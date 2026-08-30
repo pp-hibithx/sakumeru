@@ -196,7 +196,7 @@
    const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
    const renderSceneLegacyItems=items=>(Array.isArray(items)?items:[]).map(item=>{
      const title=meaningfulTitle(item)||"開示情報";
-     return `<section class="kp-live-scene-group"><h2>${esc(title)}</h2><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></section>`;
+     return `<section class="kp-live-scene-group kp-live-scene-legacy"><h2>${esc(title)}</h2><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></section>`;
    }).join("");
    const renderOutlineScene=x=>{
      const legacy=renderSceneLegacyItems(x.legacyItems);
