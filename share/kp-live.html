@@ -194,15 +194,44 @@
      return `<section class="kp-live-outline-child">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
    }).join("");
    const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
-   const renderSceneLegacyItems=items=>(Array.isArray(items)?items:[]).map(item=>{
-     const title=meaningfulTitle(item)||"開示情報";
-     return `<section class="kp-live-scene-group kp-live-scene-legacy"><h2>${esc(title)}</h2><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></section>`;
-   }).join("");
+   const normLabel=s=>String(s||"").replace(/\s+/g," ").trim();
+   const renderSceneLegacyItems=(legacyItems,outlineGroups=[])=>{
+     const outlineIds=new Set((Array.isArray(outlineGroups)?outlineGroups:[])
+       .map(g=>String(g?.id||""))
+       .filter(Boolean));
+     const outlineTitles=new Set((Array.isArray(outlineGroups)?outlineGroups:[])
+       .map(g=>normLabel(g?.title))
+       .filter(Boolean));
+     return (Array.isArray(legacyItems)?legacyItems:[])
+       .filter(item=>{
+         const id=String(item?.id||"");
+         // New outline sharing stores a special block as `special:<blockId>`.
+         // If that counterpart exists, the legacy snapshot is the same reveal and must not be rendered twice.
+         if(id && outlineIds.has(`special:${id}`))return false;
+         // Compatibility fallback for very old shares whose block id was not persisted.
+         // Only suppress by title when there is exactly one outline group with that title.
+         const title=normLabel(meaningfulTitle(item));
+         if(title){
+           const matches=(Array.isArray(outlineGroups)?outlineGroups:[]).filter(g=>normLabel(g?.title)===title);
+           if(matches.length===1 && outlineTitles.has(title))return false;
+         }
+         return true;
+       })
+       .map(item=>{
+         const title=meaningfulTitle(item)||"開示情報";
+         return `<section class="kp-live-scene-group kp-live-scene-legacy"><h2>${esc(title)}</h2><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></section>`;
+       }).join("");
+   };
    const renderOutlineScene=x=>{
-     const legacy=renderSceneLegacyItems(x.legacyItems);
-     const outline=(Array.isArray(x.outlineGroups)?x.outlineGroups:[]).map(group=>{
-       const title=String(group.title||"").trim();
-       return `<section class="kp-live-scene-group">${title?`<h2>${esc(title)}</h2>`:""}${renderOutlineChildren(group.outlineChildren)}</section>`;
+     const groups=Array.isArray(x.outlineGroups)?x.outlineGroups:[];
+     const sceneTitle=normLabel(x.title);
+     const legacy=renderSceneLegacyItems(x.legacyItems,groups);
+     const outline=groups.map(group=>{
+       const title=normLabel(group.title);
+       // The details summary already displays the scene name. Repeating the same H2 immediately below it
+       // adds no information and looked like a duplicated scene to PLs.
+       const showTitle=title && title!==sceneTitle;
+       return `<section class="kp-live-scene-group">${showTitle?`<h2>${esc(title)}</h2>`:""}${renderOutlineChildren(group.outlineChildren)}</section>`;
      }).join("");
      return legacy+outline;
    };
