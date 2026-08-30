@@ -123,8 +123,12 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .blog-editor .kp-special-action button{padding:6px 10px;font-size:12px}
 
 .blog-editor .kp-reveal-sharebox{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}
-.blog-editor .kp-reveal-mode{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
-.blog-editor .kp-reveal-mode label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+.blog-editor .kp-reveal-mode{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
+.blog-editor .kp-reveal-mode>span{margin-right:2px}
+.blog-editor .kp-reveal-mode label{position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:6px 12px;border:1px solid rgba(214,178,67,.58);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;transition:.15s ease;user-select:none}
+.blog-editor .kp-reveal-mode label:hover{border-color:var(--gold);background:rgba(214,178,67,.08)}
+.blog-editor .kp-reveal-mode label:has(input:checked){border-color:var(--gold);background:var(--gold);color:#111;font-weight:900;box-shadow:0 0 0 1px rgba(214,178,67,.18) inset}
+.blog-editor .kp-reveal-mode input[data-reveal-mode]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 .blog-editor .kp-reveal-summary{margin-top:8px}
 .blog-editor .kp-reveal-summary[hidden]{display:none}
 .blog-editor .kp-reveal-summary-label{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px}
@@ -620,6 +624,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .production-banner{border-style:solid}
 @media(max-width:760px){.kp2-pcgrid{grid-template-columns:1fr}}
 .scene-title-row{display:flex;gap:8px;align-items:center}.scene-title-row .edit-title{flex:1}.scene-title-row .danger{white-space:nowrap}
+
+.kp-history-tools{display:inline-flex!important;gap:6px;align-items:center;flex-wrap:wrap}
+.kp-history-tools #editorUndo,.kp-history-tools #editorRedo{display:inline-flex!important;visibility:visible!important;opacity:1}
+
+#editorUndo,#editorRedo{display:inline-flex!important;visibility:visible!important}
+
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
