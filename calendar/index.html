@@ -905,7 +905,45 @@ const sessionKindLabel={prelude:"事前導入",main:"本編",reserve:"予備日"
 const pad=n=>String(n).padStart(2,"0");
 function scenarios(){return TRPG39.loadScenarios()}
 function facilitatorConfig(scenario=null,system=""){scenario=scenario||scenarios().find(v=>v.id===$("scenarioSelect").value)||{};const label=TRPG39.resolveFacilitatorLabel?.(system||$("eventSystem").value||scenario.system||"",scenario)||"GM";return {label,less:scenario.facilitatorPresence==="less"}}
-function updateRoleOptions(selected=""){const sc=scenarios().find(v=>v.id===$("scenarioSelect").value)||null,cfg=facilitatorConfig(sc);const opts=["", "PL", cfg.label, ...(cfg.label==="KP"?["SKP"]:[]), "その他"];if(selected&&!opts.includes(selected))opts.splice(2,0,selected);$("eventRole").innerHTML=[...new Set(opts)].map(v=>`<option value="${esc(v)}">${v?esc(v):"未設定"}</option>`).join("");$("eventRole").value=selected||"";$("facilitatorHint").textContent=cfg.less?`${cfg.label}レスのシナリオです`:`進行役：${cfg.label}`}
+function updateRoleOptions(selected=""){const sc=scenarios().find(v=>v.id===$("scenarioSelect").value)||null,cfg=facilitatorConfig(sc);const opts=["", "PL", cfg.label, ...(cfg.label==="KP"?["SKP"]:[]), "その他"];if(selected&&!opts.includes(selected))opts.splice(2,0,selected);$("eventRole").innerHTML=[...new Set(opts)].map(v=>`<option value="${esc(v)}">${v?esc(v):"未設定"}</option>`).join("");$("eventRole").value=selected||"";$("facilitatorHint").textContent=cfg.less?`${cfg.label}レスのシナリオです`:`進行役の呼称：${cfg.label}`}
+function calendarSelfIsFacilitator(){
+ const selfRole=String($("eventRole")?.value||"").trim();
+ const cfg=facilitatorConfig();
+ return !!selfRole && (
+   selfRole===cfg.label ||
+   ["KP","GM","DL","SKP"].includes(selfRole.toUpperCase())
+ );
+}
+function calendarParticipantRoleOptions(selected=""){
+ const cfg=facilitatorConfig();
+ let opts;
+ if(calendarSelfIsFacilitator()){
+   // LIBRARY式：自分が進行役なら、参加メンバーはPLとして登録する。
+   opts=["PL"];
+ }else{
+   // 自分がPL側なら、同卓PLに加えてシステムごとの進行役も登録できる。
+   opts=["PL"];
+   if(!cfg.less)opts.push(cfg.label);
+   if(cfg.label==="KP")opts.push("SKP");
+   opts.push("見学","その他");
+ }
+ if(selected&&!opts.includes(selected))opts.unshift(selected);
+ return [...new Set(opts.filter(Boolean))];
+}
+function refreshCalendarParticipantRoleSelect(sel,selected=""){
+ if(!sel)return;
+ const opts=calendarParticipantRoleOptions(selected);
+ sel.innerHTML=opts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+ sel.value=opts.includes(selected)?selected:(opts[0]||"PL");
+ sel.disabled=calendarSelfIsFacilitator()&&opts.length===1;
+}
+function refreshCalendarParticipantRoles(){
+ document.querySelectorAll("#eventParticipantRows .eventPartRole").forEach(sel=>{
+   refreshCalendarParticipantRoleSelect(sel,sel.value||"PL");
+ });
+ syncCalendarParticipantHidden();
+}
+
 function events(){return TRPG39.loadEvents()}
 function saveEvents(v){TRPG39.saveEvents(v)}
 function fillScenarioSelect(selected=""){
@@ -932,7 +970,7 @@ function chooseScenario(id){
    $("eventTitle").value=x.title||"";
    $("eventSystem").value=x.system||"";
  }
- updateRoleOptions($("eventRole").value);
+ updateRoleOptions($("eventRole").value);refreshCalendarParticipantRoles();
  $("scenarioSearchResults").classList.remove("open");
 }
 function renderScenarioSearch(){
@@ -1111,7 +1149,9 @@ function addEventParticipantRow(value="",opts={}){
  const row=document.createElement("div");row.className="calendar-library-participant-row";
  row.dataset.placeholder=opts.placeholder?"1":"0";
  const initial=typeof value==="object"&&value?value:{plName:String(value||""),ho:"",pcName:"",role:"PL"};
- row.innerHTML=`<div class="participant-field-wrap"><label>PL</label><input class="eventPartPl" value="${esc(String(initial.plName||""))}" placeholder="参加者名を検索・選択" autocomplete="off"><div class="participant-picker-results eventPartResults"></div></div><div><label>HO / 役割</label><input class="eventPartHo" value="${esc(String(initial.ho||""))}" placeholder="HO1 / KPC など"></div><div><label>PC</label><input class="eventPartPc" value="${esc(String(initial.pcName||""))}" placeholder="PC名"></div><button type="button" class="danger participant-remove">参加者を削除</button>`;
+ const initialRole=String(initial.role||"PL");
+ row.innerHTML=`<div><label>役割</label><select class="eventPartRole"></select></div><div class="participant-field-wrap"><label>参加者</label><input class="eventPartPl" value="${esc(String(initial.plName||""))}" placeholder="参加者名を検索・選択" autocomplete="off"><div class="participant-picker-results eventPartResults"></div></div><div><label>HO / 役割</label><input class="eventPartHo" value="${esc(String(initial.ho||""))}" placeholder="HO1 / KPC など"></div><div><label>PC</label><input class="eventPartPc" value="${esc(String(initial.pcName||""))}" placeholder="PC名"></div><button type="button" class="danger participant-remove">参加者を削除</button>`;
+ refreshCalendarParticipantRoleSelect(row.querySelector(".eventPartRole"),initialRole);
  host.appendChild(row);
  const inp=row.querySelector(".eventPartPl"),res=row.querySelector(".eventPartResults");
  function render(){
@@ -1135,15 +1175,17 @@ function addEventParticipantRow(value="",opts={}){
  inp.addEventListener("focus",render);
  inp.addEventListener("input",()=>{render();syncCalendarParticipantHidden()});
  inp.addEventListener("change",syncCalendarParticipantHidden);
+ row.querySelector(".eventPartRole")?.addEventListener("change",syncCalendarParticipantHidden);
  row.querySelector(".participant-remove").onclick=()=>{row.remove();syncCalendarParticipantHidden()};
 }
-function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];return [...host.querySelectorAll(".calendar-library-participant-row")].map(r=>({role:"PL",plName:r.querySelector(".eventPartPl")?.value.trim()||"",ho:r.querySelector(".eventPartHo")?.value.trim()||"",pcName:r.querySelector(".eventPartPc")?.value.trim()||"",relation:""})).filter(r=>r.plName||r.ho||r.pcName)}
+function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];return [...host.querySelectorAll(".calendar-library-participant-row")].map(r=>({role:r.querySelector(".eventPartRole")?.value||"PL",plName:r.querySelector(".eventPartPl")?.value.trim()||"",ho:r.querySelector(".eventPartHo")?.value.trim()||"",pcName:r.querySelector(".eventPartPc")?.value.trim()||"",relation:""})).filter(r=>r.plName||r.ho||r.pcName)}
 function calendarParticipantNames(){return [...new Set(calendarParticipantRows().map(r=>r.plName).filter(Boolean))]}
 function calendarRowsFromEvent(x){if(Array.isArray(x?.participantRows)&&x.participantRows.length)return x.participantRows;return (x?.participants||[]).map((name,i)=>({role:"PL",plName:name,ho:"",pcName:"",playerId:(x.participantIds||[])[i]||"",relation:""}))}
 function syncCalendarParticipantHidden(){
  const hidden=$("eventPeople");if(hidden)hidden.value=calendarParticipantNames().join(",");
 }
 function setCalendarParticipants(rows=[]){const host=$("eventParticipantRows");if(!host)return;host.innerHTML="";const clean=(rows||[]).map(r=>typeof r==="object"&&r?r:{role:"PL",plName:String(r||""),ho:"",pcName:""}).filter(r=>r.plName||r.ho||r.pcName);if(clean.length)clean.forEach(r=>addEventParticipantRow(r,{placeholder:false}));else addEventParticipantRow({}, {placeholder:true});syncCalendarParticipantHidden()}
+if($("eventRole"))$("eventRole").addEventListener("change",refreshCalendarParticipantRoles);
 function initCalendarParticipantPicker(){
  const add=$("addEventParticipantRow");
  if(add)add.onclick=()=>addEventParticipantRow("",{placeholder:false});
