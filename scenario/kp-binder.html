@@ -2219,7 +2219,7 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
  const roots=[];let root=null,child=null;
  const makeRoot=(heading=null,titleOverride="")=>{
    const id=heading?ensureHeadingShareId(heading,"root"):(crypto.randomUUID?.()||`root-${Date.now()}-${Math.random()}`);
-   root={id,title:titleOverride||headingText(heading,"共有情報"),outlineChildren:[]};roots.push(root);child=null;return root;
+   root={id,title:titleOverride||headingText(heading,"共有情報"),outlineChildren:[],shareSource:"outline-state"};roots.push(root);child=null;return root;
  };
  const makeChild=(heading=null,titleOverride="")=>{
    if(!root)makeRoot(null);const id=heading?ensureHeadingShareId(heading,"child"):(crypto.randomUUID?.()||`child-${Date.now()}-${Math.random()}`);
@@ -2237,7 +2237,7 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
    const containers=selectedContainer?[selectedContainer]:[];
    const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>shareIsNestedStateable(x,ed)&&shareRevealState(x)==="open"));
    if(!openUnits.length)return false;
-   const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[]};
+   const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[],shareSource:"outline-state"};
    let sourceOrder=0;
    for(const container of containers){
      let subgroup=null;
@@ -2322,12 +2322,37 @@ async function applyOutlineRevealToShare(){
    if(!id && title && outlineTitles.get(title)===1)return;
    legacyById.set(id||String(crypto.randomUUID()),x);
  });
- // Once this scene has been rebuilt from the current editor, modern outline data
- // is authoritative.  Keeping the old full-HTML snapshot makes KPlive fall back to a
- // flattened copy (headings inside body + images collected at the end), which is why
- // PL saw a different layout from KP BINDER.  Old untouched sessions still retain
- // legacyItems; only a freshly reflected scene is migrated.
- fresh.legacyItems=[];
+ // Keep independently shared special blocks. The scene-level ○ reflection must not
+ // delete full-block reveals just because their nested units are currently "－".
+ const fullGroups=(oldGroups||[]).filter(g=>g?.shareSource==="special-full");
+ const freshIds=new Set((fresh.outlineGroups||[]).map(g=>String(g?.id||"")));
+ fullGroups.forEach(g=>{if(!freshIds.has(String(g?.id||""))){fresh.outlineGroups.push(g);freshIds.add(String(g?.id||""))}});
+
+ // Migrate already-shared old special snapshots in this scene to the same structured
+ // scene -> big heading -> small heading -> block model. This makes the scene-level
+ // reflect button a safe one-click migration even when every nested state is currently "－".
+ let migratedLegacyCount=0;
+ const remainingLegacy=[];
+ const activeEditor=q("#blogEditor");
+ for(const legacy of ((old?.legacyItems)||[])){
+   const legacyId=String(legacy?.id||"");
+   const section=legacyId&&activeEditor?.querySelector?.(`:scope > section.kp-special[data-block-id="${CSS.escape(legacyId)}"]`);
+   if(!section){remainingLegacy.push(legacy);continue}
+   const mode=legacy?.shareMode==="summary"?"summary":"full";
+   const source=resolveRevealBody(normalizeRevealSection(section)||section,mode);
+   const title=String(legacy?.title||section.querySelector(":scope > .kp-special-title")?.textContent||"開示情報").replace(/\s+/g," ").trim()||"開示情報";
+   const group=source?await buildSpecialOutlineGroup(section,source,title,mode):null;
+   if(!group){remainingLegacy.push(legacy);continue}
+   const previous=oldGroups.find(g=>String(g?.id||"")===String(group.id||""));
+   group.displayOrder=Number.isFinite(Number(previous?.displayOrder))?Number(previous.displayOrder):fresh.outlineGroups.length;
+   const previousChildren=new Map((previous?.outlineChildren||[]).map(c=>[String(c.id||""),c]));
+   (group.outlineChildren||[]).forEach((c,ci)=>{const pc=previousChildren.get(String(c.id||""));c.displayOrder=Number.isFinite(Number(pc?.displayOrder))?Number(pc.displayOrder):ci});
+   const existing=fresh.outlineGroups.findIndex(g=>String(g?.id||"")===String(group.id||""));
+   if(existing>=0)fresh.outlineGroups[existing]=group;else fresh.outlineGroups.push(group);
+   freshIds.add(String(group.id||""));
+   migratedLegacyCount++;
+ }
+ fresh.legacyItems=remainingLegacy;
  let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
  const now=new Date().toISOString();fresh.revealedAt=old?.revealedAt||now;fresh.updatedAt=now;
  fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
@@ -2339,9 +2364,16 @@ async function applyOutlineRevealToShare(){
    if(specialIds.has(String(x?.id||"")))return false;
    return true;
  });
- shareTest.items=fresh.outlineGroups?.length?[...keep,fresh]:keep;
+ const stateGroups=(fresh.outlineGroups||[]).filter(g=>g?.shareSource!=="special-full");
+ const stateCount=stateGroups.reduce((n,g)=>n+(g.outlineChildren||[]).reduce((m,c)=>m+(c.blocks||[]).length,0),0);
+ // If there is no ○ information and nothing old needed migration, do not withdraw or
+ // delete anything from KPlive. Existing sharing remains exactly as it was.
+ if(!stateCount&&!migratedLegacyCount){
+   return {count:0,migrated:0,skipped:true};
+ }
+ shareTest.items=[...keep,fresh];
  saveNow();await syncTestShare();renderTestShareBar();
- return (fresh.outlineGroups||[]).reduce((n,g)=>n+(g.outlineChildren||[]).reduce((m,c)=>m+(c.blocks||[]).length,0),0);
+ return {count:stateCount,migrated:migratedLegacyCount,skipped:false};
 }
 function targetMatches(itemTarget,ho){
  const t=String(itemTarget||"全員").trim();
@@ -2407,20 +2439,18 @@ function orderedOutlineChildren(group){
 async function refreshKpLiveOrderHierarchyFromPages(){
  shareTest=currentShare()||shareTest;
  if(!shareTest)return;
- const itemMap=new Map((shareTest.items||[]).map(x=>[String(x.sceneId||"") ,x]));
- for(const page of (b.pages||[])){
-   const tmp=document.createElement("div");tmp.innerHTML=ensureArticle(page);
-   const fresh=await collectOutlineShareScene(page,tmp);
-   const old=itemMap.get(String(page.id));
-   if(!old)continue; // 表示順は共有済みシーンだけを対象にする
-   const oldGroups=new Map((old.outlineGroups||[]).map(g=>[String(g.id),g]));
-   fresh.outlineGroups.forEach((g,gi)=>{
-     const og=oldGroups.get(String(g.id));
-     g.displayOrder=Number.isFinite(Number(og?.displayOrder))?Number(og.displayOrder):gi;
-     const oldChildren=new Map((og?.outlineChildren||[]).map(c=>[String(c.id),c]));
-     g.outlineChildren.forEach((c,ci)=>{const oc=oldChildren.get(String(c.id));c.displayOrder=Number.isFinite(Number(oc?.displayOrder))?Number(oc.displayOrder):ci});
+ // The order editor must reflect the data that is actually shared to KPlive.
+ // Rebuilding from saved editor HTML used to erase children when that HTML had no ○ state.
+ // Normalize displayOrder in-place instead; newly updated special blocks are migrated
+ // to outlineGroups by upsertRevealIntoScene().
+ for(const item of (shareTest.items||[])){
+   if(item?.kind!=="outline-scene")continue;
+   item.outlineGroups=Array.isArray(item.outlineGroups)?item.outlineGroups:[];
+   item.outlineGroups.forEach((g,gi)=>{
+     if(!Number.isFinite(Number(g.displayOrder)))g.displayOrder=gi;
+     g.outlineChildren=Array.isArray(g.outlineChildren)?g.outlineChildren:[];
+     g.outlineChildren.forEach((c,ci)=>{if(!Number.isFinite(Number(c.displayOrder)))c.displayOrder=ci});
    });
-   old.outlineGroups=fresh.outlineGroups;
  }
 }
 function renderKpLiveOrder(){
@@ -2728,6 +2758,44 @@ function resolveRevealBody(section,mode){
  return null;
 }
 
+async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
+ section=normalizeRevealSection(section)||section;
+ if(!section||!source)return null;
+ const blockId=String(section.dataset.blockId||"")||(crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`));
+ const group={id:`special:${blockId}`,title:String(title||"開示情報").replace(/\s+/g," ").trim()||"開示情報",outlineChildren:[],shareSource:"special-full",shareMode};
+ let child=null,order=0,untitledNo=0;
+ const makeChild=(heading=null)=>{
+   const text=heading?headingText(heading,""):"";
+   const id=heading?ensureHeadingShareId(heading,"inner"):`inner:${blockId}:untitled:${untitledNo++}`;
+   child={id,title:text,blocks:[]};
+   group.outlineChildren.push(child);
+   return child;
+ };
+ // Preserve the actual BINDER stream. A heading inside a special block is the
+ // grandchild level; paragraphs, list items and image grids stay beneath it.
+ const nodes=[...source.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,div.image-grid")];
+ for(const node of nodes){
+   if(node.matches("h1,h2,h3,h4,h5,h6")){
+     const text=headingText(node,"");
+     // Imported reveal blocks often repeat their own title as the first heading.
+     // The outer special title already represents that big-heading level.
+     if(text&&text!==group.title)child=makeChild(node);
+     continue;
+   }
+   // Only take content units whose nearest special/summary container is this source.
+   // This prevents a wrapper/list ancestor from duplicating its descendants.
+   if(node.matches("li")){
+     if(!node.parentElement?.matches?.("ul,ol"))continue;
+   }else if(node.parentElement!==source){
+     continue;
+   }
+   if(!child)child=makeChild(null);
+   child.blocks.push(await outlineShareBlockSnapshot(node,order++));
+ }
+ group.outlineChildren=group.outlineChildren.filter(c=>c.blocks.length);
+ return group.outlineChildren.length?group:null;
+}
+
 async function revealSnapshot(section){
  const page=b.pages.find(x=>String(x.id)===String(active));
  const id=section.dataset.blockId||crypto.randomUUID();
@@ -2791,7 +2859,8 @@ async function revealSnapshot(section){
    .map(img=>img.getAttribute("src")||"").filter(Boolean).filter((src,i,a)=>a.indexOf(src)===i);
  const images=[];for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
  const selectedItemIds=mode==="checked"?[...section.querySelectorAll("[data-reveal-check-item]")].filter(row=>row.querySelector("[data-reveal-check]")?.checked).map(row=>row.dataset.itemId||"").filter(Boolean):[];
- return {id,title,target,kind:section.dataset.kind||"reveal",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,revealedAt:new Date().toISOString()};
+ const outlineGroup=await buildSpecialOutlineGroup(section,source,title,mode);
+ return {id,title,target,kind:section.dataset.kind||"reveal",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,outlineGroup,revealedAt:new Date().toISOString()};
 }
 function makeRevealCheckItem(html=""){
  const row=document.createElement("div");
@@ -2833,6 +2902,8 @@ function findSharedRevealById(id){
  for(const item of (shareTest?.items||[])){
    if(String(item?.id||"")===String(id))return {item,scene:null};
    if(item?.kind==="outline-scene"){
+     const group=(item.outlineGroups||[]).find(g=>String(g?.id||"")===`special:${String(id)}`);
+     if(group)return {item:{id:String(id),title:group.title||"開示情報",target:item.target||"全員",outlineGroup:group},scene:item,group};
      const child=(item.legacyItems||[]).find(x=>String(x?.id||"")===String(id));
      if(child)return {item:child,scene:item};
    }
@@ -2870,16 +2941,35 @@ function ensureSceneShareContainer(sceneId,sceneTitle){
 }
 function upsertRevealIntoScene(snap){
  const scene=ensureSceneShareContainer(snap.sceneId,snap.sceneTitle);
- const idx=scene.legacyItems.findIndex(x=>String(x?.id||"")===String(snap.id||""));
- if(idx>=0){
-   const old=scene.legacyItems[idx];
-   snap.revealedAt=old.revealedAt||snap.revealedAt;
-   snap.displayOrder=Number.isFinite(Number(old.displayOrder))?Number(old.displayOrder):snap.displayOrder;
-   snap.updatedAt=new Date().toISOString();
-   scene.legacyItems[idx]=snap;
+ if(snap.outlineGroup){
+   const group=snap.outlineGroup;
+   scene.outlineGroups=Array.isArray(scene.outlineGroups)?scene.outlineGroups:[];
+   const idx=scene.outlineGroups.findIndex(g=>String(g?.id||"")===String(group.id||""));
+   const old=idx>=0?scene.outlineGroups[idx]:null;
+   group.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):scene.outlineGroups.length;
+   const oldChildren=new Map((old?.outlineChildren||[]).map(c=>[String(c.id||""),c]));
+   const oldChildrenByTitle=new Map();
+   (old?.outlineChildren||[]).forEach(c=>{const t=String(c.title||"").replace(/\s+/g," ").trim();if(t&&!oldChildrenByTitle.has(t))oldChildrenByTitle.set(t,c)});
+   (group.outlineChildren||[]).forEach((c,ci)=>{
+     const t=String(c.title||"").replace(/\s+/g," ").trim();
+     const oc=oldChildren.get(String(c.id||""))||oldChildrenByTitle.get(t);
+     c.displayOrder=Number.isFinite(Number(oc?.displayOrder))?Number(oc.displayOrder):ci;
+   });
+   if(idx>=0)scene.outlineGroups[idx]=group;else scene.outlineGroups.push(group);
+   // A structured special group supersedes its old flattened legacy snapshot.
+   scene.legacyItems=(scene.legacyItems||[]).filter(x=>String(x?.id||"")!==String(snap.id||""));
  }else{
-   snap.updatedAt=new Date().toISOString();
-   scene.legacyItems.push(snap);
+   const idx=scene.legacyItems.findIndex(x=>String(x?.id||"")===String(snap.id||""));
+   if(idx>=0){
+     const old=scene.legacyItems[idx];
+     snap.revealedAt=old.revealedAt||snap.revealedAt;
+     snap.displayOrder=Number.isFinite(Number(old.displayOrder))?Number(old.displayOrder):snap.displayOrder;
+     snap.updatedAt=new Date().toISOString();
+     scene.legacyItems[idx]=snap;
+   }else{
+     snap.updatedAt=new Date().toISOString();
+     scene.legacyItems.push(snap);
+   }
  }
  scene.updatedAt=new Date().toISOString();
  return scene;
@@ -2887,9 +2977,11 @@ function upsertRevealIntoScene(snap){
 function removeRevealFromScene(id){
  shareTest=currentShare()||shareTest;
  for(const scene of (shareTest?.items||[]).filter(x=>x?.kind==="outline-scene")){
-   const before=(scene.legacyItems||[]).length;
+   const beforeLegacy=(scene.legacyItems||[]).length;
+   const beforeGroups=(scene.outlineGroups||[]).length;
    scene.legacyItems=(scene.legacyItems||[]).filter(x=>String(x?.id||"")!==String(id));
-   if(scene.legacyItems.length!==before){
+   scene.outlineGroups=(scene.outlineGroups||[]).filter(g=>String(g?.id||"")!==`special:${String(id)}`);
+   if(scene.legacyItems.length!==beforeLegacy||scene.outlineGroups.length!==beforeGroups){
      scene.updatedAt=new Date().toISOString();
      if(!(scene.legacyItems||[]).length&&!(scene.outlineGroups||[]).length){
        shareTest.items=(shareTest.items||[]).filter(x=>x!==scene);
@@ -2901,7 +2993,6 @@ function removeRevealFromScene(id){
  shareTest.items=(shareTest?.items||[]).filter(x=>String(x?.id||"")!==String(id));
  return shareTest.items.length!==before;
 }
-
 function setRevealAction(section){
  section=normalizeRevealSection(section)||section;
  shareTest=currentShare()||shareTest;
@@ -3028,8 +3119,12 @@ async function runApplyOutlineReveal(){
  const st=q("#testShareStatus");
  try{
    if(st)st.textContent="このシーンの○をKPlive用に準備中…画像がある場合はStorageへアップロードします。";
-   const count=await applyOutlineRevealToShare();
-   if(st)st.textContent=count?`このシーンの○ ${count}ブロックをKPliveへ反映しました。`:"このシーンに○がないため、このシーンの共有をKPliveから外しました。";
+   const result=await applyOutlineRevealToShare();
+   if(st)st.textContent=result?.skipped
+     ? "このシーンには現在○の情報がありません。KPlive上の既存共有は変更していません。"
+     : result?.migrated
+       ? `KPliveを更新しました。○ ${result?.count||0}ブロック／既存共有 ${result.migrated}件を階層表示へ更新しました。`
+       : `このシーンの○ ${result?.count||0}ブロックをKPliveへ反映しました。`;
  }catch(err){console.error(err);if(st)st.textContent=`このシーンをKPliveへ反映できませんでした：${err?.message||String(err)}`}
 }
 q("#applyOutlineReveal")?.addEventListener("click",runApplyOutlineReveal);
