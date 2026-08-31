@@ -811,7 +811,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .kp-special[data-kind="reveal"] [data-reveal-checked-help]{display:none!important}
 
 
-.kp-live-order-scene{margin-bottom:8px}.kp-live-order-children{margin:4px 0 8px 10px;border-left:2px solid #343b46;padding-left:7px}.kp-live-order-child{background:rgba(255,255,255,.025);margin-top:4px}.kp-live-order-child .kp-live-order-handle{cursor:default;opacity:.7}.kp-live-order-grandchildren{margin:4px 0 6px 12px;border-left:1px dashed #48515f;padding-left:7px}.kp-live-order-grandchild{background:rgba(255,255,255,.015);margin-top:3px;padding-top:7px;padding-bottom:7px}.kp-live-order-grandchild .kp-live-order-title{font-size:13px}.kp-live-order-grandchild .kp-live-order-handle{cursor:default;opacity:.55}
+.kp-live-order-scene{margin-bottom:8px}.kp-live-order-scene>.kp-live-order-row{grid-template-columns:auto auto minmax(0,1fr) auto}.kp-live-order-children{margin:4px 0 8px 10px;border-left:2px solid #343b46;padding-left:7px}.kp-live-order-child{background:rgba(255,255,255,.025);margin-top:4px}.kp-live-order-child .kp-live-order-handle{cursor:default;opacity:.7}.kp-live-order-grandchildren{margin:4px 0 6px 12px;border-left:1px dashed #48515f;padding-left:7px}.kp-live-order-grandchild{background:rgba(255,255,255,.015);margin-top:3px;padding-top:7px;padding-bottom:7px}.kp-live-order-grandchild .kp-live-order-title{font-size:13px}.kp-live-order-grandchild .kp-live-order-handle{cursor:default;opacity:.55}
 .kp-live-order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.kp-live-order-fold-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kp-live-order-fold-actions button{font-size:12px;padding:5px 8px}.kp-live-order-fold{width:28px;min-width:28px;height:28px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}.kp-live-order-row>div:nth-of-type(1){min-width:0;flex:1}.kp-live-order-scene.is-collapsed>.kp-live-order-children{display:none}.kp-live-order-group.is-collapsed>.kp-live-order-grandchildren{display:none}
 </style></head><body>
 <div data-site-header data-active="scenario"></div>
@@ -2766,6 +2766,12 @@ function resolveRevealBody(section,mode){
 
  // Legacy saved blocks from the earlier importer can have these reversed:
  // long scenario text in .kp-special-title and the short heading in .kp-special-body.
+ // Prefer the actual special body whenever it contains structured RichEditor
+ // content.  A previous legacy-reversal heuristic could mistake a short body
+ // containing only a heading + image for the old reversed layout, which made
+ // both the small heading and image disappear from KPlive.
+ const bodyHasStructured=!!bodyEl?.querySelector("h1,h2,h3,h4,h5,h6,.image-grid,[data-image-grid],img,ul,ol,blockquote,table");
+ if(bodyEl && bodyHasStructured)return bodyEl;
  if(titleEl && bodyEl && titleText.length>120 && bodyText && bodyText.length<=80){
    return titleEl;
  }
