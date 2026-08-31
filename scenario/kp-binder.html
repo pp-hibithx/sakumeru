@@ -119,6 +119,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .blog-editor .kp-special[data-kind="rp"]{border-left:4px dotted var(--line)}
 .blog-editor .kp-special[data-kind="secret"]{border-left:4px double var(--accent)}
 .blog-editor .kp-special-head{display:flex;gap:8px;align-items:center;margin-bottom:7px;font-size:12px;font-weight:800;color:var(--muted)}
+.blog-editor .kp-special-head .kp-special-move{margin-left:auto;padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap}
 .blog-editor .kp-special-title{font-weight:800;color:var(--text)}
 .blog-editor .kp-special-body{min-height:1.8em}
 .blog-editor .kp-special-action{margin-top:9px}
@@ -1240,9 +1241,91 @@ function renderEditor(){
 
  function decorateBlocks(){
    directEditorBlocks().forEach(block=>block.classList.add("sm-block"));
+   decorateSpecialMoveButtons();
    decorateKpRevealStates();
    richOutline?.refresh(ed,OUTLINE_OPTIONS);
    refreshBlockHandles();
+ }
+ function moveSharedSpecialToScene(blockId,fromPage,toPage){
+   if(!blockId||!fromPage||!toPage||String(fromPage.id)===String(toPage.id))return;
+   const items=Array.isArray(shareTest?.items)?shareTest.items:[];
+   const from=items.find(x=>x?.kind==="outline-scene"&&String(x.sceneId||"")===String(fromPage.id));
+   let movedGroup=null,movedLegacy=null;
+   if(from){
+     const groups=Array.isArray(from.outlineGroups)?from.outlineGroups:[];
+     const gi=groups.findIndex(g=>String(g?.id||"")===`special:${String(blockId)}`);
+     if(gi>=0)movedGroup=groups.splice(gi,1)[0];
+     const legacy=Array.isArray(from.legacyItems)?from.legacyItems:[];
+     const li=legacy.findIndex(x=>String(x?.id||"")===String(blockId));
+     if(li>=0)movedLegacy=legacy.splice(li,1)[0];
+     from.updatedAt=new Date().toISOString();
+   }
+   if(movedGroup||movedLegacy){
+     const dest=ensureSceneShareContainer(String(toPage.id),String(toPage.title||"無題のシーン"));
+     if(movedGroup){
+       dest.outlineGroups=Array.isArray(dest.outlineGroups)?dest.outlineGroups:[];
+       movedGroup.displayOrder=dest.outlineGroups.length;
+       dest.outlineGroups.push(movedGroup);
+     }
+     if(movedLegacy){
+       dest.legacyItems=Array.isArray(dest.legacyItems)?dest.legacyItems:[];
+       movedLegacy.sceneId=String(toPage.id);movedLegacy.sceneTitle=String(toPage.title||"");
+       dest.legacyItems.push(movedLegacy);
+     }
+     dest.updatedAt=new Date().toISOString();
+   }
+   items.forEach(x=>{
+     if(x?.kind!=="outline-scene"&&String(x?.id||"")===String(blockId)){
+       x.sceneId=String(toPage.id);x.sceneTitle=String(toPage.title||"");
+     }
+   });
+ }
+ function moveSpecialBlockToScene(section,targetSceneId){
+   if(!section?.matches?.("section.kp-special"))return;
+   const target=b.pages.find(x=>String(x.id)===String(targetSceneId));
+   if(!target||String(target.id)===String(p.id))return;
+   const blockId=String(section.dataset.blockId||"");
+   const clone=section.cloneNode(true);
+   clone.querySelectorAll(".kp-special-move,.sm-drag-handle").forEach(x=>x.remove());
+   clone.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after");
+   const movedHtml=clone.outerHTML;
+   section.remove();
+   ensureParagraphBlocks();decorateBlocks();syncArticle();
+   ensureArticle(target);
+   const holder=document.createElement("div");holder.innerHTML=target.__v11ArticleHtml||"";
+   holder.appendChild(clone);
+   target.__v11ArticleHtml=holder.innerHTML;
+   moveSharedSpecialToScene(blockId,p,target);
+   saveNow();
+   renderScenes();refreshStats();
+ }
+ function askSpecialMoveDestination(section){
+   const choices=b.pages.filter(x=>String(x.id)!==String(p.id));
+   if(!choices.length){alert("移動先にできる別のシーンがありません。");return;}
+   const veil=document.createElement("div");
+   veil.className="video-choice-pop";veil.style.display="flex";veil.setAttribute("contenteditable","false");
+   veil.innerHTML=`<div class="video-choice-card"><h3>特殊ブロックを別シーンへ移動</h3><p class="muted-note">ブロックの本文・画像・開示状態をまとめて移動します。</p><select data-special-move-select style="width:100%;margin:10px 0">${choices.map(x=>`<option value="${esc(x.id)}">${esc(x.title||"無題のシーン")}</option>`).join("")}</select><div class="video-choice-actions"><button type="button" class="secondary" data-special-move-cancel>キャンセル</button><button type="button" data-special-move-go>移動</button></div></div>`;
+   document.body.appendChild(veil);
+   const close=()=>veil.remove();
+   veil.querySelector("[data-special-move-cancel]").onclick=close;
+   veil.addEventListener("mousedown",e=>{if(e.target===veil)close()});
+   veil.querySelector("[data-special-move-go]").onclick=()=>{
+     const id=veil.querySelector("[data-special-move-select]").value;
+     const dest=choices.find(x=>String(x.id)===String(id));
+     if(!dest)return;
+     if(!confirm(`この特殊ブロックを「${dest.title||"無題のシーン"}」へ移動しますか？`))return;
+     close();moveSpecialBlockToScene(section,id);
+   };
+ }
+ function decorateSpecialMoveButtons(){
+   [...ed.querySelectorAll(":scope > section.kp-special")].forEach(section=>{
+     const head=section.querySelector(":scope > .kp-special-head");
+     if(!head||head.querySelector(":scope > .kp-special-move"))return;
+     const btn=document.createElement("button");btn.type="button";btn.className="secondary kp-special-move sm-outline-ui";btn.textContent="↪ 別シーンへ移動";btn.setAttribute("contenteditable","false");
+     btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+     btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();askSpecialMoveDestination(section)});
+     head.appendChild(btn);
+   });
  }
 
  let handleFrame=0;
@@ -1429,7 +1512,7 @@ function renderEditor(){
 
  function cleanEditorHtml(){
    const clone=ed.cloneNode(true);
-   clone.querySelectorAll(".sm-drag-handle").forEach(h=>h.remove());
+   clone.querySelectorAll(".sm-drag-handle,.kp-special-move").forEach(h=>h.remove());
    clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail").forEach(el=>{
      el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail");
      if(!el.className)el.removeAttribute("class");
