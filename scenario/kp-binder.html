@@ -878,7 +878,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
    </section>
    <section class="box pc-prod-box"><h2>技能比較</h2><div class="muted-note">PC・キャラシURL連携後、この陣の技能を比較します。</div><div id="compare" style="overflow:auto"></div></section>
  </section>
-</main>
+<section id="recoveryPanel" class="panel" style="margin-top:12px"><h2>KP BINDER 復旧モード</h2><div class="muted-note">保存領域に残っている内容のあるバインダーを検索します。候補を表示するだけでは保存しません。</div><div id="recoveryCandidates" style="margin-top:8px"></div></section></main>
 <div data-site-footer></div>
 <script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
 <script>
@@ -923,6 +923,10 @@ let b=all[sid];
 b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];b.shareSessions??=[];
 b.scenarioTitle=sc.title||b.scenarioTitle||"シナリオ";
 q("#scenarioName").textContent=b.scenarioTitle+" ／ 自分専用";
+function binderDataScore(x){if(!x||typeof x!=="object")return 0;return (Array.isArray(x.pages)?x.pages.reduce((n,p)=>n+1+(p?.blocks?.length||0)+(String(p?.__v11ArticleHtml||"").length?2:0),0):0)+(Array.isArray(x.reveals)?x.reveals.length:0)+(Array.isArray(x.participants)?x.participants.length:0)}
+function renderRecoveryCandidates(){const host=q("#recoveryCandidates");if(!host)return;let rec={};try{rec=JSON.parse(localStorage.getItem("39x2_kp_binder_recovery_v1")||"{}")}catch{}const candidates=[];Object.entries(all||{}).forEach(([key,val])=>{const score=binderDataScore(val);if(score>0)candidates.push({source:"通常保存",key,val,score})});Object.entries(rec||{}).forEach(([key,row])=>{const val=row?.binder,score=binderDataScore(val);if(score>0)candidates.push({source:"復旧コピー",key,val,score})});candidates.sort((a,z)=>z.score-a.score);if(!candidates.length){host.innerHTML='<div class="muted-note">内容のある保存候補を検出できませんでした。</div>';return}host.innerHTML=candidates.map((c,i)=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><strong>${esc(c.val?.scenarioTitle||"タイトル不明")}</strong> <span class="muted-note">${esc(c.source)}／シーン ${(c.val?.pages||[]).length}</span><button type="button" class="secondary" data-recovery-preview="${i}" style="margin-left:8px">候補を表示</button></div>`).join("");host.querySelectorAll("[data-recovery-preview]").forEach(btn=>btn.onclick=()=>{const c=candidates[Number(btn.dataset.recoveryPreview)];if(!c)return;b=JSON.parse(JSON.stringify(c.val));b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];b.shareSessions??=[];q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ 復旧プレビュー（未保存）";active=b.pages[0]?.id||"";renderScenes();renderEditor();refreshStats();host.innerHTML=`<strong>${esc(b.scenarioTitle||"シナリオ")} を表示中（まだ保存していません）</strong><button type="button" id="commitRecovery" style="margin-left:8px">このデータを復旧保存</button>`;q("#commitRecovery").onclick=()=>{if(!confirm("表示中のデータを現在のシナリオへ復旧保存しますか？"))return;delete b.__unsavedNewBinder;saveNow();location.reload()}})}
+setTimeout(renderRecoveryCandidates,0);
+
 
 let saveTimer=0;
 function readLatestBinderStore(){
