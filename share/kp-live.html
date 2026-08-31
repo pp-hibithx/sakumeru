@@ -105,8 +105,15 @@
        const style=child.getAttribute("style")||"",href=child.getAttribute("href")||"",fontColor=child.tagName==="FONT"?(child.getAttribute("color")||""):"";
        const rawClass=child.getAttribute("class")||"";
        const rawKind=child.getAttribute("data-kind")||"";
+       // Numbered reveal items are shared as small OL fragments with their original
+       // start number.  Keep that semantic attribute through sanitizing so KPlive
+       // does not restart every disclosed item at 1.
+       const rawStart=child.tagName==="OL"?(child.getAttribute("start")||""):"";
+       const rawValue=child.tagName==="LI"?(child.getAttribute("value")||""):"";
        [...child.attributes].forEach(a=>child.removeAttribute(a.name));
        if(child.tagName==="A"&&/^https?:\/\//i.test(href)){child.setAttribute("href",href);child.setAttribute("target","_blank");child.setAttribute("rel","noopener noreferrer")}
+       if(child.tagName==="OL"&&/^[1-9]\d*$/.test(rawStart))child.setAttribute("start",rawStart);
+       if(child.tagName==="LI"&&/^[1-9]\d*$/.test(rawValue))child.setAttribute("value",rawValue);
        const classAllow=new Set(["kp-special","kp-special-head","kp-special-title","kp-special-body","kind-chip","dialogue-lines","dialogue-row","dialogue-name","dialogue-text","kp-live-selected-item"]);
        const keptClasses=rawClass.split(/\s+/).filter(c=>classAllow.has(c));
        if(keptClasses.length)child.setAttribute("class",keptClasses.join(" "));
