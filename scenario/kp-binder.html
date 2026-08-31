@@ -2254,6 +2254,11 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
      // Keeping one ordered stream also keeps image galleries exactly where the KP put them.
      const nodes=[...container.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,div.image-grid")];
      for(const node of nodes){
+       // Ignore editor-only image controls/captions when building the heading tree.
+       // A filename/help label inside an image grid must never become a KPlive
+       // small heading; only a real RichEditor heading (e.g. 「画像はこちら」) may.
+       if(node.closest?.(".image-grid,[data-image-grid]") && !node.matches("div.image-grid,[data-image-grid]"))continue;
+       if(node.closest?.(".sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help"))continue;
        // Ignore nodes that belong to a nested special/summary container.  We only
        // want the visible stream of the currently selected container.
        if(node.closest?.(".kp-special-body,[data-reveal-summary]")!==container)continue;
@@ -2804,6 +2809,10 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
  // grandchild level; paragraphs, list items and image grids stay beneath it.
  const nodes=[...source.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,div.image-grid")];
  for(const node of nodes){
+   // Image-grid UI (filename/remove/help) is presentation metadata, never an
+   // outline heading. Keep the grid itself as content under the preceding H3.
+   if(node.closest?.(".image-grid,[data-image-grid]") && !node.matches("div.image-grid,[data-image-grid]"))continue;
+   if(node.closest?.(".sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help"))continue;
    if(node.closest?.(".kp-special-body,[data-reveal-summary]") && node.closest?.(".kp-special-body,[data-reveal-summary]")!==source)continue;
    if(node.matches("h1,h2,h3,h4,h5,h6")){
      const text=headingText(node,"");
