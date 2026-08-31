@@ -239,7 +239,24 @@
        // Each shared unit is rendered in the same order as KP BINDER.  Image grids
        // stay between the surrounding paragraphs/list items instead of being folded
        // into a gallery at the end of a legacy HTML snapshot.
-       const body=blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("");
+       const isImageFilenameOnly=html=>{
+         const tpl=document.createElement("template");
+         tpl.innerHTML=String(html||"");
+         const text=(tpl.content.textContent||"").replace(/\s+/g," ").trim();
+         if(!text)return false;
+         const parts=text.split(/\s*[\n,、]+\s*/).filter(Boolean);
+         return parts.length>0&&parts.every(v=>/^[^\\/:*?"<>|]+\.(?:png|jpe?g|gif|webp|bmp|svg)$/i.test(v.trim()));
+       };
+       const renderOutlineBlock=block=>{
+         const images=Array.isArray(block?.images)?block.images:[];
+         const rawBody=String(block?.bodyHtml||"");
+         // Image filenames are editor-side management metadata. Never expose them
+         // on KPlive: filenames can contain NPC/HO/spoiler information. Explicit
+         // captions such as MAP1 / MAP2 remain ordinary body text.
+         const bodyHtml=images.length&&isImageFilenameOnly(rawBody)?"":richText(rawBody);
+         return `<div class="kp-live-outline-block">${bodyHtml}${renderImages(images)}</div>`;
+       };
+       const body=blocks.map(renderOutlineBlock).join("");
        return title
          ? `<details class="kp-live-outline-child kp-live-grandchild-toggle" data-level="grandchild"><summary>${esc(title)}</summary><div class="kp-live-grandchild-content">${body}</div></details>`
          : `<section class="kp-live-outline-child is-untitled" data-level="grandchild">${body}</section>`;
