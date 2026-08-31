@@ -878,7 +878,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
    </section>
    <section class="box pc-prod-box"><h2>技能比較</h2><div class="muted-note">PC・キャラシURL連携後、この陣の技能を比較します。</div><div id="compare" style="overflow:auto"></div></section>
  </section>
-<section id="deepRecoveryPanel" class="panel" style="margin-top:12px"><h2>KP BINDER 深層復旧</h2><p class="muted-note">SAKU+MERUのlocalStorage全体から、旧形式・旧シナリオID・別キーに残ったKPバインダー候補を読み取り専用で探します。候補を表示するだけでは保存しません。</p><div id="deepRecoverySummary" class="muted-note"></div><div id="deepRecoveryCandidates" style="margin-top:8px"></div><details style="margin-top:10px"><summary>完全バックアップJSONから探す</summary><div style="margin-top:8px"><input id="deepRecoveryFile" type="file" accept=".json,application/json"><div id="deepRecoveryFileResult" class="muted-note" style="margin-top:6px"></div></div></details></section></main>
+<section class="panel" id="kpLiveRecoveryPanel" style="margin-top:12px"><h2>KPlive共有URLから復旧</h2><p class="muted-note">配布済みKPlive URLに残っている共有データを読み込み、KP BINDERへ復旧プレビューします。読み込みだけでは保存しません。複数URLがある場合は1行ずつ貼れます。</p><textarea id="kpLiveRecoveryUrls" rows="4" style="width:100%" placeholder="https://pp-hibithx.github.io/sakumeru/share/kp-live.html?id=..."></textarea><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="kpLiveRecoveryLoad">共有URLから読み込む</button><button type="button" id="kpLiveRecoveryCommit" class="danger" disabled>確認した内容を復旧保存</button></div><div id="kpLiveRecoveryStatus" class="muted-note" style="margin-top:8px"></div></section></main>
 <div data-site-footer></div>
 <script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
 <script>
@@ -923,56 +923,47 @@ let b=all[sid];
 b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];b.shareSessions??=[];
 b.scenarioTitle=sc.title||b.scenarioTitle||"シナリオ";
 q("#scenarioName").textContent=b.scenarioTitle+" ／ 自分専用";
-function cloneBinderSafe(v){try{return window.structuredClone?structuredClone(v):JSON.parse(JSON.stringify(v))}catch(_){return JSON.parse(JSON.stringify(v||{}))}}
-function textLen(v){return String(v??"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().length}
-function pageRichness(p){if(!p||typeof p!=="object")return 0;let n=3+textLen(p.title)+textLen(p.body)+textLen(p.__v11ArticleHtml);if(Array.isArray(p.blocks))for(const x of p.blocks)n+=4+textLen(x?.title)+textLen(x?.body)+textLen(x?.caption)+textLen(x?.text);if(Array.isArray(p.images))n+=p.images.length*2;return n}
-function binderRichness(x){if(!x||typeof x!=="object")return 0;let n=textLen(x.overview)+textLen(x.scenarioTitle);if(Array.isArray(x.pages))for(const p of x.pages)n+=pageRichness(p);if(Array.isArray(x.participants))n+=x.participants.length*4;if(Array.isArray(x.reveals))n+=x.reveals.length*3;if(Array.isArray(x.revealLog))n+=x.revealLog.length*2;if(Array.isArray(x.shareSessions))n+=x.shareSessions.length*2;return n}
-function looksLikeBinder(x){if(!x||typeof x!=="object"||Array.isArray(x))return false;if(Array.isArray(x.pages)&&(x.pages.length||"overview" in x||"participants" in x))return true;return false}
-function walkForBinders(root,sourceKey,out,path="$",depth=0,seen=new WeakSet()){
- if(depth>8||root===null||typeof root!=="object")return;
- if(seen.has(root))return;seen.add(root);
- if(looksLikeBinder(root)){const score=binderRichness(root);if(score>0)out.push({sourceKey,path,val:root,score});}
- if(Array.isArray(root)){for(let i=0;i<root.length&&i<500;i++)walkForBinders(root[i],sourceKey,out,`${path}[${i}]`,depth+1,seen);return}
- for(const [k,v] of Object.entries(root)){walkForBinders(v,sourceKey,out,`${path}.${k}`,depth+1,seen)}
-}
-function collectDeepCandidates(){
- const out=[];let scanned=0,parsed=0;
- for(let i=0;i<localStorage.length;i++){
-   const key=localStorage.key(i);if(!key)continue;scanned++;
-   const raw=localStorage.getItem(key);if(!raw)continue;
-   let v;try{v=JSON.parse(raw);parsed++}catch{continue}
-   walkForBinders(v,key,out);
+let __kpLiveRecoveryPreview=null;
+function recoveryEscHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function recoveryImageHtml(images){return (Array.isArray(images)?images:[]).filter(Boolean).map(src=>`<div class="image-grid" data-image-grid contenteditable="false"><figure draggable="true" data-img-item contenteditable="false"><img src="${recoveryEscHtml(src)}" alt="" data-full-image><figcaption contenteditable="true" spellcheck="false"></figcaption></figure></div>`).join("")}
+function recoveryBlocksHtml(blocks){return (Array.isArray(blocks)?blocks:[]).map(block=>`${String(block?.bodyHtml||block?.body||"")}${recoveryImageHtml(block?.images)}`).join("")}
+function recoverySceneHtml(scene){
+ let html="";
+ const groups=[...(Array.isArray(scene?.outlineGroups)?scene.outlineGroups:[])].sort((a,z)=>(Number(a?.displayOrder??999999)-Number(z?.displayOrder??999999)));
+ for(const g of groups){
+   const gt=String(g?.title||"").trim(); if(gt)html+=`<h2>${recoveryEscHtml(gt)}</h2>`;
+   const children=[...(Array.isArray(g?.outlineChildren)?g.outlineChildren:[])].sort((a,z)=>(Number(a?.displayOrder??999999)-Number(z?.displayOrder??999999)));
+   for(const c of children){const ct=String(c?.title||"").trim();if(ct)html+=`<h3>${recoveryEscHtml(ct)}</h3>`;html+=recoveryBlocksHtml(c?.blocks)}
  }
- const uniq=[];const sig=new Set();
- for(const c of out.sort((a,z)=>z.score-a.score)){
-   const v=c.val;const signature=[String(v?.scenarioTitle||""),String(v?.pages?.length||0),String(v?.pages?.[0]?.title||""),String(c.score)].join("|");
-   if(sig.has(signature))continue;sig.add(signature);uniq.push(c)
+ for(const x of (Array.isArray(scene?.legacyItems)?scene.legacyItems:[])){
+   const title=String(x?.title||"開示情報").trim()||"開示情報";
+   html+=`<section class="kp-special" data-kind="reveal" data-block-id="${recoveryEscHtml(x?.id||crypto.randomUUID())}"><div class="kp-special-head" contenteditable="false"><span class="kind-chip">開示情報</span></div><div class="kp-special-title">${recoveryEscHtml(title)}</div><div class="kp-special-body">${String(x?.bodyHtml||x?.body||"")}${recoveryImageHtml(x?.images)}</div></section>`;
  }
- return {rows:uniq,scanned,parsed};
+ return html||"<p><br></p>";
 }
-function showBinderCandidate(c,host){
- b=cloneBinderSafe(c.val);b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];b.shareSessions??=[];
- q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ 復旧プレビュー（未保存）";
- active=b.pages[0]?.id||"";renderScenes();renderEditor();refreshStats();
- host.innerHTML=`<div><strong>${esc(b.scenarioTitle||"タイトル不明")} を表示中</strong><div class="muted-note">まだ保存していません。シーン ${b.pages.length}件 ／ 検出元 ${esc(c.sourceKey)} ${esc(c.path)}</div><button type="button" id="deepCommitRecovery" style="margin-top:8px">このデータを現在のシナリオへ復旧保存</button> <button type="button" id="deepBackRecovery" class="secondary" style="margin-top:8px">候補一覧へ戻る</button></div>`;
- q("#deepBackRecovery").onclick=renderDeepRecovery;
- q("#deepCommitRecovery").onclick=()=>{if(!confirm("表示中のKPバインダーを現在のシナリオへ復旧保存しますか？"))return;delete b.__unsavedNewBinder;saveNow();location.reload()};
+function unwrapKpShared(raw){
+ const parse=v=>{if(typeof v!=="string")return v;try{return JSON.parse(v)}catch{return v}};
+ let p=parse(raw);for(let n=0;n<5;n++){if(Array.isArray(p)&&p.length===1){p=parse(p[0]);continue}if(p&&typeof p==="object"&&p.kind!=="kp-live-share"){if(p.data!=null){p=parse(p.data);continue}if(p.p_data!=null){p=parse(p.p_data);continue}if(p.payload!=null){p=parse(p.payload);continue}if(p.result!=null){p=parse(p.result);continue}}break}return p;
 }
-function renderCandidateRows(rows,host){
- if(!rows.length){host.innerHTML='<div class="muted-note">内容のあるKPバインダー候補は見つかりませんでした。</div>';return}
- host.innerHTML=rows.slice(0,50).map((c,i)=>{const v=c.val;const titles=(v.pages||[]).slice(0,3).map(p=>p?.title||"無題").join(" / ");return `<div style="padding:9px 0;border-top:1px solid var(--line)"><strong>${esc(v?.scenarioTitle||"タイトル不明")}</strong> <span class="muted-note">シーン ${(v.pages||[]).length}件${titles?` ／ ${esc(titles)}`:""}<br>検出元：${esc(c.sourceKey)} ${esc(c.path)}</span><button type="button" class="secondary" data-deep-preview="${i}" style="margin-left:8px">候補を表示</button></div>`}).join("");
- host.querySelectorAll("[data-deep-preview]").forEach(btn=>btn.onclick=()=>showBinderCandidate(rows[Number(btn.dataset.deepPreview)],host));
+function kpLiveIdFromUrl(line){const v=String(line||"").trim();if(!v)return"";try{return new URL(v,location.href).searchParams.get("id")||v}catch{return v}}
+function mergeKpPayloads(payloads,ids){
+ const itemMap=new Map();
+ payloads.forEach((p,pi)=>{(Array.isArray(p?.items)?p.items:[]).forEach((x,i)=>{const key=x?.kind==="outline-scene"?`scene:${x.sceneId||x.id}`:`item:${x.id||x.title||i}`;const prev=itemMap.get(key);if(!prev||String(x?.updatedAt||x?.revealedAt||"")>=String(prev?.updatedAt||prev?.revealedAt||""))itemMap.set(key,x)})});
+ const items=[...itemMap.values()];
+ const scenes=items.filter(x=>x?.kind==="outline-scene");
+ // Keep old standalone shares by grouping them into a recovered scene when no modern scene owns them.
+ const legacy=items.filter(x=>x?.kind!=="outline-scene");
+ const pages=scenes.map((x,idx)=>({id:String(x.sceneId||crypto.randomUUID()),title:String(x.title||`復旧シーン${idx+1}`),blocks:[],images:[],__v11ArticleHtml:recoverySceneHtml(x)}));
+ if(legacy.length){pages.push({id:crypto.randomUUID(),title:"KPliveから復旧した開示情報",blocks:[],images:[],__v11ArticleHtml:legacy.map(x=>`<section class="kp-special" data-kind="reveal" data-block-id="${recoveryEscHtml(x?.id||crypto.randomUUID())}"><div class="kp-special-head" contenteditable="false"><span class="kind-chip">開示情報</span></div><div class="kp-special-title">${recoveryEscHtml(x?.title||"開示情報")}</div><div class="kp-special-body">${String(x?.bodyHtml||x?.body||"")}${recoveryImageHtml(x?.images)}</div></section>`).join("")})}
+ const first=payloads[0]||{};
+ return {binder:{overview:"",pages,participants:[],reveals:[],revealLog:[],shareSessions:[],scenarioTitle:String(first.title||b.scenarioTitle||sc.title||"シナリオ"),currentShareSession:{shareId:ids[0]||"",sessionId:first.sessionId||crypto.randomUUID(),runId:first.runId||first.sessionId||crypto.randomUUID(),runLabel:first.runLabel||"",completed:!!first.runCompleted,completedAt:first.runCompleted?first.updatedAt||"":"",startedAt:first.sessionStartedAt||first.updatedAt||new Date().toISOString(),items,participants:[]}},items,pages};
 }
-function renderDeepRecovery(){
- const host=q("#deepRecoveryCandidates"),sum=q("#deepRecoverySummary");if(!host)return;
- const result=collectDeepCandidates();
- if(sum)sum.textContent=`localStorage ${result.scanned}キーを確認／JSON ${result.parsed}件を解析／復旧候補 ${result.rows.length}件`;
- renderCandidateRows(result.rows,host);
-}
-setTimeout(renderDeepRecovery,0);
-setTimeout(()=>{const inp=q("#deepRecoveryFile"),res=q("#deepRecoveryFileResult"),host=q("#deepRecoveryCandidates");if(!inp)return;inp.onchange=async()=>{const f=inp.files?.[0];if(!f)return;let obj;try{obj=JSON.parse(await f.text())}catch(e){res.textContent="JSONを読み込めませんでした。";return}const rows=[];if(obj?.kind==="SAKUMERU_FULL_BACKUP"&&obj?.localStorage&&typeof obj.localStorage==="object"){
- for(const [key,raw] of Object.entries(obj.localStorage)){let v;try{v=typeof raw==="string"?JSON.parse(raw):raw}catch{continue}walkForBinders(v,`バックアップ:${key}`,rows)}
-}else{walkForBinders(obj,"選択JSON",rows)}rows.sort((a,z)=>z.score-a.score);res.textContent=`バックアップ内の候補 ${rows.length}件`;renderCandidateRows(rows,host)}},0);
+setTimeout(()=>{
+ const load=q("#kpLiveRecoveryLoad"),commit=q("#kpLiveRecoveryCommit"),status=q("#kpLiveRecoveryStatus"),ta=q("#kpLiveRecoveryUrls");if(!load)return;
+ ta.value="https://pp-hibithx.github.io/sakumeru/share/kp-live.html?id=9MZZVbURhtpAUt&v=0831j";
+ load.onclick=async()=>{commit.disabled=true;__kpLiveRecoveryPreview=null;const ids=ta.value.split(/\r?\n/).map(kpLiveIdFromUrl).filter(Boolean);if(!ids.length){status.textContent="共有URLを入力してください。";return}try{if(!window.TRPG39Cloud?.getSharedPage)throw new Error("共有読み込み機能を読み込めませんでした。");status.textContent="KPlive共有データを読み込み中…";const payloads=[];for(const id of ids){const raw=await TRPG39Cloud.getSharedPage(id);const p=unwrapKpShared(raw);if(!p||p.kind!=="kp-live-share")throw new Error(`${id} はKP共有データではありません。`);payloads.push(p)}const merged=mergeKpPayloads(payloads,ids);if(!merged.pages.length)throw new Error("共有URLには復旧できる開示本文がありませんでした。");__kpLiveRecoveryPreview=merged.binder;b=(typeof cloneBinderSafe==="function"?cloneBinderSafe(merged.binder):JSON.parse(JSON.stringify(merged.binder)));active=b.pages[0]?.id||"";q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ KPlive復旧プレビュー（未保存）";renderScenes();renderEditor();refreshStats();commit.disabled=false;status.textContent=`読み込み成功：${ids.length} URL ／ ${merged.pages.length}シーン。まだ保存していません。画面の本文を確認してください。`;renderTestShareBar?.()}catch(e){status.textContent=`読み込み失敗：${e?.message||e}`}};
+ commit.onclick=()=>{if(!__kpLiveRecoveryPreview)return;if(!confirm("現在プレビューしているKPlive共有内容をKP BINDERへ復旧保存しますか？\n※共有されていなかった本文はKPliveからは復元できません。"))return;b=JSON.parse(JSON.stringify(__kpLiveRecoveryPreview));delete b.__unsavedNewBinder;saveNow();status.textContent="復旧保存しました。ページを再読み込みします。";setTimeout(()=>location.reload(),300)};
+},0);
 
 
 let saveTimer=0;
