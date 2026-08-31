@@ -220,11 +220,18 @@
        return ao-zo;
      });
      return ordered.map(child=>{
-       const blocks=dedupeBlocks(child.blocks);
+       const blocks=dedupeBlocks(child.blocks).sort((a,z)=>{
+         const ao=Number.isFinite(Number(a?.sourceOrder))?Number(a.sourceOrder):Number.MAX_SAFE_INTEGER;
+         const zo=Number.isFinite(Number(z?.sourceOrder))?Number(z.sourceOrder):Number.MAX_SAFE_INTEGER;
+         return ao-zo;
+       });
        const title=String(child.title||"").trim();
        const childKey=`${title}::${blocks.map(normalizedBlockKey).join("||")}`;
        if(seenChildren.has(childKey))return "";
        seenChildren.add(childKey);
+       // Each shared unit is rendered in the same order as KP BINDER.  Image grids
+       // stay between the surrounding paragraphs/list items instead of being folded
+       // into a gallery at the end of a legacy HTML snapshot.
        const body=blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("");
        return title
          ? `<details class="kp-live-outline-child kp-live-grandchild-toggle" data-level="grandchild"><summary>${esc(title)}</summary><div class="kp-live-grandchild-content">${body}</div></details>`
@@ -283,7 +290,9 @@
        return ao-zo;
      });
      const sceneTitle=normLabel(x.title);
-     const legacy=renderSceneLegacyItems(x.legacyItems,groups);
+     // A refreshed scene's outline is the authoritative representation.  Legacy
+     // full-HTML is only a compatibility fallback for scenes that have no outline yet.
+     const legacy=groups.length?"":renderSceneLegacyItems(x.legacyItems,groups);
      const seenGroups=new Set();
      const outline=groups.map(group=>{
        const title=normLabel(group.title);
