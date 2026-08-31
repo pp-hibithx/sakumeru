@@ -149,8 +149,69 @@ function cleanupClone(clone){
   return clone;
 }
 
+function ensurePreviewModal(){
+  let modal=document.getElementById("smRichPreviewModal");
+  if(modal)return modal;
+  modal=document.createElement("div");
+  modal.id="smRichPreviewModal";
+  modal.className="sm-rich-preview-modal";
+  modal.hidden=true;
+  modal.innerHTML=`<div class="sm-rich-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="smRichPreviewTitle">
+    <div class="sm-rich-preview-head">
+      <div><strong id="smRichPreviewTitle">表示プレビュー</strong><div id="smRichPreviewNote" class="sm-rich-preview-note"></div></div>
+      <button type="button" class="sm-rich-preview-close" aria-label="プレビューを閉じる">× 閉じる</button>
+    </div>
+    <div class="sm-rich-preview-scroll"><article id="smRichPreviewContent" class="sm-rich-preview-content kp-live-body"></article></div>
+  </div>`;
+  document.body.appendChild(modal);
+  const close=()=>{modal.hidden=true;document.body.classList.remove("sm-rich-preview-open")};
+  modal.querySelector(".sm-rich-preview-close").onclick=close;
+  modal.addEventListener("click",e=>{if(e.target===modal)close()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)close()});
+  return modal;
+}
+function preparePreviewClone(source,opts){
+  opts=opts||{};
+  let clone;
+  if(typeof source==="string"){
+    clone=document.createElement("div");clone.innerHTML=source;
+  }else if(source?.cloneNode){clone=source.cloneNode(true)}
+  else{clone=document.createElement("div")}
+  cleanupClone(clone);
+  clone.querySelectorAll(".block-handle-layer,.img-remove,.grid-help,.kp-reveal-sharebox,.kp-special-action,.sm-editor-only,[data-editor-only]").forEach(x=>x.remove());
+  clone.querySelectorAll("[contenteditable]").forEach(x=>x.removeAttribute("contenteditable"));
+  clone.querySelectorAll("[draggable]").forEach(x=>x.removeAttribute("draggable"));
+  clone.querySelectorAll("input,textarea,select,button").forEach(x=>{
+    if(x.matches("input[type=checkbox],input[type=radio]")){
+      const mark=document.createElement("span");
+      mark.className="sm-rich-preview-check";
+      mark.textContent=x.checked?"☑":"☐";
+      x.replaceWith(mark);
+    }else x.remove();
+  });
+  if(typeof opts.transform==="function")opts.transform(clone);
+  return clone;
+}
+function openPreview(config){
+  config=config||{};
+  const modal=ensurePreviewModal();
+  const title=modal.querySelector("#smRichPreviewTitle");
+  const note=modal.querySelector("#smRichPreviewNote");
+  const content=modal.querySelector("#smRichPreviewContent");
+  title.textContent=config.title||"表示プレビュー";
+  note.textContent=config.note||"編集内容を読み取り専用で表示しています。プレビューを開くだけでは保存されません。";
+  const clone=preparePreviewClone(config.source||config.html||"",config);
+  content.innerHTML="";
+  while(clone.firstChild)content.appendChild(clone.firstChild);
+  modal.hidden=false;document.body.classList.add("sm-rich-preview-open");
+  modal.querySelector(".sm-rich-preview-close")?.focus();
+  return modal;
+}
+function closePreview(){const modal=document.getElementById("smRichPreviewModal");if(modal){modal.hidden=true;document.body.classList.remove("sm-rich-preview-open")}}
+
 window.SAKUMERichOutline={
   options,levelOf,isSpecial,isCollapsible,isCollapsed,setCollapsed,toggle,
-  groupFor,groupEnd,moveGroup,refresh,isHidden,cleanupClone,specialSummary
+  groupFor,groupEnd,moveGroup,refresh,isHidden,cleanupClone,specialSummary,
+  preview:{open:openPreview,close:closePreview,prepareClone:preparePreviewClone}
 };
 })();
