@@ -2206,8 +2206,15 @@ function shareIsNestedStateable(block,editor){
  if(!block?.matches?.("p,blockquote,li,div.image-grid"))return false;
  const container=block.closest?.(".kp-special-body,[data-reveal-summary]");
  if(!container||!editor?.contains(container))return false;
- if(block.matches("li"))return !!block.parentElement?.matches?.("ul,ol");
- return block.parentElement===container;
+ // RichEditor/older imported blocks may wrap paragraphs or image grids in a
+ // harmless DIV.  Treat them as belonging to the nearest special-body instead
+ // of requiring them to be direct children; otherwise images (and the heading
+ // immediately above them) disappear from the structured KPlive payload.
+ if(block.matches("li"))return !!block.parentElement?.matches?.("ul,ol") && block.parentElement.closest?.(".kp-special-body,[data-reveal-summary]")===container;
+ // Do not capture content nested inside another independently stateable unit.
+ const parentStateable=block.parentElement?.closest?.("p,blockquote,li,div.image-grid");
+ if(parentStateable&&container.contains(parentStateable))return false;
+ return true;
 }
 function shareIsTopStateable(block,editor){
  return !!(block&&block.parentElement===editor&&block.matches?.("p,blockquote,ul,ol,div.image-grid"));
@@ -2245,11 +2252,14 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
      // Walk the actual DOM in document order.  The special-block title is the big
      // heading (child of the scene); headings inside its body become grandchildren.
      // Keeping one ordered stream also keeps image galleries exactly where the KP put them.
-     const nodes=[...container.querySelectorAll("h1,h2,h3,h4,p,blockquote,li,div.image-grid")];
+     const nodes=[...container.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,div.image-grid")];
      for(const node of nodes){
-       if(node.matches("h1,h2,h3,h4")){
+       // Ignore nodes that belong to a nested special/summary container.  We only
+       // want the visible stream of the currently selected container.
+       if(node.closest?.(".kp-special-body,[data-reveal-summary]")!==container)continue;
+       if(node.matches("h1,h2,h3,h4,h5,h6")){
          const title=headingText(node,"");
-         // Some old special blocks still contain an H2 that repeats the block title.
+         // Some old special blocks still contain a heading that repeats the block title.
          // It is a visual duplicate, not a new small-heading level.
          if(title && title!==specialTitle){
            subgroup={id:ensureHeadingShareId(node,"inner"),title,blocks:[]};
@@ -2788,6 +2798,7 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
  // grandchild level; paragraphs, list items and image grids stay beneath it.
  const nodes=[...source.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,div.image-grid")];
  for(const node of nodes){
+   if(node.closest?.(".kp-special-body,[data-reveal-summary]") && node.closest?.(".kp-special-body,[data-reveal-summary]")!==source)continue;
    if(node.matches("h1,h2,h3,h4,h5,h6")){
      const text=headingText(node,"");
      // Imported reveal blocks often repeat their own title as the first heading.
@@ -2799,8 +2810,13 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
    // This prevents a wrapper/list ancestor from duplicating its descendants.
    if(node.matches("li")){
      if(!node.parentElement?.matches?.("ul,ol"))continue;
-   }else if(node.parentElement!==source){
-     continue;
+   }else{
+     // Keep wrapped RichEditor blocks as long as they belong to this source and
+     // are not nested inside another stateable unit.
+     const owner=node.closest?.(".kp-special-body,[data-reveal-summary]");
+     if(owner && owner!==source)continue;
+     const parentStateable=node.parentElement?.closest?.("p,blockquote,li,div.image-grid");
+     if(parentStateable&&source.contains(parentStateable))continue;
    }
    if(!child)child=makeChild(null);
    child.blocks.push(await outlineShareBlockSnapshot(node,order++));
