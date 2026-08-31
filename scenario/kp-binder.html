@@ -836,7 +836,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 <span class="element-tools-help" id="saveStatus">編集内容はこのKP BINDERへ自動保存されます。</span>
 </div>
    <section class="share-test-panel" id="shareTestPanel">
-  <div class="share-test-head"><div><strong>この陣の共有</strong><div class="muted-note">共通URLはHO未定でも使えます。PLを追加するとPL専用URLを発行でき、HO決定後は同じURLへ該当HOの開示情報が届きます。</div></div><button type="button" class="secondary" id="newShareSession">＋ 新しい陣</button></div>
+  <div class="share-test-head"><div><strong>この陣の共有</strong><div class="muted-note">陣ごとにURL・参加者・開示進行を独立して保持します。途中で別陣を挟んでも、選び直せばその陣の続きから再開できます。</div></div><button type="button" class="secondary" id="newShareSession">＋ 新しい陣</button></div>
+  <div class="share-run-manager" style="display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,1.2fr) auto;gap:8px;align-items:end;margin-top:10px">
+    <label>陣を切り替える<select id="shareRunSelect"></select></label>
+    <label>陣タイトル<input id="shareRunLabel" placeholder="例：びすもも明星／九重班枯れ花"></label>
+    <label style="display:flex;align-items:center;gap:6px;padding-bottom:8px"><input id="shareRunCompleted" type="checkbox" style="width:auto"> この陣は終了</label>
+  </div>
   <div class="share-test-actions"><button type="button" id="makeTestShare">共通URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共通URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共通ページを開く</a></div>
   <div class="muted-note" id="testShareStatus">共通URLには「全員」向けの開示情報だけが表示されます。</div>
   <div class="kp-outline-share-actions" style="margin-top:10px">
@@ -979,10 +984,39 @@ function currentShare(){
  }
  if(!Array.isArray(b.currentShareSession.items))b.currentShareSession.items=[];
  if(!Array.isArray(b.currentShareSession.participants))b.currentShareSession.participants=[];
- return b.currentShareSession;
+ return normalizeShareRun(b.currentShareSession);
 }
 function freshShareSession(){
- return {shareId:"",sessionId:(crypto.randomUUID?.()||String(Date.now())),startedAt:new Date().toISOString(),items:[],participants:[]};
+ const id=(crypto.randomUUID?.()||String(Date.now()));
+ return {shareId:"",sessionId:id,runId:id,runLabel:"",completed:false,completedAt:"",startedAt:new Date().toISOString(),items:[],participants:[]};
+}
+function normalizeShareRun(x){
+ if(!x||typeof x!=="object")return x;
+ x.runId=String(x.runId||x.sessionId||(crypto.randomUUID?.()||Date.now()));
+ x.sessionId=String(x.sessionId||x.runId);
+ x.runLabel=String(x.runLabel||"");
+ x.completed=!!x.completed;
+ x.completedAt=String(x.completedAt||"");
+ if(!Array.isArray(x.items))x.items=[];if(!Array.isArray(x.participants))x.participants=[];
+ return x;
+}
+function allShareRuns(){
+ const arr=[...(b.shareSessions||[])];if(b.currentShareSession)arr.push(b.currentShareSession);
+ const seen=new Set();return arr.map(normalizeShareRun).filter(x=>x&&x.runId&&!seen.has(x.runId)&&seen.add(x.runId));
+}
+function defaultRunLabel(run){const runs=allShareRuns();const i=Math.max(0,runs.findIndex(x=>x.runId===run.runId));return `${i+1}陣目`}
+function archiveCurrentShare(){
+ const cur=normalizeShareRun(b.currentShareSession);if(!cur)return;
+ b.shareSessions=(b.shareSessions||[]).filter(x=>String(x.runId||x.sessionId)!==String(cur.runId));
+ b.shareSessions.push({...cur,items:[...(cur.items||[])],participants:(cur.participants||[]).map(p=>({...p}))});
+}
+function switchShareRun(runId){
+ const target=allShareRuns().find(x=>String(x.runId)===String(runId));if(!target)return;
+ archiveCurrentShare();
+ b.shareSessions=(b.shareSessions||[]).filter(x=>String(x.runId||x.sessionId)!==String(target.runId));
+ b.currentShareSession=normalizeShareRun({...target,items:[...(target.items||[])],participants:(target.participants||[]).map(p=>({...p}))});
+ shareTest=b.currentShareSession;saveNow();renderTestShareBar();renderShareParticipants();
+ q("#testShareStatus").textContent=`${shareTest.runLabel||defaultRunLabel(shareTest)}に切り替えました。`;
 }
 if(!b.currentShareSession)b.currentShareSession=freshShareSession();
 let shareTest=b.currentShareSession;
@@ -2584,15 +2618,16 @@ function sharePayloadFor(participant=null){
  shareTest=currentShare()||shareTest;
  ensureShareDisplayOrder();
  const items=(shareTest.items||[]).filter(x=>participant?targetMatches(x.target,participant.ho):String(x.target||"全員").trim()==="全員");
- return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort(compareShareDisplayOrder)}
+ return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,runId:shareTest.runId,runLabel:shareTest.runLabel||defaultRunLabel(shareTest),runCompleted:!!shareTest.completed,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort(compareShareDisplayOrder)}
 }
 function testSharePayload(){return sharePayloadFor(null)}
 function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0831j`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
- const arr=b.shareSessions||[];
- host.innerHTML=arr.length?arr.slice().reverse().map(x=>{const u=shareUrlById(x.shareId);return `<div style="margin:6px 0"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP"))}</a> <span class="muted">（${(x.items||[]).length}件）</span></div>`}).join(""):"過去の共有セッションはありません。";
+ const arr=allShareRuns().filter(x=>x.runId!==currentShare()?.runId);
+ host.innerHTML=arr.length?arr.slice().reverse().map(x=>{const u=shareUrlById(x.shareId),name=x.runLabel||defaultRunLabel(x);return `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><button type="button" class="secondary" data-switch-share-run="${esc(x.runId)}">${x.completed?"✓ ":""}${esc(name)}</button>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">共通URL</a>`:"<span class="muted">URL未発行</span>"}<span class="muted">（${(x.items||[]).length}件）</span></div>`}).join(""):"ほかの陣はありません。";
+ host.querySelectorAll("[data-switch-share-run]").forEach(btn=>btn.onclick=()=>switchShareRun(btn.dataset.switchShareRun));
 }
 function shareOrderTitle(item){
  const t=String(item?.title||"").replace(/\s+/g," ").trim();
@@ -2739,6 +2774,9 @@ function setupKpLiveOrderDnD(){
 
 function renderTestShareBar(){
  shareTest=currentShare()||shareTest;
+ const runs=allShareRuns(),sel=q("#shareRunSelect"),lab=q("#shareRunLabel"),done=q("#shareRunCompleted");
+ if(sel){sel.innerHTML=runs.map(x=>`<option value="${esc(x.runId)}">${x.completed?"✓ ":""}${esc(x.runLabel||defaultRunLabel(x))}</option>`).join("");sel.value=shareTest.runId}
+ if(lab)lab.value=shareTest.runLabel||defaultRunLabel(shareTest);if(done)done.checked=!!shareTest.completed;
  const u=testShareUrl(),inp=q("#testShareUrl"),op=q("#openTestShare");
  if(inp)inp.value=u;if(op){op.href=u||"#";op.hidden=!u}
  renderShareHistory();refreshRevealActions();
@@ -3361,14 +3399,13 @@ document.addEventListener("pointerdown",e=>{
 });
 q("#newShareSession").onclick=()=>{
  shareTest=currentShare()||shareTest;
- const hasCurrent=!!shareTest?.shareId;
- if(hasCurrent&&!confirm("現在の陣をこの時点で残し、新しい陣を開始しますか？"))return;
- if(hasCurrent){
-   b.shareSessions.push({...shareTest,endedAt:new Date().toISOString(),items:[...(shareTest.items||[])]});
- }
- b.currentShareSession=freshShareSession();shareTest=b.currentShareSession;saveNow();renderTestShareBar();
- q("#testShareStatus").textContent="新しい陣を開始しました。「共通URLを作成」を押してください。";
+ if((shareTest.shareId||(shareTest.items||[]).length||(shareTest.participants||[]).length)&&!confirm("現在の陣を残して、新しい陣を開始しますか？"))return;
+ archiveCurrentShare();b.currentShareSession=freshShareSession();shareTest=b.currentShareSession;saveNow();renderTestShareBar();renderShareParticipants();
+ q("#testShareStatus").textContent="新しい陣を開始しました。陣タイトルを設定できます。";
 };
+q("#shareRunSelect")?.addEventListener("change",e=>switchShareRun(e.target.value));
+q("#shareRunLabel")?.addEventListener("change",e=>{shareTest=currentShare();shareTest.runLabel=String(e.target.value||"").trim()||defaultRunLabel(shareTest);saveNow();renderTestShareBar()});
+q("#shareRunCompleted")?.addEventListener("change",async e=>{shareTest=currentShare();shareTest.completed=!!e.target.checked;shareTest.completedAt=shareTest.completed?new Date().toISOString():"";saveNow();renderTestShareBar();try{if(shareTest.shareId)await syncTestShare()}catch(err){q("#testShareStatus").textContent=`終了状態の共有反映に失敗しました：${err?.message||err}`;return}q("#testShareStatus").textContent=shareTest.completed?`${shareTest.runLabel||defaultRunLabel(shareTest)}を終了扱いにしました。URLと進行記録は保持されます。`:`${shareTest.runLabel||defaultRunLabel(shareTest)}を進行中に戻しました。`});
 q("#copyTestShare").onclick=async()=>{const u=testShareUrl();if(!u)return;await navigator.clipboard.writeText(u);q("#testShareStatus").textContent="共通URLをコピーしました。"};
 document.addEventListener("change",e=>{
  const check=e.target.closest?.("[data-reveal-check]");
