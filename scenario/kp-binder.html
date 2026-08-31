@@ -2144,7 +2144,59 @@ q("#insertBgm").onclick=()=>{
 
 
 function headingText(el,fallback=""){
- return String(el?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim()||fallback;
+ if(!el)return fallback;
+ // RichEditor can leave an image grid inside the current heading when an image
+ // is inserted immediately after typing the heading.  Never let image-manager
+ // UI (filename/remove/help) become part of the shared heading title.
+ const clone=el.cloneNode(true);
+ clone.querySelectorAll(".image-grid,[data-image-grid],.sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help").forEach(x=>x.remove());
+ const text=String(clone.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ return text||fallback;
+}
+function outlinePlainHtml(html=""){
+ const tmp=document.createElement("div");tmp.innerHTML=String(html||"");
+ tmp.querySelectorAll(".image-grid,[data-image-grid],.img-remove,.grid-help,.sm-outline-ui,.sm-drag-handle").forEach(x=>x.remove());
+ return String(tmp.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+}
+function looksLikeImageUiTitle(title=""){
+ const t=String(title||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+ return /クリックで拡大|ドラッグで並べ替え/.test(t) || /(?:^|\s)[×✕]?\s*[^\s]+\.(?:png|jpe?g|webp|gif|bmp|svg)(?:\s|$)/i.test(t);
+}
+function repairImageOutlineChildren(group){
+ const src=Array.isArray(group?.outlineChildren)?group.outlineChildren:[];
+ const out=[];
+ for(const cur0 of src){
+   const cur=cur0;
+   if(looksLikeImageUiTitle(cur?.title)){
+     const prev=out[out.length-1];
+     if(prev){
+       // The common broken DOM shape is:
+       //   untitled child containing the real H3 text (e.g. 画像はこちら)
+       //   + a fake child whose title is the image filename/help UI.
+       // Promote that short text to the child title, then keep the image blocks
+       // under it and discard the fake image-UI heading.
+       if(!String(prev.title||"").trim()){
+         const blocks=Array.isArray(prev.blocks)?prev.blocks:[];
+         const textBlocks=blocks.filter(b=>!(Array.isArray(b?.images)&&b.images.length));
+         const imageBlocks=blocks.filter(b=>Array.isArray(b?.images)&&b.images.length);
+         if(textBlocks.length===1){
+           const candidate=outlinePlainHtml(textBlocks[0]?.bodyHtml||"");
+           if(candidate && candidate.length<=80){
+             prev.title=candidate;
+             prev.blocks=imageBlocks;
+           }
+         }
+       }
+       prev.blocks=[...(Array.isArray(prev.blocks)?prev.blocks:[]),...(Array.isArray(cur.blocks)?cur.blocks:[])];
+       continue;
+     }
+     // No preceding logical child: keep its content but never expose the UI title.
+     cur.title="";
+   }
+   out.push(cur);
+ }
+ group.outlineChildren=out;
+ return group;
 }
 function ensureHeadingShareId(el,prefix){
  if(!el)return `${prefix}-ungrouped`;
@@ -2837,6 +2889,8 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
    child.blocks.push(await outlineShareBlockSnapshot(node,order++));
  }
  group.outlineChildren=group.outlineChildren.filter(c=>c.blocks.length);
+ repairImageOutlineChildren(group);
+ group.outlineChildren=group.outlineChildren.filter(c=>c.blocks.length || String(c.title||"").trim());
  return group.outlineChildren.length?group:null;
 }
 
