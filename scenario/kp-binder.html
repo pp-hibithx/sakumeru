@@ -2504,6 +2504,13 @@ function orderedOutlineChildren(group){
    return ao-zo;
  });
 }
+function isUntitledOutlineChild(child){
+ const raw=String(child?.title||"").replace(/\s+/g," ").trim();
+ return !raw||raw==="開示情報"||raw==="タイトルなしの開示";
+}
+function visibleOrderedOutlineChildren(group){
+ return orderedOutlineChildren(group).filter(child=>!isUntitledOutlineChild(child));
+}
 async function refreshKpLiveOrderHierarchyFromPages(){
  shareTest=currentShare()||shareTest;
  if(!shareTest)return;
@@ -2533,7 +2540,7 @@ function renderKpLiveOrder(){
    const groups=Array.isArray(item?.outlineGroups)?orderedOutlineGroups(item):[];
    const children=groups.length?`<div class="kp-live-order-children" data-order-groups-for="${esc(sceneId)}">${groups.map((g,gi)=>{
      const groupId=String(g.id||"");
-     const grandchildren=orderedOutlineChildren(g);
+     const grandchildren=visibleOrderedOutlineChildren(g);
      const grandchildrenHtml=grandchildren.length?`<div class="kp-live-order-grandchildren" data-order-children-for="${esc(groupId)}">${grandchildren.map((c,ci)=>`<div class="kp-live-order-row kp-live-order-grandchild" data-child-id="${esc(c.id||"")}">
        <span class="kp-live-order-handle">└</span><div><div class="kp-live-order-title">${esc(shareOrderTitle(c))}</div><div class="kp-live-order-target">小見出し</div></div>
        <div class="kp-live-order-moves"><button type="button" class="secondary" data-child-up="${esc(c.id||"")}" data-group="${esc(groupId)}" data-scene="${esc(sceneId)}" ${ci===0?"disabled":""}>↑</button><button type="button" class="secondary" data-child-down="${esc(c.id||"")}" data-group="${esc(groupId)}" data-scene="${esc(sceneId)}" ${ci===grandchildren.length-1?"disabled":""}>↓</button></div>
