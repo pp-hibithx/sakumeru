@@ -55,7 +55,7 @@
 .kp-live-group-toggle[open]>summary{border-bottom:1px solid var(--line)}
 .kp-live-group-content{padding:2px 12px 10px 14px;border-left:2px solid color-mix(in srgb,var(--line) 80%,transparent)}
 .kp-live-outline-child{margin:14px 0 4px;padding:8px 0 4px 14px;border-left:2px solid color-mix(in srgb,var(--line) 72%,transparent)}
-.kp-live-outline-child>h3{margin:0 0 8px;font-size:1.02rem}.kp-live-outline-child.is-untitled{padding-left:8px;border-left-style:dashed}
+.kp-live-outline-child>h3{margin:0 0 8px;font-size:1.02rem}.kp-live-grandchild-toggle{padding:0;border-left:2px solid color-mix(in srgb,var(--line) 72%,transparent)}.kp-live-grandchild-toggle>summary{cursor:pointer;font-weight:700;padding:9px 12px;list-style:none}.kp-live-grandchild-toggle>summary::-webkit-details-marker{display:none}.kp-live-grandchild-toggle>summary::before{content:"▶";display:inline-block;width:1.2em}.kp-live-grandchild-toggle[open]>summary::before{content:"▼"}.kp-live-grandchild-content{padding:0 10px 8px 18px}.kp-live-outline-child.is-untitled{padding-left:8px;border-left-style:dashed}
 .kp-live-outline-block{padding:8px 0;line-height:1.8}
 .kp-live-outline-block+.kp-live-outline-block{border-top:1px dashed var(--line)}
 .kp-live-outline-block>p:first-child,.kp-live-outline-block>blockquote:first-child,.kp-live-outline-block>ul:first-child,.kp-live-outline-block>ol:first-child{margin-top:0}
@@ -225,7 +225,10 @@
        const childKey=`${title}::${blocks.map(normalizedBlockKey).join("||")}`;
        if(seenChildren.has(childKey))return "";
        seenChildren.add(childKey);
-       return `<section class="kp-live-outline-child${title?"":" is-untitled"}" data-level="grandchild">${title?`<h3>${esc(title)}</h3>`:""}${blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("")}</section>`;
+       const body=blocks.map(block=>`<div class="kp-live-outline-block">${richText(block.bodyHtml||"")}${renderImages(block.images)}</div>`).join("");
+       return title
+         ? `<details class="kp-live-outline-child kp-live-grandchild-toggle" data-level="grandchild"><summary>${esc(title)}</summary><div class="kp-live-grandchild-content">${body}</div></details>`
+         : `<section class="kp-live-outline-child is-untitled" data-level="grandchild">${body}</section>`;
      }).join("");
    };
    const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
@@ -306,8 +309,8 @@
      </details>`;
    }).join(""):'<div class="kp-share-empty">まだ開示された情報はありません。</div>';
    box.innerHTML=`<article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報です。左の目次から情報へ移動できます。</p><div class="kp-live-layout"><aside class="kp-live-sidebar">${toc}</aside><main class="kp-live-main">${cards}</main></div></article>`;
-   document.getElementById("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle").forEach(d=>d.open=true));
-   document.getElementById("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle").forEach(d=>d.open=false));
+   document.getElementById("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle,.kp-live-grandchild-toggle").forEach(d=>d.open=true));
+   document.getElementById("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle,.kp-live-grandchild-toggle").forEach(d=>d.open=false));
 
    const lightbox=document.getElementById("kpImageLightbox");
    const lightboxImg=document.getElementById("kpImageLightboxImg");
