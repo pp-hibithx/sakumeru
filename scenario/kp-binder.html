@@ -951,7 +951,7 @@ try{
  const openedAt=new Date().toISOString();
  b.lastOpenedAt=openedAt;
  // Opening a missing/mismatched binder must not immediately persist an empty shell.
- if(!b.__unsavedNewBinder)saveNow();
+ /* SAFE: opening the binder never writes binder data */
  localStorage.setItem("39x2_last_kp_binder_v1",JSON.stringify({scenarioId:String(sid),scenarioTitle:String(b.scenarioTitle),openedAt}));
  if(window.parent&&window.parent!==window){
    window.parent.postMessage({type:"sakumeru:last-kp-binder",scenarioId:String(sid),scenarioTitle:String(b.scenarioTitle),openedAt,url:location.href},"*");
