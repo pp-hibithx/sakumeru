@@ -2668,7 +2668,7 @@ function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
  const arr=allShareRuns().filter(x=>x.runId!==currentShare()?.runId);
- host.innerHTML=arr.length?arr.slice().reverse().map(x=>{const u=shareUrlById(x.shareId),name=x.runLabel||defaultRunLabel(x);return `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><button type="button" class="secondary" data-switch-share-run="${esc(x.runId)}">${x.completed?"✓ ":""}${esc(name)}</button>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">共通URL</a>`:"<span class="muted">URL未発行</span>"}<span class="muted">（${(x.items||[]).length}件）</span></div>`}).join(""):"ほかの陣はありません。";
+ host.innerHTML=arr.length?arr.slice().reverse().map(x=>{const u=shareUrlById(x.shareId),name=x.runLabel||defaultRunLabel(x);return `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><button type="button" class="secondary" data-switch-share-run="${esc(x.runId)}">${x.completed?"✓ ":""}${esc(name)}</button>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">共通URL</a>`:`<span class="muted">URL未発行</span>`}<span class="muted">（${(x.items||[]).length}件）</span></div>`}).join(""):"ほかの陣はありません。";
  host.querySelectorAll("[data-switch-share-run]").forEach(btn=>btn.onclick=()=>switchShareRun(btn.dataset.switchShareRun));
 }
 function shareOrderTitle(item){
