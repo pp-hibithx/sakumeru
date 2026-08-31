@@ -1152,7 +1152,14 @@ $("saveEvent").onclick=()=>{
          ||null;
      }
      if(old)usedOldIds.add(old.id);
-     const id=old?.id||(n===0?(id0||TRPG39.uuid()):TRPG39.uuid()),item=buildTrpgEvent(id,ranges[n].date,ranges[n].startTime,ranges[n].endTime,ranges[n].sessionDay,ranges[n].timeBand,ranges[n].sessionKind,old,sharedRunId);const warning=conflictMessage(item,list.concat(pending),old);if(warning&&!confirm((ranges.length>1?`${ranges[n].sessionKind!=="main"?(sessionKindLabel[ranges[n].sessionKind]||ranges[n].sessionKind):`${ranges[n].sessionDay}日目`}${ranges[n].timeBand?`・${timeBandLabel[ranges[n].timeBand]}`:""}：\n`:"")+warning))return;pending.push(item)}
+     const id=old?.id||(n===0?(id0||TRPG39.uuid()):TRPG39.uuid()),item=buildTrpgEvent(id,ranges[n].date,ranges[n].startTime,ranges[n].endTime,ranges[n].sessionDay,ranges[n].timeBand,ranges[n].sessionKind,old,sharedRunId);
+     // 複数日卓を途中の日から編集した場合、状態変更はクリックしたその予定だけに適用する。
+     // 同じ陣の他の日は各自の既存statusを保持。新しく追加した日は通常の「予定」で開始する。
+     if($("dateMode").value==="multiple"&&firstOld){
+       if(old&&old.id!==id0)item.status=old.status||"planned";
+       else if(!old)item.status="planned";
+     }
+     const warning=conflictMessage(item,list.concat(pending),old);if(warning&&!confirm((ranges.length>1?`${ranges[n].sessionKind!=="main"?(sessionKindLabel[ranges[n].sessionKind]||ranges[n].sessionKind):`${ranges[n].sessionDay}日目`}${ranges[n].timeBand?`・${timeBandLabel[ranges[n].timeBand]}`:""}：\n`:"")+warning))return;pending.push(item)}
    if(firstOld?.runId&&$("dateMode").dataset.loadedMode==="multiple"){
      const keepIds=new Set(pending.map(v=>v.id));
      const removed=existingMain.filter(v=>!keepIds.has(v.id));
@@ -2183,3 +2190,5 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
 </html>
 
 <!-- calendar-v4 keep-clicked-date / stable-multiday-numbering / date-boundary-conflict-fix -->
+
+<!-- calendar-v5 per-date-status-preserve -->
