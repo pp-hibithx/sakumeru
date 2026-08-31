@@ -88,6 +88,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-child-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .lib-child-note{font-size:12px;margin-top:5px;white-space:pre-wrap}
 .lib-child-actions{display:flex;gap:6px;align-items:center}
+.lib-record-just-saved{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px;background:color-mix(in srgb,var(--accent) 7%,transparent);transition:background .25s ease,outline-color .25s ease}
 .lib-child-actions button,.lib-parent-actions button,.lib-parent-actions a{font-size:12px}
 .lib-parent-actions{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0 2px}
 .library-editor{border-top:1px solid var(--line);padding-top:14px}
@@ -1215,7 +1216,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
   <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
-</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.4-hoinherit</div></main>
+</div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.5-save-detail-x</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
 <strong>カード画像の位置を調整</strong>
 <div class="lib-cover-help">画像を上下にドラッグして、カードに見せたい位置を合わせます。元画像は変更されません。位置はこのブラウザに保存されます。</div>
@@ -2162,7 +2163,7 @@ function save(){
    if(q("rememberParticipantHo").checked)setParticipantHoTemplate(item.scenarioId,item.title,getParticipantRows());
    else setParticipantHoTemplate(item.scenarioId,item.title,[]);
  }
- persist();const savedItem=item;reset();render();hideEditor();showPostSaveActions(savedItem);
+ persist();const savedItem=item;reset();hideEditor();showSavedRecordDetail(savedItem);
 }
 function edit(id){
  let x=data.find(v=>v.id===id);if(!x)return;fillScenarioSelect();
@@ -2416,6 +2417,22 @@ function showPostSaveActions(item){
  postSaveContext={id:item.id,runId:item.runId};
  q("postSaveTitle").textContent=item.status==="done"?"卓報告を保存しました":"開催記録を保存しました";
  q("postSaveDialog").showModal();
+}
+function showSavedRecordDetail(item){
+ if(!item)return;
+ libraryView="scenario";
+ focusedScenarioKey=groupKey(item);
+ focusedRunId=item.runId||"";
+ render();
+ requestAnimationFrame(()=>{
+   const record=document.getElementById(`record-${item.id}`);
+   if(!record)return;
+   const section=record.closest(".lib-session-group");
+   if(section)section.open=true;
+   record.classList.add("lib-record-just-saved");
+   record.scrollIntoView({behavior:"smooth",block:"center"});
+   setTimeout(()=>record.classList.remove("lib-record-just-saved"),2200);
+ });
 }
 function nextRunLabelForScenario(scenarioId,title=""){
  const same=data.filter(x=>{
