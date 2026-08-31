@@ -962,7 +962,7 @@ setTimeout(()=>{
  const load=q("#kpLiveRecoveryLoad"),commit=q("#kpLiveRecoveryCommit"),status=q("#kpLiveRecoveryStatus"),ta=q("#kpLiveRecoveryUrls");if(!load)return;
  ta.value="https://pp-hibithx.github.io/sakumeru/share/kp-live.html?id=9MZZVbURhtpAUt&v=0831j";
  load.onclick=async()=>{commit.disabled=true;__kpLiveRecoveryPreview=null;const ids=ta.value.split(/\r?\n/).map(kpLiveIdFromUrl).filter(Boolean);if(!ids.length){status.textContent="共有URLを入力してください。";return}try{if(!window.TRPG39Cloud?.getSharedPage)throw new Error("共有読み込み機能を読み込めませんでした。");status.textContent="KPlive共有データを読み込み中…";const payloads=[];for(const id of ids){const raw=await TRPG39Cloud.getSharedPage(id);const p=unwrapKpShared(raw);if(!p||p.kind!=="kp-live-share")throw new Error(`${id} はKP共有データではありません。`);payloads.push(p)}const merged=mergeKpPayloads(payloads,ids);if(!merged.pages.length)throw new Error("共有URLには復旧できる開示本文がありませんでした。");__kpLiveRecoveryPreview=merged.binder;b=(typeof cloneBinderSafe==="function"?cloneBinderSafe(merged.binder):JSON.parse(JSON.stringify(merged.binder)));active=b.pages[0]?.id||"";q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ KPlive復旧プレビュー（未保存）";renderScenes();renderEditor();refreshStats();commit.disabled=false;status.textContent=`読み込み成功：${ids.length} URL ／ ${merged.pages.length}シーン。まだ保存していません。画面の本文を確認してください。`;renderTestShareBar?.()}catch(e){status.textContent=`読み込み失敗：${e?.message||e}`}};
- commit.onclick=()=>{if(!__kpLiveRecoveryPreview)return;if(!confirm("現在プレビューしているKPlive共有内容をKP BINDERへ復旧保存しますか？\n※共有されていなかった本文はKPliveからは復元できません。"))return;b=JSON.parse(JSON.stringify(__kpLiveRecoveryPreview));delete b.__unsavedNewBinder;saveNow();status.textContent="復旧保存しました。ページを再読み込みします。";setTimeout(()=>location.reload(),300)};
+ commit.onclick=()=>{if(!__kpLiveRecoveryPreview)return;if(!confirm("現在プレビューしているKPlive共有内容をKP BINDERへ復旧保存しますか？\n※共有されていなかった本文はKPliveからは復元できません。"))return;b=JSON.parse(JSON.stringify(__kpLiveRecoveryPreview));delete b.__unsavedNewBinder;__kpExplicitSave=true;saveNow();status.textContent="復旧保存しました。ページを再読み込みします。";setTimeout(()=>location.reload(),300)};
 },0);
 
 
@@ -973,11 +973,55 @@ function readLatestBinderStore(){
    return latest&&typeof latest==="object"&&!Array.isArray(latest)?latest:{};
  }catch(_){return {}}
 }
+const KP_BACKUP_KEY="39x2_kp_binder_snapshots_v2";
+let __kpExplicitSave=false;
+function kpBinderMetrics(x){
+ const pages=Array.isArray(x?.pages)?x.pages:[];
+ const htmlLen=pages.reduce((n,p)=>n+String(p?.__v11ArticleHtml||p?.body||"").replace(/<[^>]*>/g," ").trim().length,0);
+ const blocks=pages.reduce((n,p)=>n+(Array.isArray(p?.blocks)?p.blocks.length:0),0);
+ return {pages:pages.length,htmlLen,blocks,participants:Array.isArray(x?.participants)?x.participants.length:0,reveals:Array.isArray(x?.reveals)?x.reveals.length:0};
+}
+function kpMeaningful(m){return m.pages>0||m.htmlLen>0||m.blocks>0||m.participants>0||m.reveals>0}
+function kpDestructive(prev,next){
+ const a=kpBinderMetrics(prev),z=kpBinderMetrics(next);
+ if(!kpMeaningful(a))return false;
+ if(!kpMeaningful(z))return true;
+ if(a.pages>=2&&z.pages===0)return true;
+ if(a.htmlLen>=500&&z.htmlLen<a.htmlLen*.35)return true;
+ if(a.blocks>=5&&z.blocks<a.blocks*.35&&z.htmlLen<a.htmlLen*.6)return true;
+ return false;
+}
+function kpSnapshot(prev,reason="before-save"){
+ if(!prev||!kpMeaningful(kpBinderMetrics(prev)))return;
+ let store={};try{store=JSON.parse(localStorage.getItem(KP_BACKUP_KEY)||"{}")}catch{}
+ const rows=Array.isArray(store[sid])?store[sid]:[];
+ rows.unshift({savedAt:new Date().toISOString(),reason,binder:prev});
+ store[sid]=rows.slice(0,12);
+ try{localStorage.setItem(KP_BACKUP_KEY,JSON.stringify(store))}catch(e){console.warn("KP snapshot failed",e)}
+}
+function kpPreviewSave(prev,next,reason="保存内容が大きく変わっています"){
+ const modal=q("#kpSafetyModal"),sum=q("#kpSafetySummary"),scenes=q("#kpSafetyScenes");
+ if(!modal)return false;
+ const a=kpBinderMetrics(prev),z=kpBinderMetrics(next);
+ q("#kpSafetyReason").textContent=reason;
+ sum.innerHTML=`<strong>現在の保存：</strong> ${a.pages}シーン ／ 本文量 ${a.htmlLen}<br><strong>保存しようとしている内容：</strong> ${z.pages}シーン ／ 本文量 ${z.htmlLen}<br><span class="muted-note">保存を確定しても、直前データは自動バックアップに残します。</span>`;
+ scenes.innerHTML=(next.pages||[]).map((p,i)=>`<div>${i+1}. ${esc(p?.title||"無題")} — 本文 ${String(p?.__v11ArticleHtml||p?.body||"").replace(/<[^>]*>/g," ").trim().length}</div>`).join("")||'<div class="muted-note">シーンなし</div>';
+ modal.hidden=false;
+ q("#kpSafetyCancel").onclick=()=>{modal.hidden=true;const st=q("#saveStatus");if(st)st.textContent="保存を停止しました"};
+ q("#kpSafetyConfirm").onclick=()=>{modal.hidden=true;__kpExplicitSave=true;saveNow();};
+ return true;
+}
 function saveNow(){
- // Never overwrite other scenarios with a stale snapshot held by this tab.
  const latest=readLatestBinderStore();
- const snapshot={...b};
+ const prev=latest[sid];
+ const snapshot=JSON.parse(JSON.stringify(b||{}));
  delete snapshot.__unsavedNewBinder;
+ if(!__kpExplicitSave&&kpDestructive(prev,snapshot)){
+   kpPreviewSave(prev,snapshot,"空データまたは大幅なデータ減少を検知したため、自動保存を停止しました。");
+   return;
+ }
+ __kpExplicitSave=false;
+ kpSnapshot(prev,"before-save");
  latest[sid]=snapshot;
  all={...latest};
  b=all[sid];
@@ -3682,4 +3726,4 @@ renderPC();
 renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
 </script><!-- kp-binder-safe-load-save-v1 -->
-</body></html>
+<div id="kpSafetyModal" hidden style="position:fixed;inset:0;z-index:99999;background:#0009;padding:4vh 4vw;overflow:auto"><div style="max-width:760px;margin:auto;background:var(--panel,#fff);color:var(--text,#222);border-radius:14px;padding:18px;box-shadow:0 20px 60px #0008"><h2 style="margin-top:0">保存前プレビュー</h2><div id="kpSafetyReason" class="muted-note"></div><div id="kpSafetySummary" style="margin:12px 0"></div><details><summary>シーン一覧</summary><div id="kpSafetyScenes" style="margin-top:8px"></div></details><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button type="button" id="kpSafetyCancel" class="secondary">保存しない</button><button type="button" id="kpSafetyConfirm">確認して保存</button></div></div></div></body></html>
