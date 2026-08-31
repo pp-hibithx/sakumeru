@@ -2160,7 +2160,7 @@ function cleanOutlineBlockClone(block){
  clone.querySelectorAll("[contenteditable]").forEach(x=>x.removeAttribute("contenteditable"));
  return clone;
 }
-async function outlineShareBlockSnapshot(block){
+async function outlineShareBlockSnapshot(block,sourceOrder=null){
  const blockId=shareEnsureRevealBlockId(block);
  const clone=cleanOutlineBlockClone(block);
  const imgs=[...clone.querySelectorAll("img")];
@@ -2178,9 +2178,20 @@ async function outlineShareBlockSnapshot(block){
  clone.querySelectorAll("img").forEach(img=>img.remove());
  let html="";
  if(block.matches("div.image-grid"))html=clone.innerHTML||"";
- else if(block.matches("li"))html=`<ul>${clone.outerHTML}</ul>`;
- else html=clone.outerHTML||clone.innerHTML||"";
- return {id:blockId,bodyHtml:html,images};
+ else if(block.matches("li")){
+   // Keep individually revealed list items at the same visual position and keep
+   // ordered-list numbering instead of converting every item to a bullet list.
+   const parent=block.parentElement;
+   if(parent?.matches?.("ol")){
+     const start=Number(parent.getAttribute("start")||1)||1;
+     const siblings=[...parent.children].filter(x=>x.matches?.("li"));
+     const no=start+Math.max(0,siblings.indexOf(block));
+     html=`<ol start="${no}">${clone.outerHTML}</ol>`;
+   }else html=`<ul>${clone.outerHTML}</ul>`;
+ }else html=clone.outerHTML||clone.innerHTML||"";
+ const snap={id:blockId,bodyHtml:html,images};
+ if(Number.isFinite(Number(sourceOrder)))snap.sourceOrder=Number(sourceOrder);
+ return snap;
 }
 function shareRevealState(block){
  const v=String(block?.dataset?.kpRevealState||"none");
@@ -2218,7 +2229,7 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
    const specialTitle=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim() ||
      String(section.querySelector(":scope > .kp-special-head .kind-chip")?.textContent||"開示情報").trim();
    // A reveal block has two editable representations: the scenario text and the optional PL summary.
-   // Only the currently selected reveal mode is shareable. Collecting both made every open unit appear twice in KPlive.
+   // Only the currently selected reveal mode is shareable.
    const revealMode=section.querySelector("[data-reveal-mode]:checked")?.value==="summary"?"summary":"full";
    const selectedContainer=revealMode==="summary"
      ? section.querySelector(":scope > .kp-reveal-sharebox [data-reveal-summary]")
@@ -2227,27 +2238,41 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
    const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>shareIsNestedStateable(x,ed)&&shareRevealState(x)==="open"));
    if(!openUnits.length)return false;
    const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[]};
+   let sourceOrder=0;
    for(const container of containers){
      let subgroup=null;
+     // Walk the actual DOM in document order.  The special-block title is the big
+     // heading (child of the scene); headings inside its body become grandchildren.
+     // Keeping one ordered stream also keeps image galleries exactly where the KP put them.
      const nodes=[...container.querySelectorAll("h1,h2,h3,h4,p,blockquote,li,div.image-grid")];
      for(const node of nodes){
-       if(node.matches("h1,h2,h3,h4")){subgroup={id:ensureHeadingShareId(node,"inner"),title:headingText(node,""),blocks:[]};specialRoot.outlineChildren.push(subgroup);continue}
+       if(node.matches("h1,h2,h3,h4")){
+         const title=headingText(node,"");
+         // Some old special blocks still contain an H2 that repeats the block title.
+         // It is a visual duplicate, not a new small-heading level.
+         if(title && title!==specialTitle){
+           subgroup={id:ensureHeadingShareId(node,"inner"),title,blocks:[]};
+           specialRoot.outlineChildren.push(subgroup);
+         }
+         continue;
+       }
        if(!shareIsNestedStateable(node,ed)||shareRevealState(node)!=="open")continue;
        if(!subgroup){subgroup={id:`inner:${shareEnsureRevealBlockId(node)}`,title:"",blocks:[]};specialRoot.outlineChildren.push(subgroup)}
-       subgroup.blocks.push(await outlineShareBlockSnapshot(node));
+       subgroup.blocks.push(await outlineShareBlockSnapshot(node,sourceOrder++));
      }
    }
    specialRoot.outlineChildren=specialRoot.outlineChildren.filter(c=>c.blocks.length);
    if(specialRoot.outlineChildren.length)roots.push(specialRoot);
    return !!specialRoot.outlineChildren.length;
  };
+ let sourceOrder=0;
  for(const block of [...ed.children]){
    if(block.matches?.("h2")){root=makeRoot(block);continue}
    if(block.matches?.("h3")){child=makeChild(block);continue}
    if(block.matches?.("section.kp-special")){await appendSpecialStates(block);root=null;child=null;continue}
    if(!shareIsTopStateable(block,ed)||shareRevealState(block)!=="open")continue;
    if(!root)makeRoot(null);if(!child)makeChild(null);
-   child.blocks.push(await outlineShareBlockSnapshot(block));
+   child.blocks.push(await outlineShareBlockSnapshot(block,sourceOrder++));
  }
  roots.forEach(g=>g.outlineChildren=g.outlineChildren.filter(c=>c.blocks.length));
  return {id:`outline-scene:${page.id}`,kind:"outline-scene",source:"outline",sceneId:String(page.id),
@@ -2297,7 +2322,12 @@ async function applyOutlineRevealToShare(){
    if(!id && title && outlineTitles.get(title)===1)return;
    legacyById.set(id||String(crypto.randomUUID()),x);
  });
- fresh.legacyItems=[...legacyById.values()];
+ // Once this scene has been rebuilt from the current editor, modern outline data
+ // is authoritative.  Keeping the old full-HTML snapshot makes KPlive fall back to a
+ // flattened copy (headings inside body + images collected at the end), which is why
+ // PL saw a different layout from KP BINDER.  Old untouched sessions still retain
+ // legacyItems; only a freshly reflected scene is migrated.
+ fresh.legacyItems=[];
  let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
  const now=new Date().toISOString();fresh.revealedAt=old?.revealedAt||now;fresh.updatedAt=now;
  fresh.displayOrder=Number.isFinite(Number(old?.displayOrder))?Number(old.displayOrder):++maxOrder;
