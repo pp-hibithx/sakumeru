@@ -1037,9 +1037,35 @@ function updateTypeUI(){
 }
 function resetForm(dateStr="",type="trpg"){
  ["eventId","eventTitle","eventSystem","eventPc","eventPeople","eventMemo","eventStartTime","eventEndTime"].forEach(id=>$(id).value="");fillEventPcSelect();fillScenarioSelect();$("scenarioSearch").value="";clearBulkDays();
- $("eventType").value=type;$("eventStatus").value="planned";$("eventSessionKind").value="main";updateRoleOptions("");$("eventDay").value="1";delete $("eventDay").dataset.originalSessionDay;delete $("eventDay").dataset.loadedEffectiveDay;$("eventTimeBand").value="";$("eventColor").value="";$("eventDate").value=dateStr||"";$("dateMode").value="single";$("rangeEndDate").value="";clearMultiDates();updateDateModeUI();$("eventHeading").textContent=type==="blocked"?"卓以外の予定を登録":"卓予定を登録";$("deleteEvent").hidden=true;$("reportFromEvent").hidden=true;updateTypeUI();
+ $("eventType").value=type;$("eventStatus").value="planned";$("eventSessionKind").value="main";updateRoleOptions("");$("eventDay").value="1";delete $("eventDay").dataset.originalSessionDay;delete $("eventDay").dataset.loadedEffectiveDay;$("eventTimeBand").value="";$("eventColor").value="";$("eventDate").value=dateStr||"";$("dateMode").value="single";delete $("dateMode").dataset.loadedMode;$("rangeEndDate").value="";clearMultiDates();updateDateModeUI();$("eventHeading").textContent=type==="blocked"?"卓以外の予定を登録":"卓予定を登録";$("deleteEvent").hidden=true;$("reportFromEvent").hidden=true;updateTypeUI();
 }
-function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list),sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);$("dateMode").value="single";$("rangeEndDate").value="";clearMultiDates();updateDateModeUI();$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=sessionDay;$("eventDay").dataset.originalSessionDay=String(info.rawDay);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");$("eventPeople").value=(x.participants||[]).join(", ");$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();$("eventPanel").scrollIntoView({behavior:"smooth",block:"start"})}
+function editableMainRunEvents(x,list=events()){
+ const sameRun=(x&&x.type!=="blocked"&&x.runId)
+   ?list.filter(v=>v.type!=="blocked"&&v.runId===x.runId&&(v.sessionKind||"main")==="main")
+   :[];
+ return sameRun.slice().sort((a,b)=>{
+   const da=String(a.start||"").slice(0,10),db=String(b.start||"").slice(0,10);
+   if(da!==db)return da.localeCompare(db);
+   return (Number(a.sessionDay)||1)-(Number(b.sessionDay)||1);
+ });
+}
+function restoreExistingDateMode(x,list=events()){
+ $("rangeEndDate").value="";
+ clearMultiDates();
+ const group=editableMainRunEvents(x,list);
+ const dates=[...new Set(group.map(v=>String(v.start||"").slice(0,10)).filter(Boolean))].sort();
+ if((x.sessionKind||"main")==="main"&&dates.length>1){
+   $("dateMode").value="multiple";
+   $("eventDate").value=dates[0];
+   dates.slice(1).forEach(d=>addMultiDate(d));
+   $("dateMode").dataset.loadedMode="multiple";
+ }else{
+   $("dateMode").value="single";
+   $("dateMode").dataset.loadedMode="single";
+ }
+ updateDateModeUI();
+}
+function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list),sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);restoreExistingDateMode(x,list);$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=sessionDay;$("eventDay").dataset.originalSessionDay=String(info.rawDay);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");$("eventPeople").value=(x.participants||[]).join(", ");$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();$("eventPanel").scrollIntoView({behavior:"smooth",block:"start"})}
 function renderCalendar(){
  const y=current.getFullYear(),m=current.getMonth();$("yearJump").value=String(y);$("monthJump").value=String(m+1);$("weekdayHead").innerHTML=["月","火","水","木","金","土","日"].map(x=>`<div class="calendar-head">${x}</div>`).join("");
  const first=new Date(y,m,1),offset=(first.getDay()+6)%7,start=new Date(y,m,1-offset),ev=events(),today=new Date();let html="";
@@ -1087,7 +1113,28 @@ $("saveEvent").onclick=()=>{
    if($("dateMode").value==="single"){
      [...$("bulkDays").querySelectorAll(".bulk-row")].forEach(r=>{const d=r.querySelector(".bulk-date")?.value||"";if(d)ranges.push({date:d,startTime:r.querySelector(".bulk-start-time")?.value||"",endTime:r.querySelector(".bulk-end-time")?.value||"",sessionDay:r.querySelector(".bulk-day")?.value||"1",timeBand:r.querySelector(".bulk-band")?.value||"",sessionKind:r.querySelector(".bulk-kind")?.value||"main"})});
    }
-   const firstOld=id0?list.find(x=>x.id===id0):null,sharedRunId=firstOld?.runId||TRPG39.uuid();const pending=[];for(let n=0;n<ranges.length;n++){const id=n===0?(id0||TRPG39.uuid()):TRPG39.uuid(),old=n===0?firstOld:null,item=buildTrpgEvent(id,ranges[n].date,ranges[n].startTime,ranges[n].endTime,ranges[n].sessionDay,ranges[n].timeBand,ranges[n].sessionKind,old,sharedRunId);const warning=conflictMessage(item,list.concat(pending));if(warning&&!confirm((ranges.length>1?`${ranges[n].sessionKind!=="main"?(sessionKindLabel[ranges[n].sessionKind]||ranges[n].sessionKind):`${ranges[n].sessionDay}日目`}${ranges[n].timeBand?`・${timeBandLabel[ranges[n].timeBand]}`:""}：\n`:"")+warning))return;pending.push(item)}
+   const firstOld=id0?list.find(x=>x.id===id0):null,sharedRunId=firstOld?.runId||TRPG39.uuid();
+   const existingMain=firstOld?.runId?editableMainRunEvents(firstOld,list):[];
+   const usedOldIds=new Set(),pending=[];
+   for(let n=0;n<ranges.length;n++){
+     const rangeDate=String(ranges[n].date||"").slice(0,10);
+     let old=null;
+     if(firstOld){
+       old=existingMain.find(v=>!usedOldIds.has(v.id)&&String(v.start||"").slice(0,10)===rangeDate)
+         ||existingMain.find(v=>!usedOldIds.has(v.id))
+         ||null;
+     }
+     if(old)usedOldIds.add(old.id);
+     const id=old?.id||(n===0?(id0||TRPG39.uuid()):TRPG39.uuid()),item=buildTrpgEvent(id,ranges[n].date,ranges[n].startTime,ranges[n].endTime,ranges[n].sessionDay,ranges[n].timeBand,ranges[n].sessionKind,old,sharedRunId);const warning=conflictMessage(item,list.concat(pending));if(warning&&!confirm((ranges.length>1?`${ranges[n].sessionKind!=="main"?(sessionKindLabel[ranges[n].sessionKind]||ranges[n].sessionKind):`${ranges[n].sessionDay}日目`}${ranges[n].timeBand?`・${timeBandLabel[ranges[n].timeBand]}`:""}：\n`:"")+warning))return;pending.push(item)}
+   if(firstOld?.runId&&$("dateMode").dataset.loadedMode==="multiple"){
+     const keepIds=new Set(pending.map(v=>v.id));
+     const removed=existingMain.filter(v=>!keepIds.has(v.id));
+     if(removed.length){
+       const removedIds=new Set(removed.map(v=>v.id));
+       list=list.filter(v=>!removedIds.has(v.id));
+       TRPG39.saveAlbum(TRPG39.loadAlbum().filter(a=>!removedIds.has(a.eventId)));
+     }
+   }
    pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});saveEvents(list);pending.forEach(item=>{const albumItem=TRPG39.syncEventToAlbum(item);if(albumItem)item.linkedAlbumId=albumItem.id});saveEvents(list);if(ranges.length>1)alert(`${ranges.length}件の予定を登録しました。`);
  }
  resetForm();hideEditor();renderCalendar();
@@ -2102,5 +2149,6 @@ TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();rend
 </script>
 
 <!-- availability-share-v3 one-url / schedule-match-v5.1 results-fix -->
+<!-- calendar-multidate-restore-v1 / stable-run-event-ids -->
 </body>
 </html>
