@@ -2200,10 +2200,10 @@ function shareIsNestedStateable(block,editor){
 function shareIsTopStateable(block,editor){
  return !!(block&&block.parentElement===editor&&block.matches?.("p,blockquote,ul,ol,div.image-grid"));
 }
-async function collectOutlineShareScene(){
- const ed=q("#blogEditor");
+async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
+ const ed=editorOverride||q("#blogEditor");
  if(!ed)throw new Error("現在のシーン本文を読み込めませんでした。");
- const page=b.pages.find(x=>String(x.id)===String(active))||b.pages[0];
+ const page=pageOverride||(b.pages.find(x=>String(x.id)===String(active))||b.pages[0]);
  if(!page)throw new Error("シーンを選択してください。");
  const roots=[];let root=null,child=null;
  const makeRoot=(heading=null,titleOverride="")=>{
@@ -2374,6 +2374,25 @@ function orderedOutlineChildren(group){
    return ao-zo;
  });
 }
+async function refreshKpLiveOrderHierarchyFromPages(){
+ shareTest=currentShare()||shareTest;
+ if(!shareTest)return;
+ const itemMap=new Map((shareTest.items||[]).map(x=>[String(x.sceneId||"") ,x]));
+ for(const page of (b.pages||[])){
+   const tmp=document.createElement("div");tmp.innerHTML=ensureArticle(page);
+   const fresh=await collectOutlineShareScene(page,tmp);
+   const old=itemMap.get(String(page.id));
+   if(!old)continue; // 表示順は共有済みシーンだけを対象にする
+   const oldGroups=new Map((old.outlineGroups||[]).map(g=>[String(g.id),g]));
+   fresh.outlineGroups.forEach((g,gi)=>{
+     const og=oldGroups.get(String(g.id));
+     g.displayOrder=Number.isFinite(Number(og?.displayOrder))?Number(og.displayOrder):gi;
+     const oldChildren=new Map((og?.outlineChildren||[]).map(c=>[String(c.id),c]));
+     g.outlineChildren.forEach((c,ci)=>{const oc=oldChildren.get(String(c.id));c.displayOrder=Number.isFinite(Number(oc?.displayOrder))?Number(oc.displayOrder):ci});
+   });
+   old.outlineGroups=fresh.outlineGroups;
+ }
+}
 function renderKpLiveOrder(){
  const host=q("#kpLiveOrderList");if(!host)return;
  const items=orderedShareItems();
@@ -2475,7 +2494,7 @@ async function syncTestShare(){
 }
 function wireKpLiveOrderControls(){
  const toggle=q("#toggleKpLiveOrder"),cancel=q("#cancelKpLiveOrder"),apply=q("#applyKpLiveOrder");
- if(toggle)toggle.onclick=()=>{const wrap=q("#kpLiveOrderWrap");if(!wrap)return;wrap.hidden=!wrap.hidden;if(!wrap.hidden)renderKpLiveOrder()};
+ if(toggle)toggle.onclick=async()=>{const wrap=q("#kpLiveOrderWrap");if(!wrap)return;wrap.hidden=!wrap.hidden;if(!wrap.hidden){const st=q("#testShareStatus");try{if(st)st.textContent="表示順の階層を読み込み中…";await refreshKpLiveOrderHierarchyFromPages();renderKpLiveOrder();if(st)st.textContent=""}catch(err){renderKpLiveOrder();if(st)st.textContent=`表示順を読み込めませんでした：${err?.message||String(err)}`}}};
  if(cancel)cancel.onclick=()=>{const wrap=q("#kpLiveOrderWrap");if(wrap)wrap.hidden=true};
  if(apply)apply.onclick=async()=>{const st=q("#testShareStatus");try{shareTest=currentShare()||shareTest;if(!shareTest?.shareId)throw new Error("先に「共通URLを作成」を押してください。");commitKpLiveOrderFromDom();st.textContent="KPliveの表示順を更新中…";await syncTestShare();renderKpLiveOrder();st.textContent="KPliveの表示順を更新しました。"}catch(err){st.textContent=`表示順を更新できませんでした：${err?.message||String(err)}`}};
  setupKpLiveOrderDnD();
