@@ -247,16 +247,30 @@
          const parts=text.split(/\s*[\n,、]+\s*/).filter(Boolean);
          return parts.length>0&&parts.every(v=>/^[^\\/:*?"<>|]+\.(?:png|jpe?g|gif|webp|bmp|svg)$/i.test(v.trim()));
        };
+       const hasMeaningfulRichBody=html=>{
+         const tpl=document.createElement("template");
+         tpl.innerHTML=String(html||"");
+         const text=(tpl.content.textContent||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
+         if(text)return true;
+         // Keep genuinely non-text content if it ever appears inline. Empty editor
+         // scaffolding such as <p><br></p> / <div><br></div> is intentionally ignored.
+         return !!tpl.content.querySelector("img,hr,table,video,audio,iframe,svg,canvas");
+       };
        const renderOutlineBlock=block=>{
-         const images=Array.isArray(block?.images)?block.images:[];
+         const images=Array.isArray(block?.images)?block.images.filter(Boolean):[];
          const rawBody=String(block?.bodyHtml||"");
          // Image filenames are editor-side management metadata. Never expose them
          // on KPlive: filenames can contain NPC/HO/spoiler information. Explicit
          // captions such as MAP1 / MAP2 remain ordinary body text.
-         const bodyHtml=images.length&&isImageFilenameOnly(rawBody)?"":richText(rawBody);
+         const visibleRaw=images.length&&isImageFilenameOnly(rawBody)?"":rawBody;
+         if(!images.length&&!hasMeaningfulRichBody(visibleRaw))return "";
+         const bodyHtml=hasMeaningfulRichBody(visibleRaw)?richText(visibleRaw):"";
          return `<div class="kp-live-outline-block">${bodyHtml}${renderImages(images)}</div>`;
        };
-       const body=blocks.map(renderOutlineBlock).join("");
+       const body=blocks.map(renderOutlineBlock).filter(Boolean).join("");
+       // Do not render an empty child/toggle either. This removes stray vertical
+       // gaps created by Enter-generated empty information units.
+       if(!body)return "";
        return title
          ? `<details class="kp-live-outline-child kp-live-grandchild-toggle" data-level="grandchild"><summary>${esc(title)}</summary><div class="kp-live-grandchild-content">${body}</div></details>`
          : `<section class="kp-live-outline-child is-untitled" data-level="grandchild">${body}</section>`;
