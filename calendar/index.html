@@ -187,7 +187,7 @@
 <style>
 .schedule-participant-note{margin-top:6px}
 .calendar-library-participants{display:grid;gap:8px;margin-top:8px}
-.calendar-library-participant-row{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:8px;align-items:end;padding:8px 0;border-top:1px solid var(--line)}
+.calendar-library-participant-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(120px,.65fr) minmax(180px,1fr) auto;gap:8px;align-items:end;padding:8px 0;border-top:1px solid var(--line)}
 .calendar-library-participant-row:first-child{border-top:0}
 .calendar-library-participant-row .participant-field-wrap{position:relative}
 .calendar-library-participant-row input{width:100%;box-sizing:border-box;margin:0}
@@ -771,6 +771,8 @@
 <select id="scenarioSelect" aria-hidden="true" tabindex="-1"><option value="">直接入力</option></select>
 </div>
 <div class="full"><label>タイトル <span class="small muted" id="titleHint">直接入力したシナリオ名はSCENARIOにも自動登録されます</span></label><input id="eventTitle" placeholder="シナリオ名"></div>
+<div class="trpg-field"><label>陣</label><select id="eventRunSelect"><option value="">新しい陣</option></select><div class="small muted" id="eventRunNo">新規の陣として登録</div></div>
+<div class="trpg-field"><label>陣タイトル</label><input id="eventRunLabel" placeholder="例：びすもも明星／九重班枯れ花"><div class="small muted">表示名は自由。内部では固定の陣IDで管理します。</div></div>
 <div class="trpg-field"><label>予定内容</label><select id="eventSessionKind"><option value="prelude">事前導入</option><option value="main">本編</option><option value="reserve">予備日</option><option value="aftertalk">感想戦</option></select></div>
 <div id="eventDayWrap"><label>卓日</label><input id="eventDay" type="number" min="1" step="1" value="1"></div>
 <div><label id="dateLabel">日付</label><input id="eventDate" type="date"></div>
@@ -805,11 +807,10 @@
 <div class="bulk-days trpg-field" id="bulkDaysWrap"><div class="small muted">同じシナリオの別日程をまとめて登録できます。同じ1日目の昼／夜なども登録できます。</div><div id="bulkDays"></div><button id="addDayBtn" type="button" class="text-action">＋ 日程を追加</button></div>
 </div>
 <div class="event-editor-actions">
-<button id="saveEvent" type="button">保存</button>
-<button id="reportFromEvent" type="button" hidden>この予定から卓報告</button>
-<span id="eventStatePreview" class="small">予定</span>
+<button id="saveEvent" type="button" class="primary-action">予定を保存</button>
+<button id="reportFromEvent" type="button" class="report-action" hidden>卓報告へ</button>
 <button id="resetEvent" type="button">入力をクリア</button>
-<button id="deleteEvent" class="danger" type="button" hidden>削除</button>
+<button id="deleteEvent" class="danger" type="button" hidden>予定を削除</button>
 </div>
 <div class="small" style="margin-top:8px">卓予定はLIBRARYにも自動反映されます。卓以外の予定（×）はCALENDARだけに保存され、空き日判定では予定ありとして扱います。</div>
 </section>
@@ -1077,7 +1078,7 @@ function updateTypeUI(){
  const specialKind=!blocked&&$("eventSessionKind").value!=="main";$("eventDayWrap").hidden=blocked||specialKind;
  $("dateLabel").textContent="日付";
  $("titleHint").textContent=blocked?"空欄なら「予定あり」と表示します":"直接入力したシナリオ名はSCENARIOにも自動登録されます";
- $("eventStatePreview").textContent=blocked?"× 卓以外の予定あり":statusLabel[$("eventStatus").value]||"□ 予定";
+ 
 }
 function calendarPlayerPlayCount(player){
  const ids=new Set(),names=new Set(
@@ -1109,7 +1110,8 @@ function addEventParticipantRow(value="",opts={}){
  const host=$("eventParticipantRows");if(!host)return;
  const row=document.createElement("div");row.className="calendar-library-participant-row";
  row.dataset.placeholder=opts.placeholder?"1":"0";
- row.innerHTML=`<div class="participant-field-wrap"><label>参加者</label><input class="eventPartPl" value="${esc(String(value||""))}" placeholder="参加者名を検索・選択（よく同卓する人を優先）" autocomplete="off"><div class="participant-picker-results eventPartResults"></div></div><button type="button" class="danger participant-remove">参加者を削除</button>`;
+ const initial=typeof value==="object"&&value?value:{plName:String(value||""),ho:"",pcName:"",role:"PL"};
+ row.innerHTML=`<div class="participant-field-wrap"><label>PL</label><input class="eventPartPl" value="${esc(String(initial.plName||""))}" placeholder="参加者名を検索・選択" autocomplete="off"><div class="participant-picker-results eventPartResults"></div></div><div><label>HO / 役割</label><input class="eventPartHo" value="${esc(String(initial.ho||""))}" placeholder="HO1 / KPC など"></div><div><label>PC</label><input class="eventPartPc" value="${esc(String(initial.pcName||""))}" placeholder="PC名"></div><button type="button" class="danger participant-remove">参加者を削除</button>`;
  host.appendChild(row);
  const inp=row.querySelector(".eventPartPl"),res=row.querySelector(".eventPartResults");
  function render(){
@@ -1135,22 +1137,13 @@ function addEventParticipantRow(value="",opts={}){
  inp.addEventListener("change",syncCalendarParticipantHidden);
  row.querySelector(".participant-remove").onclick=()=>{row.remove();syncCalendarParticipantHidden()};
 }
-function calendarParticipantNames(){
- const host=$("eventParticipantRows");
- if(!host)return [...new Set(String($("eventPeople")?.value||"").split(",").map(x=>x.trim()).filter(Boolean))];
- return [...new Set([...host.querySelectorAll(".eventPartPl")].map(x=>x.value.trim()).filter(Boolean))];
-}
+function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];return [...host.querySelectorAll(".calendar-library-participant-row")].map(r=>({role:"PL",plName:r.querySelector(".eventPartPl")?.value.trim()||"",ho:r.querySelector(".eventPartHo")?.value.trim()||"",pcName:r.querySelector(".eventPartPc")?.value.trim()||"",relation:""})).filter(r=>r.plName||r.ho||r.pcName)}
+function calendarParticipantNames(){return [...new Set(calendarParticipantRows().map(r=>r.plName).filter(Boolean))]}
+function calendarRowsFromEvent(x){if(Array.isArray(x?.participantRows)&&x.participantRows.length)return x.participantRows;return (x?.participants||[]).map((name,i)=>({role:"PL",plName:name,ho:"",pcName:"",playerId:(x.participantIds||[])[i]||"",relation:""}))}
 function syncCalendarParticipantHidden(){
  const hidden=$("eventPeople");if(hidden)hidden.value=calendarParticipantNames().join(",");
 }
-function setCalendarParticipants(names=[]){
- const host=$("eventParticipantRows");if(!host)return;
- host.innerHTML="";
- const clean=[...new Set((names||[]).map(x=>String(x||"").trim()).filter(Boolean))];
- if(clean.length)clean.forEach(name=>addEventParticipantRow(name,{placeholder:false}));
- else addEventParticipantRow("",{placeholder:true});
- syncCalendarParticipantHidden();
-}
+function setCalendarParticipants(rows=[]){const host=$("eventParticipantRows");if(!host)return;host.innerHTML="";const clean=(rows||[]).map(r=>typeof r==="object"&&r?r:{role:"PL",plName:String(r||""),ho:"",pcName:""}).filter(r=>r.plName||r.ho||r.pcName);if(clean.length)clean.forEach(r=>addEventParticipantRow(r,{placeholder:false}));else addEventParticipantRow({}, {placeholder:true});syncCalendarParticipantHidden()}
 function initCalendarParticipantPicker(){
  const add=$("addEventParticipantRow");
  if(add)add.onclick=()=>addEventParticipantRow("",{placeholder:false});
@@ -1162,7 +1155,7 @@ function initCalendarParticipantPicker(){
 }
 function resetForm(dateStr="",type="trpg"){
  ["eventId","eventTitle","eventSystem","eventPc","eventMemo","eventStartTime","eventEndTime"].forEach(id=>$(id).value="");setCalendarParticipants([]);fillEventPcSelect();fillScenarioSelect();$("scenarioSearch").value="";clearBulkDays();
- $("eventType").value=type;$("eventStatus").value="planned";$("eventSessionKind").value="main";updateRoleOptions("");$("eventDay").value="1";delete $("eventDay").dataset.originalSessionDay;delete $("eventDay").dataset.loadedEffectiveDay;$("eventTimeBand").value="";$("eventColor").value="";$("eventDate").value=dateStr||"";$("dateMode").value="single";delete $("dateMode").dataset.loadedMode;delete $("dateMode").dataset.multipleBaseDay;$("rangeEndDate").value="";clearMultiDates();updateDateModeUI();$("eventHeading").textContent=type==="blocked"?"卓以外の予定を登録":"卓予定を登録";$("deleteEvent").hidden=true;$("reportFromEvent").hidden=true;updateTypeUI();
+ $("eventType").value=type;$("eventStatus").value="planned";$("eventSessionKind").value="main";updateRoleOptions("");$("eventDay").value="1";delete $("eventDay").dataset.originalSessionDay;delete $("eventDay").dataset.loadedEffectiveDay;$("eventTimeBand").value="";$("eventColor").value="";$("eventDate").value=dateStr||"";$("dateMode").value="single";delete $("dateMode").dataset.loadedMode;delete $("dateMode").dataset.multipleBaseDay;$("rangeEndDate").value="";clearMultiDates();updateDateModeUI();$("eventRunLabel").value="";fillEventRunSelect("");$("eventHeading").textContent=type==="blocked"?"卓以外の予定を登録":"卓予定を登録";$("deleteEvent").hidden=true;$("reportFromEvent").hidden=true;updateTypeUI();
 }
 function editableMainRunEvents(x,list=events()){
  const sameRun=(x&&x.type!=="blocked"&&x.runId)
@@ -1194,7 +1187,7 @@ function restoreExistingDateMode(x,list=events()){
  }
  updateDateModeUI();
 }
-function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list);let sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);restoreExistingDateMode(x,list);$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=String(x.sessionDay||sessionDay||1);$("eventDay").dataset.originalSessionDay=String(x.sessionDay||info.rawDay||1);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");setCalendarParticipants(x.participants||[]);$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();$("eventPanel").scrollIntoView({behavior:"smooth",block:"start"})}
+function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list);let sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");fillEventRunSelect(x.runId||"");$("eventRunLabel").value=x.runLabel||$("eventRunLabel").value||"";const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);restoreExistingDateMode(x,list);$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=String(x.sessionDay||sessionDay||1);$("eventDay").dataset.originalSessionDay=String(x.sessionDay||info.rawDay||1);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");setCalendarParticipants(calendarRowsFromEvent(x));$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();$("eventPanel").scrollIntoView({behavior:"smooth",block:"start"})}
 function renderCalendar(){
  const y=current.getFullYear(),m=current.getMonth();$("yearJump").value=String(y);$("monthJump").value=String(m+1);$("weekdayHead").innerHTML=["月","火","水","木","金","土","日"].map(x=>`<div class="calendar-head">${x}</div>`).join("");
  const first=new Date(y,m,1),offset=(first.getDay()+6)%7,start=new Date(y,m,1-offset),ev=events(),today=new Date();let html="";
@@ -1204,6 +1197,8 @@ function renderCalendar(){
  document.querySelectorAll(".event-chip").forEach(x=>x.onclick=e=>{e.stopPropagation();editEvent(x.dataset.id)})
 }
 $("scenarioSelect").onchange=()=>chooseScenario($("scenarioSelect").value);
+$("eventRunSelect").onchange=()=>{updateEventRunUI();const hit=libraryRunsForScenario($("scenarioSelect").value,$("eventTitle").value.trim()).find(r=>r.runId===$("eventRunSelect").value);if(hit?.participantRows?.length)setCalendarParticipants(hit.participantRows)};
+$("eventRunLabel").addEventListener("input",()=>{$("eventRunNo").textContent=$("eventRunSelect").value?"既存陣の表示名を変更":"新規陣の表示名"});
 $("scenarioSearch").addEventListener("input",()=>{$("scenarioSelect").value="";renderScenarioSearch()});
 $("scenarioSearch").addEventListener("focus",renderScenarioSearch);
 $("scenarioSearch").addEventListener("keydown",e=>{if(e.key==="Escape")$("scenarioSearchResults").classList.remove("open")});
@@ -1241,6 +1236,10 @@ function conflictMessage(item,list,old=null){
 }
 function makeDateTime(date,time){return date?(time?`${date}T${time}`:date):""}
 function makeEndDateTime(date,startTime,endTime){if(!date||!endTime)return "";let end=`${date}T${endTime}`;if(startTime&&endTime<startTime){const d=new Date(date+"T00:00");d.setDate(d.getDate()+1);end=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${endTime}`}return end}
+function libraryRunsForScenario(scenarioId,title){const key=String(scenarioId||""),nt=String(title||"").normalize("NFKC").trim().toLowerCase(),map=new Map();(TRPG39.loadAlbum?.()||[]).forEach(a=>{const same=key?String(a.scenarioId||"")===key:String(a.title||"").normalize("NFKC").trim().toLowerCase()===nt;if(!same||!a.runId)return;const rid=String(a.runId);if(!map.has(rid))map.set(rid,{runId:rid,runLabel:String(a.runLabel||"").trim(),date:String(a.date||a.start||"").slice(0,10),participantRows:Array.isArray(a.participantRows)?a.participantRows:[]})});return [...map.values()].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))}
+function nextCalendarRunLabel(scenarioId,title){return `${libraryRunsForScenario(scenarioId,title).length+1}陣目`}
+function fillEventRunSelect(selected=""){const sel=$("eventRunSelect");if(!sel)return;const runs=libraryRunsForScenario($("scenarioSelect").value,$("eventTitle").value.trim());sel.innerHTML='<option value="">新しい陣</option>'+runs.map((r,i)=>`<option value="${esc(r.runId)}">${esc(r.runLabel||`${i+1}陣目`)}</option>`).join("");sel.value=runs.some(r=>r.runId===selected)?selected:"";updateEventRunUI()}
+function updateEventRunUI(){const sel=$("eventRunSelect"),label=$("eventRunLabel"),note=$("eventRunNo");if(!sel||!label||!note)return;const runs=libraryRunsForScenario($("scenarioSelect").value,$("eventTitle").value.trim()),hit=runs.find(r=>r.runId===sel.value);if(hit){label.value=hit.runLabel||label.value||"";note.textContent=`LIBRARYの既存陣を使用${hit.date?`（${hit.date}〜）`:""}`}else{if(!$("eventId").value||!label.value.trim())label.value=nextCalendarRunLabel($("scenarioSelect").value,$("eventTitle").value.trim());note.textContent=`新規：${label.value||"新しい陣"}`}}
 function buildTrpgEvent(id,date,startTime,endTime,sessionDay,timeBand,sessionKind="main",old=null,runId=""){
  const title=$("eventTitle").value.trim();let scenarioId=$("scenarioSelect").value;let scenario=scenarios().find(x=>x.id===scenarioId);if(!scenario){scenario=TRPG39.ensureScenario(title,{system:$("eventSystem").value.trim()});scenarioId=scenario?.id||"";fillScenarioSelect(scenarioId)}
  const start=makeDateTime(date,startTime),end=makeEndDateTime(date,startTime,endTime);
@@ -1253,7 +1252,7 @@ function buildTrpgEvent(id,date,startTime,endTime,sessionDay,timeBand,sessionKin
    // 完了へ変更した時だけ、現在画面に見えている実際の「○日目」を確定値として保存する。
    if(!manuallyChanged&&$("eventStatus").value!=="done")dayValue=original;
  }
- return TRPG39.normalizeEvent({...(old||{}),id,type:"trpg",title,scenarioId,scenarioTitle:title,start,end,timeSpecified:!!startTime,timeBand:timeBand||"",sessionKind:kind,sessionDay:dayValue,status:$("eventStatus").value,role:$("eventRole").value,system:$("eventSystem").value.trim(),facilitatorLabel:cfg.label,facilitatorless:cfg.less,pcName:$("eventPc").value.trim(),pcId:ensureEventPc(),participants:calendarParticipantNames(),calendarMemo:$("eventMemo").value.trim(),calendarColor:$("eventColor").value||"",runId:old?.runId||runId,runLabel:old?.runLabel||""});
+ return TRPG39.normalizeEvent({...(old||{}),id,type:"trpg",title,scenarioId,scenarioTitle:title,start,end,timeSpecified:!!startTime,timeBand:timeBand||"",sessionKind:kind,sessionDay:dayValue,status:$("eventStatus").value,role:$("eventRole").value,system:$("eventSystem").value.trim(),facilitatorLabel:cfg.label,facilitatorless:cfg.less,pcName:$("eventPc").value.trim(),pcId:ensureEventPc(),participants:calendarParticipantNames(),participantRows:calendarParticipantRows(),calendarMemo:$("eventMemo").value.trim(),calendarColor:$("eventColor").value||"",runId:old?.runId||runId,runLabel:$("eventRunLabel").value.trim()||old?.runLabel||""});
 }
 function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],linkedAlbumId:""})}
 $("saveEvent").onclick=()=>{
@@ -1268,7 +1267,7 @@ $("saveEvent").onclick=()=>{
    if($("dateMode").value==="single"){
      [...$("bulkDays").querySelectorAll(".bulk-row")].forEach(r=>{const d=r.querySelector(".bulk-date")?.value||"";if(d)ranges.push({date:d,startTime:r.querySelector(".bulk-start-time")?.value||"",endTime:r.querySelector(".bulk-end-time")?.value||"",sessionDay:r.querySelector(".bulk-day")?.value||"1",timeBand:r.querySelector(".bulk-band")?.value||"",sessionKind:r.querySelector(".bulk-kind")?.value||"main"})});
    }
-   const firstOld=id0?list.find(x=>x.id===id0):null,sharedRunId=firstOld?.runId||TRPG39.uuid();
+   const firstOld=id0?list.find(x=>x.id===id0):null,sharedRunId=firstOld?.runId||$("eventRunSelect").value||TRPG39.uuid();
    const existingMain=firstOld?.runId?editableMainRunEvents(firstOld,list):[];
    const usedOldIds=new Set(),pending=[];
    for(let n=0;n<ranges.length;n++){
@@ -1313,7 +1312,7 @@ $("saveEvent").onclick=()=>{
        TRPG39.saveAlbum(TRPG39.loadAlbum().filter(a=>!removedIds.has(a.eventId)));
      }
    }
-   pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});saveEvents(list);pending.forEach(item=>{const albumItem=TRPG39.syncEventToAlbum(item);if(albumItem)item.linkedAlbumId=albumItem.id});saveEvents(list);if(ranges.length>1)alert(`${ranges.length}件の予定を登録しました。`);
+   pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});saveEvents(list);pending.forEach(item=>{let albumItem=TRPG39.syncEventToAlbum(item);if(albumItem){item.linkedAlbumId=albumItem.id;const album=TRPG39.loadAlbum();const ai=album.findIndex(a=>String(a.id)===String(albumItem.id));if(ai>=0){album[ai]=TRPG39.normalizeAlbum({...album[ai],runId:item.runId,runLabel:item.runLabel,participants:item.participants,participantRows:item.participantRows||[]});TRPG39.saveAlbum(album);albumItem=album[ai]}}});saveEvents(list);if(ranges.length>1)alert(`${ranges.length}件の予定を登録しました。`);
  }
  resetForm();hideEditor();renderCalendar();
 };
@@ -2342,3 +2341,5 @@ initCalendarParticipantPicker();TRPG39.syncAllEventsToAlbum();fillScenarioSelect
 <!-- calendar-v7 auto-renumber-session-days / cancelled-rescheduling-excluded -->
 
 <!-- calendar-v8 library-style-participant-rows -->
+
+<!-- calendar-v9 run-id-library-link / free-run-label / full-participant-rows / clear-actions -->
