@@ -726,6 +726,32 @@
   background:color-mix(in srgb,var(--accent) 8%,transparent)!important;
 }
 </style>
+
+<style>
+/* CALENDAR participant rows: keep LIBRARY-style fields readable on desktop, stack on narrow screens. */
+.calendar-library-participant-row{
+  display:grid;
+  grid-template-columns:88px minmax(150px,1.2fr) minmax(150px,1fr) minmax(150px,1fr) auto;
+  gap:10px;
+  align-items:end;
+  width:100%;
+}
+.calendar-library-participant-row > *{min-width:0}
+.calendar-library-participant-row .participant-remove{width:auto;white-space:nowrap}
+@media(max-width:900px){
+  .calendar-library-participant-row{
+    grid-template-columns:88px minmax(0,1fr) minmax(0,1fr);
+  }
+  .calendar-library-participant-row > :nth-child(4){grid-column:2/4}
+  .calendar-library-participant-row .participant-remove{grid-column:3;justify-self:end}
+}
+@media(max-width:640px){
+  .calendar-library-participant-row{grid-template-columns:1fr}
+  .calendar-library-participant-row > :nth-child(4),
+  .calendar-library-participant-row .participant-remove{grid-column:auto}
+  .calendar-library-participant-row .participant-remove{justify-self:start}
+}
+</style>
 </head>
 <body>
 <div data-site-header data-active="calendar"></div>
