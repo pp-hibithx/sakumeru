@@ -814,7 +814,28 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 
 .kp-live-order-scene{margin-bottom:8px}.kp-live-order-scene>.kp-live-order-row{grid-template-columns:auto auto minmax(0,1fr) auto}.kp-live-order-children{margin:4px 0 8px 10px;border-left:2px solid #343b46;padding-left:7px}.kp-live-order-child{background:rgba(255,255,255,.025);margin-top:4px}.kp-live-order-child .kp-live-order-handle{cursor:default;opacity:.7}.kp-live-order-grandchildren{margin:4px 0 6px 12px;border-left:1px dashed #48515f;padding-left:7px}.kp-live-order-grandchild{background:rgba(255,255,255,.015);margin-top:3px;padding-top:7px;padding-bottom:7px}.kp-live-order-grandchild .kp-live-order-title{font-size:13px}.kp-live-order-grandchild .kp-live-order-handle{cursor:default;opacity:.55}
 .kp-live-order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.kp-live-order-fold-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kp-live-order-fold-actions button{font-size:12px;padding:5px 8px}.kp-live-order-fold{width:28px;min-width:28px;height:28px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}.kp-live-order-row>div:nth-of-type(1){min-width:0;flex:1}.kp-live-order-scene.is-collapsed>.kp-live-order-children{display:none}.kp-live-order-group.is-collapsed>.kp-live-order-grandchildren{display:none}
-</style></head><body>
+</style>
+<style id="share-url-manager-v1">
+.share-history-card{margin:10px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.share-history-head{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.share-history-head span{font-size:11px;color:var(--muted)}
+.share-url-list{display:grid;gap:7px}
+.share-url-row,.share-map-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.share-url-who,.share-map-row{min-width:0}
+.share-url-who{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.share-url-who strong,.share-map-row strong{min-width:58px}
+.share-url-who span,.share-map-row span{font-size:12px;color:var(--muted);word-break:break-word}
+.share-url-actions{display:flex;gap:6px;flex:0 0 auto}
+.share-url-actions .button,.share-url-actions button{padding:5px 8px;font-size:12px}
+.share-current-map{display:grid;gap:6px;margin:9px 0 12px}
+@media(max-width:620px){
+ .share-url-row{align-items:flex-start}
+ .share-url-actions{flex-direction:column}
+ .share-history-head{align-items:flex-start}
+}
+</style>
+
+</head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
  <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。</small></div>
@@ -2557,162 +2578,86 @@ function sharePayloadFor(participant=null){
 function testSharePayload(){return sharePayloadFor(null)}
 function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0831j`,location.href).href:""}
 function testShareUrl(){shareTest=currentShare()||shareTest;return shareUrlById(shareTest?.shareId)}
+
+function shareDisplayName(name){
+ const s=String(name||"").trim()||"PL";
+ return /さん$/.test(s)?s:(s+"さん");
+}
+function shareHoSortValue(ho){
+ const s=String(ho||"").trim();
+ const m=s.match(/^HO\s*(\d+)$/i);
+ return m?{group:0,num:+m[1],text:s}:{group:s?1:2,num:9999,text:s};
+}
+function shareParticipantSort(a,z){
+ const x=shareHoSortValue(a?.ho),y=shareHoSortValue(z?.ho);
+ return x.group-y.group||x.num-y.num||x.text.localeCompare(y.text,"ja")||String(a?.name||"").localeCompare(String(z?.name||""),"ja");
+}
+function shareHistoryRow(label,person,shareId){
+ const u=shareUrlById(shareId);
+ if(!u)return "";
+ return \`<div class="share-url-row">
+   <div class="share-url-who"><strong>\${esc(label)}</strong>\${person?\`<span>\${esc(person)}</span>\`:""}</div>
+   <div class="share-url-actions"><button type="button" class="secondary" data-history-copy="\${esc(shareId)}">コピー</button><a class="button secondary" href="\${esc(u)}" target="_blank" rel="noopener">開く</a></div>
+ </div>\`;
+}
 function renderShareHistory(){
  const host=q("#shareSessionHistory");if(!host)return;
  const arr=b.shareSessions||[];
- host.innerHTML=arr.length?arr.slice().reverse().map(x=>{const u=shareUrlById(x.shareId);return `<div style="margin:6px 0"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP"))}</a> <span class="muted">（${(x.items||[]).length}件）</span></div>`}).join(""):"過去の共有セッションはありません。";
-}
-function shareOrderTitle(item){
- const t=String(item?.title||"").replace(/\s+/g," ").trim();
- return t&&t!=="開示情報"?t:"タイトルなしの開示";
-}
-function orderedShareItems(){
- shareTest=currentShare()||shareTest;
- ensureShareDisplayOrder();
- return [...(shareTest?.items||[])].sort(compareShareDisplayOrder);
-}
-function orderedOutlineGroups(item){
- const groups=Array.isArray(item?.outlineGroups)?item.outlineGroups:[];
- return [...groups].sort((a,z)=>{
-   const ao=Number.isFinite(Number(a?.displayOrder))?Number(a.displayOrder):Number.MAX_SAFE_INTEGER;
-   const zo=Number.isFinite(Number(z?.displayOrder))?Number(z.displayOrder):Number.MAX_SAFE_INTEGER;
-   return ao-zo;
- });
-}
-function orderedOutlineChildren(group){
- const children=Array.isArray(group?.outlineChildren)?group.outlineChildren:[];
- return [...children].sort((a,z)=>{
-   const ao=Number.isFinite(Number(a?.displayOrder))?Number(a.displayOrder):Number.MAX_SAFE_INTEGER;
-   const zo=Number.isFinite(Number(z?.displayOrder))?Number(z.displayOrder):Number.MAX_SAFE_INTEGER;
-   return ao-zo;
- });
-}
-function isUntitledOutlineChild(child){
- const raw=String(child?.title||"").replace(/\s+/g," ").trim();
- return !raw||raw==="開示情報"||raw==="タイトルなしの開示";
-}
-function visibleOrderedOutlineChildren(group){
- return orderedOutlineChildren(group).filter(child=>!isUntitledOutlineChild(child));
-}
-async function refreshKpLiveOrderHierarchyFromPages(){
- shareTest=currentShare()||shareTest;
- if(!shareTest)return;
- // The order editor must reflect the data that is actually shared to KPlive.
- // Rebuilding from saved editor HTML used to erase children when that HTML had no ○ state.
- // Normalize displayOrder in-place instead; newly updated special blocks are migrated
- // to outlineGroups by upsertRevealIntoScene().
- for(const item of (shareTest.items||[])){
-   if(item?.kind!=="outline-scene")continue;
-   item.outlineGroups=Array.isArray(item.outlineGroups)?item.outlineGroups:[];
-   item.outlineGroups.forEach((g,gi)=>{
-     if(!Number.isFinite(Number(g.displayOrder)))g.displayOrder=gi;
-     g.outlineChildren=Array.isArray(g.outlineChildren)?g.outlineChildren:[];
-     g.outlineChildren.forEach((c,ci)=>{if(!Number.isFinite(Number(c.displayOrder)))c.displayOrder=ci});
+ if(!arr.length){host.innerHTML="過去の共有セッションはありません。";return}
+ host.innerHTML=arr.slice().reverse().map(x=>{
+   const ps=Array.isArray(x.participants)?x.participants.map(p=>({...p})).sort(shareParticipantSort):[];
+   const names=ps.map(p=>shareDisplayName(p.name)).join("・");
+   const common=x.shareId?shareHistoryRow("共有",names?("参加者："+names):"参加者記録なし",x.shareId):"";
+   const dedicated=ps.filter(p=>p.shareId).map(p=>{
+     const who=shareDisplayName(p.name);
+     const ho=String(p.ho||"").trim();
+     return shareHistoryRow(ho||(\`\${who}専用\`),ho?who:"",p.shareId);
+   }).join("");
+   const dt=new Date(x.startedAt||x.endedAt||Date.now()).toLocaleString("ja-JP");
+   const title=String(x.scenarioTitle||b.scenarioTitle||sc?.title||"シナリオ");
+   return \`<section class="share-history-card">
+     <div class="share-history-head"><strong>\${esc(title)}</strong><span>\${esc(dt)}</span></div>
+     <div class="share-url-list">\${common}\${dedicated||'<div class="muted-note">専用URLはありません。</div>'}</div>
+   </section>\`;
+ }).join("");
+ if(!host.dataset.copyWired){
+   host.addEventListener("click",async e=>{
+     const btn=e.target.closest?.("[data-history-copy]");if(!btn)return;
+     const u=shareUrlById(btn.dataset.historyCopy);
+     if(!u)return;
+     await navigator.clipboard.writeText(u);
+     const s=q("#testShareStatus");if(s)s.textContent="共有URLをコピーしました。";
    });
+   host.dataset.copyWired="1";
  }
-}
-const kpLiveOrderCollapsedScenes=new Set();
-const kpLiveOrderCollapsedGroups=new Set();
-function renderKpLiveOrder(){
- const host=q("#kpLiveOrderList");if(!host)return;
- const items=orderedShareItems();
- host.innerHTML=items.length?items.map((item,i)=>{
-   const sceneId=String(item.id||"");
-   // outlineGroups itself is the hierarchy marker. Do not depend only on kind so
-   // older scene snapshots can still expose their children in the order editor.
-   const groups=Array.isArray(item?.outlineGroups)?orderedOutlineGroups(item):[];
-   const children=groups.length?`<div class="kp-live-order-children" data-order-groups-for="${esc(sceneId)}">${groups.map((g,gi)=>{
-     const groupId=String(g.id||"");
-     const grandchildren=visibleOrderedOutlineChildren(g);
-     const grandchildrenHtml=grandchildren.length?`<div class="kp-live-order-grandchildren" data-order-children-for="${esc(groupId)}">${grandchildren.map((c,ci)=>`<div class="kp-live-order-row kp-live-order-grandchild" data-child-id="${esc(c.id||"")}">
-       <span class="kp-live-order-handle">└</span><div><div class="kp-live-order-title">${esc(shareOrderTitle(c))}</div><div class="kp-live-order-target">小見出し</div></div>
-       <div class="kp-live-order-moves"><button type="button" class="secondary" data-child-up="${esc(c.id||"")}" data-group="${esc(groupId)}" data-scene="${esc(sceneId)}" ${ci===0?"disabled":""}>↑</button><button type="button" class="secondary" data-child-down="${esc(c.id||"")}" data-group="${esc(groupId)}" data-scene="${esc(sceneId)}" ${ci===grandchildren.length-1?"disabled":""}>↓</button></div>
-     </div>`).join("")}</div>`:"";
-     const groupFoldKey=`${sceneId}::${groupId}`;
-     const groupCollapsed=kpLiveOrderCollapsedGroups.has(groupFoldKey);
-     return `<div class="kp-live-order-group${groupCollapsed?" is-collapsed":""}" data-group-id="${esc(groupId)}"><div class="kp-live-order-row kp-live-order-child">
-       <button type="button" class="secondary kp-live-order-fold" data-order-toggle-group="${esc(groupId)}" data-scene="${esc(sceneId)}" aria-expanded="${groupCollapsed?"false":"true"}" title="大見出しを開閉">${groupCollapsed?"▸":"▾"}</button><div><div class="kp-live-order-title">${esc(shareOrderTitle(g))}</div><div class="kp-live-order-target">大見出し</div></div>
-       <div class="kp-live-order-moves"><button type="button" class="secondary" data-group-up="${esc(groupId)}" data-scene="${esc(sceneId)}" ${gi===0?"disabled":""}>↑</button><button type="button" class="secondary" data-group-down="${esc(groupId)}" data-scene="${esc(sceneId)}" ${gi===groups.length-1?"disabled":""}>↓</button></div>
-     </div>${grandchildrenHtml}</div>`;
-   }).join("")}</div>`:"";
-   const sceneCollapsed=kpLiveOrderCollapsedScenes.has(sceneId);
-   return `<div class="kp-live-order-scene${sceneCollapsed?" is-collapsed":""}" data-order-scene="${esc(sceneId)}"><div class="kp-live-order-row" draggable="true" data-order-id="${esc(sceneId)}">
-     <span class="kp-live-order-handle" title="ドラッグしてシーンを並び替え">☰</span><button type="button" class="secondary kp-live-order-fold" data-order-toggle-scene="${esc(sceneId)}" aria-expanded="${sceneCollapsed?"false":"true"}" title="シーンを開閉">${sceneCollapsed?"▸":"▾"}</button>
-     <div><div class="kp-live-order-title">${esc(shareOrderTitle(item))}</div><div class="kp-live-order-target">シーン ／ 対象：${esc(item.target||"全員")}</div></div>
-     <div class="kp-live-order-moves"><button type="button" class="secondary" data-order-up="${esc(sceneId)}" ${i===0?"disabled":""}>↑</button><button type="button" class="secondary" data-order-down="${esc(sceneId)}" ${i===items.length-1?"disabled":""}>↓</button></div>
-   </div>${children}</div>`;
- }).join(""):'<div class="muted-note">まだ共有済みの情報はありません。</div>';
-}
-function commitKpLiveOrderFromDom(){
- shareTest=currentShare()||shareTest;
- const sceneEls=[...q("#kpLiveOrderList")?.querySelectorAll(":scope > [data-order-scene]")||[]];
- const itemMap=new Map((shareTest.items||[]).map(x=>[String(x.id),x]));
- sceneEls.forEach((sceneEl,i)=>{
-   const item=itemMap.get(String(sceneEl.dataset.orderScene));if(!item)return;
-   item.displayOrder=i;
-   const groupEls=[...sceneEl.querySelectorAll(":scope > .kp-live-order-children > [data-group-id]")];
-   const groupMap=new Map((item.outlineGroups||[]).map(g=>[String(g.id),g]));
-   groupEls.forEach((groupEl,gi)=>{
-     const g=groupMap.get(String(groupEl.dataset.groupId));if(!g)return;
-     g.displayOrder=gi;
-     const childIds=[...groupEl.querySelectorAll(":scope > .kp-live-order-grandchildren > [data-child-id]")].map(el=>String(el.dataset.childId));
-     const childMap=new Map((g.outlineChildren||[]).map(c=>[String(c.id),c]));
-     childIds.forEach((id,ci)=>{const c=childMap.get(id);if(c)c.displayOrder=ci});
-   });
- });
- saveNow();
-}
-function moveKpLiveOrder(id,delta){
- const list=q("#kpLiveOrderList");if(!list)return;
- const scene=list.querySelector(`[data-order-scene="${CSS.escape(String(id))}"]`);if(!scene)return;
- if(delta<0&&scene.previousElementSibling)list.insertBefore(scene,scene.previousElementSibling);
- if(delta>0&&scene.nextElementSibling)list.insertBefore(scene.nextElementSibling,scene);
- commitKpLiveOrderFromDom();renderKpLiveOrder();
-}
-function moveKpLiveGroup(sceneId,groupId,delta){
- const scene=q("#kpLiveOrderList")?.querySelector(`[data-order-scene="${CSS.escape(String(sceneId))}"]`);if(!scene)return;
- const row=scene.querySelector(`[data-group-id="${CSS.escape(String(groupId))}"]`);if(!row)return;
- if(delta<0&&row.previousElementSibling)row.parentElement.insertBefore(row,row.previousElementSibling);
- if(delta>0&&row.nextElementSibling)row.parentElement.insertBefore(row.nextElementSibling,row);
- commitKpLiveOrderFromDom();renderKpLiveOrder();
-}
-function moveKpLiveChild(sceneId,groupId,childId,delta){
- const scene=q("#kpLiveOrderList")?.querySelector(`[data-order-scene="${CSS.escape(String(sceneId))}"]`);if(!scene)return;
- const group=scene.querySelector(`[data-group-id="${CSS.escape(String(groupId))}"]`);if(!group)return;
- const row=group.querySelector(`[data-child-id="${CSS.escape(String(childId))}"]`);if(!row)return;
- if(delta<0&&row.previousElementSibling)row.parentElement.insertBefore(row,row.previousElementSibling);
- if(delta>0&&row.nextElementSibling)row.parentElement.insertBefore(row.nextElementSibling,row);
- commitKpLiveOrderFromDom();renderKpLiveOrder();
-}
-let orderDragId="";
-function setupKpLiveOrderDnD(){
- const list=q("#kpLiveOrderList");if(!list||list.dataset.orderWired==="1")return;list.dataset.orderWired="1";
- list.addEventListener("dragstart",e=>{const row=e.target.closest?.("[data-order-id]");if(!row)return;orderDragId=row.dataset.orderId;row.classList.add("dragging");e.dataTransfer.effectAllowed="move"});
- list.addEventListener("dragend",e=>{e.target.closest?.("[data-order-id]")?.classList.remove("dragging");list.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));orderDragId=""});
- list.addEventListener("dragover",e=>{const row=e.target.closest?.("[data-order-id]");if(!row||!orderDragId||row.dataset.orderId===orderDragId)return;e.preventDefault();list.querySelectorAll(".drag-over").forEach(x=>x.classList.remove("drag-over"));row.classList.add("drag-over")});
- list.addEventListener("drop",e=>{const targetRow=e.target.closest?.("[data-order-id]");const sourceScene=orderDragId?list.querySelector(`[data-order-scene="${CSS.escape(orderDragId)}"]`):null;const targetScene=targetRow?.closest?.("[data-order-scene]");if(!targetScene||!sourceScene||targetScene===sourceScene)return;e.preventDefault();const rect=targetRow.getBoundingClientRect();const after=e.clientY>rect.top+rect.height/2;list.insertBefore(sourceScene,after?targetScene.nextSibling:targetScene);commitKpLiveOrderFromDom();renderKpLiveOrder()});
- list.addEventListener("click",e=>{
-   const sceneToggle=e.target.closest?.("[data-order-toggle-scene]");
-   const groupToggle=e.target.closest?.("[data-order-toggle-group]");
-   if(sceneToggle){const id=String(sceneToggle.dataset.orderToggleScene||"");if(kpLiveOrderCollapsedScenes.has(id))kpLiveOrderCollapsedScenes.delete(id);else kpLiveOrderCollapsedScenes.add(id);renderKpLiveOrder();return}
-   if(groupToggle){const key=`${String(groupToggle.dataset.scene||"")}::${String(groupToggle.dataset.orderToggleGroup||"")}`;if(kpLiveOrderCollapsedGroups.has(key))kpLiveOrderCollapsedGroups.delete(key);else kpLiveOrderCollapsedGroups.add(key);renderKpLiveOrder();return}
-   const up=e.target.closest?.("[data-order-up]"),down=e.target.closest?.("[data-order-down]");
-   const gup=e.target.closest?.("[data-group-up]"),gdown=e.target.closest?.("[data-group-down]");
-   const cup=e.target.closest?.("[data-child-up]"),cdown=e.target.closest?.("[data-child-down]");
-   if(up)moveKpLiveOrder(up.dataset.orderUp,-1);else if(down)moveKpLiveOrder(down.dataset.orderDown,1);
-   else if(gup)moveKpLiveGroup(gup.dataset.scene,gup.dataset.groupUp,-1);else if(gdown)moveKpLiveGroup(gdown.dataset.scene,gdown.dataset.groupDown,1);
-   else if(cup)moveKpLiveChild(cup.dataset.scene,cup.dataset.group,cup.dataset.childUp,-1);else if(cdown)moveKpLiveChild(cdown.dataset.scene,cdown.dataset.group,cdown.dataset.childDown,1);
- });
 }
 
 function renderTestShareBar(){
  shareTest=currentShare()||shareTest;
  const u=testShareUrl(),inp=q("#testShareUrl"),op=q("#openTestShare");
  if(inp)inp.value=u;if(op){op.href=u||"#";op.hidden=!u}
+ const actions=inp?.closest?.(".share-test-actions");
+ let meta=q("#currentShareUrlMeta");
+ if(actions&&!meta){
+   meta=document.createElement("div");
+   meta.id="currentShareUrlMeta";
+   meta.className="share-current-map";
+   actions.insertAdjacentElement("afterend",meta);
+ }
+ if(meta){
+   const ps=(shareTest.participants||[]).slice().sort(shareParticipantSort);
+   const names=ps.map(p=>shareDisplayName(p.name)).join("・");
+   const rows=[\`<div class="share-map-row"><strong>共有</strong><span>\${esc(names?("参加者："+names):"参加者未登録")}</span></div>\`];
+   ps.filter(p=>p.shareId).forEach(p=>{
+     const who=shareDisplayName(p.name),ho=String(p.ho||"").trim();
+     rows.push(\`<div class="share-map-row"><strong>\${esc(ho||(\`\${who}専用\`))}</strong>\${ho?\`<span>\${esc(who)}</span>\`:""}</div>\`);
+   });
+   meta.innerHTML=rows.join("");
+ }
  renderShareHistory();refreshRevealActions();
  if(!q("#kpLiveOrderWrap")?.hidden)renderKpLiveOrder();
 }
-async function syncTestShare(){
+function syncTestShare(){
  shareTest=currentShare()||shareTest;
  if(!shareTest?.shareId)throw new Error("先に共通URLを作成してください。");
  await TRPG39Cloud.updateSharedPage(shareTest.shareId,sharePayloadFor(null));
@@ -3243,7 +3188,7 @@ function renderShareParticipants(){
  host.innerHTML=ps.map((p,i)=>{
    const u=shareUrlById(p.shareId);
    return `<div class="kp2-person" data-pl-row="${i}">
-    <div class="kp2-actions" style="justify-content:space-between;align-items:center"><b>${esc(p.name||"PL")}</b><button type="button" class="danger" data-pl-remove="${i}">削除</button></div>
+    <div class="kp2-actions" style="justify-content:space-between;align-items:center"><b>${esc((String(p.ho||"").trim()||"専用")+"｜"+shareDisplayName(p.name||"PL"))}</b><button type="button" class="danger" data-pl-remove="${i}">削除</button></div>
     <div class="kp2-pcgrid">
       <label>HO<input data-pl-ho="${i}" value="${esc(p.ho||"")}" placeholder="未定 / HO1 など"></label>
       <label>PC名<input data-pl-pc="${i}" value="${esc(p.pcName||"")}" placeholder="未定"></label>
@@ -3270,7 +3215,7 @@ function addShareParticipant(){
  if(inp)inp.value="";
  saveNow();
  renderShareParticipants();
- q("#testShareStatus").textContent=`${name}さんをこの陣に登録しました。`;
+ q("#testShareStatus").textContent=`${shareDisplayName(name)}をこの陣に登録しました。`;
  inp?.focus();
 }
 q("#addPl")?.addEventListener("click",addShareParticipant);
@@ -3285,13 +3230,13 @@ q("#shareParticipants").addEventListener("input",e=>{
  if(i<0||!key||!shareTest.participants?.[i])return;shareTest.participants[i][key]=el.value;save();
 });
 q("#shareParticipants").addEventListener("change",async e=>{
- if(!e.target.matches("[data-pl-ho]"))return;shareTest=currentShare()||shareTest;const p=shareTest.participants?.[+e.target.dataset.plHo];if(p?.shareId){try{await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));q("#testShareStatus").textContent=`${p.name}さんのHO設定を共有先へ反映しました。`}catch(err){q("#testShareStatus").textContent=`HO設定を反映できませんでした：${err?.message||err}`}}
+ if(!e.target.matches("[data-pl-ho]"))return;shareTest=currentShare()||shareTest;const p=shareTest.participants?.[+e.target.dataset.plHo];if(p?.shareId){try{await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));q("#testShareStatus").textContent=`${shareDisplayName(p.name)}のHO設定を共有先へ反映しました。`}catch(err){q("#testShareStatus").textContent=`HO設定を反映できませんでした：${err?.message||err}`}}
 });
 q("#shareParticipants").addEventListener("click",async e=>{
  shareTest=currentShare()||shareTest;const make=e.target.closest("[data-pl-make]"),copy=e.target.closest("[data-pl-copy]"),rem=e.target.closest("[data-pl-remove]");
- if(rem){const i=+rem.dataset.plRemove,p=shareTest.participants?.[i];if(p&&confirm(`${p.name}さんをこの陣から削除しますか？`)){shareTest.participants.splice(i,1);saveNow();renderShareParticipants()}return}
- if(make){const p=shareTest.participants?.[+make.dataset.plMake];if(!p)return;try{if(!window.TRPG39Cloud)throw new Error("共有機能を読み込めませんでした。");if(!p.shareId)p.shareId=await TRPG39Cloud.createSharedPage(sharePayloadFor(p));else await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));saveNow();renderShareParticipants();q("#testShareStatus").textContent=`${p.name}さんの専用URLを用意しました。`}catch(err){q("#testShareStatus").textContent=`専用URLを作成できませんでした：${err?.message||err}`}return}
- if(copy){const p=shareTest.participants?.[+copy.dataset.plCopy],u=shareUrlById(p?.shareId);if(u){await navigator.clipboard.writeText(u);q("#testShareStatus").textContent=`${p.name}さんの専用URLをコピーしました。`}}
+ if(rem){const i=+rem.dataset.plRemove,p=shareTest.participants?.[i];if(p&&confirm(`${shareDisplayName(p.name)}をこの陣から削除しますか？`)){shareTest.participants.splice(i,1);saveNow();renderShareParticipants()}return}
+ if(make){const p=shareTest.participants?.[+make.dataset.plMake];if(!p)return;try{if(!window.TRPG39Cloud)throw new Error("共有機能を読み込めませんでした。");if(!p.shareId)p.shareId=await TRPG39Cloud.createSharedPage(sharePayloadFor(p));else await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));saveNow();renderShareParticipants();q("#testShareStatus").textContent=`${shareDisplayName(p.name)}の専用URLを用意しました。`}catch(err){q("#testShareStatus").textContent=`専用URLを作成できませんでした：${err?.message||err}`}return}
+ if(copy){const p=shareTest.participants?.[+copy.dataset.plCopy],u=shareUrlById(p?.shareId);if(u){await navigator.clipboard.writeText(u);q("#testShareStatus").textContent=`${shareDisplayName(p.name)}の専用URLをコピーしました。`}}
 });
 q("#makeTestShare").onclick=async()=>{
  const st=q("#testShareStatus");
@@ -3332,7 +3277,7 @@ q("#newShareSession").onclick=()=>{
  const hasCurrent=!!shareTest?.shareId;
  if(hasCurrent&&!confirm("現在の陣をこの時点で残し、新しい陣を開始しますか？"))return;
  if(hasCurrent){
-   b.shareSessions.push({...shareTest,endedAt:new Date().toISOString(),items:[...(shareTest.items||[])]});
+   b.shareSessions.push({...shareTest,scenarioTitle:b.scenarioTitle||sc?.title||"シナリオ",endedAt:new Date().toISOString(),items:[...(shareTest.items||[])],participants:(shareTest.participants||[]).map(p=>({...p}))});
  }
  b.currentShareSession=freshShareSession();shareTest=b.currentShareSession;saveNow();renderTestShareBar();
  q("#testShareStatus").textContent="新しい陣を開始しました。「共通URLを作成」を押してください。";
@@ -3570,4 +3515,6 @@ if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find
 renderPC();
 renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
-</script></body></html>
+</script>
+<!-- build: kp-binder share-url-manager v2 2026-09-01 -->
+</body></html>
