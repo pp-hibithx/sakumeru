@@ -878,7 +878,18 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
    </section>
    <section class="box pc-prod-box"><h2>技能比較</h2><div class="muted-note">PC・キャラシURL連携後、この陣の技能を比較します。</div><div id="compare" style="overflow:auto"></div></section>
  </section>
-<section class="panel" id="kpLiveRecoveryPanel" style="margin-top:12px"><h2>KPlive共有URLから復旧</h2><p class="muted-note">配布済みKPlive URLに残っている共有データを読み込み、KP BINDERへ復旧プレビューします。読み込みだけでは保存しません。複数URLがある場合は1行ずつ貼れます。</p><textarea id="kpLiveRecoveryUrls" rows="4" style="width:100%" placeholder="https://pp-hibithx.github.io/sakumeru/share/kp-live.html?id=..."></textarea><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="kpLiveRecoveryLoad">共有URLから読み込む</button><button type="button" id="kpLiveRecoveryCommit" class="danger" disabled>確認した内容を復旧保存</button></div><div id="kpLiveRecoveryStatus" class="muted-note" style="margin-top:8px"></div></section></main>
+<details id="kpLiveRecoveryPanel" class="panel" style="margin-top:12px">
+  <summary style="cursor:pointer;font-weight:700">緊急用：KPlive共有URLから復旧</summary>
+  <div style="margin-top:12px">
+    <p class="muted-note">配布済みKPlive URLに残っている共有データを読み込み、KP BINDERへ復旧プレビューします。通常時は閉じたままで大丈夫です。読み込みだけでは保存しません。</p>
+    <textarea id="kpLiveRecoveryUrls" rows="3" style="width:100%" placeholder="https://pp-hibithx.github.io/sakumeru/share/kp-live.html?id=..."></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" id="kpLiveRecoveryLoad">共有URLから読み込む</button>
+      <button type="button" id="kpLiveRecoveryCommit" class="danger" disabled>確認した内容を復旧保存</button>
+    </div>
+    <div id="kpLiveRecoveryStatus" class="muted-note" style="margin-top:8px"></div>
+  </div>
+</details></main>
 <div data-site-footer></div>
 <script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
 <script>
@@ -960,7 +971,7 @@ function mergeKpPayloads(payloads,ids){
 }
 setTimeout(()=>{
  const load=q("#kpLiveRecoveryLoad"),commit=q("#kpLiveRecoveryCommit"),status=q("#kpLiveRecoveryStatus"),ta=q("#kpLiveRecoveryUrls");if(!load)return;
- ta.value="https://pp-hibithx.github.io/sakumeru/share/kp-live.html?id=9MZZVbURhtpAUt&v=0831j";
+ ta.value="";
  load.onclick=async()=>{commit.disabled=true;__kpLiveRecoveryPreview=null;const ids=ta.value.split(/\r?\n/).map(kpLiveIdFromUrl).filter(Boolean);if(!ids.length){status.textContent="共有URLを入力してください。";return}try{if(!window.TRPG39Cloud?.getSharedPage)throw new Error("共有読み込み機能を読み込めませんでした。");status.textContent="KPlive共有データを読み込み中…";const payloads=[];for(const id of ids){const raw=await TRPG39Cloud.getSharedPage(id);const p=unwrapKpShared(raw);if(!p||p.kind!=="kp-live-share")throw new Error(`${id} はKP共有データではありません。`);payloads.push(p)}const merged=mergeKpPayloads(payloads,ids);if(!merged.pages.length)throw new Error("共有URLには復旧できる開示本文がありませんでした。");__kpLiveRecoveryPreview=merged.binder;b=(typeof cloneBinderSafe==="function"?cloneBinderSafe(merged.binder):JSON.parse(JSON.stringify(merged.binder)));active=b.pages[0]?.id||"";q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ KPlive復旧プレビュー（未保存）";renderScenes();renderEditor();refreshStats();commit.disabled=false;status.textContent=`読み込み成功：${ids.length} URL ／ ${merged.pages.length}シーン。まだ保存していません。画面の本文を確認してください。`;renderTestShareBar?.()}catch(e){status.textContent=`読み込み失敗：${e?.message||e}`}};
  commit.onclick=()=>{if(!__kpLiveRecoveryPreview)return;if(!confirm("現在プレビューしているKPlive共有内容をKP BINDERへ復旧保存しますか？\n※共有されていなかった本文はKPliveからは復元できません。"))return;b=JSON.parse(JSON.stringify(__kpLiveRecoveryPreview));delete b.__unsavedNewBinder;__kpExplicitSave=true;saveNow();status.textContent="復旧保存しました。ページを再読み込みします。";setTimeout(()=>location.reload(),300)};
 },0);
