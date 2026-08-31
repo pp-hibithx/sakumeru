@@ -878,7 +878,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
    </section>
    <section class="box pc-prod-box"><h2>技能比較</h2><div class="muted-note">PC・キャラシURL連携後、この陣の技能を比較します。</div><div id="compare" style="overflow:auto"></div></section>
  </section>
-<section id="recoveryPanel" class="panel" style="margin-top:12px"><h2>KP BINDER 復旧モード</h2><div class="muted-note">保存領域に残っている内容のあるバインダーを検索します。候補を表示するだけでは保存しません。</div><div id="recoveryCandidates" style="margin-top:8px"></div></section></main>
+<section id="deepRecoveryPanel" class="panel" style="margin-top:12px"><h2>KP BINDER 深層復旧</h2><p class="muted-note">SAKU+MERUのlocalStorage全体から、旧形式・旧シナリオID・別キーに残ったKPバインダー候補を読み取り専用で探します。候補を表示するだけでは保存しません。</p><div id="deepRecoverySummary" class="muted-note"></div><div id="deepRecoveryCandidates" style="margin-top:8px"></div><details style="margin-top:10px"><summary>完全バックアップJSONから探す</summary><div style="margin-top:8px"><input id="deepRecoveryFile" type="file" accept=".json,application/json"><div id="deepRecoveryFileResult" class="muted-note" style="margin-top:6px"></div></div></details></section></main>
 <div data-site-footer></div>
 <script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
 <script>
@@ -923,9 +923,56 @@ let b=all[sid];
 b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];b.shareSessions??=[];
 b.scenarioTitle=sc.title||b.scenarioTitle||"シナリオ";
 q("#scenarioName").textContent=b.scenarioTitle+" ／ 自分専用";
-function binderDataScore(x){if(!x||typeof x!=="object")return 0;return (Array.isArray(x.pages)?x.pages.reduce((n,p)=>n+1+(p?.blocks?.length||0)+(String(p?.__v11ArticleHtml||"").length?2:0),0):0)+(Array.isArray(x.reveals)?x.reveals.length:0)+(Array.isArray(x.participants)?x.participants.length:0)}
-function renderRecoveryCandidates(){const host=q("#recoveryCandidates");if(!host)return;let rec={};try{rec=JSON.parse(localStorage.getItem("39x2_kp_binder_recovery_v1")||"{}")}catch{}const candidates=[];Object.entries(all||{}).forEach(([key,val])=>{const score=binderDataScore(val);if(score>0)candidates.push({source:"通常保存",key,val,score})});Object.entries(rec||{}).forEach(([key,row])=>{const val=row?.binder,score=binderDataScore(val);if(score>0)candidates.push({source:"復旧コピー",key,val,score})});candidates.sort((a,z)=>z.score-a.score);if(!candidates.length){host.innerHTML='<div class="muted-note">内容のある保存候補を検出できませんでした。</div>';return}host.innerHTML=candidates.map((c,i)=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><strong>${esc(c.val?.scenarioTitle||"タイトル不明")}</strong> <span class="muted-note">${esc(c.source)}／シーン ${(c.val?.pages||[]).length}</span><button type="button" class="secondary" data-recovery-preview="${i}" style="margin-left:8px">候補を表示</button></div>`).join("");host.querySelectorAll("[data-recovery-preview]").forEach(btn=>btn.onclick=()=>{const c=candidates[Number(btn.dataset.recoveryPreview)];if(!c)return;b=JSON.parse(JSON.stringify(c.val));b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];b.shareSessions??=[];q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ 復旧プレビュー（未保存）";active=b.pages[0]?.id||"";renderScenes();renderEditor();refreshStats();host.innerHTML=`<strong>${esc(b.scenarioTitle||"シナリオ")} を表示中（まだ保存していません）</strong><button type="button" id="commitRecovery" style="margin-left:8px">このデータを復旧保存</button>`;q("#commitRecovery").onclick=()=>{if(!confirm("表示中のデータを現在のシナリオへ復旧保存しますか？"))return;delete b.__unsavedNewBinder;saveNow();location.reload()}})}
-setTimeout(renderRecoveryCandidates,0);
+function cloneBinderSafe(v){try{return window.structuredClone?structuredClone(v):JSON.parse(JSON.stringify(v))}catch(_){return JSON.parse(JSON.stringify(v||{}))}}
+function textLen(v){return String(v??"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().length}
+function pageRichness(p){if(!p||typeof p!=="object")return 0;let n=3+textLen(p.title)+textLen(p.body)+textLen(p.__v11ArticleHtml);if(Array.isArray(p.blocks))for(const x of p.blocks)n+=4+textLen(x?.title)+textLen(x?.body)+textLen(x?.caption)+textLen(x?.text);if(Array.isArray(p.images))n+=p.images.length*2;return n}
+function binderRichness(x){if(!x||typeof x!=="object")return 0;let n=textLen(x.overview)+textLen(x.scenarioTitle);if(Array.isArray(x.pages))for(const p of x.pages)n+=pageRichness(p);if(Array.isArray(x.participants))n+=x.participants.length*4;if(Array.isArray(x.reveals))n+=x.reveals.length*3;if(Array.isArray(x.revealLog))n+=x.revealLog.length*2;if(Array.isArray(x.shareSessions))n+=x.shareSessions.length*2;return n}
+function looksLikeBinder(x){if(!x||typeof x!=="object"||Array.isArray(x))return false;if(Array.isArray(x.pages)&&(x.pages.length||"overview" in x||"participants" in x))return true;return false}
+function walkForBinders(root,sourceKey,out,path="$",depth=0,seen=new WeakSet()){
+ if(depth>8||root===null||typeof root!=="object")return;
+ if(seen.has(root))return;seen.add(root);
+ if(looksLikeBinder(root)){const score=binderRichness(root);if(score>0)out.push({sourceKey,path,val:root,score});}
+ if(Array.isArray(root)){for(let i=0;i<root.length&&i<500;i++)walkForBinders(root[i],sourceKey,out,`${path}[${i}]`,depth+1,seen);return}
+ for(const [k,v] of Object.entries(root)){walkForBinders(v,sourceKey,out,`${path}.${k}`,depth+1,seen)}
+}
+function collectDeepCandidates(){
+ const out=[];let scanned=0,parsed=0;
+ for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);if(!key)continue;scanned++;
+   const raw=localStorage.getItem(key);if(!raw)continue;
+   let v;try{v=JSON.parse(raw);parsed++}catch{continue}
+   walkForBinders(v,key,out);
+ }
+ const uniq=[];const sig=new Set();
+ for(const c of out.sort((a,z)=>z.score-a.score)){
+   const v=c.val;const signature=[String(v?.scenarioTitle||""),String(v?.pages?.length||0),String(v?.pages?.[0]?.title||""),String(c.score)].join("|");
+   if(sig.has(signature))continue;sig.add(signature);uniq.push(c)
+ }
+ return {rows:uniq,scanned,parsed};
+}
+function showBinderCandidate(c,host){
+ b=cloneBinderSafe(c.val);b.pages??=[];b.participants??=[];b.reveals??=[];b.revealLog??=[];b.shareSessions??=[];
+ q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ 復旧プレビュー（未保存）";
+ active=b.pages[0]?.id||"";renderScenes();renderEditor();refreshStats();
+ host.innerHTML=`<div><strong>${esc(b.scenarioTitle||"タイトル不明")} を表示中</strong><div class="muted-note">まだ保存していません。シーン ${b.pages.length}件 ／ 検出元 ${esc(c.sourceKey)} ${esc(c.path)}</div><button type="button" id="deepCommitRecovery" style="margin-top:8px">このデータを現在のシナリオへ復旧保存</button> <button type="button" id="deepBackRecovery" class="secondary" style="margin-top:8px">候補一覧へ戻る</button></div>`;
+ q("#deepBackRecovery").onclick=renderDeepRecovery;
+ q("#deepCommitRecovery").onclick=()=>{if(!confirm("表示中のKPバインダーを現在のシナリオへ復旧保存しますか？"))return;delete b.__unsavedNewBinder;saveNow();location.reload()};
+}
+function renderCandidateRows(rows,host){
+ if(!rows.length){host.innerHTML='<div class="muted-note">内容のあるKPバインダー候補は見つかりませんでした。</div>';return}
+ host.innerHTML=rows.slice(0,50).map((c,i)=>{const v=c.val;const titles=(v.pages||[]).slice(0,3).map(p=>p?.title||"無題").join(" / ");return `<div style="padding:9px 0;border-top:1px solid var(--line)"><strong>${esc(v?.scenarioTitle||"タイトル不明")}</strong> <span class="muted-note">シーン ${(v.pages||[]).length}件${titles?` ／ ${esc(titles)}`:""}<br>検出元：${esc(c.sourceKey)} ${esc(c.path)}</span><button type="button" class="secondary" data-deep-preview="${i}" style="margin-left:8px">候補を表示</button></div>`}).join("");
+ host.querySelectorAll("[data-deep-preview]").forEach(btn=>btn.onclick=()=>showBinderCandidate(rows[Number(btn.dataset.deepPreview)],host));
+}
+function renderDeepRecovery(){
+ const host=q("#deepRecoveryCandidates"),sum=q("#deepRecoverySummary");if(!host)return;
+ const result=collectDeepCandidates();
+ if(sum)sum.textContent=`localStorage ${result.scanned}キーを確認／JSON ${result.parsed}件を解析／復旧候補 ${result.rows.length}件`;
+ renderCandidateRows(result.rows,host);
+}
+setTimeout(renderDeepRecovery,0);
+setTimeout(()=>{const inp=q("#deepRecoveryFile"),res=q("#deepRecoveryFileResult"),host=q("#deepRecoveryCandidates");if(!inp)return;inp.onchange=async()=>{const f=inp.files?.[0];if(!f)return;let obj;try{obj=JSON.parse(await f.text())}catch(e){res.textContent="JSONを読み込めませんでした。";return}const rows=[];if(obj?.kind==="SAKUMERU_FULL_BACKUP"&&obj?.localStorage&&typeof obj.localStorage==="object"){
+ for(const [key,raw] of Object.entries(obj.localStorage)){let v;try{v=typeof raw==="string"?JSON.parse(raw):raw}catch{continue}walkForBinders(v,`バックアップ:${key}`,rows)}
+}else{walkForBinders(obj,"選択JSON",rows)}rows.sort((a,z)=>z.score-a.score);res.textContent=`バックアップ内の候補 ${rows.length}件`;renderCandidateRows(rows,host)}},0);
 
 
 let saveTimer=0;
