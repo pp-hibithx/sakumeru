@@ -97,17 +97,24 @@ function toggleXHidden(editor,range){
  });
  return !!nodes.length;
 }
+function decorateSpecialBlocks(editor){
+ editor.querySelectorAll(".sm-special").forEach(block=>{
+  if(block.querySelector(":scope > .sm-rich-special-remove,:scope > .kp-special-head > .sm-rich-special-remove"))return;
+  const button=document.createElement("button");button.type="button";button.className="sm-rich-special-remove sm-rich-ui";button.contentEditable="false";button.textContent="削除";button.title="このブロックを削除";
+  const head=block.matches("section")?block.querySelector(":scope > .kp-special-head"):null;(head||block).append(button);
+ });
+}
 function create(options={}){
  const mount=options.mount;if(!mount)throw new Error("RichEditor mount is required");
  mount.classList.add("sm-rich-shell");mount.innerHTML=toolbarHtml(options)+`<article class="sm-rich-editor blog-editor" contenteditable="true" role="textbox" aria-multiline="true"></article>`;
  const editor=mount.querySelector(".sm-rich-editor"),toolbar=mount.querySelector(".sm-rich-toolbar");
- editor.innerHTML=String(options.html||"").trim()||textToHtml(options.text||"");normalizeExistingEditor(editor);
+ editor.innerHTML=String(options.html||"").trim()||textToHtml(options.text||"");normalizeExistingEditor(editor);decorateSpecialBlocks(editor);
  let range=null,history=[cleanupEditorHtml(editor)],index=0,timer=0,destroyed=false;
  const saveRange=()=>{const s=getSelection();if(s?.rangeCount&&editor.contains(s.getRangeAt(0).commonAncestorContainer))range=s.getRangeAt(0).cloneRange()};
  const restoreRange=()=>{editor.focus();const s=getSelection();s.removeAllRanges();if(range)s.addRange(range);else{const r=document.createRange();r.selectNodeContents(editor);r.collapse(false);s.addRange(r)}};
  const value=()=>cleanupEditorHtml(editor,options.cleanup);
  const updateButtons=()=>{toolbar.querySelector("[data-rich-undo]").disabled=index<=0;toolbar.querySelector("[data-rich-redo]").disabled=index>=history.length-1};
- const notify=({record=true}={})=>{normalizeExistingEditor(editor);const html=value();if(record&&html!==history[index]){history=history.slice(0,index+1);history.push(html);if(history.length>31)history.shift();index=history.length-1}updateButtons();options.onChange?.({html,text:plainText(html)})};
+ const notify=({record=true}={})=>{normalizeExistingEditor(editor);decorateSpecialBlocks(editor);const html=value();if(record&&html!==history[index]){history=history.slice(0,index+1);history.push(html);if(history.length>31)history.shift();index=history.length-1}updateButtons();options.onChange?.({html,text:plainText(html)})};
  const exec=(cmd,arg=null)=>{restoreRange();document.execCommand(cmd,false,arg);saveRange();notify()};
  toolbar.addEventListener("mousedown",saveRange);
  toolbar.querySelectorAll("[data-rich-cmd]").forEach(b=>b.onclick=()=>exec(b.dataset.richCmd));
@@ -116,13 +123,14 @@ function create(options={}){
  toolbar.querySelector("[data-rich-hr]").onclick=()=>{restoreRange();document.execCommand("insertHTML",false,"<hr><p><br></p>");notify()};
  toolbar.querySelectorAll("[data-rich-special]").forEach(b=>b.onclick=()=>{restoreRange();document.execCommand("insertHTML",false,specialHtml(b.dataset.richSpecial));notify()});
  const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("Xで伏せたい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
- toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
- toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
+ toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
+ toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
+ editor.addEventListener("click",e=>{const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){block.remove();range=null;notify()}});
  editor.addEventListener("keyup",saveRange);editor.addEventListener("mouseup",saveRange);editor.addEventListener("blur",saveRange);
  editor.addEventListener("input",()=>{saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)});
  editor.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const k=e.key.toLowerCase();if(k==="z"||k==="y"){e.preventDefault();toolbar.querySelector(k==="y"||e.shiftKey?"[data-rich-redo]":"[data-rich-undo]").click()}});
  updateButtons();
- return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);history=[value()];index=0;range=null;updateButtons()},focus(){editor.focus()},destroy(){destroyed=true;clearTimeout(timer);mount.innerHTML=""},get destroyed(){return destroyed}};
+ return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;updateButtons()},focus(){editor.focus()},destroy(){destroyed=true;clearTimeout(timer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
 window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
