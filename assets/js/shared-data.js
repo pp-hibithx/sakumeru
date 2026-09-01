@@ -123,8 +123,42 @@
     };
   }
 
+  function mergeParticipantRows(eventRows = [], libraryRows = []) {
+    const keyOf = r => String(r?.plName || "").normalize("NFKC").trim().toLowerCase();
+    const libMap = new Map();
+    (Array.isArray(libraryRows) ? libraryRows : []).forEach(r => {
+      const key = keyOf(r);
+      if (!key) return;
+      const prev = libMap.get(key) || {};
+      libMap.set(key, {
+        ...prev,
+        ...r,
+        ho: String(r?.ho || prev.ho || ""),
+        pcName: String(r?.pcName || prev.pcName || ""),
+        playerId: String(r?.playerId || prev.playerId || ""),
+        relation: String(r?.relation || prev.relation || "")
+      });
+    });
+    return (Array.isArray(eventRows) ? eventRows : []).map(r => {
+      const lib = libMap.get(keyOf(r)) || {};
+      return {
+        ...lib,
+        ...r,
+        role: String(r?.role || lib.role || "PL"),
+        ho: String(r?.ho || lib.ho || ""),
+        plName: String(r?.plName || lib.plName || ""),
+        playerId: String(r?.playerId || lib.playerId || ""),
+        pcName: String(r?.pcName || lib.pcName || ""),
+        relation: String(r?.relation || lib.relation || "")
+      };
+    });
+  }
+
   function albumFromEvent(event, existing = {}) {
     const e = normalizeEvent(event);
+    const mergedParticipantRows = e.participantRows.length
+      ? mergeParticipantRows(e.participantRows, existing.participantRows || [])
+      : (existing.participantRows || []);
     return normalizeAlbum({
       ...existing,
       eventId: e.id,
@@ -139,11 +173,11 @@
       facilitatorless: e.facilitatorless !== undefined ? e.facilitatorless : !!existing.facilitatorless,
       role: e.role || existing.role || "PL",
       selfHo: e.selfHo || existing.selfHo || "",
-      pcName: e.pcName,
-      pcId: e.pcId,
+      pcName: e.pcName || existing.pcName || "",
+      pcId: e.pcId || existing.pcId || "",
       participants: e.participants,
       participantIds: e.participantIds,
-      participantRows: e.participantRows.length ? e.participantRows : (existing.participantRows || []),
+      participantRows: mergedParticipantRows,
       runId: e.runId || existing.runId || "",
       runLabel: e.runLabel || existing.runLabel || "",
       sessionDay: e.sessionDay || existing.sessionDay || 0,
@@ -251,6 +285,7 @@ window.TRPG39 = {
     v),
     normalizeEvent,
     normalizeAlbum,
+    mergeParticipantRows,
     albumFromEvent,
     syncEventToAlbum,
     syncAllEventsToAlbum,
