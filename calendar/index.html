@@ -1632,9 +1632,14 @@ $("saveEvent").onclick=()=>{
 };
 $("closeEventDetail").onclick=hideEventDetail;
 $("editFromDetail").onclick=()=>{const id=$("eventDetailPanel").dataset.eventId;if(!id)return;hideEventDetail();editEvent(id)};
-$("reportFromDetail").onclick=()=>{const id=$("eventDetailPanel").dataset.eventId;if(!id)return;location.href=`../library/?event=${encodeURIComponent(id)}&action=report`};
+function openCalendarReportInLibrary(id){
+ const x=events().find(v=>String(v.id)===String(id));if(!x)return;
+ const date=String(x.start||"").slice(0,10);
+ const u=new URL("../library/",location.href);u.searchParams.set("event",id);u.searchParams.set("action","report");if(date)u.searchParams.set("reportDate",date);location.href=u.href;
+}
+$("reportFromDetail").onclick=()=>{const id=$("eventDetailPanel").dataset.eventId;if(id)openCalendarReportInLibrary(id)};
 $("libraryFromDetail").onclick=()=>{const id=$("eventDetailPanel").dataset.eventId;if(!id)return;location.href=`../library/?event=${encodeURIComponent(id)}`};
-$("reportFromEvent").onclick=()=>{const id=$("eventId").value;if(!id)return;location.href=`../library/?event=${encodeURIComponent(id)}&action=report`;};
+$("reportFromEvent").onclick=()=>{const id=$("eventId").value;if(id)openCalendarReportInLibrary(id)};
 $("deleteEvent").onclick=()=>{const id=$("eventId").value;if(!id||!confirm("この予定を削除しますか？"))return;const old=events().find(x=>x.id===id);saveEvents(events().filter(x=>x.id!==id));if(old?.type!=="blocked")TRPG39.saveAlbum(TRPG39.loadAlbum().filter(x=>x.eventId!==id));resetForm();hideEditor();renderCalendar()};
 $("prevMonth").onclick=()=>{current.setMonth(current.getMonth()-1);renderCalendar()};
 $("nextMonth").onclick=()=>{current.setMonth(current.getMonth()+1);renderCalendar()};
