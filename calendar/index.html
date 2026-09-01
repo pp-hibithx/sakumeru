@@ -760,7 +760,7 @@
   top:0;
   right:0;
   z-index:10020;
-  width:min(760px,92vw);
+  width:min(1080px,96vw);
   height:100dvh;
   max-height:100dvh;
   overflow:auto;
@@ -796,9 +796,49 @@ body.calendar-editor-open{overflow:hidden}
 }
 .event-editor-head h2{margin:0}
 #closeEventEditor{width:auto;white-space:nowrap}
+#eventPanel .event-form{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px 16px;
+}
+#eventPanel .event-form > div{min-width:0}
+#eventPanel .event-form input,
+#eventPanel .event-form select{width:100%;box-sizing:border-box}
+#eventPanel .event-participants-section{
+  margin-top:4px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+}
+#eventPanel .event-participants-section > .row{margin-bottom:4px}
+#eventPanel .calendar-library-participant-row{
+  grid-template-columns:92px minmax(180px,1.15fr) minmax(150px,.9fr) minmax(180px,1fr) auto;
+  gap:10px;
+}
+#eventPanel .event-editor-actions{
+  position:sticky;
+  bottom:-18px;
+  z-index:3;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:16px -18px -18px;
+  padding:12px 18px;
+  background:var(--panel);
+  border-top:1px solid var(--line);
+}
+#eventPanel .event-editor-actions button{width:auto}
+@media(max-width:900px){
+  #eventPanel .event-form{grid-template-columns:1fr}
+  #eventPanel .calendar-library-participant-row{grid-template-columns:88px minmax(0,1fr) minmax(0,1fr)}
+  #eventPanel .calendar-library-participant-row > :nth-child(4){grid-column:2/4}
+  #eventPanel .calendar-library-participant-row .participant-remove{grid-column:3;justify-self:end}
+}
 @media(max-width:700px){
   #eventPanel.event-editor{width:100vw;padding:14px}
   .event-editor-head{top:-14px;margin:-14px -14px 12px;padding:12px 14px}
+  #eventPanel .calendar-library-participant-row{grid-template-columns:1fr}
+  #eventPanel .calendar-library-participant-row > :nth-child(4),
+  #eventPanel .calendar-library-participant-row .participant-remove{grid-column:auto}
+  #eventPanel .event-editor-actions{bottom:-14px;margin:14px -14px -14px;padding:10px 14px}
 }
 </style>
 </head>
@@ -859,7 +899,7 @@ body.calendar-editor-open{overflow:hidden}
 <div class="trpg-field"><label>システム</label><input id="eventSystem"><div id="facilitatorHint" class="small muted"></div></div>
 <div class="trpg-field"><label>自分のHO / 役割</label><input id="eventSelfHo" placeholder="HO1 / KPC など"></div>
 <div class="trpg-field"><label>PC</label><select id="eventPcSelect"><option value="">直接入力</option></select><input id="eventPc" placeholder="未登録PCは保存時にPC LIBRARYへ自動登録"></div>
-<div class="full trpg-field">
+<div class="full trpg-field event-participants-section">
   <div class="row" style="align-items:center">
     <div><label style="margin:0">参加者</label></div>
     <button id="addEventParticipantRow" type="button" style="width:auto">＋ 参加者を追加</button>
