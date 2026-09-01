@@ -3192,7 +3192,7 @@ function deletePlayerFromDirectory(id){
 }
 
 function playerRowsForRecord(x){
- return Array.isArray(x.participantRows)&&x.participantRows.length?x.participantRows:(x.participants||[]).map(n=>({plName:n,role:"PL",pcName:"",ho:""}));
+ return Array.isArray(x.participantRows)&&x.participantRows.length?x.participantRows:(x.participants||[]).map((n,i)=>({plName:n,playerId:(x.participantIds||[])[i]||"",role:"PL",pcName:"",pcId:"",ho:""}));
 }
 function playerRecordRows(player,x){
  return playerRowsForRecord(x).filter(r=>{
