@@ -1581,28 +1581,30 @@ function setRunRoster(runId,roster){
  localStorage.setItem(RUN_ROSTER_STORE_KEY,JSON.stringify(all));
 }
 function ensureRunRosterFromData(runId){
- let roster=getRunRoster(runId);
- if(roster)return roster;
-
  const items=data.filter(x=>x.runId===runId).sort(bySessionStart);
- if(!items.length)return null;
-
- // Prefer a main-session record with the fullest participant composition.
- const ranked=items.slice().sort((a,b)=>{
-   const ak=sessionKindForRecord(a)==="main"?10:0;
-   const bk=sessionKindForRecord(b)==="main"?10:0;
-   const ac=storedSelfPcRows(a).length+rowsFromRecord(a).length;
-   const bc=storedSelfPcRows(b).length+rowsFromRecord(b).length;
-   return (bk+bc)-(ak+ac)||bySessionStart(a,b);
- });
- const base=ranked[0];
- roster={
-   role:base.role||"PL",
-   selfPcs:storedSelfPcRows(base),
-   participants:rowsFromRecord(base)
- };
- setRunRoster(runId,roster);
- return roster;
+ if(items.length){
+   // Canonical LIBRARY records are authoritative. The old runRoster store is cache/fallback only.
+   const ranked=items.slice().sort((a,b)=>{
+     const ak=sessionKindForRecord(a)==="main"?10:0;
+     const bk=sessionKindForRecord(b)==="main"?10:0;
+     const ac=storedSelfPcRows(a).length+rowsFromRecord(a).length;
+     const bc=storedSelfPcRows(b).length+rowsFromRecord(b).length;
+     return (bk+bc)-(ak+ac)||bySessionStart(a,b);
+   });
+   const base=ranked[0];
+   const roster={role:base.role||"PL",selfPcs:storedSelfPcRows(base),participants:rowsFromRecord(base)};
+   setRunRoster(runId,roster);
+   return roster;
+ }
+ const evs=(TRPG39.loadEvents?TRPG39.loadEvents():[]).filter(e=>e.runId===runId);
+ if(evs.length){
+   const base=evs.slice().sort((a,b)=>(rowsFromRecord(b).length-rowsFromRecord(a).length))[0];
+   const selfPcs=(base.pcName||base.pcId||base.selfHo)?[{pcName:base.pcName||"",pcId:base.pcId||"",ho:base.selfHo||""}]:[];
+   const roster={role:base.role||"PL",selfPcs,participants:rowsFromRecord(base)};
+   setRunRoster(runId,roster);
+   return roster;
+ }
+ return getRunRoster(runId);
 }
 
 const X_REPORT_STORE_KEY="trpg39.library.xReports.v1";
@@ -1878,6 +1880,7 @@ function addParticipantRow(v={},opts={}){
  const row=document.createElement("div");row.className="participant-row";
  row.dataset.placeholder=opts.placeholder?"1":"0";
  const role=String(v.role||"PL"),pl=String(v.plName||v.name||"");
+ row.dataset.playerId=String(v.playerId||"");
  const cfg=facilitatorConfig({});
  row.innerHTML=`<div class="participant-person">
    <div><label>役割</label><select class="partRole">${roleOptions(role,cfg.label)}</select></div>
@@ -1917,21 +1920,21 @@ function addParticipantRow(v={},opts={}){
    return [...names].sort((a,b)=>a.localeCompare(b,"ja"));
  }
  function addPc(pc={}){
-   const pr=document.createElement("div");pr.className="participant-pc-row";
+   const pr=document.createElement("div");pr.className="participant-pc-row";pr.dataset.pcId=String(pc.pcId||"");
    pr.innerHTML=`<div><label>HO / 役割</label><input class="partPcHo" value="${esc(pc.ho||"")}" placeholder="HO1 / KPC など"></div>
    <div class="participant-field-wrap"><label>PC</label><input class="partPcName" value="${esc(pc.pcName||"")}" placeholder="PC名を検索・入力" autocomplete="off"><div class="participant-picker-results partPcResults"></div></div>
    <button type="button" class="danger participant-pc-remove">削除</button>`;
    pcBox.appendChild(pr);
    const inp=pr.querySelector(".partPcName"),res=pr.querySelector(".partPcResults");
    const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),names=playerPcCandidates().filter(n=>!term||n.normalize("NFKC").toLowerCase().includes(term));if(names.length){res.innerHTML=names.map(n=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(n)}">${esc(n)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;res.classList.remove("open")})};
-   inp.addEventListener("focus",render);inp.addEventListener("input",render);
+   inp.addEventListener("focus",render);inp.addEventListener("input",()=>{pr.dataset.pcId="";render()});
    pr.querySelector(".participant-pc-remove").onclick=()=>pr.remove();
  }
- const pcs0=Array.isArray(v.pcs)?v.pcs:((v.pcName||v.ho)?[{pcName:v.pcName||"",ho:v.ho||""}]:[]);
+ const pcs0=Array.isArray(v.pcs)?v.pcs:((v.pcName||v.ho||v.pcId)?[{pcName:v.pcName||"",ho:v.ho||"",pcId:v.pcId||""}]:[]);
  pcs0.forEach(addPc);
  row.querySelector(".participant-pc-add").onclick=()=>addPc({});
- function renderPl(){const raw=plInput.value.trim(),term=raw.normalize("NFKC").toLowerCase(),rows=currentPlayers().filter(p=>!term||[p.name,p.publicName,p.socialName].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term)).slice(0,40);if(rows.length){plResults.innerHTML=rows.map(p=>`<button type="button" class="participant-picker-item" data-pl-choice="${esc(p.name)}">${esc(p.name)}</button>`).join("")}else if(raw){plResults.innerHTML=`<button type="button" class="participant-picker-item" data-pl-create="${esc(raw)}">＋「${esc(raw)}」を新しい参加者として使う</button><div class="participant-picker-empty">保存時にPLAYERSへ登録されます。</div>`}else{plResults.innerHTML='<div class="participant-picker-empty">名前を入力すると既存の参加者を検索できます。未登録ならそのまま新規入力できます。</div>'}plResults.classList.add("open");plResults.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plChoice;plResults.classList.remove("open")});plResults.querySelectorAll("[data-pl-create]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plCreate;if(TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){TRPG39.ensurePlayer(plInput.value);players=TRPG39.loadPlayers()}plResults.classList.remove("open")})}
- plInput.addEventListener("focus",renderPl);plInput.addEventListener("input",renderPl);
+ function renderPl(){const raw=plInput.value.trim(),term=raw.normalize("NFKC").toLowerCase(),rows=currentPlayers().filter(p=>!term||[p.name,p.publicName,p.socialName].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term)).slice(0,40);if(rows.length){plResults.innerHTML=rows.map(p=>`<button type="button" class="participant-picker-item" data-pl-choice="${esc(p.name)}" data-pl-id="${esc(p.id||"")}">${esc(p.name)}</button>`).join("")}else if(raw){plResults.innerHTML=`<button type="button" class="participant-picker-item" data-pl-create="${esc(raw)}">＋「${esc(raw)}」を新しい参加者として使う</button><div class="participant-picker-empty">保存時にPLAYERSへ登録されます。</div>`}else{plResults.innerHTML='<div class="participant-picker-empty">名前を入力すると既存の参加者を検索できます。未登録ならそのまま新規入力できます。</div>'}plResults.classList.add("open");plResults.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plChoice;row.dataset.playerId=b.dataset.plId||"";plResults.classList.remove("open")});plResults.querySelectorAll("[data-pl-create]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plCreate;if(TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){TRPG39.ensurePlayer(plInput.value);players=TRPG39.loadPlayers()}plResults.classList.remove("open")})}
+ plInput.addEventListener("focus",renderPl);plInput.addEventListener("input",()=>{row.dataset.playerId="";renderPl()});
  row.querySelector(".participant-remove").onclick=()=>row.remove();
  q("participantRows").appendChild(row);
 }
@@ -1939,9 +1942,10 @@ function getParticipantRows(){
  const out=[];
  [...q("participantRows").querySelectorAll(".participant-row")].forEach(r=>{
    const role=r.querySelector(".partRole").value,plName=r.querySelector(".partPl").value.trim();
-   const pcRows=[...r.querySelectorAll(".participant-pc-row")].map(pr=>({ho:pr.querySelector(".partPcHo").value.trim(),pcName:pr.querySelector(".partPcName").value.trim()})).filter(p=>p.ho||p.pcName);
-   if(pcRows.length)pcRows.forEach(p=>out.push({role,ho:p.ho,plName,pcName:p.pcName,relation:""}));
-   else if(plName||r.dataset.placeholder!=="1")out.push({role,ho:"",plName,pcName:"",relation:""});
+   const playerId=String(r.dataset.playerId||"");
+   const pcRows=[...r.querySelectorAll(".participant-pc-row")].map(pr=>({ho:pr.querySelector(".partPcHo").value.trim(),pcName:pr.querySelector(".partPcName").value.trim(),pcId:String(pr.dataset.pcId||"")})).filter(p=>p.ho||p.pcName||p.pcId);
+   if(pcRows.length)pcRows.forEach(p=>out.push({role,ho:p.ho,plName,playerId,pcName:p.pcName,pcId:p.pcId,relation:""}));
+   else if(plName||playerId||r.dataset.placeholder!=="1")out.push({role,ho:"",plName,playerId,pcName:"",pcId:"",relation:""});
  });
  return out;
 }
@@ -1954,9 +1958,9 @@ function setParticipantRows(rows=[]){
  refreshParticipantPlayerList();q("participantRows").innerHTML="";
  const groups=[],map=new Map();
  (rows||[]).forEach((r,i)=>{
-   const key=`${r.role||"PL"}||${String(r.plName||"").trim()}`;
-   let g=map.get(key);if(!g){g={role:r.role||"PL",plName:r.plName||"",pcs:[]};map.set(key,g);groups.push(g)}
-   if(r.pcName||r.ho)g.pcs.push({pcName:r.pcName||"",ho:r.ho||""});
+   const key=`${r.role||"PL"}||${String(r.playerId||"")||String(r.plName||"").trim()}`;
+   let g=map.get(key);if(!g){g={role:r.role||"PL",plName:r.plName||"",playerId:r.playerId||"",pcs:[]};map.set(key,g);groups.push(g)}
+   if(r.pcName||r.ho||r.pcId)g.pcs.push({pcName:r.pcName||"",pcId:r.pcId||"",ho:r.ho||""});
  });
  if(groups.length)groups.forEach(g=>addParticipantRow(g,{placeholder:false}));
  else addParticipantRow({}, {placeholder:true});
@@ -1967,9 +1971,11 @@ function loadSelfPcRowsMap(){try{return JSON.parse(localStorage.getItem(SELF_PC_
 function saveSelfPcRowsMap(v){localStorage.setItem(SELF_PC_ROWS_KEY,JSON.stringify(v||{}))}
 function storedSelfPcRows(record){
  if(!record)return [];
+ const canonical=Array.isArray(record.selfPcRows)?record.selfPcRows.filter(r=>r&&(r.ho||r.pcName||r.pcId)):[];
+ if(canonical.length)return canonical;
  const map=loadSelfPcRowsMap(),saved=Array.isArray(map[record.id])?map[record.id]:[];
  if(saved.length)return saved;
- if(record.pcName||record.selfHo)return [{pcName:record.pcName||"",ho:record.selfHo||"",pcId:record.pcId||""}];
+ if(record.pcName||record.pcId||record.selfHo)return [{pcName:record.pcName||"",ho:record.selfHo||"",pcId:record.pcId||""}];
  return [];
 }
 function setStoredSelfPcRows(recordId,rows){
@@ -2141,7 +2147,7 @@ function save(){
  q("pc").value=ownPcName;q("selfHo").value=primarySelf.ho||"";
  let item=TRPG39.normalizeAlbum({...old,id,scenarioId,title,runId,runLabel,date,start,end,status:q("status").value,
    articleBody:old?.articleBody||"",
-   spoilerBody:q("spoilerBody")?.value.trim()||"",spoiler:"",system:q("system").value.trim(),facilitatorLabel:facilitatorConfig({}).label,facilitatorless:q("facilitatorPresence").value==="less",role:q("role").value,selfHo:primarySelf.ho||"",pcName:ownPcName,pcId:ownPcId,
+   spoilerBody:q("spoilerBody")?.value.trim()||"",spoiler:"",system:q("system").value.trim(),facilitatorLabel:facilitatorConfig({}).label,facilitatorless:q("facilitatorPresence").value==="less",role:q("role").value,selfHo:primarySelf.ho||"",pcName:ownPcName,pcId:ownPcId,selfPcRows,
    participants,participantIds,participantRows:rows,
    imageUrls:normalizedReportImages(editingImageUrls.length?editingImageUrls:(old?.imageUrls||[])),visibility:q("visibility").value,comment:q("comment").value.trim(),
    xReportUrl:q("xReportUrl").value.trim(),xReportText:q("xReportText").value.trim(),
@@ -3589,7 +3595,9 @@ function applyRunRosterBulk(runId,box){
  })).filter(r=>r.plName||r.ho||r.pcName).map(r=>{
    let playerId='';
    if(TRPG39.playersEnabled?.()&&r.plName){const p=TRPG39.ensurePlayer?TRPG39.ensurePlayer(r.plName):null;playerId=p?.id||''}
-   return {...r,playerId};
+   let pcId='';
+   if(r.pcName&&TRPG39.ensurePC){const pc=TRPG39.ensurePC(r.pcName,{ownerPlayerId:playerId});pcId=pc?.id||''}
+   return {...r,playerId,pcId};
  });
  const participants=rows.map(r=>r.plName).filter(Boolean),participantIds=rows.filter(r=>r.plName).map(r=>r.playerId||'');
  const count=data.filter(x=>x.runId===runId).length;
@@ -3599,7 +3607,7 @@ function applyRunRosterBulk(runId,box){
  const current=getRunRoster(runId)||ensureRunRosterFromData(runId)||{role:'PL',selfPcs:[]};
  setRunRoster(runId,{role:current.role||'PL',selfPcs:current.selfPcs||[],participants:rows});
  let evs=TRPG39.loadEvents(),changed=false;
- evs=evs.map(e=>{if(e.runId!==runId)return e;changed=true;return TRPG39.normalizeEvent({...e,participants,participantIds})});
+ evs=evs.map(e=>{if(e.runId!==runId)return e;changed=true;return TRPG39.normalizeEvent({...e,participants,participantIds,participantRows:rows})});
  if(changed)TRPG39.saveEvents(evs);
  persist();render();
 }
