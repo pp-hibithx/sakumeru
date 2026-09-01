@@ -1571,7 +1571,17 @@ $("saveEvent").onclick=()=>{
 
    // 参加者構成・自分の役割/HOは日単位ではなく陣単位で扱う。
    // 同じrunIdの別日程に古いPL固定データが残っていると、後からその値で巻き戻るため全日程へ同期する。
-   const runRosterRows=calendarParticipantRows().map(r=>({...r}));
+   const rawRunRosterRows=calendarParticipantRows().map(r=>({...r}));
+   const existingRunLibraryRows=(TRPG39.loadAlbum?.()||[])
+     .filter(a=>String(a?.runId||"")===String(sharedRunId||""))
+     .flatMap(a=>Array.isArray(a.participantRows)?a.participantRows:[]);
+   const runRosterRows=(TRPG39.mergeParticipantRows
+     ? TRPG39.mergeParticipantRows(rawRunRosterRows,existingRunLibraryRows)
+     : rawRunRosterRows.map(r=>{
+         const key=String(r.plName||"").normalize("NFKC").trim().toLowerCase();
+         const old=existingRunLibraryRows.find(q=>String(q?.plName||"").normalize("NFKC").trim().toLowerCase()===key)||{};
+         return {...old,...r,ho:r.ho||old.ho||"",pcName:r.pcName||old.pcName||"",playerId:r.playerId||old.playerId||"",relation:r.relation||old.relation||""};
+       }));
    const runRosterNames=[...new Set(runRosterRows.map(r=>r.plName).filter(Boolean))];
    const selfRoleForRun=$("eventRole").value;
    const selfHoForRun=$("eventSelfHo").value.trim();
@@ -1585,8 +1595,11 @@ $("saveEvent").onclick=()=>{
 
    saveEvents(list);
    pending.forEach(item=>{let albumItem=TRPG39.syncEventToAlbum(item);if(albumItem){item.linkedAlbumId=albumItem.id;const album=TRPG39.loadAlbum();const ai=album.findIndex(a=>String(a.id)===String(albumItem.id));if(ai>=0){album[ai]=TRPG39.normalizeAlbum({...album[ai],runId:item.runId,runLabel:item.runLabel,role:item.role,selfHo:item.selfHo||"",pcName:item.pcName||"",pcId:item.pcId||"",participants:item.participants,participantRows:item.participantRows||[]});
- album[ai].participantRows=(item.participantRows||[]).map(r=>({...r}));
- album[ai].participants=[...new Set((item.participantRows||[]).map(r=>r.plName).filter(Boolean))];
+ const mergedRows=TRPG39.mergeParticipantRows
+   ? TRPG39.mergeParticipantRows(item.participantRows||[],album[ai].participantRows||[])
+   : (item.participantRows||[]).map(r=>({...r}));
+ album[ai].participantRows=mergedRows.map(r=>({...r}));
+ album[ai].participants=[...new Set(mergedRows.map(r=>r.plName).filter(Boolean))];
  album[ai].selfHo=item.selfHo||"";
  TRPG39.saveAlbum(album);albumItem=album[ai]}}});
 
@@ -1596,9 +1609,12 @@ $("saveEvent").onclick=()=>{
      let changed=false;
      for(let ai=0;ai<album.length;ai++){
        if(String(album[ai]?.runId||"")!==String(sharedRunId||""))continue;
-       const normalized=TRPG39.normalizeAlbum({...album[ai],role:selfRoleForRun,selfHo:selfHoForRun,participants:runRosterNames,participantRows:runRosterRows});
-       normalized.participantRows=runRosterRows.map(r=>({...r}));
-       normalized.participants=[...runRosterNames];
+       const mergedRows=TRPG39.mergeParticipantRows
+         ? TRPG39.mergeParticipantRows(runRosterRows,album[ai].participantRows||[])
+         : runRosterRows.map(r=>({...r}));
+       const normalized=TRPG39.normalizeAlbum({...album[ai],role:selfRoleForRun,selfHo:selfHoForRun,participants:runRosterNames,participantRows:mergedRows});
+       normalized.participantRows=mergedRows.map(r=>({...r}));
+       normalized.participants=[...new Set(mergedRows.map(r=>r.plName).filter(Boolean))];
        normalized.role=selfRoleForRun;
        normalized.selfHo=selfHoForRun;
        album[ai]=normalized;
