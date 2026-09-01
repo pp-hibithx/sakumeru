@@ -3957,14 +3957,27 @@ function render(){
 
  document.querySelectorAll("[data-add-scenario]").forEach(b=>b.onclick=e=>{
    e.preventDefault();e.stopPropagation();
-   const id=b.dataset.addScenario;addForScenario(id);if(!id)q("title").value=b.dataset.addTitle||"";
+   const id=b.dataset.addScenario||"";
+   const u=new URL("../library/index.html",location.href);u.searchParams.set("new","1");if(id)u.searchParams.set("scenario",id);
+   location.href=u.href;
  });
- document.querySelectorAll("[data-add-run]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();addForRun(b.dataset.runScenario,b.dataset.addRun,b.dataset.runLabel)});
+ document.querySelectorAll("[data-add-run]").forEach(b=>b.onclick=e=>{
+   e.preventDefault();e.stopPropagation();
+   const u=new URL("../library/index.html",location.href);u.searchParams.set("new","1");
+   if(b.dataset.runScenario)u.searchParams.set("scenario",b.dataset.runScenario);
+   if(b.dataset.addRun)u.searchParams.set("run",b.dataset.addRun);
+   if(b.dataset.runLabel)u.searchParams.set("runLabel",b.dataset.runLabel);
+   location.href=u.href;
+ });
  document.querySelectorAll("[data-archive-run]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();setRunArchived(b.dataset.archiveRun,b.dataset.archived!=="1")});
  document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>shareAlbum(b.dataset.share));
  document.querySelectorAll("[data-post-x]").forEach(b=>b.onclick=()=>postAlbumToX(b.dataset.postX));
- document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>edit(b.dataset.edit));
- document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>del(b.dataset.del));
+ document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
+   const u=new URL("../library/index.html",location.href);u.searchParams.set("edit",b.dataset.edit);location.href=u.href;
+ });
+ document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+   const u=new URL("../library/index.html",location.href);u.searchParams.set("focusRecord",b.dataset.del);location.href=u.href;
+ });
 }
 q("title").addEventListener("input",()=>{
  const s=scenarioById(q("scenarioSelect").value);
@@ -3991,7 +4004,7 @@ q("system").addEventListener("input",()=>updateFacilitatorControls(false));q("fa
 q("save").onclick=save;
 q("cancel").onclick=()=>{reset();hideEditor()};
 q("image").oninput=updateImagePreview;
-q("openLibraryEditor").onclick=()=>{reset();showEditor();q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"})};q("xPreviewText").oninput=updateXPreviewCount;q("xPreviewCancel").onclick=()=>q("xPreviewDialog").close();q("xPreviewPost").onclick=confirmPostAlbumToX;
+q("openLibraryEditor").onclick=()=>{location.href=new URL("../library/index.html?new=1",location.href).href};q("xPreviewText").oninput=updateXPreviewCount;q("xPreviewCancel").onclick=()=>q("xPreviewDialog").close();q("xPreviewPost").onclick=confirmPostAlbumToX;
 q("search").oninput=()=>{focusedScenarioKey="";focusedRunId="";focusedPlayerId="";render()};
 q("playerListSort").onchange=()=>{playerListSort=q("playerListSort").value;render()};
 q("playerArchiveFilter").onchange=()=>{playerArchiveFilter=q("playerArchiveFilter").value;focusedPlayerId="";render()};q("filter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};q("archiveFilter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};
