@@ -654,7 +654,8 @@ function analyzeTRPG(){
   applyGrowthExclusions(currentDiceResults);applyGrowthExclusions(currentDiceTotalResults);
  const names=[...new Set(currentDiceResults.map(x=>x.speaker))].sort((a,b)=>a.localeCompare(b,"ja"));
  $("trpgCharacterFilter").innerHTML='<option value="">全員</option>'+names.map(x=>`<option>${esc(x)}</option>`).join("");
- renderDiceResults();renderSourcePreview();renderCritFumbleSummary("trpgRangeCritFumble",currentDiceResults);renderCritFumbleSummary("trpgTotalCritFumble",currentDiceTotalResults);renderSkillOnlySpeakers();refreshLibraryTargets();
+ renderDiceResults();renderSourcePreview();renderCritFumbleSummary("trpgRangeCritFumble",currentDiceResults);renderCritFumbleSummary("trpgTotalCritFumble",currentDiceTotalResults);renderSkillOnlySpeakers();
+ $("trpgSendLibrary").disabled=!currentDiceResults.length||!$("trpgLibraryDay").value;
  if((currentSourceRange.startMark&&!currentSourceRange.startFound)||(currentSourceRange.endMark&&!currentSourceRange.endFound))alert("指定した区切りの目印が一部見つかりませんでした。抽出範囲の確認欄を確認してください。");
  if(!currentDiceResults.length)alert("技能判定を見つけられませんでした。ログ形式を確認してください。");
 }
@@ -681,16 +682,22 @@ function renderSavedAnalyses(){
 }
 
 
+let libraryTargetsLoaded=false,libraryTargetAlbum=[];
+function ensureLibraryTargetsLoaded(){
+ if(libraryTargetsLoaded||!window.TRPG39)return;
+ libraryTargetAlbum=TRPG39.loadAlbum();
+ libraryTargetsLoaded=true;
+ refreshLibraryTargets();
+}
 function refreshLibraryTargets(){
- if(!window.TRPG39)return;
- const album=TRPG39.loadAlbum(),m=new Map();
+ const album=libraryTargetAlbum,m=new Map();
  album.forEach(x=>{const k=x.runId||x.id;if(!m.has(k))m.set(k,{id:k,title:x.title||"名称未設定",label:x.runLabel||"",role:x.role||"",items:[]});m.get(k).items.push(x)});
  const runs=[...m.values()].sort((a,b)=>String(a.title).localeCompare(String(b.title),"ja"));
  $("trpgLibraryRun").innerHTML='<option value="">選択してください</option>'+runs.map(r=>{const auto=r.label||(String(r.role).toUpperCase()==="PL"?"自陣":"陣");return `<option value="${esc(r.id)}">${esc(r.title)} ／ ${esc(auto)}</option>`}).join("");
  refreshLibraryDays();
 }
 function refreshLibraryDays(){
- const rid=$("trpgLibraryRun").value,album=window.TRPG39?TRPG39.loadAlbum():[];
+ const rid=$("trpgLibraryRun").value,album=libraryTargetAlbum;
  const xs=album.filter(x=>(x.runId||x.id)===rid).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
  $("trpgLibraryDay").innerHTML='<option value="">選択してください</option>'+xs.map((x,i)=>`<option value="${esc(x.id)}">${esc(x.date||`${i+1}日目`)}${x.pcName?` ／ ${esc(x.pcName)}`:""}</option>`).join("");
  $("trpgSendLibrary").disabled=!currentDiceResults.length||!$("trpgLibraryDay").value;
@@ -740,11 +747,12 @@ $("trpgSkillOnlyRefresh").onclick=renderSkillOnlySpeakers;
 $("trpgSkillOnlyMake").onclick=makeSkillOnlyOutput;
 $("trpgSkillOnlyCopy").onclick=()=>copyText($("trpgSkillOnlyOutput").value,$("trpgSkillOnlyCopy"),"コピー");
 $("trpgSaveAnalysis").onclick=saveAnalysis;
-$("trpgLibraryRun").onchange=refreshLibraryDays;
+$("trpgLibraryRun").onfocus=ensureLibraryTargetsLoaded;
+$("trpgLibraryRun").onpointerdown=ensureLibraryTargetsLoaded;
+$("trpgLibraryRun").onchange=()=>{ensureLibraryTargetsLoaded();refreshLibraryDays()};
 $("trpgLibraryDay").onchange=()=>{$("trpgSendLibrary").disabled=!currentDiceResults.length||!$("trpgLibraryDay").value};
 $("trpgSendLibrary").onclick=sendAnalysisToLibrary;
 
-refreshLibraryTargets();
 renderSavedAnalyses();
 const y=document.querySelector("[data-year]");if(y)y.textContent=new Date().getFullYear();
 })();
