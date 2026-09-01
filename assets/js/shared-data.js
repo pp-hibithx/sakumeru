@@ -47,7 +47,6 @@
         ho: String(r?.ho || ""),
         plName: String(r?.plName || ""),
         playerId: String(r?.playerId || ""),
-        pcId: String(r?.pcId || ""),
         pcName: String(r?.pcName || ""),
         relation: String(r?.relation || "")
       })) : [],
@@ -99,7 +98,6 @@
         ho: String(r?.ho || ""),
         plName: String(r?.plName || ""),
         playerId: String(r?.playerId || ""),
-        pcId: String(r?.pcId || ""),
         pcName: String(r?.pcName || ""),
         relation: String(r?.relation || "")
       })) : [],
@@ -138,7 +136,6 @@
         ho: String(r?.ho || prev.ho || ""),
         pcName: String(r?.pcName || prev.pcName || ""),
         playerId: String(r?.playerId || prev.playerId || ""),
-        pcId: String(r?.pcId || prev.pcId || ""),
         relation: String(r?.relation || prev.relation || "")
       });
     });
@@ -151,7 +148,6 @@
         ho: String(r?.ho || lib.ho || ""),
         plName: String(r?.plName || lib.plName || ""),
         playerId: String(r?.playerId || lib.playerId || ""),
-        pcId: String(r?.pcId || lib.pcId || ""),
         pcName: String(r?.pcName || lib.pcName || ""),
         relation: String(r?.relation || lib.relation || "")
       };
@@ -320,17 +316,10 @@ window.TRPG39 = {
   api.ensurePC=api.ensurePC||function(name,defaults={}){
     const clean=String(name||"").trim(); if(!clean)return null;
     let pcs=api.loadPCs?api.loadPCs():[];
-    const ownerPlayerId=String(defaults.ownerPlayerId||defaults.playerId||"");
-    let found=pcs.find(p=>norm(p.name)===norm(clean) && (!ownerPlayerId || !p.ownerPlayerId || String(p.ownerPlayerId)===ownerPlayerId));
-    if(found){
-      let changed=false;
-      if(ownerPlayerId&&!found.ownerPlayerId){found.ownerPlayerId=ownerPlayerId;changed=true}
-      if(defaults.system&&!found.system){found.system=defaults.system;changed=true}
-      if(changed)api.savePCs&&api.savePCs(pcs);
-      return found;
-    }
+    let found=pcs.find(p=>norm(p.name)===norm(clean));
+    if(found)return found;
     const id=api.uuid?api.uuid():crypto.randomUUID();
-    const pc={id,name:clean,ownerPlayerId,reading:"",system:defaults.system||"",job:"",image:"",sheet:"",visibility:"private",bio:"",autoCreated:true};
+    const pc={id,name:clean,reading:"",system:defaults.system||"",job:"",image:"",sheet:"",visibility:"private",bio:"",autoCreated:true};
     pcs.push(pc); api.savePCs&&api.savePCs(pcs); return pc;
   };
 })();
