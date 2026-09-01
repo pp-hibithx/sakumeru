@@ -1755,11 +1755,9 @@ function pcContinuationCount(pc,systemValue=q("system")?.value||""){
 }
 
 function sortedSelfPcCandidates(selectedId=""){
- const all=TRPG39.loadPCs?TRPG39.loadPCs():pcs;
+ const all=TRPG39.selfPCs?TRPG39.selfPCs():(TRPG39.loadPCs?TRPG39.loadPCs():pcs).filter(p=>!String(p.ownerPlayerId||"").trim());
  const selected=all.find(p=>String(p.id)===String(selectedId||""));
-
  let rows=all.filter(p=>pcMatchesCurrentSystem(p));
-
  if(selected&&!rows.some(p=>p.id===selected.id))rows.unshift(selected);
 
  return rows.slice().sort((a,b)=>{
@@ -2143,7 +2141,10 @@ function save(){
  const participantIds=rows.filter(r=>r.plName).map(r=>r.playerId||"");
  const selfPcRows=getSelfPcRows().map(r=>{
    let pcId=r.pcId||"";
-   if(!pcId&&r.pcName){const p=TRPG39.ensurePC?TRPG39.ensurePC(r.pcName,{system:q("system").value.trim()}):null;pcId=p?.id||""}
+   const existing=TRPG39.resolvePCReference?.({pcId,pcName:r.pcName},{selfOnly:true});
+   if(existing)pcId=existing.id;
+   else if(r.pcName){const p=TRPG39.ensurePC?TRPG39.ensurePC(r.pcName,{system:q("system").value.trim()}):null;pcId=p?.id||""}
+   else pcId="";
    return {...r,pcId};
  });
  const primarySelf=selfPcRows[0]||{pcName:"",ho:"",pcId:""};
@@ -3817,16 +3818,18 @@ function pcRelRows(x){
 function allLibraryPcs(){
  const map=new Map();
 
- // MY PCs
+ // 登録PCも ownerPlayerId を基準に自PC／同卓PCを分ける。
  (pcs||[]).forEach(p=>{
    if(!p?.id||!String(p.name||"").trim())return;
+   const ownerId=String(p.ownerPlayerId||"").trim();
+   const owner=ownerId?(players||[]).find(v=>String(v.id)===ownerId):null;
    map.set(String(p.id),{
      id:String(p.id),
      name:String(p.name||"").trim(),
-     ownerType:"self",
-     ownerLabel:"自分",
-     plName:"自分",
-     playerId:"",
+     ownerType:ownerId?"guest":"self",
+     ownerLabel:ownerId?`PL：${owner?.name||"同卓PL"}`:"自分",
+     plName:ownerId?String(owner?.name||""):"自分",
+     playerId:ownerId,
      system:String(p.system||""),
      image:String(p.image||""),
      registeredId:String(p.id)
@@ -3840,8 +3843,10 @@ function allLibraryPcs(){
      if(!pcName)return;
      const plName=String(row.plName||"").trim();
      const playerId=String(row.playerId||"").trim();
+     const pcId=String(row.pcId||"").trim();
+     if(pcId&&map.has(pcId))return;
      // If this is actually one of MY PCs, keep the registered MY PC identity.
-     const self=(pcs||[]).find(p=>pcRelNameKey(p.name)===pcRelNameKey(pcName));
+     const self=(pcs||[]).find(p=>!String(p.ownerPlayerId||"").trim()&&pcRelNameKey(p.name)===pcRelNameKey(pcName));
      if(self && (!plName || plName==="自分"))return;
 
      const ownerKey=playerId || ("name:"+pcRelNameKey(plName||"不明"));
@@ -3869,15 +3874,6 @@ function allLibraryPcs(){
 }
 function anyPcById(id){
  if(!id)return null;
- // Backward compatibility: old saved relation/event IDs are raw MY PC IDs.
- const direct=(pcs||[]).find(p=>String(p.id)===String(id));
- if(direct){
-   return {
-     id:String(direct.id),name:String(direct.name||"").trim(),
-     ownerType:"self",ownerLabel:"自分",plName:"自分",playerId:"",
-     system:String(direct.system||""),image:String(direct.image||""),registeredId:String(direct.id)
-   };
- }
  return allLibraryPcs().find(p=>String(p.id)===String(id))||null;
 }
 function pcOwnerText(p){
