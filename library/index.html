@@ -4468,10 +4468,11 @@ function normDirectoryName(v){return String(v||"").normalize("NFKC").trim().toLo
 function recordHasSelfPc(rec,pc){
  const id=String(pc?.id||"");
  const name=normDirectoryName(pc?.name);
- return storedSelfPcRows(rec).some(r=>
-   (id&&r.pcId&&String(r.pcId)===id) ||
-   (name&&normDirectoryName(r.pcName)===name)
- );
+ return storedSelfPcRows(rec).some(r=>{
+   const rid=String(r?.pcId||"");
+   if(id&&rid)return rid===id;
+   return !!name&&normDirectoryName(r?.pcName)===name;
+ });
 }
 function playerNameSet(player){
  return new Set([player?.name,player?.publicName,player?.socialName]
@@ -4480,10 +4481,11 @@ function playerNameSet(player){
 function recordHasPlayer(rec,player){
  const id=String(player?.id||"");
  const names=playerNameSet(player);
- return rowsFromRecord(rec).some(r=>
-   (id&&r.playerId&&String(r.playerId)===id) ||
-   names.has(normDirectoryName(r.plName))
- );
+ return rowsFromRecord(rec).some(r=>{
+   const rid=String(r?.playerId||"");
+   if(id&&rid)return rid===id;
+   return names.has(normDirectoryName(r?.plName));
+ });
 }
 function openLibraryScenarioFilter(params={}){
  libraryYearFilter="all";
