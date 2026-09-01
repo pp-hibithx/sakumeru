@@ -1351,15 +1351,29 @@ async function fetchThumbnail(){
 }
 const publicationLabels={public:"公開中",private:"現在非公開",unpublished:"未公開",ended:"頒布終了",unknown:"未確認"};
 const pubBadge=x=>`<span class="badge">${esc(publicationLabels[x.publicationStatus||"public"]||"公開中")}</span>`;
-function scenarioStats(x){
+let scenarioStatsCache=null;
+function buildScenarioStatsIndex(){
+ if(scenarioStatsCache)return scenarioStatsCache;
+ const byId=new Map(),byLegacyTitle=new Map(),facilitatorRoles=new Set(["KP","DL","GM","SKP"]);
+ const ensure=(map,key)=>{if(!map.has(key))map.set(key,{facilitator:0,pl:0,last:"",lastRun:""});return map.get(key)};
  const album=TRPG39.loadAlbum?TRPG39.loadAlbum():[];
- const items=album.filter(a=>(x.id&&a.scenarioId===x.id)||(!a.scenarioId&&String(a.title||"").trim()===String(x.title||"").trim()));
- const byRole=role=>items.filter(a=>String(a.role||"").toUpperCase()===role);
- const runItems=items.filter(a=>["KP","DL","GM","SKP"].includes(String(a.role||"").toUpperCase()));
- const dates=items.map(a=>a.date||String(a.start||"").slice(0,10)).filter(Boolean).sort();
- const runDates=runItems.map(a=>a.date||String(a.start||"").slice(0,10)).filter(Boolean).sort();
- return {facilitator:items.filter(a=>["KP","DL","GM","SKP"].includes(String(a.role||"").toUpperCase())).length,pl:byRole("PL").length,last:dates.at(-1)||"",lastRun:runDates.at(-1)||""};
+ album.forEach(a=>{
+   const scenarioId=String(a.scenarioId||"").trim(),title=String(a.title||"").trim();
+   const st=scenarioId?ensure(byId,scenarioId):(title?ensure(byLegacyTitle,title):null);
+   if(!st)return;
+   const role=String(a.role||"").toUpperCase(),date=a.date||String(a.start||"").slice(0,10);
+   if(facilitatorRoles.has(role)){st.facilitator++;if(date>st.lastRun)st.lastRun=date}
+   else if(role==="PL")st.pl++;
+   if(date>st.last)st.last=date;
+ });
+ scenarioStatsCache={byId,byLegacyTitle};
+ return scenarioStatsCache;
 }
+function scenarioStats(x){
+ const idx=buildScenarioStatsIndex();
+ return idx.byId.get(String(x.id||""))||idx.byLegacyTitle.get(String(x.title||"").trim())||{facilitator:0,pl:0,last:"",lastRun:""};
+}
+window.addEventListener("storage",e=>{if(e.key===TRPG39.KEYS?.album)scenarioStatsCache=null});
 function refreshTagFilter(){
  const sel=q("tagFilter");if(!sel)return;const current=sel.value;const tags=[...new Set(data.flatMap(x=>Array.isArray(x.tags)?x.tags:[]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
  sel.innerHTML='<option value="">すべて</option>'+tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");if(tags.includes(current))sel.value=current;
@@ -1374,7 +1388,8 @@ function scenarioSortKey(x){
 }
 function sortScenarios(xs){
  const mode=q("sort")?.value||"name",idx=new Map(data.map((x,i)=>[x.id,i]));
- const rows=xs.map(x=>({x,st:scenarioStats(x)}));
+ const needsStats=["recentRun","recentPlay","kpCount","plCount"].includes(mode);
+ const rows=xs.map(x=>({x,st:needsStats?scenarioStats(x):null}));
  rows.sort((a,b)=>{const an=String(a.x.title||""),bn=String(b.x.title||"");if(mode==="new")return (idx.get(a.x.id)??9999)-(idx.get(b.x.id)??9999);if(mode==="old")return (idx.get(b.x.id)??-1)-(idx.get(a.x.id)??-1);if(mode==="recentRun")return String(b.st.lastRun||"").localeCompare(String(a.st.lastRun||""))||an.localeCompare(bn,"ja");if(mode==="recentPlay")return String(b.st.last||"").localeCompare(String(a.st.last||""))||an.localeCompare(bn,"ja");if(mode==="kpCount")return (b.st.facilitator-a.st.facilitator)||an.localeCompare(bn,"ja");if(mode==="plCount")return (b.st.pl-a.st.pl)||an.localeCompare(bn,"ja");const ak=scenarioSortKey(a.x),bk=scenarioSortKey(b.x);return ak.localeCompare(bk,"ja",{numeric:true,sensitivity:"base"})||an.localeCompare(bn,"ja")});
  return rows;
 }
@@ -1399,10 +1414,11 @@ function detail(id){
 
 // --- KP用バインダー：シナリオ単位。CALENDAR/卓予定には一切登録しない ---
 const KP_BINDER_KEY="39x2_scenario_kp_binders_v1";
-let kpBinders=(()=>{try{return JSON.parse(localStorage.getItem(KP_BINDER_KEY)||"{}")||{}}catch{return {}}})();
-const saveKpBinders=()=>localStorage.setItem(KP_BINDER_KEY,JSON.stringify(kpBinders));
+let kpBinders=null;
+function loadKpBinders(){if(kpBinders)return kpBinders;try{kpBinders=JSON.parse(localStorage.getItem(KP_BINDER_KEY)||"{}")||{}}catch{kpBinders={}}return kpBinders}
+const saveKpBinders=()=>localStorage.setItem(KP_BINDER_KEY,JSON.stringify(loadKpBinders()));
 function kpDefault(){return {overview:"",pages:[],participants:[]}}
-function kpGet(id){return kpBinders[id]||(kpBinders[id]=kpDefault())}
+function kpGet(id){const all=loadKpBinders();return all[id]||(all[id]=kpDefault())}
 function kpParseLines(text){const out={};String(text||"").split(/\n/).forEach(line=>{const m=line.trim().match(/^(.+?)[\s:：=]+(\d{1,3})\s*%?$/);if(m)out[m[1].trim()]=Number(m[2])});return out}
 function kpSaveField(id,fn){const b=kpGet(id);fn(b);saveKpBinders()}
 function openKpBinder(id){renderKpBinder(id);q("kpBinderDialog").showModal()}
