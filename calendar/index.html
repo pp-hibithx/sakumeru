@@ -1499,13 +1499,13 @@ function buildTrpgEvent(id,date,startTime,endTime,sessionDay,timeBand,sessionKin
  normalized.selfHo=$("eventSelfHo").value.trim();
  return normalized;
 }
-function syncRunLabelEverywhere(runId,label,list=null){
- runId=String(runId||"");label=String(label||"").trim();if(!runId||!label)return list||events();
- const evs=(list||events()).map(e=>String(e.runId||"")===runId?TRPG39.normalizeEvent({...e,runLabel:label}):e);
- const album=TRPG39.loadAlbum();let changed=false;
- const nextAlbum=album.map(a=>{if(String(a.runId||"")!==runId)return a;changed=true;return TRPG39.normalizeAlbum({...a,runLabel:label})});
- if(changed)TRPG39.saveAlbum(nextAlbum);
- return evs;
+function syncRunLabelInMemory(runId,label,eventList,albumList){
+ runId=String(runId||"");label=String(label||"").trim();
+ if(!runId||!label)return {events:eventList,album:albumList,albumChanged:false};
+ const evs=eventList.map(e=>String(e.runId||"")===runId?TRPG39.normalizeEvent({...e,runLabel:label}):e);
+ let albumChanged=false;
+ const album=albumList.map(a=>{if(String(a.runId||"")!==runId)return a;albumChanged=true;return TRPG39.normalizeAlbum({...a,runLabel:label})});
+ return {events:evs,album,albumChanged};
 }
 function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],linkedAlbumId:""})}
 $("saveEvent").onclick=()=>{
@@ -1556,13 +1556,16 @@ $("saveEvent").onclick=()=>{
      renumberRunSessionDays(combined);
    }
 
+   // この保存処理ではLIBRARYを一度だけ読み、以降は同じ配列上で更新する。
+   let albumForSave=TRPG39.loadAlbum?.()||[],albumChanged=false;
    if(firstOld?.runId&&$("dateMode").dataset.loadedMode==="multiple"){
      const keepIds=new Set(pending.map(v=>v.id));
      const removed=existingMain.filter(v=>!keepIds.has(v.id));
      if(removed.length){
        const removedIds=new Set(removed.map(v=>v.id));
        list=list.filter(v=>!removedIds.has(v.id));
-       TRPG39.saveAlbum(TRPG39.loadAlbum().filter(a=>!removedIds.has(a.eventId)));
+       const nextAlbum=albumForSave.filter(a=>!removedIds.has(a.eventId));
+       if(nextAlbum.length!==albumForSave.length){albumForSave=nextAlbum;albumChanged=true}
      }
    }
    pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});
@@ -1570,7 +1573,7 @@ $("saveEvent").onclick=()=>{
    // 参加者構成・自分の役割/HOは日単位ではなく陣単位で扱う。
    // 同じrunIdの別日程に古いPL固定データが残っていると、後からその値で巻き戻るため全日程へ同期する。
    const rawRunRosterRows=calendarParticipantRows().map(r=>({...r}));
-   const existingRunLibraryRows=(TRPG39.loadAlbum?.()||[])
+   const existingRunLibraryRows=albumForSave
      .filter(a=>String(a?.runId||"")===String(sharedRunId||""))
      .flatMap(a=>Array.isArray(a.participantRows)?a.participantRows:[]);
    const runRosterRows=(TRPG39.mergeParticipantRows
@@ -1592,39 +1595,44 @@ $("saveEvent").onclick=()=>{
      ev.selfHo=selfHoForRun;
    }
    // 陣名はrunId単位で1つ。CALENDARで変更したら同じ陣の全日程とLIBRARYへ反映する。
-   list=syncRunLabelEverywhere(sharedRunId,$("eventRunLabel").value.trim(),list);
+   const labelSync=syncRunLabelInMemory(sharedRunId,$("eventRunLabel").value.trim(),list,albumForSave);
+   list=labelSync.events;albumForSave=labelSync.album;albumChanged=albumChanged||labelSync.albumChanged;
 
-   saveEvents(list);
-   pending.forEach(item=>{let albumItem=TRPG39.syncEventToAlbum(item);if(albumItem){item.linkedAlbumId=albumItem.id;const album=TRPG39.loadAlbum();const ai=album.findIndex(a=>String(a.id)===String(albumItem.id));if(ai>=0){album[ai]=TRPG39.normalizeAlbum({...album[ai],runId:item.runId,runLabel:item.runLabel,role:item.role,selfHo:item.selfHo||"",pcName:item.pcName||"",pcId:item.pcId||"",participants:item.participants,participantRows:item.participantRows||[]});
- const mergedRows=TRPG39.mergeParticipantRows
-   ? TRPG39.mergeParticipantRows(item.participantRows||[],album[ai].participantRows||[])
-   : (item.participantRows||[]).map(r=>({...r}));
- album[ai].participantRows=mergedRows.map(r=>({...r}));
- album[ai].participants=[...new Set(mergedRows.map(r=>r.plName).filter(Boolean))];
- album[ai].selfHo=item.selfHo||"";
- TRPG39.saveAlbum(album);albumItem=album[ai]}}});
+   pending.forEach(item=>{
+     const existing=albumForSave.find(a=>a.eventId===item.id||(item.linkedAlbumId&&a.id===item.linkedAlbumId));
+     const stableAlbumId=existing?.id||item.linkedAlbumId||TRPG39.uuid();
+     item.linkedAlbumId=stableAlbumId;
+     const albumItem=TRPG39.albumFromEvent(item,{...(existing||{}),id:stableAlbumId});
+     const ai=albumForSave.findIndex(a=>String(a.id)===String(stableAlbumId));
+     if(ai>=0)albumForSave[ai]=albumItem;else albumForSave.unshift(albumItem);
+     const eventIndex=list.findIndex(e=>String(e.id)===String(item.id));
+     if(eventIndex>=0)list[eventIndex]={...list[eventIndex],linkedAlbumId:stableAlbumId};
+     albumChanged=true;
+   });
 
    // LIBRARY側も同じ陣の全記録へ同じ参加者構成を同期し、古い日程からPL固定情報が戻らないようにする。
    {
-     const album=TRPG39.loadAlbum();
      let changed=false;
-     for(let ai=0;ai<album.length;ai++){
-       if(String(album[ai]?.runId||"")!==String(sharedRunId||""))continue;
+     for(let ai=0;ai<albumForSave.length;ai++){
+       if(String(albumForSave[ai]?.runId||"")!==String(sharedRunId||""))continue;
        const mergedRows=TRPG39.mergeParticipantRows
-         ? TRPG39.mergeParticipantRows(runRosterRows,album[ai].participantRows||[])
+         ? TRPG39.mergeParticipantRows(runRosterRows,albumForSave[ai].participantRows||[])
          : runRosterRows.map(r=>({...r}));
-       const normalized=TRPG39.normalizeAlbum({...album[ai],role:selfRoleForRun,selfHo:selfHoForRun,participants:runRosterNames,participantRows:mergedRows});
+       const normalized=TRPG39.normalizeAlbum({...albumForSave[ai],role:selfRoleForRun,selfHo:selfHoForRun,participants:runRosterNames,participantRows:mergedRows});
        normalized.participantRows=mergedRows.map(r=>({...r}));
        normalized.participants=[...new Set(mergedRows.map(r=>r.plName).filter(Boolean))];
        normalized.role=selfRoleForRun;
        normalized.selfHo=selfHoForRun;
-       album[ai]=normalized;
+       albumForSave[ai]=normalized;
        changed=true;
      }
-     if(changed)TRPG39.saveAlbum(album);
+     albumChanged=albumChanged||changed;
    }
 
-   saveEvents(list);if(ranges.length>1)alert(`${ranges.length}件の予定を登録しました。`);
+   // 新規記事IDを予定側へ先に固定する。LIBRARY保存が容量不足で失敗しても、再保存時に同じIDで復旧できる。
+   saveEvents(list);
+   if(albumChanged)TRPG39.saveAlbum(albumForSave);
+   if(ranges.length>1)alert(`${ranges.length}件の予定を登録しました。`);
  }
  resetForm();hideEditor();renderCalendar();
 };
