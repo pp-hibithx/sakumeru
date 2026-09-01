@@ -2922,7 +2922,7 @@ function articlePagesHtml(r){
    <div class="lib-article-editor" id="articleEditor-${esc(r.id)}" hidden>
      <input type="hidden" class="articleEditId">
      <label>ページタイトル</label><input class="articleTitle" placeholder="例：セッション感想／KPメモ／あとがき">
-     <div class="article-block-toolbar"><button type="button" data-block-add-text="${esc(r.id)}">＋ 文章</button><button type="button" data-block-add-image="${esc(r.id)}">＋ 画像</button><button type="button" data-block-add-conversation="${esc(r.id)}">＋ 会話ログ</button><button type="button" data-block-add-youtube="${esc(r.id)}">＋ YouTube</button><button type="button" data-block-add-bgm="${esc(r.id)}">＋ BGM</button></div><div class="small muted article-block-help">同じ種類のブロックを何個でも追加できます。文章の途中に画像・会話・動画・BGMを挟めます。</div>
+     <div class="article-block-toolbar"><button type="button" data-block-add-text="${esc(r.id)}">＋ 文章</button><button type="button" data-block-add-image="${esc(r.id)}">＋ 画像</button><button type="button" data-block-add-conversation="${esc(r.id)}">＋ 会話ログ</button><button type="button" data-block-add-youtube="${esc(r.id)}">＋ YouTube</button><button type="button" data-block-add-bgm="${esc(r.id)}">＋ BGM</button></div><div class="small muted article-block-help">同じ種類のブロックを何個でも追加できます。文章の一部を選んで「🙈 Xでは伏せる」を押すと、共有URLでは全文を見せたままX投稿文から除外できます。</div>
      <div class="article-blocks"></div>
      <div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
@@ -2964,7 +2964,7 @@ function initArticleRichEditors(ed,blocks){
  (blocks||[]).filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-  articleRichEditors.set(id,SAKUMERichEditor.create({mount,html}));
+  articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
@@ -3510,7 +3510,7 @@ async function shareArticlePage(runId,pageId,options={}){
     const preparedPublic=await prepareConversationBlocksForShare(publicBlocks),preparedById=new Map(preparedPublic.map(b=>[String(b.id),b]));
     const sharedBlocks=baseBlocks.map(b=>b.visibility==="public"?(preparedById.get(String(b.id))||b):({id:b.id,type:"restricted",visibility:b.visibility}));
     const sharedBody=preparedPublic.filter(b=>b.type==="text").map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
-    const payload={kind:"library-article",version:11,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",spoilerWarning:true,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
+    const payload={kind:"library-article",version:12,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:true,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
    let shareId=page.shareId||"";
    if(shareId)await TRPG39Cloud.updateSharedPage(shareId,payload);else shareId=await TRPG39Cloud.createSharedPage(payload);
    saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));
@@ -3522,7 +3522,10 @@ async function shareArticlePage(runId,pageId,options={}){
 }
 function articleTextForX(page){
  const blocks=normalizedArticleBlocks(page);
- return blocks.filter(b=>b.type==="text").map(b=>String(b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).trim()).filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
+ return blocks.filter(b=>b.type==="text"&&(b.visibility||"public")==="public").map(b=>String(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainTextForX(b.html):(b.text||"")).trim()).filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function articleHasXHidden(page){
+ return normalizedArticleBlocks(page).some(b=>b.type==="text"&&(b.visibility||"public")==="public"&&b.html&&window.SAKUMERichEditor&&SAKUMERichEditor.hasXHidden(b.html));
 }
 function trimArticleExcerpt(text,maxChars=96){
  const chars=[...String(text||"").trim()];
@@ -3539,10 +3542,11 @@ function articleXPostText(page){
  if(page.passwordProtected)return "SAKU+MERUで記事を共有しました。\n#SAKUMERU";
  const title=String(page.title||"").trim();
  const body=articleTextForX(page);
+ const hasHidden=articleHasXHidden(page);
  const main=[title,body].filter(Boolean).join("\n\n");
- if(!main)return `#SAKUMERU`;
+ if(!main)return hasHidden?`続きはURLから\n\n#SAKUMERU`:`#SAKUMERU`;
  const isLong=[...main].length>140;
- if(!isLong)return `${main}\n\n#SAKUMERU`;
+ if(!isLong)return `${main}${hasHidden?"\n\n続きはURLから":""}\n\n#SAKUMERU`;
  const titleChars=[...title].length;
  const bodyBudget=Math.max(28,140-titleChars-(title&&body?2:0));
  const shownBody=body?trimArticleExcerpt(body,bodyBudget):"";
