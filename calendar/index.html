@@ -1511,6 +1511,14 @@ function buildTrpgEvent(id,date,startTime,endTime,sessionDay,timeBand,sessionKin
  normalized.selfHo=$("eventSelfHo").value.trim();
  return normalized;
 }
+function syncRunLabelEverywhere(runId,label,list=null){
+ runId=String(runId||"");label=String(label||"").trim();if(!runId||!label)return list||events();
+ const evs=(list||events()).map(e=>String(e.runId||"")===runId?TRPG39.normalizeEvent({...e,runLabel:label}):e);
+ const album=TRPG39.loadAlbum();let changed=false;
+ const nextAlbum=album.map(a=>{if(String(a.runId||"")!==runId)return a;changed=true;return TRPG39.normalizeAlbum({...a,runLabel:label})});
+ if(changed)TRPG39.saveAlbum(nextAlbum);
+ return evs;
+}
 function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],linkedAlbumId:""})}
 $("saveEvent").onclick=()=>{
  const type=$("eventType").value,date=$("eventDate").value,id0=$("eventId").value;
@@ -1595,6 +1603,8 @@ $("saveEvent").onclick=()=>{
      ev.role=selfRoleForRun;
      ev.selfHo=selfHoForRun;
    }
+   // 陣名はrunId単位で1つ。CALENDARで変更したら同じ陣の全日程とLIBRARYへ反映する。
+   list=syncRunLabelEverywhere(sharedRunId,$("eventRunLabel").value.trim(),list);
 
    saveEvents(list);
    pending.forEach(item=>{let albumItem=TRPG39.syncEventToAlbum(item);if(albumItem){item.linkedAlbumId=albumItem.id;const album=TRPG39.loadAlbum();const ai=album.findIndex(a=>String(a.id)===String(albumItem.id));if(ai>=0){album[ai]=TRPG39.normalizeAlbum({...album[ai],runId:item.runId,runLabel:item.runLabel,role:item.role,selfHo:item.selfHo||"",pcName:item.pcName||"",pcId:item.pcId||"",participants:item.participants,participantRows:item.participantRows||[]});
