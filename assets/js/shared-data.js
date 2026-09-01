@@ -131,69 +131,27 @@
   }
 
   function mergeParticipantRows(eventRows = [], libraryRows = []) {
-    const keyOf = r => String(r?.plName || "").normalize("NFKC").trim().toLowerCase();
-    const libMap = new Map();
-    (Array.isArray(libraryRows) ? libraryRows : []).forEach(r => {
-      const key = keyOf(r);
-      if (!key) return;
-      const prev = libMap.get(key) || {};
-      libMap.set(key, {
-        ...prev,
-        ...r,
-        ho: String(r?.ho || prev.ho || ""),
-        pcName: String(r?.pcName || prev.pcName || ""),
-        playerId: String(r?.playerId || prev.playerId || ""),
-        pcId: String(r?.pcId || prev.pcId || ""),
-        relation: String(r?.relation || prev.relation || "")
-      });
+    const norm = v => String(v || "").normalize("NFKC").trim().toLowerCase();
+    const events = (Array.isArray(eventRows) ? eventRows : []).map(r => ({...r}));
+    const libs = (Array.isArray(libraryRows) ? libraryRows : []).map(r => ({...r}));
+    const used = new Set();
+    const findMatch = r => {
+      let i = -1;
+      if (r?.pcId) i = libs.findIndex((q,n)=>!used.has(n)&&q?.pcId&&String(q.pcId)===String(r.pcId));
+      if (i < 0 && r?.playerId && r?.pcName) i = libs.findIndex((q,n)=>!used.has(n)&&q?.playerId&&String(q.playerId)===String(r.playerId)&&norm(q.pcName)===norm(r.pcName));
+      if (i < 0 && r?.playerId && r?.ho) i = libs.findIndex((q,n)=>!used.has(n)&&q?.playerId&&String(q.playerId)===String(r.playerId)&&norm(q.ho)===norm(r.ho));
+      if (i < 0 && r?.playerId) i = libs.findIndex((q,n)=>!used.has(n)&&q?.playerId&&String(q.playerId)===String(r.playerId));
+      if (i < 0 && r?.plName && r?.pcName) i = libs.findIndex((q,n)=>!used.has(n)&&norm(q.plName)===norm(r.plName)&&norm(q.pcName)===norm(r.pcName));
+      if (i < 0 && r?.plName) i = libs.findIndex((q,n)=>!used.has(n)&&norm(q.plName)===norm(r.plName));
+      return i;
+    };
+    const merged = events.map(r => {
+      const i=findMatch(r), lib=i>=0?libs[i]:{}; if(i>=0)used.add(i);
+      return {...lib,...r,role:String(r?.role||lib.role||"PL"),ho:String(r?.ho||lib.ho||""),plName:String(r?.plName||lib.plName||""),playerId:String(r?.playerId||lib.playerId||""),pcId:String(r?.pcId||lib.pcId||""),pcName:String(r?.pcName||lib.pcName||""),relation:String(r?.relation||lib.relation||"")};
     });
-    return (Array.isArray(eventRows) ? eventRows : []).map(r => {
-      const lib = libMap.get(keyOf(r)) || {};
-      return {
-        ...lib,
-        ...r,
-        role: String(r?.role || lib.role || "PL"),
-        ho: String(r?.ho || lib.ho || ""),
-        plName: String(r?.plName || lib.plName || ""),
-        playerId: String(r?.playerId || lib.playerId || ""),
-        pcId: String(r?.pcId || lib.pcId || ""),
-        pcName: String(r?.pcName || lib.pcName || ""),
-        relation: String(r?.relation || lib.relation || "")
-      };
-    });
-  }
-
-  function albumFromEvent(event, existing = {}) {
-    const e = normalizeEvent(event);
-    const mergedParticipantRows = e.participantRows.length
-      ? mergeParticipantRows(e.participantRows, existing.participantRows || [])
-      : (existing.participantRows || []);
-    return normalizeAlbum({
-      ...existing,
-      eventId: e.id,
-      scenarioId: e.scenarioId,
-      title: e.title,
-      date: String(e.start || "").slice(0,10),
-      start: e.start,
-      end: e.end,
-      status: e.status,
-      system: e.system,
-      facilitatorLabel: e.facilitatorLabel || existing.facilitatorLabel || "",
-      facilitatorless: e.facilitatorless !== undefined ? e.facilitatorless : !!existing.facilitatorless,
-      role: e.role || existing.role || "PL",
-      selfHo: e.selfHo || existing.selfHo || "",
-      pcName: e.pcName || existing.pcName || "",
-      pcId: e.pcId || existing.pcId || "",
-      participants: e.participants,
-      participantIds: e.participantIds,
-      participantRows: mergedParticipantRows,
-      runId: e.runId || existing.runId || "",
-      runLabel: e.runLabel || existing.runLabel || "",
-      sessionDay: e.sessionDay || existing.sessionDay || 0,
-      timeBand: e.timeBand || existing.timeBand || "",
-      timeSpecified: e.timeSpecified,
-      visibility: existing.visibility || e.visibility || "private"
-    });
+    // CALENDARにまだ存在しないLIBRARY側の複数PC行なども消さない。
+    libs.forEach((r,i)=>{if(!used.has(i))merged.push({...r});});
+    return merged;
   }
 
   function syncEventToAlbum(event) {
