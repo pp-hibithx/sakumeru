@@ -229,6 +229,8 @@
   }
 
   function syncAllEventsToAlbum() {
+    const originalEventsRaw = localStorage.getItem(KEYS.events);
+    const originalAlbumRaw = localStorage.getItem(KEYS.album);
     let events = load(KEYS.events).map(normalizeEvent);
     let album = load(KEYS.album);
     let changed = false;
@@ -259,8 +261,17 @@
       return e;
     });
     if (events.length || album.length) {
-      save(KEYS.events, events);
-      save(KEYS.album, album);
+      const nextEventsRaw=JSON.stringify(events),nextAlbumRaw=JSON.stringify(album);
+      try{
+        if(nextEventsRaw!==(originalEventsRaw||"[]"))localStorage.setItem(KEYS.events,nextEventsRaw);
+        if(nextAlbumRaw!==(originalAlbumRaw||"[]"))localStorage.setItem(KEYS.album,nextAlbumRaw);
+      }catch(err){
+        // 容量不足で起動そのものを止めない。先に書いたキーがあれば元へ戻す。
+        try{if(originalEventsRaw===null)localStorage.removeItem(KEYS.events);else localStorage.setItem(KEYS.events,originalEventsRaw)}catch{}
+        try{if(originalAlbumRaw===null)localStorage.removeItem(KEYS.album);else localStorage.setItem(KEYS.album,originalAlbumRaw)}catch{}
+        console.warn("[SAKU+MERU] Event/album startup sync skipped because browser storage is full. Existing data was kept.",err);
+        return {events:load(KEYS.events),album:load(KEYS.album),changed:false,writeSkipped:true};
+      }
     }
     return {events, album, changed};
   }
@@ -678,20 +689,28 @@ window.TRPG39 = {
     playerId:String(r?.playerId||""),pcId:String(r?.pcId||""),pcName:String(r?.pcName||""),relation:String(r?.relation||"")
   })).filter(r=>r.plName||r.playerId||r.pcName||r.pcId||r.ho);
 
-  function backup(){
-    if(localStorage.getItem(BACKUP_KEY))return true;
+  const BACKUP_DB="sakumeru_migration_backups_v1",BACKUP_STORE="backups";
+  function backupDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(BACKUP_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(BACKUP_STORE))req.result.createObjectStore(BACKUP_STORE,{keyPath:"id"})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error("migration backup database error"))})}
+  async function readBackup(){
+    const legacy=localStorage.getItem(BACKUP_KEY);if(legacy){try{return JSON.parse(legacy)}catch{}}
+    const db=await backupDb();try{return await new Promise((resolve,reject)=>{const req=db.transaction(BACKUP_STORE,"readonly").objectStore(BACKUP_STORE).get(BACKUP_KEY);req.onsuccess=()=>resolve(req.result?.data||null);req.onerror=()=>reject(req.error)})}finally{db.close()}
+  }
+  async function backup(){
+    if(await readBackup())return true;
     const data={kind:"SAKUMERU_ID_MIGRATION_BACKUP",version:2,createdAt:new Date().toISOString(),storage:{}};
     [ALBUM_KEY,EVENT_KEY,SELF_PC_KEY,RUN_ROSTER_KEY].forEach(k=>{if(localStorage.getItem(k)!==null)data.storage[k]=localStorage.getItem(k)});
-    try{localStorage.setItem(BACKUP_KEY,JSON.stringify(data));return true}catch(err){
-      console.error("[SAKU+MERU] ID migration v2 backup failed; migration aborted.",err);return false;
-    }
+    const db=await backupDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(BACKUP_STORE,"readwrite"),req=tx.objectStore(BACKUP_STORE).put({id:BACKUP_KEY,data});req.onerror=()=>reject(req.error);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}
+    return true;
   }
 
-  function run(){
+  async function run(){
     if(localStorage.getItem(MIGRATION_KEY)==="1")return;
-    if(!backup())return;
     const report={version:2,startedAt:new Date().toISOString(),selfPcRowsRecovered:0,runParticipantsRecovered:0,runSelfPcsRecovered:0,eventParticipantsRecovered:0,eventSelfPcRecovered:0};
     try{
+      // 大容量の複製はLocalStorageへ置かず、別容量枠のIndexedDBへ退避する。
+      // 退避できない場合も既存データの通常読み込みは妨げない。
+      await backup();
+      const originalAlbumRaw=localStorage.getItem(ALBUM_KEY),originalEventRaw=localStorage.getItem(EVENT_KEY);
       const album=(parse(ALBUM_KEY,[])||[]).map(x=>clone(x));
       const events=(parse(EVENT_KEY,[])||[]).map(x=>clone(x));
       const selfMap=parse(SELF_PC_KEY,{})||{};
@@ -733,16 +752,29 @@ window.TRPG39 = {
         }
       }
 
-      localStorage.setItem(ALBUM_KEY,JSON.stringify(album));
-      localStorage.setItem(EVENT_KEY,JSON.stringify(events));
+      const nextAlbumRaw=JSON.stringify(album),nextEventRaw=JSON.stringify(events);
+      try{
+        localStorage.setItem(MIGRATION_KEY,"running");
+        if(nextAlbumRaw!==(originalAlbumRaw||"[]"))localStorage.setItem(ALBUM_KEY,nextAlbumRaw);
+        if(nextEventRaw!==(originalEventRaw||"[]"))localStorage.setItem(EVENT_KEY,nextEventRaw);
+        localStorage.setItem(MIGRATION_KEY,"1");
+      }catch(writeErr){
+        // 途中まで書けた場合も元の文字列へ戻し、空配列などで上書きしない。
+        try{if(originalAlbumRaw===null)localStorage.removeItem(ALBUM_KEY);else localStorage.setItem(ALBUM_KEY,originalAlbumRaw)}catch{}
+        try{if(originalEventRaw===null)localStorage.removeItem(EVENT_KEY);else localStorage.setItem(EVENT_KEY,originalEventRaw)}catch{}
+        try{localStorage.removeItem(MIGRATION_KEY)}catch{}
+        console.warn("[SAKU+MERU] ID migration v2 write skipped because browser storage is full. Existing data was kept.",writeErr);
+        return;
+      }
       report.finishedAt=new Date().toISOString();report.album=album.length;report.events=events.length;
-      localStorage.setItem(REPORT_KEY,JSON.stringify(report));localStorage.setItem(MIGRATION_KEY,"1");
+      try{localStorage.setItem(REPORT_KEY,JSON.stringify(report))}catch(err){console.warn("[SAKU+MERU] ID migration v2 report was not stored because browser storage is full.",err)}
       window.dispatchEvent(new CustomEvent("sakumeru:identity-migrated-v2",{detail:report}));
       console.info("[SAKU+MERU] Identity rescue migration v2 completed.",report);
-    }catch(err){console.error("[SAKU+MERU] Identity rescue migration v2 failed; source backup is preserved.",err);}
+    }catch(err){console.warn("[SAKU+MERU] Identity rescue migration v2 was skipped; normal data loading continues.",err);}
   }
   api.getIdentityMigrationV2Report=function(){try{return JSON.parse(localStorage.getItem(REPORT_KEY)||"null")}catch{return null}};
   api.getIdentityMigrationV2Backup=function(){try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||"null")}catch{return null}};
+  api.getIdentityMigrationV2BackupAsync=readBackup;
   api.runIdentityMigrationV2=run;
   run();
 })();
