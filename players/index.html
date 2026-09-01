@@ -1440,12 +1440,17 @@ function save(){
  const start=combineLibraryDateTime(date,q("startTime").value);
  const end=combineLibraryDateTime(date,q("endTime").value);
  const rows=getParticipantRows().map(r=>{
-   let playerId="";
+   let playerId=String(r.playerId||"");
    if(TRPG39.playersEnabled?.()&&r.plName){
      const p=TRPG39.ensurePlayer?TRPG39.ensurePlayer(r.plName):null;
-     playerId=p?.id||"";
+     playerId=p?.id||playerId;
    }
-   return {...r,playerId};
+   let pcId=String(r.pcId||"");
+   if(r.pcName&&TRPG39.ensurePC){
+     const pc=TRPG39.ensurePC(r.pcName,{system:q("system").value.trim(),ownerPlayerId:playerId});
+     pcId=pc?.id||pcId;
+   }
+   return {...r,playerId,pcId};
  });
  const participants=rows.map(r=>r.plName).filter(Boolean);
  const participantIds=rows.filter(r=>r.plName).map(r=>r.playerId||"");
@@ -1475,7 +1480,7 @@ function save(){
  if(item.start){
    let evs=TRPG39.loadEvents(),eventId=item.eventId||TRPG39.uuid();
    const ei=evs.findIndex(e=>e.id===eventId),base=ei>=0?evs[ei]:{};
-   const ev=TRPG39.normalizeEvent({...base,id:eventId,type:"trpg",scenarioId:item.scenarioId,title:item.title,scenarioTitle:item.title,start:item.start,end:item.end,status:item.status,sessionKind:q("sessionKind").value||"main",system:item.system,facilitatorLabel:item.facilitatorLabel,facilitatorless:item.facilitatorless,role:item.role,pcName:item.pcName,pcId:item.pcId,participants:item.participants,participantIds:item.participantIds,runId:item.runId,runLabel:item.runLabel,linkedAlbumId:item.id});
+   const ev=TRPG39.normalizeEvent({...base,id:eventId,type:"trpg",scenarioId:item.scenarioId,title:item.title,scenarioTitle:item.title,start:item.start,end:item.end,status:item.status,sessionKind:q("sessionKind").value||"main",system:item.system,facilitatorLabel:item.facilitatorLabel,facilitatorless:item.facilitatorless,role:item.role,selfHo:item.selfHo||"",pcName:item.pcName,pcId:item.pcId,participants:item.participants,participantIds:item.participantIds,participantRows:item.participantRows||[],runId:item.runId,runLabel:item.runLabel,linkedAlbumId:item.id});
    if(ei>=0)evs[ei]=ev;else evs.push(ev);TRPG39.saveEvents(evs);
    item=TRPG39.normalizeAlbum({...item,eventId,date:String(item.start).slice(0,10)});
    i=data.findIndex(x=>x.id===item.id);if(i>=0)data[i]=item;
