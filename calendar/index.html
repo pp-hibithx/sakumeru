@@ -1336,7 +1336,7 @@ function addEventParticipantRow(value="",opts={}){
  row.querySelector(".eventPartRole")?.addEventListener("change",syncCalendarParticipantHidden);
  row.querySelector(".participant-remove").onclick=()=>{row.remove();syncCalendarParticipantHidden()};
 }
-function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];return [...host.querySelectorAll(".calendar-library-participant-row")].map(r=>({role:r.querySelector(".eventPartRole")?.value||"PL",plName:r.querySelector(".eventPartPl")?.value.trim()||"",ho:r.querySelector(".eventPartHo")?.value.trim()||"",pcName:r.querySelector(".eventPartPc")?.value.trim()||"",relation:""})).filter(r=>r.plName||r.ho||r.pcName)}
+function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];return [...host.querySelectorAll(".calendar-library-participant-row")].map(r=>{const role=r.querySelector(".eventPartRole")?.value||"PL",plName=r.querySelector(".eventPartPl")?.value.trim()||"",ho=r.querySelector(".eventPartHo")?.value.trim()||"",pcName=r.querySelector(".eventPartPc")?.value.trim()||"";let playerId="",pcId="";if(plName&&TRPG39.ensurePlayer&&TRPG39.playersEnabled?.()){const p=TRPG39.ensurePlayer(plName);playerId=p?.id||""}if(pcName&&TRPG39.ensurePC){const pc=TRPG39.ensurePC(pcName,{system:$("eventSystem")?.value.trim()||"",ownerPlayerId:playerId});pcId=pc?.id||""}return {role,plName,playerId,ho,pcName,pcId,relation:""}}).filter(r=>r.plName||r.ho||r.pcName)}
 function calendarParticipantNames(){return [...new Set(calendarParticipantRows().map(r=>r.plName).filter(Boolean))]}
 function calendarLibraryRowsForEvent(x){
  const album=TRPG39.loadAlbum?.()||[];
