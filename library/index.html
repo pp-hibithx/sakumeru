@@ -2169,6 +2169,8 @@ function save(){
    item=TRPG39.normalizeAlbum({...item,eventId,date:String(item.start).slice(0,10)});
    i=data.findIndex(x=>x.id===item.id);if(i>=0)data[i]=item;
  }
+ // 陣名はrunId単位の共通メタデータ。LIBRARYで変更したら同じ陣の全記録・CALENDAR全日程へ同期する。
+ updateRunLabel(item.runId,item.runLabel);
  setXReport(item.id,q("xReportUrl").value,q("xReportText").value);
  const selfRoleForHoTemplate=String(item.role||"").toUpperCase();
  if(["KP","DL","GM","KPGM","SKP"].includes(selfRoleForHoTemplate)){
@@ -2909,8 +2911,8 @@ function articleEditorBlockHtml(b,index,total){
 function articlePagesHtml(r){
  const pages=articlePagesForRun(r.id).slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
  return `<section class="lib-article-pages">
-   <div class="lib-article-pages-head"><div><strong>卓記事</strong><div class="small muted">1ページの中に文章・画像・会話ログ・YouTube・BGMを好きな順で何個でも追加できます。</div></div><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div>
-   <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page" ${i===0?"open":""}>
+   <div class="lib-article-pages-head"><div><strong>卓記事</strong><div class="small muted">1ページの中に文章・画像・会話ログ・YouTube・BGMを好きな順で何個でも追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div></div>
+   <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page">
      <summary><div><div class="lib-article-page-title">${esc(p.title||`ページ ${i+1}`)} <span class="lib-article-share-badge">${esc(articleShareLabel(p))}</span></div><div class="lib-article-page-meta">${esc(p.updatedAt||p.createdAt||"")}</div></div><span>▼</span></summary>
      ${articleBlocksHtml(p)}
      <div class="lib-article-page-actions">${p.shareEnabled?`<button type="button" data-article-share="${esc(p.id)}" data-run-id="${esc(r.id)}">共有URL</button><button type="button" data-article-x="${esc(p.id)}" data-run-id="${esc(r.id)}">Xに投稿</button>`:""}<button type="button" data-article-edit="${esc(p.id)}" data-run-id="${esc(r.id)}">編集</button><button type="button" class="danger" data-article-delete="${esc(p.id)}" data-run-id="${esc(r.id)}">削除</button></div>
@@ -3536,6 +3538,10 @@ async function postArticlePageToX(runId,pageId){
  window.open(intent.href,"_blank","noopener,noreferrer");
 }
 function bindArticlePageButtons(){
+ document.querySelectorAll('[data-article-close-all]').forEach(b=>b.onclick=()=>{
+   const section=b.closest('.lib-article-pages');
+   if(section)section.querySelectorAll('details.lib-article-page').forEach(d=>d.open=false);
+ });
  document.querySelectorAll('[data-article-new]').forEach(b=>b.onclick=()=>openArticleEditor(b.dataset.articleNew));
  document.querySelectorAll('[data-article-edit]').forEach(b=>b.onclick=()=>openArticleEditor(b.dataset.runId,b.dataset.articleEdit));
  document.querySelectorAll('[data-article-delete]').forEach(b=>b.onclick=()=>deleteArticlePage(b.dataset.runId,b.dataset.articleDelete));
@@ -3576,12 +3582,31 @@ function sessionGroupHtml(items,kind,label){
  </details>`;
 }
 
+function dedupeRunRosterRows(rows=[]){
+ const out=[],seen=new Map();
+ const norm=v=>String(v||"").normalize("NFKC").trim().toLowerCase();
+ (rows||[]).forEach(src=>{
+   if(!src)return;
+   const r={...src};
+   // 同じ陣の各開催日に同一参加者行が保存されていても、一括設定では1行だけ表示する。
+   // 同じPLが別PCを使っている場合は pcId / PC名 が異なるため別行として保持する。
+   const person=String(r.playerId||"")||`name:${norm(r.plName)}`;
+   const pc=String(r.pcId||"")||`pc:${norm(r.pcName)}`;
+   const key=`${person}|${pc}|${norm(r.ho)}|${norm(r.role||"PL")}`;
+   const idx=seen.get(key);
+   if(idx===undefined){seen.set(key,out.length);out.push(r);return}
+   const prev=out[idx];
+   out[idx]={...prev,...r,playerId:r.playerId||prev.playerId||"",pcId:r.pcId||prev.pcId||"",plName:r.plName||prev.plName||"",pcName:r.pcName||prev.pcName||"",ho:r.ho||prev.ho||""};
+ });
+ return out;
+}
 function runRosterBulkRows(runId){
  const roster=ensureRunRosterFromData(runId)||{participants:[]};
  const rows=Array.isArray(roster.participants)?roster.participants:[];
- if(rows.length)return rows.map(r=>({...r}));
- const first=data.find(x=>x.runId===runId);
- return first?rowsFromRecord(first).map(r=>({...r})):[];
+ if(rows.length)return dedupeRunRosterRows(rows);
+ // 旧データでは同じ陣の各日程に参加者が複製されているため、陣全体を集めても重複表示しない。
+ const all=data.filter(x=>String(x.runId||"")===String(runId||"")).flatMap(x=>rowsFromRecord(x));
+ return dedupeRunRosterRows(all);
 }
 function runRosterBulkSelf(runId){
  const roster=ensureRunRosterFromData(runId)||{role:'PL',selfPcs:[]};
