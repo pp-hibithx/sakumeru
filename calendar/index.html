@@ -1148,10 +1148,10 @@ function renderScenarioSearch(){
  box.querySelectorAll("[data-scenario-choice]").forEach(b=>b.onclick=()=>chooseScenario(b.dataset.scenarioChoice));
 }
 function fillEventPcSelect(selectedId=""){
- const sel=$("eventPcSelect");if(!sel)return;const pcs=(window.TRPG39&&TRPG39.loadPCs)?TRPG39.loadPCs():[];
+ const sel=$("eventPcSelect");if(!sel)return;const pcs=(window.TRPG39&&TRPG39.selfPCs)?TRPG39.selfPCs():((window.TRPG39&&TRPG39.loadPCs)?TRPG39.loadPCs():[]).filter(p=>!String(p.ownerPlayerId||"").trim());
  sel.innerHTML='<option value="">直接入力</option>'+pcs.slice().sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ja")).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");sel.value=selectedId||"";
 }
-function ensureEventPc(){const selected=$("eventPcSelect")?.value||"";if(selected)return selected;const typed=$("eventPc")?.value.trim()||"";if(!typed)return "";const pc=window.TRPG39?.ensurePC?.(typed,{system:$("eventSystem")?.value.trim()||""});if(pc){fillEventPcSelect(pc.id);return pc.id}return ""}
+function ensureEventPc(){const selected=$("eventPcSelect")?.value||"";const selectedPc=window.TRPG39?.resolvePCReference?.({pcId:selected},{selfOnly:true});if(selectedPc)return selectedPc.id;const typed=$("eventPc")?.value.trim()||"";if(!typed)return "";const existing=window.TRPG39?.resolvePCReference?.({pcName:typed},{selfOnly:true});const pc=existing||window.TRPG39?.ensurePC?.(typed,{system:$("eventSystem")?.value.trim()||""});if(pc){fillEventPcSelect(pc.id);return pc.id}return ""}
 function showEditor(){hideEventDetail();$("eventPanel").hidden=false;document.body.classList.add("calendar-editor-open")}
 function hideEditor(){$("eventPanel").hidden=true;document.body.classList.remove("calendar-editor-open")}
 function clearBulkDays(){$("bulkDays").innerHTML=""}
