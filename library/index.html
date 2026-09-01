@@ -63,7 +63,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .player-external-list{margin-top:8px}
 @media(max-width:760px){.player-external-row{grid-template-columns:1fr}}
 
-.run-roster-bulk{margin:12px 0}.run-roster-bulk-card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px}.run-roster-bulk-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.run-roster-bulk-head button,.run-roster-bulk-actions button,.run-roster-bulk-row button,.run-roster-self-actions button{width:auto}.run-roster-self{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2,#fff)}.run-roster-self-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.run-roster-self-head strong{margin-right:auto}.run-roster-self-head select{width:auto;min-width:110px;margin:0}.run-roster-self-row{display:grid;grid-template-columns:minmax(100px,.65fr) minmax(140px,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.run-roster-self-row input{margin:0}.run-roster-self-actions{margin-top:8px}.run-roster-bulk-labels,.run-roster-bulk-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(100px,.65fr) minmax(140px,1fr) auto;gap:8px;align-items:center}.run-roster-bulk-labels{font-size:12px;color:var(--muted);margin-top:12px;padding:0 2px}.run-roster-bulk-row{padding:7px 0;border-top:1px solid var(--line)}.run-roster-bulk-row input{margin:0}.run-roster-bulk-actions{display:flex;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}@media(max-width:720px){.run-roster-bulk-labels{display:none}.run-roster-bulk-row{grid-template-columns:1fr 1fr}.run-roster-bulk-row [data-roster-pc]{grid-column:1/-1}.run-roster-bulk-row button{justify-self:end;grid-column:2}.run-roster-self-row{grid-template-columns:1fr 1fr}.run-roster-self-row [data-roster-self-pc]{grid-column:1/-1}.run-roster-self-row button{justify-self:end;grid-column:2}}
+.run-roster-bulk{margin:12px 0}.run-roster-bulk-card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px}.run-roster-bulk-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.run-roster-bulk-head button,.run-roster-bulk-actions button,.run-roster-bulk-row button,.run-roster-self-actions button{width:auto}.run-roster-self{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2,#fff)}.run-roster-self-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.run-roster-self-head strong{margin-right:auto}.run-roster-self-head select{width:auto;min-width:110px;margin:0}.run-roster-self-row{display:grid;grid-template-columns:minmax(100px,.65fr) minmax(140px,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.run-roster-self-row input{margin:0}.run-roster-self-actions{margin-top:8px}.run-roster-bulk-labels,.run-roster-bulk-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(92px,.55fr) minmax(100px,.65fr) minmax(140px,1fr) auto;gap:8px;align-items:center}.run-roster-bulk-labels{font-size:12px;color:var(--muted);margin-top:12px;padding:0 2px}.run-roster-bulk-row{padding:7px 0;border-top:1px solid var(--line)}.run-roster-bulk-row input{margin:0}.run-roster-bulk-actions{display:flex;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}@media(max-width:720px){.run-roster-bulk-labels{display:none}.run-roster-bulk-row{grid-template-columns:1fr 1fr}.run-roster-bulk-row [data-roster-role]{grid-column:2}.run-roster-bulk-row [data-roster-pc]{grid-column:1/-1}.run-roster-bulk-row button{justify-self:end;grid-column:2}.run-roster-self-row{grid-template-columns:1fr 1fr}.run-roster-self-row [data-roster-self-pc]{grid-column:1/-1}.run-roster-self-row button{justify-self:end;grid-column:2}}
 .lib-self-pcs{display:grid;gap:4px;margin-bottom:4px}.lib-self-pcs .lib-child-title{margin:0}</style>
 
 <style>
@@ -2253,13 +2253,8 @@ function groupData(xs){
    // 既存データは書き換えず、表示時だけ陣名を補完する。
    let displayKpNo=0;
    g.runs.forEach(r=>{
-     // 自分がPLとして参加した卓は、保存済みrunLabelより「自陣」を優先して表示する。
-     const selfRoles=new Set((r.items||[]).map(x=>String(x.role||"").toUpperCase()).filter(Boolean));
-     if(selfRoles.has("PL")){
-       r.label="自陣";
-       return;
-     }
-
+     // 保存済みrunLabelを最優先する。
+     // 「自陣」「○陣目」は、陣名未設定の旧データにだけ表示上の仮ラベルとして使う。
      if(r.label){
        const m=String(r.label).match(/^(\d+)陣目$/);
        if(m)displayKpNo=Math.max(displayKpNo,Number(m[1])||0);
@@ -3626,8 +3621,10 @@ function renderRunRosterBulk(runId){
    <input data-roster-self-pc data-pcid="${esc(r.pcId||"")}" value="${esc(r.pcName||"")}" placeholder="自PC名（PCなしなら空欄）">
    <button type="button" class="danger" data-roster-self-remove="${i}">削除</button>
  </div>`).join("");
+ const roleOptions=(value='PL')=>['PL','KP','SKP','見学','その他'].map(v=>`<option${String(value||'PL')===v?' selected':''}>${v}</option>`).join('');
  const body=rows.map((r,i)=>`<div class="run-roster-bulk-row" data-roster-row>
    <input data-roster-pl data-playerid="${esc(r.playerId||"")}" value="${esc(r.plName||"")}" placeholder="PL名">
+   <select data-roster-role>${roleOptions(r.role||'PL')}</select>
    <input data-roster-ho value="${esc(r.ho||"")}" placeholder="HO1 など">
    <input data-roster-pc data-pcid="${esc(r.pcId||"")}" value="${esc(r.pcName||"")}" placeholder="PC名">
    <button type="button" class="danger" data-roster-remove="${i}">削除</button>
@@ -3641,12 +3638,12 @@ function renderRunRosterBulk(runId){
      <div data-roster-self-rows>${selfRows}</div>
      <div class="run-roster-self-actions"><button type="button" data-roster-self-add>＋ 自PCを追加</button></div>
    </div>
-   <div class="run-roster-bulk-labels"><span>PL</span><span>HO</span><span>PC</span><span></span></div>
+   <div class="run-roster-bulk-labels"><span>PL</span><span>役割</span><span>HO</span><span>PC</span><span></span></div>
    <div data-roster-rows>${body}</div>
    <div class="run-roster-bulk-actions"><button type="button" data-roster-add>＋ PLを追加</button><button type="button" data-roster-apply>全日程に反映</button></div>
  </div>`;
  const rowsBox=box.querySelector('[data-roster-rows]'),selfRowsBox=box.querySelector('[data-roster-self-rows]');
- const addRow=(v={})=>{const d=document.createElement('div');d.className='run-roster-bulk-row';d.dataset.rosterRow='';d.innerHTML=`<input data-roster-pl data-playerid="${esc(v.playerId||'')}" value="${esc(v.plName||"")}" placeholder="PL名"><input data-roster-ho value="${esc(v.ho||"")}" placeholder="HO1 など"><input data-roster-pc data-pcid="${esc(v.pcId||'')}" value="${esc(v.pcName||"")}" placeholder="PC名"><button type="button" class="danger" data-roster-remove>削除</button>`;d.querySelector('[data-roster-remove]').onclick=()=>d.remove();rowsBox.appendChild(d)};
+ const addRow=(v={})=>{const d=document.createElement('div');d.className='run-roster-bulk-row';d.dataset.rosterRow='';d.innerHTML=`<input data-roster-pl data-playerid="${esc(v.playerId||'')}" value="${esc(v.plName||"")}" placeholder="PL名"><select data-roster-role>${roleOptions(v.role||'PL')}</select><input data-roster-ho value="${esc(v.ho||"")}" placeholder="HO1 など"><input data-roster-pc data-pcid="${esc(v.pcId||'')}" value="${esc(v.pcName||"")}" placeholder="PC名"><button type="button" class="danger" data-roster-remove>削除</button>`;d.querySelector('[data-roster-remove]').onclick=()=>d.remove();rowsBox.appendChild(d)};
  const addSelfRow=(v={})=>{const d=document.createElement('div');d.className='run-roster-self-row';d.dataset.rosterSelfRow='';d.innerHTML=`<input data-roster-self-ho value="${esc(v.ho||"")}" placeholder="HO1 / KPC など"><input data-roster-self-pc data-pcid="${esc(v.pcId||'')}" value="${esc(v.pcName||"")}" placeholder="自PC名（PCなしなら空欄）"><button type="button" class="danger" data-roster-self-remove>削除</button>`;d.querySelector('[data-roster-self-remove]').onclick=()=>d.remove();selfRowsBox.appendChild(d)};
  box.querySelectorAll('[data-roster-remove]').forEach(b=>b.onclick=()=>b.closest('[data-roster-row]')?.remove());
  box.querySelectorAll('[data-roster-self-remove]').forEach(b=>b.onclick=()=>b.closest('[data-roster-self-row]')?.remove());
@@ -3666,7 +3663,7 @@ function applyRunRosterBulk(runId,box){
    return {...r,pcId};
  });
  const rows=[...box.querySelectorAll('[data-roster-row]')].map(r=>({
-   role:'PL',ho:r.querySelector('[data-roster-ho]').value.trim(),plName:r.querySelector('[data-roster-pl]').value.trim(),playerId:r.querySelector('[data-roster-pl]').dataset.playerid||'',pcName:r.querySelector('[data-roster-pc]').value.trim(),pcId:r.querySelector('[data-roster-pc]').dataset.pcid||'',relation:''
+   role:r.querySelector('[data-roster-role]')?.value||'PL',ho:r.querySelector('[data-roster-ho]').value.trim(),plName:r.querySelector('[data-roster-pl]').value.trim(),playerId:r.querySelector('[data-roster-pl]').dataset.playerid||'',pcName:r.querySelector('[data-roster-pc]').value.trim(),pcId:r.querySelector('[data-roster-pc]').dataset.pcid||'',relation:''
  })).filter(r=>r.plName||r.ho||r.pcName).map(r=>{
    let playerId=r.playerId||'';
    if(TRPG39.playersEnabled?.()&&r.plName){const p=TRPG39.ensurePlayer?TRPG39.ensurePlayer(r.plName):null;playerId=p?.id||playerId}
