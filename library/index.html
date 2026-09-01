@@ -2462,6 +2462,24 @@ function showSavedRecordDetail(item){
    setTimeout(()=>record.classList.remove("lib-record-just-saved"),2200);
  });
 }
+function showLibraryRecordById(recordId){
+ const item=data.find(x=>String(x.id||"")===String(recordId||""));
+ if(!item)return false;
+ libraryView="scenario";
+ focusedScenarioKey=groupKey(item);
+ focusedRunId=item.runId||"";
+ render();
+ requestAnimationFrame(()=>{
+   const record=document.getElementById(`record-${item.id}`);
+   if(!record)return;
+   const section=record.closest(".lib-session-group");
+   if(section)section.open=true;
+   record.classList.add("lib-record-just-saved");
+   record.scrollIntoView({behavior:"smooth",block:"center"});
+   setTimeout(()=>record.classList.remove("lib-record-just-saved"),2200);
+ });
+ return true;
+}
 function nextRunLabelForScenario(scenarioId,title=""){
  const same=data.filter(x=>{
    if(scenarioId)return x.scenarioId===scenarioId;
@@ -2481,12 +2499,19 @@ function nextRunLabelForScenario(scenarioId,title=""){
 }
 function applyCrossPageRecordPrefill(){
  const params=new URLSearchParams(location.search);
+ const participantId=String(params.get("participantId")||"").trim();
  const participantName=String(params.get("participantName")||"").trim();
  const selfPcId=String(params.get("selfPcId")||"").trim();
  const selfPcName=String(params.get("selfPcName")||"").trim();
- if(participantName){
+ if(participantId||participantName){
+   let selected=null;
+   if(participantId)selected=players.find(x=>String(x.id||"")===participantId)||null;
+   else{
+     const matches=players.filter(x=>String(x.name||"").trim()===participantName);
+     if(matches.length===1)selected=matches[0];
+   }
    q("participantRows").innerHTML="";
-   addParticipantRow({role:"PL",plName:participantName,pcs:[]},{placeholder:false});
+   addParticipantRow({role:"PL",playerId:participantId||selected?.id||"",plName:selected?.name||participantName,pcs:[]},{placeholder:false});
  }
  if(selfPcId||selfPcName){
    const own=TRPG39.loadPCs?TRPG39.loadPCs():pcs;
@@ -2497,8 +2522,8 @@ function applyCrossPageRecordPrefill(){
 function addForScenario(id){
  const s=scenarioById(id);
  reset(id);
- applyCrossPageRecordPrefill();
  applyParticipantHoTemplate(id,s?.title||q("title").value||"");
+ applyCrossPageRecordPrefill();
  q("runId").value=TRPG39.uuid();
  q("runLabel").value=nextRunLabelForScenario(id,s?.title||"");
  showEditor();
@@ -5779,9 +5804,10 @@ q("pcLibraryEditorSave").onclick=savePcLibraryEditor;
 q("pcLibraryEditor").addEventListener("click",e=>{if(e.target===q("pcLibraryEditor"))closePcLibraryEditor()});
 
 reset();hideEditor();render();openLibraryFromCalendarEvent();{
- const p=new URLSearchParams(location.search),sid=p.get("scenario")||"",editId=p.get("edit")||"",runId=p.get("run")||"",runLabel=p.get("runLabel")||"";
+ const p=new URLSearchParams(location.search),sid=p.get("scenario")||"",editId=p.get("edit")||"",albumId=p.get("albumId")||"",runId=p.get("run")||"",runLabel=p.get("runLabel")||"";
  if(editId){edit(editId)}
  else if(p.get("new")==="1"){if(runId)addForRun(sid,runId,runLabel);else addForScenario(sid)}
+ else if(albumId)showLibraryRecordById(albumId)
 }
 })();
 </script>
