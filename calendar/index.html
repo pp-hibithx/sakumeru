@@ -752,6 +752,55 @@
   .calendar-library-participant-row .participant-remove{justify-self:start}
 }
 </style>
+
+<style>
+/* CALENDAR editor: keep calendar scroll position and edit in a right-side drawer. */
+#eventPanel.event-editor{
+  position:fixed;
+  top:0;
+  right:0;
+  z-index:10020;
+  width:min(760px,92vw);
+  height:100dvh;
+  max-height:100dvh;
+  overflow:auto;
+  margin:0;
+  padding:18px;
+  border-radius:0;
+  border-top:0;
+  border-right:0;
+  border-bottom:0;
+  box-shadow:-18px 0 55px rgba(0,0,0,.35);
+}
+#eventPanel[hidden]{display:none!important}
+body.calendar-editor-open::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:10010;
+  background:rgba(0,0,0,.48);
+}
+body.calendar-editor-open{overflow:hidden}
+.event-editor-head{
+  position:sticky;
+  top:-18px;
+  z-index:3;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  margin:-18px -18px 14px;
+  padding:14px 18px;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+}
+.event-editor-head h2{margin:0}
+#closeEventEditor{width:auto;white-space:nowrap}
+@media(max-width:700px){
+  #eventPanel.event-editor{width:100vw;padding:14px}
+  .event-editor-head{top:-14px;margin:-14px -14px 12px;padding:12px 14px}
+}
+</style>
 </head>
 <body>
 <div data-site-header data-active="calendar"></div>
@@ -784,7 +833,7 @@
 </section>
 
 <section class="panel event-editor" id="eventPanel" hidden>
-<h2 id="eventHeading">卓予定を登録</h2>
+<div class="event-editor-head"><h2 id="eventHeading">卓予定を登録</h2><button id="closeEventEditor" type="button" class="secondary" aria-label="編集を閉じる">× 閉じる</button></div>
 <input id="eventId" type="hidden">
 <div class="event-form">
 <div><label>予定種別</label><select id="eventType"><option value="trpg">卓予定</option><option value="blocked">卓以外の予定（×）</option></select></div>
@@ -806,8 +855,8 @@
 <div class="trpg-field"><label>色</label><select id="eventColor"><option value="">自動</option><option value="red">赤</option><option value="orange">橙</option><option value="yellow">黄</option><option value="green">緑</option><option value="blue">青</option><option value="purple">紫</option><option value="pink">ピンク</option><option value="gray">グレー</option></select></div>
 <div class="trpg-field"><label>開始時刻 <span class="small muted">任意</span></label><input id="eventStartTime" type="time"></div>
 <div class="trpg-field"><label>終了時刻 <span class="small muted">任意</span></label><input id="eventEndTime" type="time"></div>
-<div class="trpg-field"><label>役割</label><select id="eventRole"><option value="">未設定</option><option>PL</option><option>KP</option><option>SKP</option><option>その他</option></select><div id="facilitatorHint" class="small muted"></div></div>
-<div class="trpg-field"><label>システム</label><input id="eventSystem"></div>
+<div class="trpg-field"><label>役割</label><select id="eventRole"><option value="">未設定</option><option>PL</option><option>KP</option><option>SKP</option><option>その他</option></select></div>
+<div class="trpg-field"><label>システム</label><input id="eventSystem"><div id="facilitatorHint" class="small muted"></div></div>
 <div class="trpg-field"><label>自分のHO / 役割</label><input id="eventSelfHo" placeholder="HO1 / KPC など"></div>
 <div class="trpg-field"><label>PC</label><select id="eventPcSelect"><option value="">直接入力</option></select><input id="eventPc" placeholder="未登録PCは保存時にPC LIBRARYへ自動登録"></div>
 <div class="full trpg-field">
@@ -1021,8 +1070,8 @@ function fillEventPcSelect(selectedId=""){
  sel.innerHTML='<option value="">直接入力</option>'+pcs.slice().sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ja")).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");sel.value=selectedId||"";
 }
 function ensureEventPc(){const selected=$("eventPcSelect")?.value||"";if(selected)return selected;const typed=$("eventPc")?.value.trim()||"";if(!typed)return "";const pc=window.TRPG39?.ensurePC?.(typed,{system:$("eventSystem")?.value.trim()||""});if(pc){fillEventPcSelect(pc.id);return pc.id}return ""}
-function showEditor(){$("eventPanel").hidden=false}
-function hideEditor(){$("eventPanel").hidden=true}
+function showEditor(){$("eventPanel").hidden=false;document.body.classList.add("calendar-editor-open")}
+function hideEditor(){$("eventPanel").hidden=true;document.body.classList.remove("calendar-editor-open")}
 function clearBulkDays(){$("bulkDays").innerHTML=""}
 function clearMultiDates(){$("multiDateList").innerHTML=""}
 function addMultiDate(date=""){const row=document.createElement("div");row.className="multi-date-row";row.innerHTML=`<input class="multi-date" type="date" value="${esc(date)}"><button type="button" class="danger remove-multi-date">削除</button>`;row.querySelector(".remove-multi-date").onclick=()=>row.remove();$("multiDateList").appendChild(row)}
@@ -1272,6 +1321,7 @@ $("scenarioSearch").addEventListener("input",()=>{$("scenarioSelect").value="";r
 $("scenarioSearch").addEventListener("focus",renderScenarioSearch);
 $("scenarioSearch").addEventListener("keydown",e=>{if(e.key==="Escape")$("scenarioSearchResults").classList.remove("open")});
 document.addEventListener("click",e=>{if(!e.target.closest(".scenario-picker"))$("scenarioSearchResults")?.classList.remove("open")});
+$("closeEventEditor").onclick=hideEditor;
 $("eventPcSelect").onchange=()=>{const id=$("eventPcSelect").value;const pc=(window.TRPG39?.loadPCs?.()||[]).find(p=>p.id===id);if(pc)$("eventPc").value=pc.name||""};
 $("eventType").onchange=updateTypeUI;$("eventStatus").onchange=updateTypeUI;$("eventSessionKind").onchange=updateTypeUI;$("eventDay").oninput=updateDayLabel;$("dateMode").onchange=updateDateModeUI;$("addMultiDate").onclick=()=>addMultiDate();$("addDayBtn").onclick=()=>addBulkDay();
 function parseLocalYmdTime(ymd,time="00:00"){const [y,m,d]=String(ymd||"").split("-").map(Number),[hh,mm]=String(time||"00:00").split(":").map(Number);if(!y||!m||!d)return null;return new Date(y,m-1,d,hh||0,mm||0,0,0)}
@@ -1321,7 +1371,13 @@ function buildTrpgEvent(id,date,startTime,endTime,sessionDay,timeBand,sessionKin
    // 完了へ変更した時だけ、現在画面に見えている実際の「○日目」を確定値として保存する。
    if(!manuallyChanged&&$("eventStatus").value!=="done")dayValue=original;
  }
- return TRPG39.normalizeEvent({...(old||{}),id,type:"trpg",title,scenarioId,scenarioTitle:title,start,end,timeSpecified:!!startTime,timeBand:timeBand||"",sessionKind:kind,sessionDay:dayValue,status:$("eventStatus").value,role:$("eventRole").value,system:$("eventSystem").value.trim(),facilitatorLabel:cfg.label,facilitatorless:cfg.less,selfHo:$("eventSelfHo").value.trim(),pcName:$("eventPc").value.trim(),pcId:ensureEventPc(),participants:calendarParticipantNames(),participantRows:calendarParticipantRows(),calendarMemo:$("eventMemo").value.trim(),calendarColor:$("eventColor").value||"",runId:old?.runId||runId,runLabel:$("eventRunLabel").value.trim()||old?.runLabel||""});
+ const participantRows=calendarParticipantRows();
+ const normalized=TRPG39.normalizeEvent({...(old||{}),id,type:"trpg",title,scenarioId,scenarioTitle:title,start,end,timeSpecified:!!startTime,timeBand:timeBand||"",sessionKind:kind,sessionDay:dayValue,status:$("eventStatus").value,role:$("eventRole").value,system:$("eventSystem").value.trim(),facilitatorLabel:cfg.label,facilitatorless:cfg.less,selfHo:$("eventSelfHo").value.trim(),pcName:$("eventPc").value.trim(),pcId:ensureEventPc(),participants:calendarParticipantNames(),participantRows,calendarMemo:$("eventMemo").value.trim(),calendarColor:$("eventColor").value||"",runId:old?.runId||runId,runLabel:$("eventRunLabel").value.trim()||old?.runLabel||""});
+ // shared-data の正規化で参加者の詳細が落ちても、CALENDARではLIBRARY互換の行情報を必ず保持する。
+ normalized.participantRows=participantRows.map(r=>({...r}));
+ normalized.participants=[...new Set(participantRows.map(r=>r.plName).filter(Boolean))];
+ normalized.selfHo=$("eventSelfHo").value.trim();
+ return normalized;
 }
 function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],linkedAlbumId:""})}
 $("saveEvent").onclick=()=>{
@@ -1381,7 +1437,47 @@ $("saveEvent").onclick=()=>{
        TRPG39.saveAlbum(TRPG39.loadAlbum().filter(a=>!removedIds.has(a.eventId)));
      }
    }
-   pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});saveEvents(list);pending.forEach(item=>{let albumItem=TRPG39.syncEventToAlbum(item);if(albumItem){item.linkedAlbumId=albumItem.id;const album=TRPG39.loadAlbum();const ai=album.findIndex(a=>String(a.id)===String(albumItem.id));if(ai>=0){album[ai]=TRPG39.normalizeAlbum({...album[ai],runId:item.runId,runLabel:item.runLabel,role:item.role,selfHo:item.selfHo||"",pcName:item.pcName||"",pcId:item.pcId||"",participants:item.participants,participantRows:item.participantRows||[]});TRPG39.saveAlbum(album);albumItem=album[ai]}}});saveEvents(list);if(ranges.length>1)alert(`${ranges.length}件の予定を登録しました。`);
+   pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});
+
+   // 参加者構成・自分の役割/HOは日単位ではなく陣単位で扱う。
+   // 同じrunIdの別日程に古いPL固定データが残っていると、後からその値で巻き戻るため全日程へ同期する。
+   const runRosterRows=calendarParticipantRows().map(r=>({...r}));
+   const runRosterNames=[...new Set(runRosterRows.map(r=>r.plName).filter(Boolean))];
+   const selfRoleForRun=$("eventRole").value;
+   const selfHoForRun=$("eventSelfHo").value.trim();
+   for(const ev of list){
+     if(ev.type==="blocked"||String(ev.runId||"")!==String(sharedRunId||""))continue;
+     ev.participantRows=runRosterRows.map(r=>({...r}));
+     ev.participants=[...runRosterNames];
+     ev.role=selfRoleForRun;
+     ev.selfHo=selfHoForRun;
+   }
+
+   saveEvents(list);
+   pending.forEach(item=>{let albumItem=TRPG39.syncEventToAlbum(item);if(albumItem){item.linkedAlbumId=albumItem.id;const album=TRPG39.loadAlbum();const ai=album.findIndex(a=>String(a.id)===String(albumItem.id));if(ai>=0){album[ai]=TRPG39.normalizeAlbum({...album[ai],runId:item.runId,runLabel:item.runLabel,role:item.role,selfHo:item.selfHo||"",pcName:item.pcName||"",pcId:item.pcId||"",participants:item.participants,participantRows:item.participantRows||[]});
+ album[ai].participantRows=(item.participantRows||[]).map(r=>({...r}));
+ album[ai].participants=[...new Set((item.participantRows||[]).map(r=>r.plName).filter(Boolean))];
+ album[ai].selfHo=item.selfHo||"";
+ TRPG39.saveAlbum(album);albumItem=album[ai]}}});
+
+   // LIBRARY側も同じ陣の全記録へ同じ参加者構成を同期し、古い日程からPL固定情報が戻らないようにする。
+   {
+     const album=TRPG39.loadAlbum();
+     let changed=false;
+     for(let ai=0;ai<album.length;ai++){
+       if(String(album[ai]?.runId||"")!==String(sharedRunId||""))continue;
+       const normalized=TRPG39.normalizeAlbum({...album[ai],role:selfRoleForRun,selfHo:selfHoForRun,participants:runRosterNames,participantRows:runRosterRows});
+       normalized.participantRows=runRosterRows.map(r=>({...r}));
+       normalized.participants=[...runRosterNames];
+       normalized.role=selfRoleForRun;
+       normalized.selfHo=selfHoForRun;
+       album[ai]=normalized;
+       changed=true;
+     }
+     if(changed)TRPG39.saveAlbum(album);
+   }
+
+   saveEvents(list);if(ranges.length>1)alert(`${ranges.length}件の予定を登録しました。`);
  }
  resetForm();hideEditor();renderCalendar();
 };
