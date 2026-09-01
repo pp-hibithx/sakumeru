@@ -704,7 +704,7 @@ window.TRPG39 = {
   api.getIdentityMigrationReport=function(){try{return JSON.parse(localStorage.getItem(REPORT_KEY)||"null")}catch{return null}};
   api.getIdentityMigrationBackup=function(){try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||"null")}catch{return null}};
   api.runIdentityMigrationV1=run;
-  run();
+  // ページ起動時には実行しない。バックアップ確認済みの専用移行工程から明示的に呼ぶ。
 })();
 
 
@@ -815,5 +815,5 @@ window.TRPG39 = {
   api.getIdentityMigrationV2Report=function(){try{return JSON.parse(localStorage.getItem(REPORT_KEY)||"null")}catch{return null}};
   api.getIdentityMigrationV2Backup=function(){try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||"null")}catch{return null}};
   api.runIdentityMigrationV2=run;
-  run();
+  // ページ起動時には実行しない。容量不足時の再試行・全件書換えを通常表示から分離する。
 })();
