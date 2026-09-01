@@ -40,17 +40,7 @@
       end: input.end || "",
       status: legacyStatus || "planned",
       role: input.role || "",
-      participants: Array.isArray(input.participants) ? input.participants : [],
-      participantIds: Array.isArray(input.participantIds) ? input.participantIds : [],
-      participantRows: Array.isArray(input.participantRows) ? input.participantRows.map(r => ({
-        role: String(r?.role || "PL"),
-        ho: String(r?.ho || ""),
-        plName: String(r?.plName || ""),
-        playerId: String(r?.playerId || ""),
-        pcId: String(r?.pcId || ""),
-        pcName: String(r?.pcName || ""),
-        relation: String(r?.relation || "")
-      })) : [],
+      ...normalizeParticipantFields(input),
       selfHo: input.selfHo || "",
       pcName: input.pcName || "",
       pcId: input.pcId || "",
@@ -97,17 +87,7 @@
         pcName: String(r?.pcName || ""),
         pcId: String(r?.pcId || "")
       })).filter(r => r.ho || r.pcName || r.pcId) : [],
-      participants: Array.isArray(input.participants) ? input.participants : [],
-      participantIds: Array.isArray(input.participantIds) ? input.participantIds : [],
-      participantRows: Array.isArray(input.participantRows) ? input.participantRows.map(r => ({
-        role: String(r?.role || "PL"),
-        ho: String(r?.ho || ""),
-        plName: String(r?.plName || ""),
-        playerId: String(r?.playerId || ""),
-        pcId: String(r?.pcId || ""),
-        pcName: String(r?.pcName || ""),
-        relation: String(r?.relation || "")
-      })) : [],
+      ...normalizeParticipantFields(input),
       imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
       comment: input.comment || "",
       articleBody: input.articleBody || "",
@@ -130,58 +110,38 @@
     };
   }
 
-  function mergeParticipantRows(eventRows = [], libraryRows = []) {
-    const norm = v => String(v || "").normalize("NFKC").trim().toLowerCase();
-    const events = (Array.isArray(eventRows) ? eventRows : []).map(r => ({...r}));
-    const libs = (Array.isArray(libraryRows) ? libraryRows : []).map(r => ({...r}));
-    const used = new Set();
-
-    const findMatch = r => {
-      let i = -1;
-      if (r?.pcId) {
-        i = libs.findIndex((q,n) => !used.has(n) && q?.pcId && String(q.pcId) === String(r.pcId));
-      }
-      if (i < 0 && r?.playerId && r?.pcName) {
-        i = libs.findIndex((q,n) => !used.has(n) && q?.playerId && String(q.playerId) === String(r.playerId) && norm(q.pcName) === norm(r.pcName));
-      }
-      if (i < 0 && r?.playerId && r?.ho) {
-        i = libs.findIndex((q,n) => !used.has(n) && q?.playerId && String(q.playerId) === String(r.playerId) && norm(q.ho) === norm(r.ho));
-      }
-      if (i < 0 && r?.playerId) {
-        i = libs.findIndex((q,n) => !used.has(n) && q?.playerId && String(q.playerId) === String(r.playerId));
-      }
-      if (i < 0 && r?.plName && r?.pcName) {
-        i = libs.findIndex((q,n) => !used.has(n) && norm(q.plName) === norm(r.plName) && norm(q.pcName) === norm(r.pcName));
-      }
-      if (i < 0 && r?.plName) {
-        i = libs.findIndex((q,n) => !used.has(n) && norm(q.plName) === norm(r.plName));
-      }
-      return i;
-    };
-
-    const merged = events.map(r => {
-      const i = findMatch(r);
-      const lib = i >= 0 ? libs[i] : {};
-      if (i >= 0) used.add(i);
-      return {
-        ...lib,
-        ...r,
-        role: String(r?.role || lib.role || "PL"),
-        ho: String(r?.ho || lib.ho || ""),
-        plName: String(r?.plName || lib.plName || ""),
-        playerId: String(r?.playerId || lib.playerId || ""),
-        pcId: String(r?.pcId || lib.pcId || ""),
-        pcName: String(r?.pcName || lib.pcName || ""),
-        relation: String(r?.relation || lib.relation || "")
-      };
-    });
-
-    // CALENDARにまだ存在しないLIBRARY側の複数PC行なども消さない。
-    libs.forEach((r,i) => {
-      if (!used.has(i)) merged.push({...r});
-    });
-    return merged;
+  const participantNorm=v=>String(v||"").normalize("NFKC").replace(/\s+/g,"").toLowerCase();
+  function cleanParticipantRow(r={}){return {role:String(r?.role||"PL"),ho:String(r?.ho||""),plName:String(r?.plName||""),playerId:String(r?.playerId||""),pcId:String(r?.pcId||""),pcName:String(r?.pcName||""),relation:String(r?.relation||"")}}
+  function sameParticipantRow(a,b){
+    const ap=String(a?.playerId||""),bp=String(b?.playerId||""),ac=String(a?.pcId||""),bc=String(b?.pcId||"");
+    if(ap&&bp&&ap!==bp)return false;
+    if(ac&&bc)return ac===bc;
+    const an=participantNorm(a?.plName),bn=participantNorm(b?.plName),apc=participantNorm(a?.pcName),bpc=participantNorm(b?.pcName);
+    if(ap&&bp){if(apc&&bpc&&apc!==bpc)return false;return true}
+    if(ac||bc){return !!an&&an===bn&&!!apc&&apc===bpc}
+    if(an&&bn&&an===bn){if(apc&&bpc&&apc!==bpc)return false;return true}
+    return false;
   }
+  function mergeParticipantRow(primary,extra){
+    const a=cleanParticipantRow(primary),b=cleanParticipantRow(extra);
+    return {...b,...a,role:a.role||b.role||"PL",ho:a.ho||b.ho||"",plName:a.plName||b.plName||"",playerId:a.playerId||b.playerId||"",pcId:a.pcId||b.pcId||"",pcName:a.pcName||b.pcName||"",relation:a.relation||b.relation||""};
+  }
+  function normalizeParticipantRows(rows=[]){
+    const out=[];
+    for(const raw of (Array.isArray(rows)?rows:[])){
+      const row=cleanParticipantRow(raw);if(!row.plName&&!row.playerId&&!row.pcName&&!row.pcId&&!row.ho)continue;
+      const i=out.findIndex(x=>sameParticipantRow(x,row));if(i<0)out.push(row);else out[i]=mergeParticipantRow(out[i],row);
+    }
+    return out;
+  }
+  function normalizeParticipantFields(input={}){
+    const rows=normalizeParticipantRows(input.participantRows);
+    const legacyNames=Array.isArray(input.participants)?input.participants:[],legacyIds=Array.isArray(input.participantIds)?input.participantIds:[];
+    const source=rows.length?rows:legacyNames.map((name,i)=>({plName:String(name||""),playerId:String(legacyIds[i]||"")}));
+    const people=[];for(const r of source){const name=String(r.plName||"");if(!name)continue;const i=people.findIndex(x=>(r.playerId&&x.playerId===r.playerId)||(!r.playerId&&!x.playerId&&participantNorm(x.name)===participantNorm(name)));if(i<0)people.push({name,playerId:String(r.playerId||"")});else if(!people[i].playerId&&r.playerId)people[i].playerId=String(r.playerId)}
+    return {participants:people.map(x=>x.name),participantIds:people.map(x=>x.playerId),participantRows:rows};
+  }
+  function mergeParticipantRows(eventRows = [], libraryRows = []) {return normalizeParticipantRows([...(Array.isArray(eventRows)?eventRows:[]),...(Array.isArray(libraryRows)?libraryRows:[])])}
 
   function albumFromEvent(event, existing = {}) {
     const e = normalizeEvent(event);
@@ -317,15 +277,14 @@ window.TRPG39 = {
     loadScenarios: () => load(KEYS.scenarios),
     saveScenarios: v => save(KEYS.scenarios,
     v),
-    loadEvents: () => load(KEYS.events),
-    saveEvents: v => save(KEYS.events,
-    v),
-    loadAlbum: () => load(KEYS.album),
-    saveAlbum: v => save(KEYS.album,
-    v),
+    loadEvents: () => load(KEYS.events).map(x=>({...x,...normalizeParticipantFields(x)})),
+    saveEvents: v => save(KEYS.events,(Array.isArray(v)?v:[]).map(x=>({...x,...normalizeParticipantFields(x)}))),
+    loadAlbum: () => load(KEYS.album).map(x=>({...x,...normalizeParticipantFields(x)})),
+    saveAlbum: v => save(KEYS.album,(Array.isArray(v)?v:[]).map(x=>({...x,...normalizeParticipantFields(x)}))),
     normalizeEvent,
     normalizeAlbum,
     mergeParticipantRows,
+    normalizeParticipantRows,
     albumFromEvent,
     syncEventToAlbum,
     syncAllEventsToAlbum,
