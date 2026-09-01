@@ -3,7 +3,7 @@
 
 const ALLOWED_TAGS=new Set("A B BLOCKQUOTE BR CODE DEL DETAILS DIV EM FIGCAPTION FIGURE H2 H3 HR I IMG LI MARK OL P S SECTION SMALL SPAN STRONG SUMMARY U UL".split(" "));
 const DROP_TAGS=new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","SELECT","TEXTAREA","META","LINK"]);
-const ALLOWED_ATTRS=new Set(["class","href","target","rel","src","alt","title","style","open","data-kind","data-block-id"]);
+const ALLOWED_ATTRS=new Set(["class","href","target","rel","src","alt","title","style","open","data-kind","data-block-id","data-x-hidden"]);
 const SAFE_CLASSES=/^(sm-rich-|sm-special|kp-special|kp-special-(?:head|title|body)|kind-chip|image-grid|cols-[1-4]|kp-marker)(?:\s|$)/;
 
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -14,6 +14,8 @@ function textToHtml(text){
  return (lines.length?lines:[""]).map(line=>`<p>${line?esc(line):"<br>"}</p>`).join("");
 }
 function plainText(html){const d=document.createElement("div");d.innerHTML=String(html||"");return (d.innerText||d.textContent||"").replace(/\u200B/g,"").trim()}
+function plainTextForX(html){const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);d.querySelectorAll('[data-x-hidden="true"]').forEach(x=>x.replaceWith(document.createTextNode("――")));return (d.innerText||d.textContent||"").replace(/(?:――\s*){2,}/g,"――").replace(/\u200B/g,"").replace(/[ \t]+\n/g,"\n").trim()}
+function hasXHidden(html){const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);return !!d.querySelector('[data-x-hidden="true"]')}
 function safeUrl(value,{image=false}={}){
  const v=String(value||"").trim();
  if(!v)return "";
@@ -74,15 +76,30 @@ function specialHtml(kind){
  const label=labels[kind]||"特殊ブロック";
  return `<section class="sm-special kp-special" data-kind="${esc(kind)}" data-block-id="${esc(uid())}"><div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span></div><div class="kp-special-title">${esc(label)}</div><div class="kp-special-body"><p><br></p></div></section><p><br></p>`;
 }
-function toolbarHtml(){return `<div class="sm-rich-toolbar sm-rich-ui" contenteditable="false">
+function toolbarHtml(options={}){return `<div class="sm-rich-toolbar sm-rich-ui" contenteditable="false">
  <div class="sm-rich-group"><button type="button" data-rich-undo title="元に戻す">↶</button><button type="button" data-rich-redo title="やり直す">↷</button></div>
  <div class="sm-rich-group"><select data-rich-format aria-label="段落形式"><option value="p">本文</option><option value="h2">大見出し</option><option value="h3">小見出し</option><option value="blockquote">引用</option></select><button type="button" data-rich-cmd="bold"><b>B</b></button><button type="button" data-rich-cmd="italic"><i>I</i></button><button type="button" data-rich-cmd="underline"><u>U</u></button><button type="button" data-rich-cmd="strikeThrough"><s>S</s></button></div>
  <div class="sm-rich-group"><button type="button" data-rich-cmd="justifyLeft">左</button><button type="button" data-rich-cmd="justifyCenter">中</button><button type="button" data-rich-cmd="justifyRight">右</button><button type="button" data-rich-cmd="insertUnorderedList">• 箇条書き</button><button type="button" data-rich-cmd="insertOrderedList">1. 番号</button><button type="button" data-rich-link>🔗</button><button type="button" data-rich-hr>―</button></div>
  <div class="sm-rich-group"><button type="button" data-rich-special="note">＋ メモ</button><button type="button" data-rich-special="rp">＋ RP</button><button type="button" data-rich-special="secret">＋ 秘匿</button><button type="button" data-rich-special="dialogue">💬 会話</button><button type="button" data-rich-special="toggle">▸ トグル</button></div>
+ ${options.enableXHide?'<div class="sm-rich-group"><button type="button" data-rich-x-hide title="選択部分をXの投稿文・OGP説明文から除外します">🙈 Xでは伏せる</button></div>':""}
  </div>`}
+function toggleXHidden(editor,range){
+ if(!range||range.collapsed)return false;
+ const start=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement;
+ const end=range.endContainer.nodeType===1?range.endContainer:range.endContainer.parentElement;
+ const existing=start?.closest?.('[data-x-hidden="true"]');
+ if(existing&&existing===end?.closest?.('[data-x-hidden="true"]')){existing.replaceWith(...existing.childNodes);return true}
+ const walker=document.createTreeWalker(editor,NodeFilter.SHOW_TEXT),nodes=[];let node;
+ while((node=walker.nextNode())){try{if(node.textContent&&range.intersectsNode(node)&&!node.parentElement?.closest('[data-x-hidden="true"]'))nodes.push(node)}catch{}}
+ nodes.reverse().forEach(textNode=>{
+  const startOffset=textNode===range.startContainer?range.startOffset:0,endOffset=textNode===range.endContainer?range.endOffset:textNode.length;if(endOffset<=startOffset)return;
+  const part=document.createRange();part.setStart(textNode,startOffset);part.setEnd(textNode,endOffset);const span=document.createElement("span");span.className="sm-rich-x-hidden";span.dataset.xHidden="true";part.surroundContents(span);
+ });
+ return !!nodes.length;
+}
 function create(options={}){
  const mount=options.mount;if(!mount)throw new Error("RichEditor mount is required");
- mount.classList.add("sm-rich-shell");mount.innerHTML=toolbarHtml()+`<article class="sm-rich-editor blog-editor" contenteditable="true" role="textbox" aria-multiline="true"></article>`;
+ mount.classList.add("sm-rich-shell");mount.innerHTML=toolbarHtml(options)+`<article class="sm-rich-editor blog-editor" contenteditable="true" role="textbox" aria-multiline="true"></article>`;
  const editor=mount.querySelector(".sm-rich-editor"),toolbar=mount.querySelector(".sm-rich-toolbar");
  editor.innerHTML=String(options.html||"").trim()||textToHtml(options.text||"");normalizeExistingEditor(editor);
  let range=null,history=[cleanupEditorHtml(editor)],index=0,timer=0,destroyed=false;
@@ -98,6 +115,7 @@ function create(options={}){
  toolbar.querySelector("[data-rich-link]").onclick=()=>{const u=prompt("リンク先URL");if(u)exec("createLink",u)};
  toolbar.querySelector("[data-rich-hr]").onclick=()=>{restoreRange();document.execCommand("insertHTML",false,"<hr><p><br></p>");notify()};
  toolbar.querySelectorAll("[data-rich-special]").forEach(b=>b.onclick=()=>{restoreRange();document.execCommand("insertHTML",false,specialHtml(b.dataset.richSpecial));notify()});
+ const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("Xで伏せたい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
  toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  editor.addEventListener("keyup",saveRange);editor.addEventListener("mouseup",saveRange);editor.addEventListener("blur",saveRange);
@@ -107,5 +125,5 @@ function create(options={}){
  return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);history=[value()];index=0;range=null;updateButtons()},focus(){editor.focus()},destroy(){destroyed=true;clearTimeout(timer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
-window.SAKUMERichEditor={create,textToHtml,plainText,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
+window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
 })();
