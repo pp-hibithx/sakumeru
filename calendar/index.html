@@ -81,9 +81,25 @@
 /* v19: schedule detail first, edit only on demand */
 .event-detail{position:fixed;right:18px;top:18px;z-index:10030;width:min(520px,calc(100vw - 36px));max-height:calc(100dvh - 36px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.42)}
 .event-detail[hidden]{display:none!important}.event-detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px}.event-detail-head h2{margin:0}.event-detail-title{font-size:1.12rem;font-weight:700;margin-bottom:5px}.event-detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin:14px 0}.event-detail-item{min-width:0}.event-detail-label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:3px}.event-detail-value{overflow-wrap:anywhere}.event-detail-participants{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}.event-detail-person{display:grid;grid-template-columns:72px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:8px;padding:7px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}.event-detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
-body.calendar-editor-open .calendar-page-main{margin-right:min(720px,48vw);transition:margin-right .18s ease}#eventPanel.event-editor{width:min(700px,48vw)}
+/* v20: keep the calendar at its normal width. Editing slides the calendar left instead of crushing its 7 columns. */
+body.calendar-editor-open .calendar-page-main{
+  margin-right:0!important;
+  transform:translateX(clamp(-150px,-8vw,-72px));
+  transition:transform .18s ease;
+}
+body.calendar-editor-open .calendar-grid{grid-template-columns:repeat(7,minmax(118px,1fr));min-width:826px}
+body.calendar-editor-open .calendar-page-main{overflow:hidden}
+#eventPanel.event-editor{width:min(700px,46vw)}
+body.calendar-editor-open::before{display:none!important}
 .event-form-section{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}.event-form-section:first-child{border-top:0;padding-top:0}.event-form-section-title{font-weight:700;margin-bottom:8px}.event-participants-section{grid-column:1/-1!important}
-@media(max-width:1100px){body.calendar-editor-open .calendar-page-main{margin-right:0}#eventPanel.event-editor{width:min(760px,94vw)}}
+@media(max-width:1250px){
+  body.calendar-editor-open .calendar-page-main{transform:translateX(-48px)}
+  #eventPanel.event-editor{width:min(680px,58vw)}
+}
+@media(max-width:980px){
+  body.calendar-editor-open .calendar-page-main{transform:none}
+  #eventPanel.event-editor{width:min(760px,94vw)}
+}
 @media(max-width:640px){.event-detail{inset:8px;width:auto;max-height:calc(100dvh - 16px)}.event-detail-meta{grid-template-columns:1fr}.event-detail-person{grid-template-columns:64px 1fr}.event-detail-person span:nth-child(n+3){grid-column:2}}
 </style>
 <script src="../assets/js/optional-features.js?v=0292" defer></script>
@@ -849,6 +865,14 @@ body.calendar-editor-open{overflow:hidden}
   #eventPanel .event-editor-actions{bottom:-14px;margin:14px -14px -14px;padding:10px 14px}
 }
 </style>
+
+<style>
+/* v20 participant rows: use the full editor width without pushing delete off-screen. */
+#eventPanel .calendar-library-participant-row{grid-template-columns:82px minmax(150px,1.1fr) minmax(130px,.8fr) minmax(150px,1fr) 34px;align-items:end}
+#eventPanel .calendar-library-participant-row .participant-remove{font-size:0;width:34px;height:34px;padding:0;display:grid;place-items:center}
+#eventPanel .calendar-library-participant-row .participant-remove::after{content:"×";font-size:18px;line-height:1}
+@media(max-width:1120px){#eventPanel .calendar-library-participant-row{grid-template-columns:74px minmax(0,1fr) minmax(0,1fr) 34px}#eventPanel .calendar-library-participant-row>div:nth-child(4){grid-column:2/4}}
+</style>
 </head>
 <body>
 <div data-site-header data-active="calendar"></div>
@@ -1299,7 +1323,7 @@ function addEventParticipantRow(value="",opts={}){
      res.innerHTML='<div class="participant-picker-empty">名前を入力すると既存の参加者を検索できます。未登録ならそのまま新規入力できます。</div>';
    }
    res.classList.add("open");
-   res.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.plChoice;res.classList.remove("open");syncCalendarParticipantHidden()});
+   res.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.plChoice;const pcInput=row.querySelector(".eventPartPc"),hoInput=row.querySelector(".eventPartHo");const key=String(inp.value||"").normalize("NFKC").trim().toLowerCase();const recent=(TRPG39.loadAlbum?.()||[]).slice().sort((a,b)=>String(b.date||b.start||"").localeCompare(String(a.date||a.start||""))).flatMap(a=>Array.isArray(a.participantRows)?a.participantRows:[]).find(r=>String(r.plName||"").normalize("NFKC").trim().toLowerCase()===key&&(r.pcName||r.ho));if(recent){if(pcInput&&!pcInput.value.trim()&&recent.pcName)pcInput.value=recent.pcName;if(hoInput&&!hoInput.value.trim()&&recent.ho)hoInput.value=recent.ho}res.classList.remove("open");syncCalendarParticipantHidden()});
    res.querySelectorAll("[data-pl-create]").forEach(b=>b.onclick=()=>{
      inp.value=b.dataset.plCreate;
      if(TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer)TRPG39.ensurePlayer(inp.value);
@@ -1314,7 +1338,37 @@ function addEventParticipantRow(value="",opts={}){
 }
 function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];return [...host.querySelectorAll(".calendar-library-participant-row")].map(r=>({role:r.querySelector(".eventPartRole")?.value||"PL",plName:r.querySelector(".eventPartPl")?.value.trim()||"",ho:r.querySelector(".eventPartHo")?.value.trim()||"",pcName:r.querySelector(".eventPartPc")?.value.trim()||"",relation:""})).filter(r=>r.plName||r.ho||r.pcName)}
 function calendarParticipantNames(){return [...new Set(calendarParticipantRows().map(r=>r.plName).filter(Boolean))]}
-function calendarRowsFromEvent(x){if(Array.isArray(x?.participantRows)&&x.participantRows.length)return x.participantRows;return (x?.participants||[]).map((name,i)=>({role:"PL",plName:name,ho:"",pcName:"",playerId:(x.participantIds||[])[i]||"",relation:""}))}
+function calendarLibraryRowsForEvent(x){
+ const album=TRPG39.loadAlbum?.()||[];
+ const exact=album.find(a=>String(a.eventId||"")===String(x?.id||""))
+   ||album.find(a=>String(a.id||"")===String(x?.linkedAlbumId||""));
+ const runRows=String(x?.runId||"")
+   ? album.filter(a=>String(a.runId||"")===String(x.runId||"")).flatMap(a=>Array.isArray(a.participantRows)?a.participantRows:[])
+   : [];
+ const exactRows=Array.isArray(exact?.participantRows)?exact.participantRows:[];
+ return [...exactRows,...runRows].filter(r=>r&&(r.plName||r.pcName||r.ho));
+}
+function calendarRowsFromEvent(x){
+ const base=Array.isArray(x?.participantRows)&&x.participantRows.length
+   ? x.participantRows.map(r=>({...r}))
+   : (x?.participants||[]).map((name,i)=>({role:"PL",plName:name,ho:"",pcName:"",playerId:(x.participantIds||[])[i]||"",relation:""}));
+ const libRows=calendarLibraryRowsForEvent(x);
+ if(!base.length&&libRows.length)return libRows.map(r=>({...r}));
+ const norm=v=>String(v||"").normalize("NFKC").trim().toLowerCase();
+ const used=new Set();
+ const merged=base.map(r=>{
+   let hitIndex=-1;
+   if(r.playerId)hitIndex=libRows.findIndex((q,i)=>!used.has(i)&&q.playerId&&String(q.playerId)===String(r.playerId));
+   if(hitIndex<0&&r.plName)hitIndex=libRows.findIndex((q,i)=>!used.has(i)&&norm(q.plName)===norm(r.plName)&&(!r.role||!q.role||String(q.role)===String(r.role)));
+   if(hitIndex<0&&r.plName)hitIndex=libRows.findIndex((q,i)=>!used.has(i)&&norm(q.plName)===norm(r.plName));
+   if(hitIndex<0)return {...r};
+   used.add(hitIndex);const q=libRows[hitIndex]||{};
+   return {...q,...r,role:r.role||q.role||"PL",plName:r.plName||q.plName||"",ho:r.ho||q.ho||"",pcName:r.pcName||q.pcName||"",playerId:r.playerId||q.playerId||"",pcId:r.pcId||q.pcId||""};
+ });
+ // LIBRARY may contain an additional PC row for the same participant; keep it visible too.
+ libRows.forEach((q,i)=>{if(used.has(i))return;const key=`${norm(q.plName)}|${norm(q.pcName)}|${norm(q.ho)}`;if(!merged.some(r=>`${norm(r.plName)}|${norm(r.pcName)}|${norm(r.ho)}`===key))merged.push({...q})});
+ return merged;
+}
 function syncCalendarParticipantHidden(){
  const hidden=$("eventPeople");if(hidden)hidden.value=calendarParticipantNames().join(",");
 }
