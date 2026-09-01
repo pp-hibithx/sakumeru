@@ -5670,7 +5670,11 @@ q("pcLibraryEditorCancel").onclick=closePcLibraryEditor;
 q("pcLibraryEditorSave").onclick=savePcLibraryEditor;
 q("pcLibraryEditor").addEventListener("click",e=>{if(e.target===q("pcLibraryEditor"))closePcLibraryEditor()});
 
-reset();hideEditor();render();openLibraryFromCalendarEvent();{const p=new URLSearchParams(location.search),sid=p.get("scenario")||"";if(p.get("new")==="1"){addForScenario(sid)}}
+reset();hideEditor();render();openLibraryFromCalendarEvent();{
+ const p=new URLSearchParams(location.search),sid=p.get("scenario")||"",editId=p.get("edit")||"",runId=p.get("run")||"",runLabel=p.get("runLabel")||"";
+ if(editId){edit(editId)}
+ else if(p.get("new")==="1"){if(runId)addForRun(sid,runId,runLabel);else addForScenario(sid)}
+}
 })();
 </script>
 
