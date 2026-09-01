@@ -2,7 +2,9 @@
 <title>KP BINDER | SAKU+MERU</title>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
 <link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0901-preview1">
+<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0901-common1">
 <script src="../assets/js/rich-editor-outline.js?v=0901-preview1"></script>
+<script src="../assets/js/rich-editor.js?v=0901-common1"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/beta-gate.js?v=02315"></script><script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 <style>
@@ -1686,7 +1688,10 @@ function renderEditor(){
  }
 
  function cleanEditorHtml(){
-   const clone=ed.cloneNode(true);
+    if(window.SAKUMERichEditor?.cleanupEditorHtml){
+      return SAKUMERichEditor.cleanupEditorHtml(ed,clone=>richOutline?.cleanupClone(clone));
+    }
+    const clone=ed.cloneNode(true);
    clone.querySelectorAll(".sm-drag-handle,.kp-special-move").forEach(h=>h.remove());
    clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail").forEach(el=>{
      el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail");
@@ -1697,7 +1702,8 @@ function renderEditor(){
  }
 
  function ensureParagraphBlocks(){
-   // Browsers sometimes leave bare text nodes in contenteditable. Wrap them so Enter-based
+    if(window.SAKUMERichEditor?.normalizeExistingEditor){SAKUMERichEditor.normalizeExistingEditor(ed);return}
+    // Browsers sometimes leave bare text nodes in contenteditable. Wrap them so Enter-based
    // paragraphs consistently become movable blocks.
    [...ed.childNodes].forEach(n=>{
      if(n.nodeType===3 && n.textContent.trim()){
@@ -1800,7 +1806,7 @@ function renderEditor(){
  }
  function insertHtml(html){
    restoreRange();
-   document.execCommand("insertHTML",false,html);
+   SAKUMERichEditor.execCommand(ed,"insertHTML",false,html);
    saveRange();ensureParagraphBlocks();decorateBlocks();requestAnimationFrame(()=>{decorateBlocks();refreshBlockHandles()});syncArticle();
  }
 
@@ -1917,7 +1923,7 @@ ed.addEventListener("keyup",saveRange);
  q("#sceneTitleInput").oninput=e=>{p.title=e.target.value;save();renderScenes();refreshStats()};
  q("#deleteScene").onclick=()=>{if(!confirm(`「${p.title||"このシーン"}」を削除しますか？`))return;b.pages=b.pages.filter(x=>String(x.id)!==String(p.id));active=b.pages[0]?.id||"";saveNow();renderScenes();renderEditor()};
 
- q("#formatBlock").onchange=e=>{restoreRange();document.execCommand("formatBlock",false,e.target.value);saveRange();syncArticle()};
+ q("#formatBlock").onchange=e=>{restoreRange();SAKUMERichEditor.execCommand(ed,"formatBlock",false,e.target.value);saveRange();syncArticle()};
  q("#richToolbar").querySelectorAll("[data-cmd]").forEach(btn=>btn.onclick=()=>{
    const cmd=btn.dataset.cmd;
    restoreRange();
@@ -1935,18 +1941,18 @@ ed.addEventListener("keyup",saveRange);
          const special=node?.closest?.("div.kp-special-body,div.kp-special-title");
          if(special&&ed.contains(special)){
            restoreRange();
-           document.execCommand("formatBlock",false,"p");
+           SAKUMERichEditor.execCommand(ed,"formatBlock",false,"p");
            const sel2=window.getSelection();
            let n2=sel2?.anchorNode;if(n2&&n2.nodeType===3)n2=n2.parentElement;
            const p2=n2?.closest?.("p,h1,h2,h3,h4,blockquote,li");
            if(p2&&special.contains(p2))p2.style.textAlign=cmd==="justifyLeft"?"left":cmd==="justifyCenter"?"center":"right";
          }else{
-           document.execCommand(cmd,false,null);
+           SAKUMERichEditor.execCommand(ed,cmd,false,null);
          }
        }
      }
    }else{
-     document.execCommand(cmd,false,null);
+     SAKUMERichEditor.execCommand(ed,cmd,false,null);
    }
    saveRange();syncArticle()
  });
@@ -1955,18 +1961,18 @@ ed.addEventListener("keyup",saveRange);
  q("#foreColor").oninput=e=>{
    q("#colorDot").style.background=e.target.value;
    restoreRange();
-   document.execCommand("styleWithCSS",false,true);
-   document.execCommand("foreColor",false,e.target.value);
+   SAKUMERichEditor.execCommand(ed,"styleWithCSS",false,true);
+   SAKUMERichEditor.execCommand(ed,"foreColor",false,e.target.value);
    saveRange();syncArticle()
  };
  q("#clearTextColor").onclick=()=>{
    restoreRange();
-   document.execCommand("styleWithCSS",false,true);
+   SAKUMERichEditor.execCommand(ed,"styleWithCSS",false,true);
    // "inherit" returns the selection to the editor/theme's normal text color
    // without removing bold, italic, underline, links, etc.
-   if(!document.execCommand("foreColor",false,"inherit")){
+   if(!SAKUMERichEditor.execCommand(ed,"foreColor",false,"inherit")){
      const fallback=getComputedStyle(ed).color||"#000000";
-     document.execCommand("foreColor",false,fallback);
+     SAKUMERichEditor.execCommand(ed,"foreColor",false,fallback);
    }
    saveRange();syncArticle()
  };
@@ -1976,23 +1982,23 @@ ed.addEventListener("keyup",saveRange);
    q("#bgColorDot").style.background=e.target.value;
    restoreRange();
    // hiliteColor is preferred; backColor is kept as a fallback.
-   if(!document.execCommand("hiliteColor",false,e.target.value)){
-     document.execCommand("backColor",false,e.target.value);
+   if(!SAKUMERichEditor.execCommand(ed,"hiliteColor",false,e.target.value)){
+     SAKUMERichEditor.execCommand(ed,"backColor",false,e.target.value);
    }
    saveRange();syncArticle()
  };
  q("#clearTextBg").onclick=()=>{
    restoreRange();
-   document.execCommand("styleWithCSS",false,true);
-   if(!document.execCommand("hiliteColor",false,"transparent")){
-     document.execCommand("backColor",false,"transparent");
+   SAKUMERichEditor.execCommand(ed,"styleWithCSS",false,true);
+   if(!SAKUMERichEditor.execCommand(ed,"hiliteColor",false,"transparent")){
+     SAKUMERichEditor.execCommand(ed,"backColor",false,"transparent");
    }
    saveRange();syncArticle()
  };
  q("#insertHr").onclick=()=>insertHtml("<hr><p><br></p>");
  q("#insertLink").onclick=()=>{
    const url=prompt("リンク先URL");if(!url)return;
-   restoreRange();document.execCommand("createLink",false,url);saveRange();syncArticle();
+   restoreRange();SAKUMERichEditor.execCommand(ed,"createLink",false,url);saveRange();syncArticle();
  };
  q("#richToolbar").querySelectorAll("[data-special]").forEach(btn=>btn.onclick=()=>insertSpecial(btn.dataset.special));
 
@@ -2228,7 +2234,7 @@ ed.addEventListener("keyup",saveRange);
    restoreRange();
    const beforeBlock=currentSelectionDirectBlock();
    const beforeId=beforeBlock?.dataset?.kpRevealId||"";
-   document.execCommand("insertParagraph",false,null);
+   SAKUMERichEditor.execCommand(ed,"insertParagraph",false,null);
    requestAnimationFrame(()=>{
      ensureParagraphBlocks();
      const now=currentSelectionDirectBlock();
