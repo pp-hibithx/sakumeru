@@ -1337,7 +1337,7 @@ function addEventParticipantRow(value="",opts={}){
  row.querySelector(".eventPartRole")?.addEventListener("change",syncCalendarParticipantHidden);
  row.querySelector(".participant-remove").onclick=()=>{row.remove();syncCalendarParticipantHidden()};
 }
-function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];return [...host.querySelectorAll(".calendar-library-participant-row")].map(r=>{const role=r.querySelector(".eventPartRole")?.value||"PL",plName=r.querySelector(".eventPartPl")?.value.trim()||"",ho=r.querySelector(".eventPartHo")?.value.trim()||"",pcName=r.querySelector(".eventPartPc")?.value.trim()||"";let playerId=String(r.dataset.playerId||""),pcId=String(r.dataset.pcId||"");if(plName&&TRPG39.ensurePlayer&&TRPG39.playersEnabled?.()&&!playerId){const p=TRPG39.ensurePlayer(plName);playerId=p?.id||"";r.dataset.playerId=playerId}if(pcName&&TRPG39.ensurePC){const pcs=TRPG39.loadPCs?.()||[];const existing=pcId?pcs.find(p=>String(p.id)===pcId):null;if(!existing||String(existing.name||"").trim()!==pcName){const pc=TRPG39.ensurePC(pcName,{system:$("eventSystem")?.value.trim()||"",ownerPlayerId:playerId});pcId=pc?.id||"";r.dataset.pcId=pcId}}else if(!pcName){pcId="";r.dataset.pcId=""}return {role,plName,playerId,ho,pcName,pcId,relation:""}}).filter(r=>r.plName||r.ho||r.pcName)}
+function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];const rows=[...host.querySelectorAll(".calendar-library-participant-row")].map(r=>{const role=r.querySelector(".eventPartRole")?.value||"PL",plName=r.querySelector(".eventPartPl")?.value.trim()||"",ho=r.querySelector(".eventPartHo")?.value.trim()||"",pcName=r.querySelector(".eventPartPc")?.value.trim()||"";let playerId=String(r.dataset.playerId||""),pcId=String(r.dataset.pcId||"");if(plName&&TRPG39.ensurePlayer&&TRPG39.playersEnabled?.()&&!playerId){const p=TRPG39.ensurePlayer(plName);playerId=p?.id||"";r.dataset.playerId=playerId}if(pcName&&TRPG39.ensurePC){const pcs=TRPG39.loadPCs?.()||[];const existing=pcId?pcs.find(p=>String(p.id)===pcId):null;if(!existing||String(existing.name||"").trim()!==pcName){const pc=TRPG39.ensurePC(pcName,{system:$("eventSystem")?.value.trim()||"",ownerPlayerId:playerId});pcId=pc?.id||"";r.dataset.pcId=pcId}}else if(!pcName){pcId="";r.dataset.pcId=""}return {role,plName,playerId,ho,pcName,pcId,relation:""}}).filter(r=>r.plName||r.ho||r.pcName);return TRPG39.normalizeParticipantRows?TRPG39.normalizeParticipantRows(rows):rows}
 function calendarParticipantNames(){return [...new Set(calendarParticipantRows().map(r=>r.plName).filter(Boolean))]}
 function calendarLibraryRowsForEvent(x){
  const album=TRPG39.loadAlbum?.()||[];
@@ -1347,33 +1347,21 @@ function calendarLibraryRowsForEvent(x){
    ? album.filter(a=>String(a.runId||"")===String(x.runId||"")).flatMap(a=>Array.isArray(a.participantRows)?a.participantRows:[])
    : [];
  const exactRows=Array.isArray(exact?.participantRows)?exact.participantRows:[];
- return [...exactRows,...runRows].filter(r=>r&&(r.plName||r.pcName||r.ho));
+ const rows=[...exactRows,...runRows].filter(r=>r&&(r.plName||r.pcName||r.ho));
+ return TRPG39.normalizeParticipantRows?TRPG39.normalizeParticipantRows(rows):rows;
 }
 function calendarRowsFromEvent(x){
  const base=Array.isArray(x?.participantRows)&&x.participantRows.length
    ? x.participantRows.map(r=>({...r}))
    : (x?.participants||[]).map((name,i)=>({role:"PL",plName:name,ho:"",pcName:"",playerId:(x.participantIds||[])[i]||"",relation:""}));
  const libRows=calendarLibraryRowsForEvent(x);
- if(!base.length&&libRows.length)return libRows.map(r=>({...r}));
- const norm=v=>String(v||"").normalize("NFKC").trim().toLowerCase();
- const used=new Set();
- const merged=base.map(r=>{
-   let hitIndex=-1;
-   if(r.playerId)hitIndex=libRows.findIndex((q,i)=>!used.has(i)&&q.playerId&&String(q.playerId)===String(r.playerId));
-   if(hitIndex<0&&r.plName)hitIndex=libRows.findIndex((q,i)=>!used.has(i)&&norm(q.plName)===norm(r.plName)&&(!r.role||!q.role||String(q.role)===String(r.role)));
-   if(hitIndex<0&&r.plName)hitIndex=libRows.findIndex((q,i)=>!used.has(i)&&norm(q.plName)===norm(r.plName));
-   if(hitIndex<0)return {...r};
-   used.add(hitIndex);const q=libRows[hitIndex]||{};
-   return {...q,...r,role:r.role||q.role||"PL",plName:r.plName||q.plName||"",ho:r.ho||q.ho||"",pcName:r.pcName||q.pcName||"",playerId:r.playerId||q.playerId||"",pcId:r.pcId||q.pcId||""};
- });
- // LIBRARY may contain an additional PC row for the same participant; keep it visible too.
- libRows.forEach((q,i)=>{if(used.has(i))return;const key=`${norm(q.plName)}|${norm(q.pcName)}|${norm(q.ho)}`;if(!merged.some(r=>`${norm(r.plName)}|${norm(r.pcName)}|${norm(r.ho)}`===key))merged.push({...q})});
- return merged;
+ if(TRPG39.mergeParticipantRows)return TRPG39.mergeParticipantRows(base,libRows);
+ return [...base,...libRows];
 }
 function syncCalendarParticipantHidden(){
  const hidden=$("eventPeople");if(hidden)hidden.value=calendarParticipantNames().join(",");
 }
-function setCalendarParticipants(rows=[]){const host=$("eventParticipantRows");if(!host)return;host.innerHTML="";const clean=(rows||[]).map(r=>typeof r==="object"&&r?r:{role:"PL",plName:String(r||""),ho:"",pcName:""}).filter(r=>r.plName||r.ho||r.pcName);if(clean.length)clean.forEach(r=>addEventParticipantRow(r,{placeholder:false}));else addEventParticipantRow({}, {placeholder:true});syncCalendarParticipantHidden()}
+function setCalendarParticipants(rows=[]){const host=$("eventParticipantRows");if(!host)return;host.innerHTML="";let clean=(rows||[]).map(r=>typeof r==="object"&&r?r:{role:"PL",plName:String(r||""),ho:"",pcName:""}).filter(r=>r.plName||r.ho||r.pcName);if(TRPG39.normalizeParticipantRows)clean=TRPG39.normalizeParticipantRows(clean);if(clean.length)clean.forEach(r=>addEventParticipantRow(r,{placeholder:false}));else addEventParticipantRow({}, {placeholder:true});syncCalendarParticipantHidden()}
 if($("eventRole"))$("eventRole").addEventListener("change",refreshCalendarParticipantRoles);
 function initCalendarParticipantPicker(){
  const add=$("addEventParticipantRow");
