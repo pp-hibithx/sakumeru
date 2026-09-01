@@ -54,6 +54,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .player-tab-panel{min-width:0}.player-pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .player-pc-card{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel)}
 .player-relation-launch{border:1px solid var(--line);border-radius:12px;padding:18px;background:var(--panel)}
+#playerDirectoryHead[hidden],#playerDirectoryViews[hidden],#libraryToolbar[hidden]{display:none!important}
 @media(max-width:620px){.player-detail{gap:13px}.player-detail-header{padding:13px}.player-detail-tabs{margin-inline:-2px}.player-detail-tab{padding:9px 12px}.player-detail-stats{display:grid;grid-template-columns:1fr 1fr}.player-detail-stat{border-radius:8px}.player-detail-stat:first-child{grid-column:1/-1}}
 .player-history-card{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--panel)}
 .player-history-thumb{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:rgba(255,255,255,.025)}
@@ -778,11 +779,11 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 <div class="notice small">記録はお使いのブラウザ内に保存されます。<br>現在他の利用者とのオンライン共有には対応していません。</div>
 
 <section class="lib-panel">
-  <div class="row">
+  <div class="row" id="playerDirectoryHead">
     <div><h2>同卓名簿</h2><div id="summary" class="small"></div></div>
     <div class="row"><button id="addPlayerDirect" type="button">＋ PLAYERを追加</button><button id="openLibraryEditor" type="button">＋ 記録を追加</button></div>
   </div>
-  <div class="library-view-tabs" role="tablist">
+  <div class="library-view-tabs" id="playerDirectoryViews" role="tablist">
 <button type="button" class="library-view-tab active" data-library-view="scenario">シナリオ</button>
 <button type="button" class="library-view-tab" data-library-view="pc">PC</button>
 <button type="button" class="library-view-tab" data-library-view="player">同卓者</button>
@@ -3192,7 +3193,7 @@ function renderPcView(){
 function playerById(id){return players.find(p=>p.id===id)}
 function savePlayersState(){if(TRPG39.savePlayers)TRPG39.savePlayers(players)}
 function addPlayerDirect(){const dlg=q("playerAddDialog"),inp=q("playerAddName");inp.value="";dlg.showModal();setTimeout(()=>inp.focus(),0)}
-function commitPlayerDirect(){const name=String(q("playerAddName").value||"").trim();if(!name)return alert("名前を入力してください。");const found=players.find(p=>String(p.name||"").normalize("NFKC").trim().toLowerCase()===name.normalize("NFKC").trim().toLowerCase());if(found){q("playerAddDialog").close();focusedPlayerId=found.id;render();return}const p=TRPG39.ensurePlayer?TRPG39.ensurePlayer(name):null;players=TRPG39.loadPlayers();q("playerAddDialog").close();if(p)focusedPlayerId=p.id;render()}
+function commitPlayerDirect(){const name=String(q("playerAddName").value||"").trim();if(!name)return alert("名前を入力してください。");const found=players.find(p=>String(p.name||"").normalize("NFKC").trim().toLowerCase()===name.normalize("NFKC").trim().toLowerCase());const p=found||(TRPG39.ensurePlayer?TRPG39.ensurePlayer(name):null);players=TRPG39.loadPlayers();q("playerAddDialog").close();if(p){focusedPlayerId=p.id;playerDetailTab="overview";const u=new URL(location.href);u.searchParams.set("focus",p.id);u.searchParams.set("tab",playerDetailTab);window.history.pushState(null,"",u)}render()}
 function setPlayerArchived(id,archived){players=players.map(p=>p.id===id?{...p,archived:!!archived}:p);savePlayersState();render()}
 function deletePlayerFromDirectory(id){
  const p=playerById(id);if(!p)return;
@@ -3694,6 +3695,7 @@ function closePlayerRelationshipGraph(){
 }
 
 function renderPlayerDetail(player){
+ q("playerDirectoryHead").hidden=true;q("playerDirectoryViews").hidden=true;q("libraryToolbar").hidden=true;
  const pcsForPlayer=playerRegisteredPcs(player),allHistory=playerAllRoleRecords(player),external=externalPlayedFor(player.id);
  const availableRoles=playerAvailableRoles(player),availableSystems=playerAvailableSystems(player);
  const stats=playerStats(player.name);
@@ -3806,6 +3808,7 @@ function playerHasSystem(player,system){
  return playerAvailableSystems(player).includes(system);
 }
 function renderPlayerView(){
+ q("playerDirectoryHead").hidden=false;q("playerDirectoryViews").hidden=false;q("libraryToolbar").hidden=false;
  if(focusedPlayerId){
    const player=playerById(focusedPlayerId);
    if(player){renderPlayerDetail(player);return}
