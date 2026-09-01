@@ -3340,9 +3340,16 @@ function playerHistoryCardHtml(v){
      <div class="player-history-title">${esc(scenario.title||x.title||"名称未設定")}</div>
      ${metaLine1?`<div class="player-history-meta">${esc(metaLine1)}</div>`:""}
      ${metaLine2?`<div class="player-history-meta">${esc(metaLine2)}</div>`:""}
-     ${x.scenarioId?`<div style="margin-top:7px"><a class="link" href="../library/index.html?view=scenario&scenario=${encodeURIComponent(x.scenarioId)}">卓記録を見る</a></div>`:""}
+     ${x.id?`<div style="margin-top:7px"><a class="link" href="${esc(libraryRecordHref(x))}">卓記録を見る</a></div>`:""}
    </div>
  </article>`;
+}
+function libraryRecordHref(record){
+ const params=new URLSearchParams();
+ if(record?.id)params.set("albumId",String(record.id));
+ if(record?.runId)params.set("run",String(record.runId));
+ if(record?.scenarioId)params.set("scenario",String(record.scenarioId));
+ return `../library/index.html?${params.toString()}`;
 }
 function externalPlayedFor(playerId){
  return Array.isArray(playerExternalPlayed[playerId])?playerExternalPlayed[playerId]:[];
@@ -3372,7 +3379,7 @@ function playerPcHistoryHtml(player,pcItem){
        <strong>${esc(scenario.title||x.title||"名称未設定")}</strong>
        ${firstDate?`<div class="muted">${esc(firstDate)}</div>`:""}
        ${v.row?.ho?`<div>${esc(cleanPlayerFieldValue(v.row.ho,"HO"))}</div>`:""}
-       ${x.scenarioId?`<a class="link" href="../library/index.html?view=scenario&scenario=${encodeURIComponent(x.scenarioId)}">卓記録を見る</a>`:""}
+       ${x.id?`<a class="link" href="${esc(libraryRecordHref(x))}">卓記録を見る</a>`:""}
      </div>
    </div>`;
  }).join("")}</div>`;
@@ -3779,7 +3786,11 @@ function renderPlayerDetail(player){
  q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");u.searchParams.delete("tab");window.history.pushState(null,"",u);render()};
  document.querySelectorAll("[data-player-tab]").forEach(button=>button.onclick=()=>{const next=button.dataset.playerTab;if(!PLAYER_DETAIL_TABS.has(next)||next===playerDetailTab)return;playerDetailTab=next;const u=new URL(location.href);u.searchParams.set("focus",player.id);u.searchParams.set("tab",next);window.history.pushState(null,"",u);renderPlayerDetail(player)});
  if(q("openPlayerRelationFromDetail"))q("openPlayerRelationFromDetail").onclick=()=>openPlayerRelationshipGraph(player.id);
- if(q("addRecordForPlayer"))q("addRecordForPlayer").onclick=()=>{location.href=`../library/index.html?new=1&participantName=${encodeURIComponent(player.name||"")}`};
+ if(q("addRecordForPlayer"))q("addRecordForPlayer").onclick=()=>{
+   const params=new URLSearchParams({new:"1",participantId:String(player.id||"")});
+   if(player.name)params.set("participantName",String(player.name));
+   location.href=`../library/index.html?${params.toString()}`;
+ };
  if(q("savePlayerContact"))q("savePlayerContact").onclick=()=>{const value=String(q("playerXAccount").value||"").trim();const shareUrl=String(q("playerShareUrl").value||"").trim();players=players.map(p=>p.id===player.id?{...p,xAccount:value,shareUrl}:p);savePlayersState();const updated=players.find(p=>p.id===player.id)||player;renderPlayerDetail(updated)};
  if(q("playerDetailRole"))q("playerDetailRole").onchange=()=>{playerDetailRoleFilter=q("playerDetailRole").value;renderPlayerDetail(player)};
  if(q("playerDetailSystem"))q("playerDetailSystem").onchange=()=>{playerDetailSystemFilter=q("playerDetailSystem").value;renderPlayerDetail(player)};
