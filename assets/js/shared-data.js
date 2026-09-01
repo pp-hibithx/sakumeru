@@ -41,9 +41,7 @@
       status: legacyStatus || "planned",
       role: input.role || "",
       ...normalizeParticipantFields(input),
-      selfHo: input.selfHo || "",
-      pcName: input.pcName || "",
-      pcId: input.pcId || "",
+      ...normalizeSelfPCFields(input),
       system: input.system || "",
       facilitatorLabel: input.facilitatorLabel || "",
       facilitatorless: !!input.facilitatorless,
@@ -79,14 +77,7 @@
       facilitatorLabel: input.facilitatorLabel || "",
       facilitatorless: !!input.facilitatorless,
       role: input.role || "PL",
-      selfHo: input.selfHo || "",
-      pcName: input.pcName || "",
-      pcId: input.pcId || "",
-      selfPcRows: Array.isArray(input.selfPcRows) ? input.selfPcRows.map(r => ({
-        ho: String(r?.ho || ""),
-        pcName: String(r?.pcName || ""),
-        pcId: String(r?.pcId || "")
-      })).filter(r => r.ho || r.pcName || r.pcId) : [],
+      ...normalizeSelfPCFields(input),
       ...normalizeParticipantFields(input),
       imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
       comment: input.comment || "",
@@ -111,6 +102,48 @@
   }
 
   const participantNorm=v=>String(v||"").normalize("NFKC").replace(/\s+/g,"").toLowerCase();
+  function identityLists(){
+    const read=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return []}};
+    return {pcs:read("trpg39_pcs"),players:read("trpg39_players")};
+  }
+  function repairParticipantReference(raw={}){
+    const row=cleanParticipantRow(raw),{pcs,players}=identityLists();
+    let player=row.playerId?players.find(p=>String(p.id||"")===row.playerId):null;
+    if(!row.playerId&&row.plName){
+      const hits=players.filter(p=>participantNorm(p.name)===participantNorm(row.plName));
+      if(hits.length===1){player=hits[0];row.playerId=String(player.id||"")}
+    }
+    let pc=row.pcId?pcs.find(p=>String(p.id||"")===row.pcId):null;
+    if(pc&&row.playerId&&String(pc.ownerPlayerId||"")!==row.playerId){row.pcId="";pc=null}
+    if(!pc&&row.pcName){
+      let hits=pcs.filter(p=>participantNorm(p.name)===participantNorm(row.pcName));
+      if(row.playerId)hits=hits.filter(p=>String(p.ownerPlayerId||"")===row.playerId);
+      if(hits.length===1){pc=hits[0];row.pcId=String(pc.id||"")}
+    }
+    if(pc&&pc.ownerPlayerId&&!row.playerId){
+      row.playerId=String(pc.ownerPlayerId);
+      player=players.find(p=>String(p.id||"")===row.playerId)||null;
+    }
+    if(player&&!row.plName)row.plName=String(player.name||"");
+    if(pc&&!row.pcName)row.pcName=String(pc.name||"");
+    return row;
+  }
+  function normalizeSelfPCFields(input={}){
+    const {pcs}=identityLists();
+    const fix=raw=>{
+      const row={ho:String(raw?.ho||""),pcName:String(raw?.pcName||""),pcId:String(raw?.pcId||"")};
+      let pc=row.pcId?pcs.find(p=>String(p.id||"")===row.pcId&&!String(p.ownerPlayerId||"").trim()):null;
+      if(!pc&&row.pcName){const hits=pcs.filter(p=>!String(p.ownerPlayerId||"").trim()&&participantNorm(p.name)===participantNorm(row.pcName));if(hits.length===1)pc=hits[0]}
+      row.pcId=pc?String(pc.id||""):"";
+      if(pc&&!row.pcName)row.pcName=String(pc.name||"");
+      return row;
+    };
+    let rows=Array.isArray(input.selfPcRows)?input.selfPcRows.map(fix).filter(r=>r.ho||r.pcName||r.pcId):[];
+    const primary=fix({ho:input.selfHo,pcName:input.pcName,pcId:input.pcId});
+    if(!rows.length&&(primary.ho||primary.pcName||primary.pcId))rows=[primary];
+    const first=rows[0]||primary;
+    return {selfHo:first.ho||"",pcName:first.pcName||"",pcId:first.pcId||"",selfPcRows:rows};
+  }
   function cleanParticipantRow(r={}){return {role:String(r?.role||"PL"),ho:String(r?.ho||""),plName:String(r?.plName||""),playerId:String(r?.playerId||""),pcId:String(r?.pcId||""),pcName:String(r?.pcName||""),relation:String(r?.relation||"")}}
   function sameParticipantRow(a,b){
     const ap=String(a?.playerId||""),bp=String(b?.playerId||""),ac=String(a?.pcId||""),bc=String(b?.pcId||"");
@@ -129,7 +162,7 @@
   function normalizeParticipantRows(rows=[]){
     const out=[];
     for(const raw of (Array.isArray(rows)?rows:[])){
-      const row=cleanParticipantRow(raw);if(!row.plName&&!row.playerId&&!row.pcName&&!row.pcId&&!row.ho)continue;
+      const row=repairParticipantReference(raw);if(!row.plName&&!row.playerId&&!row.pcName&&!row.pcId&&!row.ho)continue;
       const i=out.findIndex(x=>sameParticipantRow(x,row));if(i<0)out.push(row);else out[i]=mergeParticipantRow(out[i],row);
     }
     return out;
@@ -312,11 +345,49 @@ window.TRPG39 = {
     const pcs=api.loadPCs?api.loadPCs():[];
     return pcs.find(p=>norm(p.name)===norm(name))||null;
   };
+  api.isSelfPC=function(pc){return !!pc&&!String(pc.ownerPlayerId||"").trim()};
+  api.selfPCs=function(){return (api.loadPCs?api.loadPCs():[]).filter(api.isSelfPC)};
+  api.resolvePCReference=function(ref={},options={}){
+    const pcs=api.loadPCs?api.loadPCs():[];
+    const pcId=String(ref.pcId||ref.id||"").trim();
+    const playerId=String(ref.playerId||ref.ownerPlayerId||"").trim();
+    const name=String(ref.pcName||ref.name||"").trim();
+    const byId=pcId?pcs.find(p=>String(p.id||"")===pcId):null;
+    if(byId){
+      if(options.selfOnly&&!api.isSelfPC(byId))return null;
+      if(playerId&&String(byId.ownerPlayerId||"")!==playerId)return null;
+      return byId;
+    }
+    if(!name)return null;
+    const named=pcs.filter(p=>norm(p.name)===norm(name));
+    if(options.selfOnly){
+      const self=named.filter(api.isSelfPC);
+      return self.length===1?self[0]:null;
+    }
+    if(playerId){
+      const owned=named.filter(p=>String(p.ownerPlayerId||"")===playerId);
+      return owned.length===1?owned[0]:null;
+    }
+    return named.length===1?named[0]:null;
+  };
   api.ensurePC=api.ensurePC||function(name,defaults={}){
     const clean=String(name||"").trim(); if(!clean)return null;
     let pcs=api.loadPCs?api.loadPCs():[];
     const ownerPlayerId=String(defaults.ownerPlayerId||defaults.playerId||"");
-    let found=pcs.find(p=>norm(p.name)===norm(clean) && (!ownerPlayerId || !p.ownerPlayerId || String(p.ownerPlayerId)===ownerPlayerId));
+    const requestedId=String(defaults.pcId||defaults.id||"").trim();
+    let found=requestedId?pcs.find(p=>String(p.id||"")===requestedId):null;
+    if(found&&ownerPlayerId&&String(found.ownerPlayerId||"")!==ownerPlayerId)found=null;
+    if(!found){
+      const named=pcs.filter(p=>norm(p.name)===norm(clean));
+      if(ownerPlayerId){
+        found=named.find(p=>String(p.ownerPlayerId||"")===ownerPlayerId)||null;
+        // 所有者なし旧データを引き継ぐのは、同名候補がその1件だけの時に限る。
+        if(!found&&named.length===1&&!named[0].ownerPlayerId)found=named[0];
+      }else{
+        const self=named.filter(api.isSelfPC);
+        if(self.length===1)found=self[0];
+      }
+    }
     if(found){
       let changed=false;
       if(ownerPlayerId&&!found.ownerPlayerId){found.ownerPlayerId=ownerPlayerId;changed=true}
