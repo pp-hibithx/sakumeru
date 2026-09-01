@@ -2363,16 +2363,18 @@ function pcRelRows(x){
 function allLibraryPcs(){
  const map=new Map();
 
- // MY PCs
+ // 登録PCも ownerPlayerId を基準に自PC／同卓PCを分ける。
  (pcs||[]).forEach(p=>{
    if(!p?.id||!String(p.name||"").trim())return;
+   const ownerId=String(p.ownerPlayerId||"").trim();
+   const owner=ownerId?(players||[]).find(v=>String(v.id)===ownerId):null;
    map.set(String(p.id),{
      id:String(p.id),
      name:String(p.name||"").trim(),
-     ownerType:"self",
-     ownerLabel:"自分",
-     plName:"自分",
-     playerId:"",
+     ownerType:ownerId?"guest":"self",
+     ownerLabel:ownerId?`PL：${owner?.name||"同卓PL"}`:"自分",
+     plName:ownerId?String(owner?.name||""):"自分",
+     playerId:ownerId,
      system:String(p.system||""),
      image:String(p.image||""),
      registeredId:String(p.id)
@@ -2386,8 +2388,10 @@ function allLibraryPcs(){
      if(!pcName)return;
      const plName=String(row.plName||"").trim();
      const playerId=String(row.playerId||"").trim();
+     const pcId=String(row.pcId||"").trim();
+     if(pcId&&map.has(pcId))return;
      // If this is actually one of MY PCs, keep the registered MY PC identity.
-     const self=(pcs||[]).find(p=>pcRelNameKey(p.name)===pcRelNameKey(pcName));
+     const self=(pcs||[]).find(p=>!String(p.ownerPlayerId||"").trim()&&pcRelNameKey(p.name)===pcRelNameKey(pcName));
      if(self && (!plName || plName==="自分"))return;
 
      const ownerKey=playerId || ("name:"+pcRelNameKey(plName||"不明"));
@@ -2415,15 +2419,6 @@ function allLibraryPcs(){
 }
 function anyPcById(id){
  if(!id)return null;
- // Backward compatibility: old saved relation/event IDs are raw MY PC IDs.
- const direct=(pcs||[]).find(p=>String(p.id)===String(id));
- if(direct){
-   return {
-     id:String(direct.id),name:String(direct.name||"").trim(),
-     ownerType:"self",ownerLabel:"自分",plName:"自分",playerId:"",
-     system:String(direct.system||""),image:String(direct.image||""),registeredId:String(direct.id)
-   };
- }
  return allLibraryPcs().find(p=>String(p.id)===String(id))||null;
 }
 function pcOwnerText(p){
