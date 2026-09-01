@@ -1,0 +1,14 @@
+.sm-rich-shell{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:visible}
+.sm-rich-toolbar{position:sticky;top:6px;z-index:12;display:flex;gap:5px;align-items:center;flex-wrap:wrap;padding:8px;border-bottom:1px solid var(--line);background:var(--panel);box-shadow:0 3px 14px rgba(0,0,0,.08)}
+.sm-rich-group{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding-right:6px;border-right:1px solid var(--line)}.sm-rich-group:last-child{border-right:0}
+.sm-rich-toolbar button,.sm-rich-toolbar select{width:auto;min-height:30px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px}.sm-rich-toolbar button:disabled{opacity:.38}
+.sm-rich-editor{min-height:180px;padding:14px;line-height:1.75;outline:none}.sm-rich-editor:focus{box-shadow:inset 0 0 0 1px var(--accent)}
+.sm-rich-editor h2,.sm-rich-render h2{font-size:1.45rem;margin:1.35em 0 .55em}.sm-rich-editor h3,.sm-rich-render h3{font-size:1.18rem;margin:1.15em 0 .45em}.sm-rich-editor p,.sm-rich-render p{margin:.65em 0}
+.sm-rich-editor blockquote,.sm-rich-render blockquote{margin:1em 0;padding:.35em 1em;border-left:3px solid var(--line);color:var(--muted)}
+.sm-rich-editor hr,.sm-rich-render hr{border:0;border-top:1px solid var(--line);margin:1.5em 0}
+.sm-special{position:relative;margin:16px 0;padding:12px 14px;border:1px solid var(--line);border-left:5px solid var(--sm-kind,#8b949e);border-radius:8px;background:var(--panel)}
+.sm-special[data-kind="note"]{--sm-kind:#c75b5b}.sm-special[data-kind="rp"]{--sm-kind:#9a72c7}.sm-special[data-kind="secret"]{--sm-kind:#5689cf}.sm-special[data-kind="dialogue"]{--sm-kind:#8b949e}
+.sm-special .kp-special-head{display:flex;gap:8px;align-items:center;margin-bottom:7px;font-size:12px;font-weight:800;color:var(--muted)}.sm-special .kind-chip{display:inline-block;padding:2px 6px;border-radius:999px;background:var(--sm-kind,#8b949e);color:#fff;font-size:10px}.sm-special .kp-special-title{font-weight:800}.sm-special .kp-special-body{min-height:1.8em}
+.sm-rich-toggle{padding:0;overflow:hidden}.sm-rich-toggle>summary{cursor:pointer;padding:10px 12px;font-weight:800}.sm-rich-toggle-body{padding:0 12px 12px}
+.sm-rich-render{line-height:1.75;overflow-wrap:anywhere}.sm-rich-render img{max-width:100%;height:auto}
+@media(max-width:680px){.sm-rich-toolbar{position:static}.sm-rich-group{width:100%;border-right:0;border-bottom:1px solid var(--line);padding:0 0 6px}.sm-rich-group:last-child{border-bottom:0}.sm-rich-editor{padding:12px;min-height:160px}}
