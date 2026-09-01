@@ -3,6 +3,7 @@
 .sm-rich-group{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding-right:6px;border-right:1px solid var(--line)}.sm-rich-group:last-child{border-right:0}
 .sm-rich-toolbar button,.sm-rich-toolbar select{width:auto;min-height:30px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px}.sm-rich-toolbar button:disabled{opacity:.38}
 .sm-rich-editor{min-height:180px;padding:14px;line-height:1.75;outline:none}.sm-rich-editor:focus{box-shadow:inset 0 0 0 1px var(--accent)}
+.sm-rich-editor .sm-rich-x-hidden{background:repeating-linear-gradient(-45deg,rgba(217,184,91,.2),rgba(217,184,91,.2) 4px,rgba(217,184,91,.08) 4px,rgba(217,184,91,.08) 8px);border-bottom:2px solid #d9b85b;border-radius:3px;padding:0 2px}
 .sm-rich-editor h2,.sm-rich-render h2{font-size:1.45rem;margin:1.35em 0 .55em}.sm-rich-editor h3,.sm-rich-render h3{font-size:1.18rem;margin:1.15em 0 .45em}.sm-rich-editor p,.sm-rich-render p{margin:.65em 0}
 .sm-rich-editor blockquote,.sm-rich-render blockquote{margin:1em 0;padding:.35em 1em;border-left:3px solid var(--line);color:var(--muted)}
 .sm-rich-editor hr,.sm-rich-render hr{border:0;border-top:1px solid var(--line);margin:1.5em 0}
