@@ -102,9 +102,13 @@
   }
 
   const participantNorm=v=>String(v||"").normalize("NFKC").replace(/\s+/g,"").toLowerCase();
+  let identityReferenceCache=null;
+  (window.TRPG39=window.TRPG39||{}).invalidateIdentityReferenceCache=()=>{identityReferenceCache=null};
   function identityLists(){
+    if(identityReferenceCache)return identityReferenceCache;
     const read=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return []}};
-    return {pcs:read("trpg39_pcs"),players:read("trpg39_players")};
+    identityReferenceCache={pcs:read("trpg39_pcs"),players:read("trpg39_players")};
+    return identityReferenceCache;
   }
   function repairParticipantReference(raw={}){
     const row=cleanParticipantRow(raw),{pcs,players}=identityLists();
@@ -224,6 +228,12 @@
   function syncAllEventsToAlbum() {
     const originalEventsRaw = localStorage.getItem(KEYS.events);
     const originalAlbumRaw = localStorage.getItem(KEYS.album);
+    // 大容量ストアの全件同期は同期APIであるLocalStorage上では画面停止を招く。
+    // 個別の保存時同期は維持し、起動時の一括移行だけをIndexedDB移行工程まで延期する。
+    if((originalEventsRaw?.length||0)+(originalAlbumRaw?.length||0)>1_000_000){
+      console.warn("[SAKU+MERU] Startup event/album full sync deferred because local data is large.");
+      return {events:[],album:[],changed:false,deferred:true};
+    }
     let events = load(KEYS.events).map(normalizeEvent);
     let album = load(KEYS.album);
     let changed = false;
@@ -333,9 +343,9 @@ window.TRPG39 = {
   const parse=(k)=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return []}};
   const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
   if(!api.loadPCs) api.loadPCs=()=>parse("trpg39_pcs");
-  if(!api.savePCs) api.savePCs=v=>save("trpg39_pcs",v);
+  if(!api.savePCs) api.savePCs=v=>{save("trpg39_pcs",v);api.invalidateIdentityReferenceCache?.()};
   if(!api.loadPlayers) api.loadPlayers=()=>parse("trpg39_players");
-  if(!api.savePlayers) api.savePlayers=v=>save("trpg39_players",v);
+  if(!api.savePlayers) api.savePlayers=v=>{save("trpg39_players",v);api.invalidateIdentityReferenceCache?.()};
 })();
 
 ;(function(){
@@ -488,7 +498,10 @@ window.TRPG39 = {
     if(localStorage.getItem(BACKUP_KEY))return true;
     const keys=[...Object.values(KEYS),...LEGACY_PLAYER_KEYS,...LEGACY_PC_KEYS];
     const data={kind:"SAKUMERU_ID_MIGRATION_BACKUP",version:1,createdAt:new Date().toISOString(),storage:{}};
-    keys.forEach(k=>{if(localStorage.getItem(k)!==null)data.storage[k]=localStorage.getItem(k)});
+    let sourceChars=0;
+    keys.forEach(k=>{const raw=localStorage.getItem(k);if(raw!==null){sourceChars+=raw.length;data.storage[k]=raw}});
+    // LocalStorage内へ大容量データを丸ごと複製すると、同期処理だけで画面を停止させ得る。
+    if(sourceChars>1_000_000){console.warn("[SAKU+MERU] ID migration v1 deferred: source is too large for an in-LocalStorage backup.");return false}
     try{localStorage.setItem(BACKUP_KEY,JSON.stringify(data));return true}catch(err){
       console.error("[SAKU+MERU] ID migration backup failed; migration aborted.",err);
       return false;
@@ -722,7 +735,10 @@ window.TRPG39 = {
   function backup(){
     if(localStorage.getItem(BACKUP_KEY))return true;
     const data={kind:"SAKUMERU_ID_MIGRATION_BACKUP",version:2,createdAt:new Date().toISOString(),storage:{}};
-    [ALBUM_KEY,EVENT_KEY,SELF_PC_KEY,RUN_ROSTER_KEY].forEach(k=>{if(localStorage.getItem(k)!==null)data.storage[k]=localStorage.getItem(k)});
+    let sourceChars=0;
+    [ALBUM_KEY,EVENT_KEY,SELF_PC_KEY,RUN_ROSTER_KEY].forEach(k=>{const raw=localStorage.getItem(k);if(raw!==null){sourceChars+=raw.length;data.storage[k]=raw}});
+    // IndexedDB移行までは、大容量バックアップのJSON化・書き戻し自体を行わない。
+    if(sourceChars>1_000_000){console.warn("[SAKU+MERU] ID migration v2 deferred: source is too large for an in-LocalStorage backup.");return false}
     try{localStorage.setItem(BACKUP_KEY,JSON.stringify(data));return true}catch(err){
       // バックアップを作れない容量ではmigrationを実行しない。既存キーには触れず、通常起動を続ける。
       console.warn("[SAKU+MERU] ID migration v2 skipped because browser storage is full. Existing data will be loaded without migration.",err);return false;
