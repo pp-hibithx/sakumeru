@@ -1232,6 +1232,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
   </div>
 </dialog>
 <dialog id="xPreviewDialog" class="x-preview"><h2>X卓報告プレビュー</h2><p class="small muted">投稿前に自由に編集できます。SNS表示名が設定されている人は短縮名で表示します。</p><textarea id="xPreviewText"></textarea><div class="x-preview-actions"><span id="xPreviewCount" class="small muted"></span><div class="row"><button id="xPreviewCancel" type="button">戻る</button><button id="xPreviewPost" type="button">X投稿画面へ</button></div></div></dialog>
+<dialog id="calendarReportDialog" class="x-preview"><h2>この日の卓を記録しますか？</h2><p id="calendarReportSummary"></p><p class="small muted">CALENDARで選んだ日付を卓日として、LIBRARYのこの陣に卓記事を作成します。</p><div class="row" style="justify-content:flex-end;gap:8px"><button id="calendarReportCancel" type="button">キャンセル</button><button id="calendarReportConfirm" type="button">この日付で記録する</button></div></dialog>
 <dialog id="postSaveDialog" class="x-preview"><h2 id="postSaveTitle">保存しました</h2><p class="small muted">このまま次の操作へ進めます。</p><div class="row" style="justify-content:flex-end;gap:8px"><button id="postSaveClose" type="button">閉じる</button><button id="postSaveArticle" type="button">卓記事を書く</button><button id="postSaveX" type="button">Xで卓報告</button></div></dialog>
 
 <dialog id="bgmLibraryDialog" class="bgm-library-dialog"><div class="bgm-library-panel">
@@ -2184,12 +2185,29 @@ function edit(id){
  q("externalLinks").innerHTML="";(x.externalLinks||[]).forEach(addLinkRow);if(!(x.externalLinks||[]).length)addLinkRow();
  q("formHeading").textContent="開催記録を編集";q("cancel").hidden=false;showEditor();q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"});
 }
+function formatLibraryReportDate(v){const m=String(v||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日`:String(v||"")}
 function openLibraryFromCalendarEvent(){
  const params=new URLSearchParams(location.search),eventId=params.get("event");if(!eventId)return;
  const rec=data.find(x=>String(x.eventId||"")===String(eventId));
  if(!rec)return;
- edit(rec.id);
- if(params.get("action")==="report"){q("formHeading").textContent="この予定から卓報告";q("status").value="done";}
+ if(params.get("action")!=="report"){edit(rec.id);return;}
+ const reportDate=params.get("reportDate")||String(rec.start||rec.date||"").slice(0,10);
+ const dialog=q("calendarReportDialog"),summary=q("calendarReportSummary");
+ if(!dialog||!summary)return;
+ summary.innerHTML=`<strong>${esc(formatLibraryReportDate(reportDate))}</strong><br>${esc(rec.title||"名称未設定")} ／ ${esc(rec.runLabel||"この陣")}`;
+ q("calendarReportCancel").onclick=()=>dialog.close();
+ q("calendarReportConfirm").onclick=()=>{
+   dialog.close();
+   const runId=String(rec.runId||"");
+   if(!runId)return edit(rec.id);
+   focusedScenarioKey=groupKey(rec);focusedRunId=runId;libraryView="scenario";render();
+   requestAnimationFrame(()=>{
+     openArticleEditor(runId);
+     const ed=document.getElementById(`articleEditor-${runId}`);if(!ed)return;
+     const title=ed.querySelector('.articleTitle');if(title&&!title.value.trim())title.value=`${reportDate} 卓報告`;
+   });
+ };
+ dialog.showModal();
 }
 
 function setRunArchived(runId,archived){
