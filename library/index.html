@@ -1974,7 +1974,10 @@ function setParticipantRows(rows=[]){
  refreshParticipantPlayerList();q("participantRows").innerHTML="";
  const groups=[],map=new Map();
  (rows||[]).forEach((r,i)=>{
-   const key=`${r.role||"PL"}||${String(r.playerId||"")||String(r.plName||"").trim()}`;
+   const participantIdentity=String(r.playerId||"")||String(r.plName||"").trim();
+   // PL未定の行は「同じ空欄の人」ではなく、HO構成上の独立した参加枠として扱う。
+   // IDまたは名前がある参加者だけ、従来どおり同一参加者へまとめる。
+   const key=participantIdentity?`${r.role||"PL"}||${participantIdentity}`:`__pending_participant_slot__${i}`;
    let g=map.get(key);if(!g){g={role:r.role||"PL",plName:r.plName||"",playerId:r.playerId||"",pcs:[]};map.set(key,g);groups.push(g)}
    if(r.pcName||r.ho||r.pcId)g.pcs.push({pcName:r.pcName||"",pcId:r.pcId||"",ho:r.ho||""});
  });
