@@ -1276,12 +1276,12 @@ function updateTypeUI(){
  $("titleHint").textContent=blocked?"空欄なら「予定あり」と表示します":"直接入力したシナリオ名はSCENARIOにも自動登録されます";
  
 }
-function calendarPlayerPlayCount(player){
+function calendarPlayerPlayCount(player,albumSource=null){
  const ids=new Set(),names=new Set(
    [player?.name,player?.publicName,player?.socialName]
      .map(v=>String(v||"").normalize("NFKC").trim().toLowerCase()).filter(Boolean)
  );
- const album=TRPG39.loadAlbum?.()||[];
+ const album=albumSource||(TRPG39.loadAlbum?.()||[]);
  album.forEach(rec=>{
    const rows=Array.isArray(rec?.participantRows)&&rec.participantRows.length
      ? rec.participantRows
@@ -1296,8 +1296,10 @@ function calendarPlayerPlayCount(player){
 }
 function calendarPlayerCandidates(){
  const rows=TRPG39.loadPlayers?.()||[];
+ const album=TRPG39.loadAlbum?.()||[];
+ const counts=new Map(rows.map(p=>[String(p.id||""),calendarPlayerPlayCount(p,album)]));
  return rows.filter(p=>p&&!p.excluded&&!p.archived&&String(p.name||"").trim()).slice().sort((a,b)=>{
-   const diff=calendarPlayerPlayCount(b)-calendarPlayerPlayCount(a);
+   const diff=(counts.get(String(b.id||""))||0)-(counts.get(String(a.id||""))||0);
    if(diff)return diff;
    return String(a.name||"").localeCompare(String(b.name||""),"ja");
  });
