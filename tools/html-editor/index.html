@@ -10,6 +10,7 @@
 button,input{font:inherit}button{border:1px solid var(--line2);border-radius:7px;background:#202631;color:var(--text);padding:8px 12px;cursor:pointer;min-height:38px}button:hover{border-color:var(--gold);background:#282f3b}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}.primary{background:var(--gold);border-color:var(--gold);color:#18140a;font-weight:800}.primary:hover{background:var(--gold2);color:#18140a}.active{border-color:var(--gold2);box-shadow:inset 0 0 0 1px var(--gold2);background:#302b1f}.icon-button{min-width:38px;padding-inline:9px}.muted{color:var(--muted)}
 .app{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto}.topbar{display:flex;gap:14px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);background:#0d1117}.brand{display:flex;align-items:center;gap:10px;white-space:nowrap}.mark{width:31px;height:31px;border:1px solid var(--gold);display:grid;place-items:center;color:var(--gold2);font-weight:900;transform:rotate(45deg);border-radius:5px}.mark span{transform:rotate(-45deg)}.brand-title{font-weight:900;letter-spacing:.12em}.brand-sub{font-size:11px;color:var(--muted);letter-spacing:.08em}.steps{display:flex;gap:5px;align-items:center;margin-left:auto}.step{font-size:12px;color:var(--muted);padding:5px 8px;border:1px solid transparent;border-radius:999px}.step.current{color:var(--gold2);border-color:#625630;background:#201d15}.step-sep{color:#56606e}
 .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel)}.file-name{min-width:130px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--blue);margin-right:4px}.toolbar-spacer{flex:1}.switch{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.switch input{appearance:none;width:36px;height:20px;border:1px solid var(--line2);background:#282e38;border-radius:20px;position:relative;margin:0;cursor:pointer}.switch input:after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:#9da6b3;top:2px;left:2px;transition:.16s}.switch input:checked{background:#5b4c22;border-color:var(--gold)}.switch input:checked:after{left:18px;background:var(--gold2)}
+.preview-mode{display:flex;align-items:center;gap:5px;padding:3px;border:1px solid var(--line);border-radius:9px;background:#0b0f14}.preview-mode button{min-height:32px;padding:5px 9px;border-color:transparent;background:transparent;font-size:12px}.preview-mode button.active{border-color:var(--gold);background:#302b1f;color:var(--gold2)}.base-select{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}.base-select[hidden]{display:none}.base-select select{min-height:34px;border:1px solid var(--line2);border-radius:6px;background:#111720;color:var(--text);padding:5px 7px}
 .workspace{display:grid;grid-template-columns:minmax(280px,1fr) 8px minmax(320px,1fr);min-height:0}.pane{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr)}.pane-head{height:42px;display:flex;align-items:center;gap:9px;padding:0 11px;border-bottom:1px solid var(--line);background:var(--panel2)}.pane-title{font-weight:800;letter-spacing:.04em}.pane-meta{font-size:12px;color:var(--muted)}.resizer{cursor:col-resize;background:#090c10;border-inline:1px solid #252b34;position:relative}.resizer:after{content:"";position:absolute;inset:45% 2px;border-block:2px dotted #737d8c}.resizer:hover,.resizer.dragging{background:#4c411f}
 .editor-wrap{min-height:0;display:grid;grid-template-columns:auto minmax(0,1fr);background:#0d1117;position:relative}.lines{margin:0;padding:12px 9px 40px 8px;min-width:48px;text-align:right;overflow:hidden;user-select:none;background:#0a0d12;color:#687384;border-right:1px solid #252b34;font:13px/1.58 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;white-space:pre}.code{width:100%;height:100%;resize:none;border:0;border-radius:0;margin:0;padding:12px 14px 40px;background:#0d1117;color:#e7edf5;caret-color:var(--gold2);font:13px/1.58 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;tab-size:2;white-space:pre;overflow:auto}.code:focus{outline:0}.searchbar{position:absolute;z-index:3;top:8px;right:18px;display:flex;gap:5px;align-items:center;padding:7px;background:#1b222c;border:1px solid var(--line2);border-radius:9px;box-shadow:var(--shadow)}.searchbar[hidden]{display:none}.searchbar input{width:210px;min-height:34px;border:1px solid var(--line2);border-radius:6px;background:#0e1218;color:var(--text);padding:6px 9px}.search-count{min-width:54px;text-align:center;font-size:11px;color:var(--muted)}
 .preview-area{min-height:0;overflow:auto;display:grid;place-items:start center;padding:16px;background-color:#272d36;background-image:linear-gradient(45deg,#303743 25%,transparent 25%),linear-gradient(-45deg,#303743 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#303743 75%),linear-gradient(-45deg,transparent 75%,#303743 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}.device{width:100%;height:100%;min-height:300px;background:#fff;border:1px solid #687282;box-shadow:var(--shadow);transition:width .18s}.device.mobile{width:390px;max-width:100%;height:max(720px,100%)}iframe{display:block;width:100%;height:100%;min-height:300px;border:0;background:#fff}.preview-actions{margin-left:auto;display:flex;gap:5px}.width-readout{font-variant-numeric:tabular-nums;color:var(--gold2);font-size:12px;white-space:nowrap}
@@ -33,6 +34,8 @@ button,input{font:inherit}button{border:1px solid var(--line2);border-radius:7px
     <button id="undoButton" type="button" title="Ctrl+Z">元に戻す</button>
     <button id="redoButton" type="button" title="Ctrl+Y">やり直す</button>
     <span class="toolbar-spacer"></span>
+    <div class="preview-mode" aria-label="プレビューモード"><button id="safeModeButton" class="active" type="button">安全プレビュー</button><button id="dataModeButton" type="button">実データ・読取専用</button></div>
+    <label id="baseSelectWrap" class="base-select" hidden><span>元ページ</span><select id="previewBase"><option value="">HOME</option><option value="scenario/">SCENARIO</option><option value="calendar/">CALENDAR</option><option value="library/">LIBRARY</option><option value="pcs/">PC</option><option value="players/">PLAYERS</option><option value="share/">SHARE</option><option value="tools/">TOOLS</option></select></label>
     <label class="switch"><input id="autoUpdate" type="checkbox" checked><span>自動更新</span></label>
     <button id="updateButton" type="button">↻ プレビュー更新</button>
     <button id="helpButton" type="button" class="icon-button" aria-label="使い方">?</button>
@@ -58,15 +61,15 @@ button,input{font:inherit}button{border:1px solid var(--line2);border-radius:7px
       <div id="previewArea" class="preview-area"><div id="device" class="device"><iframe id="preview" title="編集内容のプレビュー" sandbox="allow-scripts allow-forms allow-modals"></iframe></div></div>
     </section>
   </main>
-  <footer class="statusbar"><span id="status" class="status">準備完了</span><span id="errors" class="errors"></span><span class="privacy">🔒 本体データと分離・外部通信なし</span></footer>
+  <footer class="statusbar"><span id="status" class="status">準備完了</span><span id="errors" class="errors"></span><span id="previewDataInfo" class="pane-meta">本体データを使用しません</span><span class="privacy">🔒 隔離プレビュー・外部通信なし</span></footer>
 </div>
-<div id="help" class="help" hidden><div class="help-card"><button id="helpClose" class="help-close" type="button">閉じる</button><h2>使い方</h2><ol><li><strong>HTMLを開く</strong>で編集したいファイルを選びます。元ファイルは変更されません。</li><li>左側でHTML・CSS・JavaScriptを編集します。検索はCtrl+F、元に戻す／やり直すはCtrl+Z／Ctrl+Yです。</li><li>右側で結果を確認します。PC表示と390px表示を切り替えられます。</li><li><strong>保存用HTMLを出力</strong>を押すと、編集後のHTMLが新しいダウンロードファイルになります。</li></ol><p class="muted">プレビューは隔離されています。localStorage、sessionStorage、親画面、SAKU+MERU本体データへアクセスできません。外部URLへの通信も遮断します。</p></div></div>
+<div id="help" class="help" hidden><div class="help-card"><button id="helpClose" class="help-close" type="button">閉じる</button><h2>使い方</h2><ol><li><strong>HTMLを開く</strong>で編集したいファイルを選びます。元ファイルは変更されません。</li><li>左側でHTML・CSS・JavaScriptを編集します。検索はCtrl+F、元に戻す／やり直すはCtrl+Z／Ctrl+Yです。</li><li>通常は<strong>安全プレビュー</strong>で見た目を確認します。実データで確認するときは<strong>実データ・読取専用</strong>と元ページを選びます。このモードは公開したHTML EDITOR上でのみ使用できます。</li><li>PC表示と390px表示を切り替えて確認します。</li><li><strong>保存用HTMLを出力</strong>を押すと、編集後のHTMLが新しいダウンロードファイルになります。</li></ol><p class="muted">どちらのモードもsandbox付きiframe内で動作し、外部通信を遮断します。実データモードは現在のLocalStorageをコピーして渡し、setItem／removeItem／clearを遮断します。sessionStorageは空、IndexedDBは利用不可です。</p></div></div>
 <script>
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id);
 const editor=$("editor"),lines=$("lineNumbers"),preview=$("preview"),device=$("device"),workspace=$("workspace");
-let currentFileName="new-page.html",updateTimer=0,searchMatches=[],searchIndex=-1,dirty=false;
+let currentFileName="new-page.html",updateTimer=0,searchMatches=[],searchIndex=-1,dirty=false,previewMode="safe",dataModeConfirmed=false;
 const initial=`<!doctype html>
 <html lang="ja">
 <head>
@@ -100,10 +103,21 @@ function validateSource(source){
  });
  return found;
 }
+function readLocalStorageSnapshot(){const copy={};let chars=0;for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key===null)continue;const value=localStorage.getItem(key);copy[key]=value;chars+=key.length+(value?.length||0)}return {copy,chars}}
+function previewBaseUrl(){const root=new URL("../../",location.href);return new URL($("previewBase").value,root).href}
 function securedDocument(source){
- const csp=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">`;
- const reporter=`<script>(function(){function send(kind,value,line,col){parent.postMessage({source:'sakumeru-html-editor-preview',kind:kind,message:String(value||'不明なエラー'),line:line||0,col:col||0},'*')}window.addEventListener('error',function(e){send('error',e.message,e.lineno,e.colno)});window.addEventListener('unhandledrejection',function(e){send('promise',e.reason&&e.reason.message||e.reason)});try{localStorage.setItem=function(){throw new Error('プレビューではlocalStorageを使用できません')}}catch(e){};try{sessionStorage.setItem=function(){throw new Error('プレビューではsessionStorageを使用できません')}}catch(e){}})();<\/script>`;
- const injection=csp+reporter;
+ const dev=previewMode==="data",origin=location.origin,assets=dev&&origin!=="null"?` ${origin}`:"";
+ const csp=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'${assets}; script-src 'unsafe-inline'${assets}; img-src data: blob:${assets}; media-src data: blob:${assets}; font-src data:${assets}; connect-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'">`;
+ const base=dev?`<base href="${previewBaseUrl().replace(/[\"&<]/g,c=>({"\"":"&quot;","&":"&amp;","<":"&lt;"}[c]))}">`:"";
+ let storageGuard="";
+ if(dev){
+   const snap=readLocalStorageSnapshot();
+   const json=JSON.stringify(snap.copy).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
+   storageGuard=`const __snapshot=${json};function __notice(op,key){parent.postMessage({source:'sakumeru-html-editor-preview',kind:'blocked-write',message:'本番データへの '+op+' を遮断しました'+(key?'：'+key:'')},'*')}function __readOnlyStorage(data){const keys=Object.keys(data);const api={getItem:key=>Object.prototype.hasOwnProperty.call(data,String(key))?data[String(key)]:null,key:index=>keys[index]??null,setItem:key=>__notice('setItem',String(key)),removeItem:key=>__notice('removeItem',String(key)),clear:()=>__notice('clear','')};Object.defineProperty(api,'length',{get:()=>keys.length});return Object.freeze(api)}Object.defineProperty(window,'localStorage',{value:__readOnlyStorage(__snapshot),configurable:false});Object.defineProperty(window,'sessionStorage',{value:__readOnlyStorage({}),configurable:false});const __blockedDb=Object.freeze({open(){__notice('IndexedDB open','');throw new DOMException('実データプレビューではIndexedDBを使用できません','SecurityError')},deleteDatabase(){__notice('IndexedDB deleteDatabase','');throw new DOMException('実データプレビューではIndexedDBを使用できません','SecurityError')}});try{Object.defineProperty(window,'indexedDB',{value:__blockedDb,configurable:false})}catch(e){}`;
+   $("previewDataInfo").textContent=`LocalStorageコピー ${Object.keys(snap.copy).length}キー・約${(snap.chars*2/1048576).toFixed(2)}MiB`;
+ }
+ const reporter=`<script>(function(){function send(kind,value,line,col){parent.postMessage({source:'sakumeru-html-editor-preview',kind:kind,message:String(value||'不明なエラー'),line:line||0,col:col||0},'*')}window.addEventListener('error',function(e){send('error',e.message,e.lineno,e.colno)});window.addEventListener('unhandledrejection',function(e){send('promise',e.reason&&e.reason.message||e.reason)});${storageGuard}})();<\/script>`;
+ const injection=csp+base+reporter;
  if(/<head(?:\s[^>]*)?>/i.test(source))return source.replace(/<head(?:\s[^>]*)?>/i,m=>m+injection);
  if(/<html(?:\s[^>]*)?>/i.test(source))return source.replace(/<html(?:\s[^>]*)?>/i,m=>m+"<head>"+injection+"</head>");
  return "<!doctype html><html><head>"+injection+"</head><body>"+source+"</body></html>";
@@ -112,13 +126,20 @@ function renderPreview(){
  clearTimeout(updateTimer);$("errors").textContent="";
  const errors=validateSource(editor.value);
  if(errors.length){$("errors").textContent=errors[0];setStatus("構文エラー","error")}else setStatus("プレビュー更新済み","ok");
- preview.srcdoc=securedDocument(editor.value);
+ try{preview.srcdoc=securedDocument(editor.value)}catch(error){$("errors").textContent=error.message||String(error);setStatus("プレビューを作成できませんでした","error");return}
  requestAnimationFrame(updateWidth);
 }
 function schedulePreview(){if(!$("autoUpdate").checked)return;clearTimeout(updateTimer);updateTimer=setTimeout(renderPreview,350)}
 function markEdited(){dirty=true;setStatus($("autoUpdate").checked?"編集中…":"未反映の変更あり");updateLines();updateCursor();schedulePreview()}
 function updateWidth(){const w=Math.round(preview.getBoundingClientRect().width);$("previewWidth").textContent=`幅 ${w}px`}
 function setDevice(mode){const mobile=mode==="mobile";device.classList.toggle("mobile",mobile);$("desktopButton").classList.toggle("active",!mobile);$("mobileButton").classList.toggle("active",mobile);requestAnimationFrame(updateWidth)}
+function setPreviewMode(mode){
+ if(mode==="data"){
+   if(location.protocol==="file:"){setStatus("実データプレビューはGitHub Pages上で使用してください","error");$("errors").textContent="file://ではGitHub Pages版SAKU+MERUのLocalStorageを読み取れません。";return}
+   if(!dataModeConfirmed){if(!confirm("現在のSAKU+MERU LocalStorageを読み取り、そのコピーを隔離プレビューへ渡します。\n\n本番データへの書き込み、削除、外部通信は遮断されます。続けますか？"))return;dataModeConfirmed=true}
+ }
+ previewMode=mode;$("safeModeButton").classList.toggle("active",mode==="safe");$("dataModeButton").classList.toggle("active",mode==="data");$("baseSelectWrap").hidden=mode!=="data";$("previewDataInfo").textContent=mode==="data"?"実データのコピーを準備中":"本体データを使用しません";renderPreview();
+}
 function openSearch(){$("searchBar").hidden=false;$("searchInput").focus();$("searchInput").select();findMatches()}
 function findMatches(){const term=$("searchInput").value;searchMatches=[];searchIndex=-1;if(term){let at=0;while((at=editor.value.indexOf(term,at))>=0){searchMatches.push(at);at+=Math.max(1,term.length)}}showSearchCount()}
 function showSearchCount(){$("searchCount").textContent=searchMatches.length?`${searchIndex+1} / ${searchMatches.length}`:"0 / 0"}
@@ -133,9 +154,10 @@ $("fileInput").onchange=async e=>{const file=e.target.files?.[0];if(!file)return
 $("saveButton").onclick=saveFile;$("updateButton").onclick=renderPreview;$("autoUpdate").onchange=()=>{if($("autoUpdate").checked)renderPreview();else setStatus("自動更新OFF")};
 $("undoButton").onclick=()=>{editor.focus();document.execCommand("undo");markEdited()};$("redoButton").onclick=()=>{editor.focus();document.execCommand("redo");markEdited()};
 $("desktopButton").onclick=()=>setDevice("desktop");$("mobileButton").onclick=()=>setDevice("mobile");
+$("safeModeButton").onclick=()=>setPreviewMode("safe");$("dataModeButton").onclick=()=>setPreviewMode("data");$("previewBase").onchange=renderPreview;
 $("searchButton").onclick=openSearch;$("searchInput").oninput=findMatches;$("searchInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();jumpSearch(e.shiftKey?-1:1)}if(e.key==="Escape")$("searchBar").hidden=true};$("searchPrev").onclick=()=>jumpSearch(-1);$("searchNext").onclick=()=>jumpSearch(1);$("searchClose").onclick=()=>{$("searchBar").hidden=true;editor.focus()};
 $("helpButton").onclick=()=>$("help").hidden=false;$("helpClose").onclick=()=>$("help").hidden=true;$("help").onclick=e=>{if(e.target===$("help"))$("help").hidden=true};
-window.addEventListener("message",e=>{if(e.data?.source!=="sakumeru-html-editor-preview")return;const where=e.data.line?`（${e.data.line}行${e.data.col?` ${e.data.col}列`:""}）`:"";$("errors").textContent=`${e.data.message}${where}`;setStatus("プレビューエラー","error")});
+window.addEventListener("message",e=>{if(e.source!==preview.contentWindow||e.data?.source!=="sakumeru-html-editor-preview")return;const where=e.data.line?`（${e.data.line}行${e.data.col?` ${e.data.col}列`:""}）`:"";$("errors").textContent=`${e.data.message}${where}`;const blocked=e.data.kind==="blocked-write";setStatus(blocked?"書き込みを安全に遮断":"プレビューエラー",blocked?"ok":"error")});
 window.addEventListener("beforeunload",e=>{if(!dirty)return;e.preventDefault();e.returnValue=""});
 new ResizeObserver(updateWidth).observe(device);
 
