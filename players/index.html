@@ -1029,9 +1029,14 @@ const q=id=>document.getElementById(id);
 const vis={private:"自分のみ",table:"同卓者のみ（準備中）",link:"リンク限定",public:"公開"};
 const statusLabel={tentative:"仮押さえ",planned:"予定",confirmed:"予定",done:"完了",rescheduling:"リスケ中",postponed:"延期",cancelled:"中止"};
 const sessionKindLabel={prelude:"事前導入",main:"本編",reserve:"予備日",aftertalk:"感想戦"};
+let sessionKindEventIndex=null;
+function refreshSessionKindEventIndex(){
+ sessionKindEventIndex=new Map((TRPG39.loadEvents?.()||[]).map(e=>[String(e.id||""),e]));
+}
 function sessionKindForRecord(x){
  if(x?.eventId){
-   const ev=(TRPG39.loadEvents?.()||[]).find(e=>e.id===x.eventId);
+   if(!sessionKindEventIndex)refreshSessionKindEventIndex();
+   const ev=sessionKindEventIndex.get(String(x.eventId));
    if(ev?.sessionKind)return ev.sessionKind;
  }
  return String(x?.sessionKind||"main");
@@ -1115,7 +1120,8 @@ let playerDetailRoleFilter="all";
 let playerDetailSystemFilter="all";
 let playerDetailPcFilter="all";
 
-{let changed=false;data=data.map(x=>{if(!x.spoilerBody&&x.spoiler){changed=true;return TRPG39.normalizeAlbum({...x,spoilerBody:x.spoiler,spoiler:""})}return x});if(changed)TRPG39.saveAlbum(data);}
+// 旧spoilerは表示時だけ後方互換として参照し、ページ起動では全件を書き戻さない。
+data=data.map(x=>!x.spoilerBody&&x.spoiler?{...x,spoilerBody:x.spoiler}:x);
 
 function migrateScenarioLinks(){
   let changed=false;
@@ -3999,6 +4005,7 @@ function bindRunMergeRepair(){
 }
 
 function render(){
+ sessionKindEventIndex=null;
  restorePlayerRelationPanelToModal();
  syncLibraryView();
  if(libraryView==="pc"){renderPcView();return}
