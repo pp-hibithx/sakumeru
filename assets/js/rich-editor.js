@@ -14,7 +14,34 @@ function textToHtml(text){
  return (lines.length?lines:[""]).map(line=>`<p>${line?esc(line):"<br>"}</p>`).join("");
 }
 function plainText(html){const d=document.createElement("div");d.innerHTML=String(html||"");return (d.innerText||d.textContent||"").replace(/\u200B/g,"").trim()}
-function plainTextForX(html){const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);d.querySelectorAll('[data-x-hidden="true"]').forEach(x=>x.replaceWith(document.createTextNode("――")));return (d.innerText||d.textContent||"").replace(/(?:――\s*){2,}/g,"――").replace(/\u200B/g,"").replace(/[ \t]+\n/g,"\n").trim()}
+const TEXT_BLOCK_TAGS=new Set(["P","DIV","H2","H3","BLOCKQUOTE","LI","UL","OL","SECTION","FIGURE","FIGCAPTION","DETAILS","SUMMARY"]);
+function htmlWithLineBreaks(root){
+ let out="";
+ const newline=()=>{if(!out.endsWith("\n"))out+="\n"};
+ const walk=node=>{
+   if(node.nodeType===3){out+=node.textContent||"";return}
+   if(node.nodeType!==1)return;
+   if(node.tagName==="BR"){out+="\n";return}
+   if(node.tagName==="HR"){newline();out+="――";newline();return}
+   const block=TEXT_BLOCK_TAGS.has(node.tagName);
+   if(block&&out&&!out.endsWith("\n"))newline();
+   [...node.childNodes].forEach(walk);
+   if(block)newline();
+ };
+ [...root.childNodes].forEach(walk);
+ return out;
+}
+function plainTextForX(html){
+ const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);
+ d.querySelectorAll('[data-x-hidden="true"]').forEach(x=>x.replaceWith(document.createTextNode("――")));
+ return htmlWithLineBreaks(d)
+   .replace(/(?:――[ \t]*){2,}/g,"――")
+   .replace(/\u200B/g,"")
+   .replace(/\r/g,"")
+   .replace(/[ \t]+\n/g,"\n")
+   .replace(/\n{3,}/g,"\n\n")
+   .trim();
+}
 function hasXHidden(html){const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);return !!d.querySelector('[data-x-hidden="true"]')}
 function safeUrl(value,{image=false}={}){
  const v=String(value||"").trim();
