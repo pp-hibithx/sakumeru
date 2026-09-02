@@ -16,7 +16,8 @@ button,input{font:inherit}button{border:1px solid var(--line2);border-radius:7px
 .preview-area{min-height:0;overflow:auto;display:grid;place-items:start center;padding:16px;background-color:#272d36;background-image:linear-gradient(45deg,#303743 25%,transparent 25%),linear-gradient(-45deg,#303743 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#303743 75%),linear-gradient(-45deg,transparent 75%,#303743 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}.device{width:100%;height:100%;min-height:300px;background:#fff;border:1px solid #687282;box-shadow:var(--shadow);transition:width .18s}.device.mobile{width:390px;max-width:100%;height:max(720px,100%)}iframe{display:block;width:100%;height:100%;min-height:300px;border:0;background:#fff}.preview-actions{margin-left:auto;display:flex;gap:5px}.width-readout{font-variant-numeric:tabular-nums;color:var(--gold2);font-size:12px;white-space:nowrap}
 .statusbar{min-height:35px;display:flex;align-items:center;gap:13px;padding:6px 12px;border-top:1px solid var(--line);background:#0d1117;font-size:12px}.status{white-space:nowrap}.status.ok{color:var(--ok)}.status.error{color:var(--danger)}.errors{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--danger)}.privacy{margin-left:auto;color:var(--muted);white-space:nowrap}
 .help{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:20px}.help[hidden]{display:none}.help-card{width:min(620px,100%);max-height:85vh;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:13px;box-shadow:var(--shadow);padding:20px}.help-card h2{margin-top:0}.help-card ol{padding-left:22px}.help-card li{margin:9px 0}.help-close{float:right}
-@media(max-width:760px){body{overflow:auto}.app{min-height:100vh;height:auto}.topbar{align-items:flex-start}.steps{display:none}.toolbar{position:sticky;top:0;z-index:5}.workspace{height:1100px;grid-template-columns:1fr;grid-template-rows:minmax(420px,1fr) 8px minmax(420px,1fr)}.resizer{cursor:row-resize}.resizer:after{inset:2px 45%;border-block:0;border-inline:2px dotted #737d8c}.privacy{display:none}.file-name{max-width:150px}}
+.term-help{position:fixed;z-index:8;top:0;right:0;width:min(390px,calc(100vw - 24px));height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr);background:#10151c;border-left:1px solid var(--line2);box-shadow:-15px 0 36px rgba(0,0,0,.4);transform:translateX(0);transition:transform .18s ease}.term-help[hidden]{display:none}.term-help-head{display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid var(--line);background:var(--panel2)}.term-help-head strong{font-size:15px;letter-spacing:.03em}.term-help-head button{margin-left:auto}.term-help-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;padding:10px 12px;border-bottom:1px solid var(--line)}.term-help-tools input,.term-help-tools select{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#0c1117;color:var(--text);padding:7px 9px}.term-help-tools select{grid-column:1/-1}.term-help-body{overflow:auto;padding:16px}.term-name{margin:0 0 3px;color:var(--gold2);font:800 21px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.term-badge{display:inline-block;margin:5px 0 14px;padding:3px 7px;border:1px solid #5a6472;border-radius:999px;color:#c8d2df;font-size:11px}.term-summary{font-size:15px;white-space:pre-line}.term-note{margin:12px 0 0;padding:10px 11px;border-left:3px solid var(--gold);background:#1c1a13;white-space:pre-line}.term-note.danger{border-color:var(--danger);background:#211617}.term-details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.term-details summary{cursor:pointer;color:var(--blue);font-weight:700}.term-details dl{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px 10px;margin:13px 0 0}.term-details dt{color:var(--muted);font-size:12px}.term-details dd{margin:0;overflow-wrap:anywhere}.term-empty{color:var(--muted)}.term-source{margin-top:18px;color:var(--muted);font-size:11px}.help-highlight{color:var(--gold2)}
+@media(max-width:760px){body{overflow:auto}.app{min-height:100vh;height:auto}.topbar{align-items:flex-start}.steps{display:none}.toolbar{position:sticky;top:0;z-index:5}.workspace{height:1100px;grid-template-columns:1fr;grid-template-rows:minmax(420px,1fr) 8px minmax(420px,1fr)}.resizer{cursor:row-resize}.resizer:after{inset:2px 45%;border-block:0;border-inline:2px dotted #737d8c}.privacy{display:none}.file-name{max-width:150px}.term-help{top:auto;bottom:0;width:100%;height:min(72vh,620px);border-left:0;border-top:1px solid var(--line2);box-shadow:0 -15px 36px rgba(0,0,0,.48)}.term-details dl{grid-template-columns:1fr}.term-details dd{margin-bottom:5px}}
 </style>
 </head>
 <body>
@@ -33,6 +34,7 @@ button,input{font:inherit}button{border:1px solid var(--line2);border-radius:7px
     <button id="searchButton" type="button">検索</button>
     <button id="undoButton" type="button" title="Ctrl+Z">元に戻す</button>
     <button id="redoButton" type="button" title="Ctrl+Y">やり直す</button>
+    <button id="termHelpButton" type="button">📖 ID・用語ヘルプ</button>
     <span class="toolbar-spacer"></span>
     <div class="preview-mode" aria-label="プレビューモード"><button id="safeModeButton" class="active" type="button">安全プレビュー</button><button id="dataModeButton" type="button">実データ・読取専用</button></div>
     <label id="baseSelectWrap" class="base-select" hidden><span>元ページ</span><select id="previewBase"><option value="">HOME</option><option value="scenario/">SCENARIO</option><option value="calendar/">CALENDAR</option><option value="library/">LIBRARY</option><option value="pcs/">PC</option><option value="players/">PLAYERS</option><option value="share/">SHARE</option><option value="tools/">TOOLS</option></select></label>
@@ -64,6 +66,11 @@ button,input{font:inherit}button{border:1px solid var(--line2);border-radius:7px
   <footer class="statusbar"><span id="status" class="status">準備完了</span><span id="errors" class="errors"></span><span id="previewDataInfo" class="pane-meta">本体データを使用しません</span><span class="privacy">🔒 隔離プレビュー・外部通信なし</span></footer>
 </div>
 <div id="help" class="help" hidden><div class="help-card"><button id="helpClose" class="help-close" type="button">閉じる</button><h2>使い方</h2><ol><li><strong>HTMLを開く</strong>で編集したいファイルを選びます。元ファイルは変更されません。</li><li>左側でHTML・CSS・JavaScriptを編集します。検索はCtrl+F、元に戻す／やり直すはCtrl+Z／Ctrl+Yです。</li><li>通常は<strong>安全プレビュー</strong>で見た目を確認します。実データで確認するときは<strong>実データ・読取専用</strong>と元ページを選びます。このモードは公開したHTML EDITOR上でのみ使用できます。</li><li>PC表示と390px表示を切り替えて確認します。</li><li><strong>保存用HTMLを出力</strong>を押すと、編集後のHTMLが新しいダウンロードファイルになります。</li></ol><p class="muted">どちらのモードもsandbox付きiframe内で動作し、外部通信を遮断します。実データモードは現在のLocalStorageをコピーして渡し、setItem／removeItem／clearを遮断します。sessionStorageは空、IndexedDBは利用不可です。</p></div></div>
+<aside id="termHelp" class="term-help" aria-label="SAKU+MERU ID・用語ヘルプ" hidden>
+  <div class="term-help-head"><strong>SAKU+MERU ID・用語ヘルプ</strong><button id="termHelpClose" type="button" aria-label="用語ヘルプを閉じる">閉じる</button></div>
+  <div class="term-help-tools"><input id="termSearch" type="search" placeholder="用語を検索" aria-label="用語を検索"><button id="termSearchButton" type="button">検索</button><select id="termList" aria-label="用語一覧"></select></div>
+  <div id="termHelpBody" class="term-help-body" aria-live="polite"></div>
+</aside>
 <script>
 (()=>{
 "use strict";
@@ -90,9 +97,182 @@ const initial=`<!doctype html>
 </body>
 </html>`;
 
+// 正本: SAKUMERU_ID仕様表_2026-09-03.md
+// 説明の追加・修正はこの辞書だけを変更する。
+const TERM_DICTIONARY={
+ "ID":{title:"ID",kind:"基本用語",summary:"同じ名前のものが複数あっても区別できる、変更しない整理番号です。",note:"人間で例えると、名前ではなく会員番号や住民票コードに近いものです。",target:"データ本人または参照先を区別",storage:"さまざまなデータの id / ○○Id 欄",related:"主ID、参照ID、UUID",fallback:"IDがない旧データでは名前などを使う場合があります。",missing:"同名の人・PC・シナリオを安全に区別できません。",risk:"既存IDを再生成すると、データ同士のつながりが切れます。"},
+ "フィールド":{title:"フィールド",kind:"基本用語",summary:"1件のデータにある「記入欄」です。",note:"PLAYERデータなら、名前欄・読み欄・ID欄などがそれぞれフィールドです。",target:"データを構成する各項目",storage:"オブジェクト内の各項目",related:"id、playerId、ownerPlayerId など",fallback:"該当なし",missing:"必要な欄がなければ、その情報を記録・参照できません。",risk:"同じ名前のフィールドでも、置かれたデータによって意味が違う場合があります。"},
+ "主ID":{title:"主ID",kind:"基本用語",summary:"そのデータ本人の整理番号です。",note:"人間で例えると「自分の会員番号」です。同じ種類のデータ内で重複してはいけません。",target:"PLAYER、PC、SCENARIOなどの本人",storage:"各データの id",related:"参照ID",fallback:"原則なし",missing:"本人を確実に特定できません。",risk:"変更すると、そのIDを参照する全データとのつながりが切れます。"},
+ "参照ID":{title:"参照ID",kind:"基本用語",summary:"別のデータの主IDを書き写して、相手を指す番号です。",note:"荷物の伝票に「受取人の会員番号」を書くようなものです。",target:"別データの主ID",storage:"playerId、pcId、ownerPlayerId など",related:"主ID、参照切れ",fallback:"旧データでは名前を使う場合があります。",missing:"どのデータとつながるのか分からなくなります。",risk:"存在しないIDを入れると参照切れになります。"},
+ "複合ID":{title:"複合ID／複合キー",kind:"基本用語",summary:"複数の値を組み合わせて作る目印です。",note:"例: guest:PLAYER番号:PC名 は、未登録PCの仮の名札です。",target:"単独IDがない対象の識別",storage:"guest系ID、動的な保存キーなど",related:"guest系ID、複合キー",fallback:"正式IDがない場合に使われます。",missing:"未登録対象同士を区別しにくくなります。",risk:"組み立て規則を変えると、既存の画像・履歴・関係図が見つからなくなります。"},
+ "fallback":{title:"fallback",kind:"基本用語",summary:"本来のIDがない旧データを、名前など別の手掛かりで探す予備ルールです。",note:"会員番号が分からないので氏名で照合する、という考え方です。",target:"IDがない旧データ",storage:"保存項目ではなく読込時の処理",related:"旧仕様、互換、名前参照",fallback:"この項目自体が予備ルールです。",missing:"古いデータが表示できない場合があります。",risk:"同名の人やPCを誤って統合する可能性があります。"},
+ "旧仕様":{title:"旧仕様",kind:"基本用語",summary:"以前のSAKU+MERUで使われていた保存形式や識別方法です。",note:"現在も過去データを読めるよう、一部の処理が残されています。",target:"過去バージョンのデータ",storage:"旧キー、旧フィールド、名前参照など",related:"互換、fallback",fallback:"現行IDがなければ旧形式を読む場合があります。",missing:"過去データが読めなくなることがあります。",risk:"利用状況を確認せず削除すると、古い記録が消えたように見えます。"},
+ "互換":{title:"互換",kind:"基本用語",summary:"新しい画面でも古い保存データを読めるようにする仕組みです。",note:"新規保存では不要に見えても、既存利用者の記録を守る役目があります。",target:"旧データと現行コードの橋渡し",storage:"旧配列・旧キー・fallback処理",related:"旧仕様、fallback",fallback:"旧形式を順番に確認します。",missing:"過去データの一部が表示されなくなります。",risk:"十分な移行なしに削除しないでください。"},
+ "UUID":{title:"UUID",kind:"基本用語",summary:"非常に重複しにくい、長いランダム文字列です。",note:"新しいPLAYER、PC、予定、記事ブロックなどの番号作成に使われます。通常は覚える必要がありません。",target:"新規データの一意な識別",storage:"各データの主ID",related:"id、主ID",fallback:"生成機能が使えない場合は時刻と乱数の代替形式",missing:"新しいデータを安全に区別できません。",risk:"既存UUIDを作り直すと参照が切れます。"},
+ "参照切れ":{title:"参照切れ",kind:"基本用語",summary:"参照IDが指す相手のデータが見つからない状態です。",note:"住所録に会員番号が書かれているのに、その番号の会員が存在しない状態です。",target:"参照IDと参照先の不一致",storage:"各参照ID欄",related:"参照ID",fallback:"名前fallbackで表示できる場合もありますが、安全とは限りません。",missing:"表示漏れ、誤った所有者判定、リンク先が開かない問題につながります。",risk:"IDだけを部分的に変更すると発生します。"},
+
+ "PLAYER id":{title:"PLAYER id",kind:"主ID",summary:"PLAYER本人を区別する名簿番号です。",target:"PLAYER本人",storage:"trpg39_players の id",related:"playerId、ownerPlayerId",fallback:"IDがない旧データは、一意な正規化済みPLAYER名。",missing:"同名PLAYERを区別できず、所有PCや卓履歴を正しく結べません。",risk:"再生成するとPLAYERを参照する全データが切れます。",aliases:["player.id","PLAYERのid"]},
+ "playerId":{title:"playerId",kind:"参照ID",summary:"卓参加者が「どのPLAYERか」を指す番号です。\n中にはPLAYERの id が入ります。",target:"PLAYERの id",storage:"39x2_album_v2、39x2_events_v1 の participantRows など",related:"PLAYER id、participantIds、ownerPlayerId",fallback:"IDが空の旧行だけ、候補が1人に決まる名前照合。",missing:"同名PLAYERを区別できません。",risk:"名前だけで補完すると別PLAYERへ誤結合する可能性があります。"},
+ "participantIds":{title:"participantIds[]",kind:"互換参照ID",summary:"旧形式の参加者名配列と、同じ順番で並ぶPLAYER番号の配列です。",target:"PLAYERの id",storage:"39x2_album_v2、39x2_events_v1",related:"participants[]、participantRows[].playerId",fallback:"participantRows がなければ旧配列を読みます。",missing:"旧データの参加者とPLAYERを結べません。",risk:"participants と並びがずれると別人を指します。",aliases:["participantIds[]"]},
+ "PC id":{title:"PC id",kind:"主ID",summary:"PC本人を区別する登録証番号です。",target:"PC本人",storage:"trpg39_pcs の id",related:"pcId、pcRefId、ownerPlayerId",fallback:"IDなし旧データだけ、一意な名前と所有者条件。",missing:"同名PCを区別できず、履歴や関係図が分断します。",risk:"再生成するとPC履歴・画像・関係図の参照が切れます。",aliases:["pc.id","PCのid"]},
+ "pcId":{title:"pcId",kind:"参照ID",summary:"卓記録や参加行が「どのPCか」を指す番号です。\n中にはPCの id が入ります。",target:"PCの id",storage:"39x2_album_v2、39x2_events_v1、participantRows、URL focus",related:"PC id、ownerPlayerId、pcRefId",fallback:"IDが空の旧データだけ名前照合。参加者PCでは playerId の所有条件も使います。",missing:"同名PCを安全に区別できません。",risk:"名前だけの補完では別人のPCを選ぶ危険があります。"},
+ "ownerPlayerId":{title:"ownerPlayerId",kind:"参照ID",summary:"PCの持ち主を示す項目です。\n中にはPLAYERの id が入ります。",note:"空欄の場合:\n現在のSAKU+MERUでは原則「自分のPC」です。",target:"持ち主であるPLAYERの id",storage:"trpg39_pcs",related:"PLAYER id、PC id、playerId",fallback:"原則なし。空欄は現行コードで自PC扱い。",missing:"現行仕様では自PCとして扱われます。単純な欠損とは限りません。",risk:"空欄を一律に補完すると、自PCを他人のPCとして扱う危険があります。"},
+ "SCENARIO id":{title:"SCENARIO id",kind:"主ID",summary:"シナリオ本人を区別する蔵書番号です。",target:"シナリオ本人",storage:"39x2_scenarios_v3 の id",related:"scenarioId",fallback:"旧参照では正規化タイトル一致が残ります。",missing:"同名シナリオを区別できず、履歴や卓準備が分断します。",risk:"再生成するとCALENDAR、LIBRARY、KPバインダーとの参照が切れます。",aliases:["scenario.id","SCENARIOのid"]},
+ "scenarioId":{title:"scenarioId",kind:"参照ID",summary:"予定・卓記録などが「どのシナリオか」を指す番号です。",target:"SCENARIOの id",storage:"39x2_events_v1、39x2_album_v2、外部通過記録、KPバインダー索引",related:"SCENARIO id、runId",fallback:"IDなし旧データではタイトル、場合によりシステムも使用。",missing:"同名シナリオを区別できません。卓以外の予定では空欄が正常です。",risk:"タイトルだけで統合すると同名シナリオを誤結合します。"},
+ "CALENDAR event id":{title:"CALENDAR event id",kind:"主ID",summary:"カレンダー上の1日程を区別する予定番号です。",target:"CALENDAR予定1件",storage:"39x2_events_v1 の id",related:"eventId、linkedAlbumId、runId",fallback:"なし。古い対応探索では linkedAlbumId も使用。",missing:"予定を編集・特定できず、LIBRARYとのリンクも切れます。",risk:"複数日卓でも各日のevent idは別です。同じ番号に統合しないでください。",aliases:["event.id","event id"]},
+ "eventId":{title:"eventId",kind:"参照ID",summary:"LIBRARY卓記録が、元のCALENDAR予定を指す番号です。",target:"CALENDAR予定の id",storage:"39x2_album_v2",related:"CALENDAR event id、linkedAlbumId、LIBRARY album id",fallback:"linkedAlbumId から逆方向に照合。",missing:"予定から卓記録へ辿りにくくなります。",risk:"LIBRARY記事自身の id とは別番号です。混同して統合しないでください。"},
+ "LIBRARY album id":{title:"LIBRARY album id",kind:"主ID",summary:"LIBRARYの卓記録1件を区別する番号です。\nコードでは albumId / recordId と呼ばれることもあります。",target:"LIBRARY卓記録1件",storage:"39x2_album_v2 の id",related:"linkedAlbumId、eventId、runId、albumId、recordId",fallback:"予定連携では eventId でも探索。",missing:"卓記録を直接特定できません。",risk:"CALENDARのevent idとは別です。同じ番号へ統合しないでください。",aliases:["album.id","album id"]},
+ "linkedAlbumId":{title:"linkedAlbumId",kind:"参照ID",summary:"CALENDAR予定から、対応するLIBRARY卓記録を指す番号です。",target:"LIBRARY卓記録の id",storage:"39x2_events_v1",related:"LIBRARY album id、eventId",fallback:"卓記録側の eventId でも相互探索。",missing:"予定と卓記録が別物に見えることがあります。",risk:"対応しないalbum idを入れると、別の卓記録へつながります。"},
+ "runId":{title:"runId",kind:"グループ主ID兼参照キー",summary:"同じ「陣・開催」をまとめる番号です。\n\n複数日卓では、1日目・2日目など複数の予定や記録が同じ runId を持ちます。",note:"注意:\n日ごとにrunIdを作り直すと、1つの卓が別々に分裂します。",target:"同じ開催に属する予定・卓記録・記事群",storage:"39x2_events_v1、39x2_album_v2、卓記事ページ保存箱、KP共有",related:"eventId、linkedAlbumId、articleId",fallback:"旧記録では record:album.id を代用する集計があります。",missing:"複数日、参加者、記事ページをひとまとまりにできません。",risk:"旧来の first-... 形式も有効です。形式だけを理由に再生成しないでください。"},
+ "articleId":{title:"articleId",kind:"記事ページの主ID",summary:"1つの陣の中の卓記事ページを区別する番号です。",target:"LIBRARY卓記事ページ",storage:"saku_meru_library_run_article_pages_v1、IndexedDB下書き",related:"pageId、runId、blockId",fallback:"旧 body 形式から読み替え。",missing:"編集対象・下書き・共有対象を特定できません。",risk:"pageId と実質同じ役割です。別IDとして作り直さないでください。"},
+ "pageId":{title:"pageId",kind:"記事ページの主IDの別名",summary:"現在のLIBRARYでは、主に記事ページの id を指す呼び名です。",target:"LIBRARY卓記事ページ",storage:"記事ページの id をコード内で参照",related:"articleId、runId、blockId",fallback:"articleId と同じ対象として扱われます。",missing:"記事ページを直接選択できません。",risk:"articleIdと別体系だと誤解して新しいIDを作らないでください。"},
+ "blockId":{title:"blockId",kind:"子要素の主ID",summary:"記事内の文章・画像・会話・YouTube・BGMブロックを区別する番号です。",target:"記事ページ内の各ブロック",storage:"記事ページの blocks[].id",related:"articleId、pageId",fallback:"旧本文をブロック化するとき、実行時生成される場合があります。",missing:"編集・並び替え・公開範囲の対象が安定しません。",risk:"保存前の旧本文で一時生成されたIDは、まだ固定されていない可能性があります。",aliases:["blocks[].id"]},
+ "pcRefId":{title:"pcRefId",kind:"参照ID／複合互換ID",summary:"会話ログなどで話者PCを指す目印です。",target:"登録PCの id、または未登録guest PC",storage:"LIBRARYの記事ブロック",related:"pcId、guest系ID",fallback:"登録PCはPC id、未登録PCだけguest形式。",missing:"話者のPC画像・名前・関係を正しく結べません。",risk:"guest形式を正式pcIdと同格に自動統合しないでください。"},
+ "guest系ID":{title:"guest系ID",kind:"複合互換ID",summary:"正式登録されていないゲストPCを仮に区別する名札です。",note:"代表形式: guest:PLAYER番号:PC名\nPLAYER番号もない場合は、正規化したPL名が使われます。",target:"未登録の参加PC",storage:"会話ログ、ゲスト画像、関係図など",related:"pcRefId、playerId、pcId",fallback:"playerIdがなければ name:正規化PL名を使用。",missing:"未登録PC同士を区別できません。",risk:"名前変更・同名に弱く、組み立て規則の変更で既存参照が切れます。",aliases:["guest:","guest"]},
+ "variantId":{title:"variantId",kind:"子要素の主ID",summary:"同じPC内の差分・姿を区別する番号です。",target:"PCの variants[] 内の1差分",storage:"trpg39_pcs 内の variants[].id",related:"PC id、pcId",fallback:"なし",missing:"PC差分を選択できません。",risk:"PC本体のpcIdとは別です。混同しないでください。",aliases:["variants[].id"]},
+ "libraryId":{title:"libraryId",kind:"参照ID",summary:"BGMブロックから、BGMライブラリ項目を指す番号です。",target:"BGMライブラリ項目の id",storage:"LIBRARY記事のBGMブロック",related:"BGM項目 id、localAudioId",fallback:"ブロックに複製情報があれば一部表示できる場合があります。",missing:"元のBGM項目を見つけられません。",risk:"BGM項目のidを変更すると参照が切れます。"},
+ "localAudioId":{title:"localAudioId",kind:"IndexedDB参照ID",summary:"ブラウザ内に保存した音声本体を指す番号です。",target:"IndexedDB内のローカル音声",storage:"BGMメタ情報はLocalStorage、音声実体はIndexedDB",related:"libraryId、BGM項目 id",fallback:"なし",missing:"ローカル音声を再生できません。",risk:"BGM項目idとは別です。LocalStorageだけのバックアップでは音声実体を含まない場合があります。"},
+ "draftId":{title:"draftId",kind:"下書きの主ID",summary:"SCENARIO編集の一時保存1件を区別する番号です。",target:"SCENARIOの下書き1件",storage:"39x2_scenario_form_drafts_v2",related:"scenarioId",fallback:"旧単一下書きキーの読込互換があります。",missing:"複数下書きを区別できません。",risk:"シナリオ本体のscenarioIdとは別です。"},
+ "shareId":{title:"shareId",kind:"外部共有主ID／参照ID",summary:"Supabase上の共有データ1件を開く番号です。\n共有URLの ?id= に使われます。",target:"Supabaseの共有データ1件",storage:"各記事・共有設定・固定共有ID、Supabase",related:"chunkIds、caseId、availabilityId",fallback:"なし",missing:"既存の共有URLからデータを開けません。",risk:"再発行すると以前の共有URLが切れます。内部のPLAYER/PC IDとは別です。"},
+ "syncId":{title:"syncId",kind:"名前空間ID・取扱注意",summary:"クラウドバックアップ上の、自分の保存領域を識別する同期コードです。",target:"クラウド同期用の保存領域",storage:"39x2_cloud_sync_id_v1",related:"cloud part ID",fallback:"未作成時のみ新規生成。",missing:"既存クラウドバックアップへ接続できません。",risk:"shareIdとは別です。第三者へ不用意に渡さず、勝手に再発行しないでください。"},
+ "caseId":{title:"caseId",kind:"共有主ID",summary:"1つの日程調整案件を区別する共有番号です。",target:"Supabase上の日程調整案件",storage:"trpg39.scheduleMatch.cases.v2、旧case.v1",related:"shareId、parentId、editToken",fallback:"旧単一保存も互換用に読みます。",missing:"保存済みの日程調整を開けません。",risk:"実体は共有IDです。再発行すると以前のURLとの接続が切れます。"},
+ "parentId":{title:"parentId",kind:"参照ID",summary:"返信が、どのコメントへの返事かを示す番号です。",target:"親コメントの id",storage:"日程調整メッセージ",related:"日程調整メッセージ id、caseId",fallback:"なし",missing:"返信関係を表示できません。",risk:"存在しないコメントIDへ変更すると参照切れになります。"},
+ "availabilityId":{title:"availabilityId",kind:"URL上の参照名",summary:"出欠・空き日共有を開く共有番号です。",target:"Supabaseの共有データ",storage:"trpg39.calendar.availabilityShare.v2、URL",related:"shareId",fallback:"実体はshareIdです。",missing:"既存の空き日共有を開けません。",risk:"独立した別ID体系ではありません。"},
+ "videoId":{title:"videoId",kind:"外部サービスID",summary:"YouTube動画を識別する、YouTube側の番号です。",target:"YouTube動画",storage:"LIBRARYのYouTubeブロック",related:"YouTube URL",fallback:"URLから抽出。",missing:"動画を埋め込み表示できません。",risk:"SAKU+MERUが生成するIDではありません。"},
+ "KP page id":{title:"KPページ id / sceneId",kind:"子要素の主ID／参照ID",summary:"KPバインダー内のページと、共有対象ページを区別する番号です。",target:"KPバインダーのページ",storage:"39x2_scenario_kp_binders_v1 内",related:"sceneId、scenarioId、sessionId",fallback:"sceneIdは多くの場合ページidを指します。",missing:"ページ選択や共有対象を特定できません。",risk:"SCENARIO側だけで変更するとバインダー参照が切れます。",aliases:["sceneId"]},
+ "KP block id":{title:"KPブロック id",kind:"子要素の主ID",summary:"KPバインダー内の編集ブロックを区別する番号です。",target:"KPページ内の各ブロック",storage:"KPバインダーのblocks[].id",related:"KP page id",fallback:"なし",missing:"ブロックの編集・並び替え対象を特定できません。",risk:"LIBRARYの記事blockIdとは別のID空間です。"},
+ "data-kp-reveal-id":{title:"data-kp-reveal-id",kind:"子要素の識別ID",summary:"KP画面で個別開示する部分を区別する番号です。",target:"KP資料内の開示要素",storage:"KPバインダーのHTML要素",related:"KP block id、sessionId",fallback:"なし",missing:"個別開示状態を対応付けにくくなります。",risk:"既存の開示状態と切り離さないでください。",aliases:["kpRevealId"]},
+ "sessionId":{title:"sessionId",kind:"KP共有セッションの主ID",summary:"1回のKP共有セッションを区別する番号です。",target:"KP共有セッション1回",storage:"KPバインダーのshareSessions[]",related:"runId、shareId、sceneId",fallback:"なし",missing:"共有セッションの状態を特定できません。",risk:"開催を表すrunIdとは別です。"},
+ "selectedItemIds":{title:"selectedItemIds[]",kind:"参照ID配列",summary:"KPアウトラインで選択された項目の番号一覧です。",target:"アウトラインitem.id",storage:"KPバインダー",related:"group.id、item.id",fallback:"なし",missing:"どの項目が選択済みか復元できません。",risk:"項目IDを再生成すると選択状態が切れます。",aliases:["selectedItemIds[]"]},
+ "group.id":{title:"group.id / item.id",kind:"子要素の主ID",summary:"KP資料の章や、その中の項目を区別する番号です。",target:"KPアウトラインのグループ・項目",storage:"KPバインダー",related:"selectedItemIds",fallback:"なし",missing:"章・項目を特定できません。",risk:"既存の選択・参照状態との接続が切れます。",aliases:["item.id"]},
+ "BGM item id":{title:"BGM項目の id",kind:"主ID",summary:"BGMライブラリの1項目を区別する番号です。",target:"BGMライブラリ項目",storage:"saku_meru_bgm_library_v1",related:"libraryId、localAudioId",fallback:"なし",missing:"記事のBGMブロックから元項目を特定できません。",risk:"変更するとlibraryIdからの参照が切れます。",aliases:["BGM項目 id"]},
+ "guest PC image key":{title:"ゲストPC画像キー",kind:"複合参照キー",summary:"未登録PCの画像をguest系IDへ結び付ける目印です。",target:"ゲストPCの画像",storage:"saku_meru_guest_pc_images_v1／IndexedDB",related:"guest系ID、pcRefId",fallback:"guest系IDの名前fallbackを引き継ぎます。",missing:"ゲストPC画像を表示できません。",risk:"guest IDの規則変更で既存画像との接続が切れます。"},
+ "PC timeline key":{title:"PCタイムラインのキー",kind:"動的保存キー",summary:"PCごとの補助履歴を分ける保存箱の名前です。",target:"特定PCのタイムライン",storage:"trpg39_pc_timeline_<pcId>",related:"pcId",fallback:"なし",missing:"PCごとの補助履歴を見つけられません。",risk:"pcIdを変更すると別の保存箱になり、過去履歴が見えません。",aliases:["trpg39_pc_timeline_"]},
+ "relation id":{title:"関係追加データの id",kind:"子要素の主ID",summary:"手動追加したPC関係・出来事1件を区別する番号です。",target:"関係図の追加関係または出来事",storage:"trpg39_pc_relation_extras",related:"端点 a / b、pcId、guest系ID",fallback:"端点には実PC IDまたはguest系IDが使われます。",missing:"追加した関係を個別に編集・削除できません。",risk:"端点の識別方式を変えると関係図が切れます。"},
+ "article draft key":{title:"卓記事下書きの key",kind:"複合主キー",summary:"IndexedDBの自動下書きを、開催と記事の組み合わせで特定する番号です。",target:"LIBRARY卓記事の未保存下書き",storage:"IndexedDB。runId + ':' + articleId",related:"runId、articleId",fallback:"なし",missing:"どの記事の下書きか分からず復元できません。",risk:"正常保存を確認する前に削除しないでください。"},
+ "KP binder key":{title:"KPバインダー保存箱のキー",kind:"オブジェクトキー",summary:"シナリオごとのKPバインダーを選ぶためにscenarioIdを使う保存キーです。",target:"特定シナリオのKPバインダー",storage:"39x2_scenario_kp_binders_v1[scenarioId]",related:"scenarioId、KP page id",fallback:"なし",missing:"シナリオからKPバインダーを開けません。",risk:"scenarioIdを片側だけ変更するとバインダーが消えたように見えます。"},
+ "chunkIds":{title:"chunkIds[]",kind:"参照ID配列",summary:"分割したシナリオ共有データ各部のshareId一覧です。",target:"Supabase上の各共有チャンク",storage:"39x2_fixed_scenario_share_chunk_ids_v1、共有マニフェスト",related:"shareId",fallback:"なし",missing:"シナリオ共有一覧の一部を取得できません。",risk:"順序変更・削除・再発行で既存共有が不完全になります。",aliases:["chunkIds[]"]},
+ "message id":{title:"日程調整メッセージの id",kind:"子要素の主ID",summary:"日程調整のコメント1件を区別する番号です。",target:"日程調整コメント",storage:"日程調整共有データ",related:"parentId、editToken、caseId",fallback:"旧コメントには legacy_... 形式があります。",missing:"返信先や編集対象を特定できません。",risk:"UUIDと旧形式が混在していても、形式だけを理由に作り直さないでください。"},
+ "cloud part ID":{title:"cloud part ID",kind:"派生外部ID",summary:"大きな同期データを分割した各部分の番号です。",target:"クラウドバックアップの分割片",storage:"クラウド同期先",related:"syncId、LocalStorageキー、分割番号",fallback:"syncId + キー + 通し番号から生成。",missing:"クラウドバックアップの一部を復元できません。",risk:"形式変更で既存バックアップを読めなくする危険があります。"},
+ "editToken":{title:"editToken",kind:"認可トークン（正式なIDではない）",summary:"日程調整コメントを編集できることを示す、秘密の合言葉です。",target:"コメント編集権限",storage:"日程調整の端末側データ",related:"caseId、コメントid",fallback:"なし",missing:"自分のコメントを編集できなくなります。",risk:"公開用IDとして扱わないでください。漏えいすると権限に影響します。"},
+
+ "editId":{title:"editId",kind:"画面用の一時値（正式なIDではない）",summary:"現在編集中の対象を画面内で覚えるための変数・入力欄名です。",target:"文脈により既存データのidを一時保持",storage:"主に画面上。独立したID体系ではありません。",related:"各データのid",fallback:"文脈による",missing:"編集対象の選択状態が分からなくなります。",risk:"名前だけを見て新しいID種類と判断しないでください。"},
+ "activePageId":{title:"activePageId",kind:"画面用の一時値（正式なIDではない）",summary:"現在表示・編集しているページのidを一時的に覚える変数です。",target:"選択中の記事・ページ",storage:"実行中の画面状態",related:"pageId、articleId",fallback:"なし",missing:"現在ページの選択状態を維持できません。",risk:"保存データの新しい主IDではありません。"},
+ "selectedId":{title:"selectedId",kind:"画面用の一時値（正式なIDではない）",summary:"現在選択している対象のidを一時的に覚える一般的な変数名です。",target:"文脈ごとの選択対象",storage:"実行中の画面状態",related:"各主ID",fallback:"なし",missing:"選択状態を維持できません。",risk:"どの種類のIDかは周辺コードを確認してください。"},
+ "focusId":{title:"focusId",kind:"画面用の一時値（正式なIDではない）",summary:"画面で注目・表示する対象のidを一時的に覚える変数です。",target:"PCまたはPLAYERなど文脈上の対象",storage:"実行中の画面状態やURLから取得",related:"focus、pcId、playerId",fallback:"文脈による",missing:"目的の詳細画面を直接開けません。",risk:"単独ではPLAYER IDかPC IDか決まりません。"},
+ "pendingXId":{title:"pendingXId",kind:"画面用の一時値（正式なIDではない）",summary:"X投稿など、処理待ちの対象idを一時的に覚える変数です。",target:"投稿処理中の既存対象",storage:"実行中の画面状態",related:"LIBRARY album id、articleId",fallback:"文脈による",missing:"処理対象を維持できません。",risk:"独立した保存IDではありません。"},
+ "focus":{title:"focus",kind:"URLパラメータ（正式なIDではない）",summary:"URLで、最初に表示する対象のIDを運ぶ入れ物です。",target:"PCページではpcId、PLAYERSではplayerId",storage:"URL ?focus=...",related:"pcId、playerId、focusId",fallback:"ページにより異なります。",missing:"一覧は開けても対象詳細へ直接移動できません。",risk:"focus自体を新しいID種類と考えないでください。"},
+ "tab":{title:"tab",kind:"表示状態（正式なIDではない）",summary:"どのタブを表示するかを示す名前です。",target:"概要・卓記録・PC・関係図などの画面",storage:"URL ?tab=...、画面状態",related:"focus",fallback:"既定タブ",missing:"既定タブが表示されます。",risk:"データ本人を識別するIDではありません。"},
+ "albumId":{title:"albumId",kind:"別名（新しいIDではない）",summary:"多くの箇所で、LIBRARY卓記録の id を説明的に呼んだ名前です。",target:"LIBRARY卓記録の id",storage:"変数・URL・処理内",related:"LIBRARY album id、recordId、linkedAlbumId",fallback:"eventIdで対応探索する場合があります。",missing:"卓記録を直接指定できません。",risk:"別の主IDを新規生成する欄ではありません。"},
+ "recordId":{title:"recordId",kind:"別名（新しいIDではない）",summary:"多くの箇所で、LIBRARY卓記録の id を「記録ID」と呼んだ名前です。",target:"LIBRARY卓記録の id",storage:"変数・補助マップ・処理内",related:"albumId、LIBRARY album id",fallback:"runIdがない集計では record:album.id の形を使う場合があります。",missing:"卓記録を直接指定できません。",risk:"albumIdと別体系だと誤解しないでください。"},
+ "type":{title:"type",kind:"分類名（正式なIDではない）",summary:"データや共有ページが「何の種類か」を示す値です。",target:"記事・予定・共有内容などの種類",storage:"各データ内、URL ?type=...",related:"shareId",fallback:"文脈により既定種類",missing:"どの描画処理を使うか判断できない場合があります。",risk:"共有対象そのものを識別するIDではありません。"},
+ "participants":{title:"participants[]",kind:"名前配列（正式なIDではない）",summary:"旧形式で参加者名を並べた配列です。",target:"参加者の表示名",storage:"39x2_album_v2、39x2_events_v1",related:"participantIds、participantRows",fallback:"participantRowsがない旧データで使用。",missing:"旧データの参加者名を表示できません。",risk:"名前なので、同名PLAYERを安全に区別できません。",aliases:["participants[]"]},
+ "plName":{title:"plName",kind:"表示文字列（正式なIDではない）",summary:"PLAYERの表示名を保存する欄です。",target:"参加者の名前",storage:"participantRows[]",related:"playerId",fallback:"playerIdがない旧行では照合手掛かり。",missing:"参加者名を表示できません。",risk:"同名PLAYERの区別には使えません。playerIdを優先してください。"},
+ "pcName":{title:"pcName",kind:"表示文字列（正式なIDではない）",summary:"PCの表示名を保存する欄です。",target:"参加PCの名前",storage:"卓記録・予定・participantRowsなど",related:"pcId",fallback:"pcIdがない旧行では照合手掛かり。",missing:"PC名を表示できません。",risk:"同名PCの区別には使えません。pcIdを優先してください。"},
+ "scenarioTitle":{title:"scenarioTitle",kind:"表示文字列（正式なIDではない）",summary:"シナリオ名を表示・互換照合するための文字列です。",target:"シナリオのタイトル",storage:"予定・卓記録など",related:"scenarioId",fallback:"scenarioIdがない旧データの照合に使う場合があります。",missing:"シナリオ名を表示できず、旧参照も難しくなります。",risk:"同名シナリオを区別できません。scenarioIdを優先してください。"}
+};
+
+const TERM_ALIAS_INDEX=new Map();
+Object.entries(TERM_DICTIONARY).forEach(([key,item])=>{
+ TERM_ALIAS_INDEX.set(key.toLowerCase(),key);
+ (item.aliases||[]).forEach(alias=>TERM_ALIAS_INDEX.set(String(alias).toLowerCase(),key));
+});
+function escapeHelp(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function termKeyFromText(value){
+ const clean=String(value||"").trim().replace(/^[\s'"\`(<{]+|[\s'"\`)>};,]+$/g,"");
+ if(!clean)return "";
+ const direct=TERM_ALIAS_INDEX.get(clean.toLowerCase());
+ if(direct)return direct;
+ if(/^guest:/i.test(clean))return "guest系ID";
+ return "";
+}
+function contextualBareId(position){
+ const around=editor.value.slice(Math.max(0,position-100),Math.min(editor.value.length,position+100)).toLowerCase();
+ if(/ownerplayer|player(?:s|data|master)|trpg39_players/.test(around))return "PLAYER id";
+ if(/scenario|39x2_scenarios/.test(around))return "SCENARIO id";
+ if(/event|calendar|39x2_events/.test(around))return "CALENDAR event id";
+ if(/album|record|39x2_album/.test(around))return "LIBRARY album id";
+ if(/\bpc\b|pcs|character|trpg39_pcs/.test(around))return "PC id";
+ return "ID";
+}
+function termAtEditorSelection(){
+ const start=editor.selectionStart,end=editor.selectionEnd,value=editor.value;
+ if(end>start){
+   const selected=value.slice(start,end);
+   const key=termKeyFromText(selected);
+   if(key)return key;
+ }
+ let a=start,b=start;
+ const tokenChar=/[A-Za-z0-9_:$.-]/;
+ while(a>0&&tokenChar.test(value[a-1]))a--;
+ while(b<value.length&&tokenChar.test(value[b]))b++;
+ let token=value.slice(a,b);
+ let key=termKeyFromText(token);
+ if(!key&&token.includes("."))key=termKeyFromText(token.split(".").at(-1));
+ if(!key&&token==="id")key=contextualBareId(start);
+ return key;
+}
+function openTermHelp(key,focusSearch=false){
+ $("termHelp").hidden=false;
+ renderTermHelp(key||$("termList").value||"ID");
+ if(focusSearch){$("termSearch").focus();$("termSearch").select()}
+}
+function closeTermHelp(){$("termHelp").hidden=true;editor.focus()}
+function renderTermHelp(key){
+ const item=TERM_DICTIONARY[key];
+ if(!item)return;
+ $("termList").value=key;
+ const note=item.note?`<div class="term-note">${escapeHelp(item.note)}</div>`:"";
+ const risk=item.risk?`<div class="term-note danger"><strong>変更時の注意</strong><br>${escapeHelp(item.risk)}</div>`:"";
+ $("termHelpBody").innerHTML=`
+   <h2 class="term-name">${escapeHelp(item.title||key)}</h2>
+   <span class="term-badge">${escapeHelp(item.kind||"用語")}</span>
+   <div class="term-summary">${escapeHelp(item.summary||"")}</div>
+   ${note}
+   <details class="term-details">
+     <summary>詳しく見る</summary>
+     <dl>
+       <dt>種類</dt><dd>${escapeHelp(item.kind||"—")}</dd>
+       <dt>何を指すか</dt><dd>${escapeHelp(item.target||"—")}</dd>
+       <dt>主な保存先</dt><dd>${escapeHelp(item.storage||"—")}</dd>
+       <dt>関連するID</dt><dd>${escapeHelp(item.related||"—")}</dd>
+       <dt>fallback</dt><dd>${escapeHelp(item.fallback||"なし")}</dd>
+       <dt>欠けた場合</dt><dd>${escapeHelp(item.missing||"—")}</dd>
+     </dl>
+     ${risk}
+   </details>
+   <div class="term-source">説明の正本: SAKUMERU_ID仕様表_2026-09-03.md<br>このヘルプはコードと保存データを変更しません。</div>`;
+}
+function detectAndShowTerm(){
+ const key=termAtEditorSelection();
+ if(key)openTermHelp(key);
+}
+function searchTerm(){
+ const query=$("termSearch").value.trim().toLowerCase();
+ if(!query){renderTermHelp($("termList").value||"ID");return}
+ const hit=Object.entries(TERM_DICTIONARY).find(([key,item])=>{
+   const hay=[key,item.title,item.kind,item.summary,...(item.aliases||[])].join("\n").toLowerCase();
+   return hay.includes(query);
+ });
+ if(hit){renderTermHelp(hit[0]);setStatus(`用語「${hit[1].title}」を表示`,"ok")}
+ else setStatus("該当する用語が見つかりません","error");
+}
+function initializeTermHelp(){
+ const groups={"中核ID":[],"補助ID":[],"正式なIDではない名前":[],"初心者向け用語":[]};
+ const basics=new Set(["ID","フィールド","主ID","参照ID","複合ID","fallback","旧仕様","互換","UUID","参照切れ"]);
+ const notIds=new Set(["editId","activePageId","selectedId","focusId","pendingXId","focus","tab","albumId","recordId","type","participants","plName","pcName","scenarioTitle","editToken"]);
+ Object.entries(TERM_DICTIONARY).forEach(([key,item])=>{
+   const group=basics.has(key)?"初心者向け用語":notIds.has(key)?"正式なIDではない名前":(["PLAYER id","playerId","participantIds","PC id","pcId","ownerPlayerId","SCENARIO id","scenarioId","CALENDAR event id","eventId","LIBRARY album id","linkedAlbumId","runId","articleId","pageId","blockId"].includes(key)?"中核ID":"補助ID");
+   groups[group].push([key,item.title]);
+ });
+ $("termList").innerHTML=Object.entries(groups).map(([label,items])=>`<optgroup label="${escapeHelp(label)}">${items.map(([key,title])=>`<option value="${escapeHelp(key)}">${escapeHelp(title)}</option>`).join("")}</optgroup>`).join("");
+ $("termList").value="ID";
+ renderTermHelp("ID");
+}
+
 function setStatus(text,type=""){$("status").textContent=text;$("status").className="status "+type}
 function updateLines(){const n=editor.value.split("\n").length;lines.textContent=Array.from({length:n},(_,i)=>i+1).join("\n");lines.scrollTop=editor.scrollTop}
-function updateCursor(){const before=editor.value.slice(0,editor.selectionStart),parts=before.split("\n");$("cursorInfo").textContent=`${parts.length}行 ${parts.at(-1).length+1}列`}
+function updateCursor(){const before=editor.value.slice(0,editor.selectionStart),parts=before.split("\n");$("cursorInfo").textContent=`${parts.length}行 ${parts.at(-1).length+1}列`;detectAndShowTerm()}
 function validateSource(source){
  const found=[];
  const doc=new DOMParser().parseFromString(source,"text/html");
@@ -146,13 +326,18 @@ function showSearchCount(){$("searchCount").textContent=searchMatches.length?`${
 function jumpSearch(step){if(!searchMatches.length)findMatches();if(!searchMatches.length)return;searchIndex=(searchIndex+step+searchMatches.length)%searchMatches.length;const start=searchMatches[searchIndex],len=$("searchInput").value.length;editor.focus();editor.setSelectionRange(start,start+len);const line=editor.value.slice(0,start).split("\n").length;editor.scrollTop=Math.max(0,(line-4)*20.5);lines.scrollTop=editor.scrollTop;showSearchCount();updateCursor()}
 function saveFile(){const blob=new Blob([editor.value],{type:"text/html;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");const base=currentFileName.replace(/\.(html?|HTML?)$/,'')||"page";a.href=url;a.download=`${base}-edited.html`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);dirty=false;setStatus(`${a.download} を出力しました`,"ok")}
 
-editor.value=initial;updateLines();renderPreview();
+initializeTermHelp();editor.value=initial;updateLines();renderPreview();
 editor.addEventListener("input",markEdited);editor.addEventListener("scroll",()=>{lines.scrollTop=editor.scrollTop});editor.addEventListener("click",updateCursor);editor.addEventListener("keyup",updateCursor);
 editor.addEventListener("keydown",e=>{if(e.key==="Tab"){e.preventDefault();const a=editor.selectionStart,b=editor.selectionEnd;editor.setRangeText("  ",a,b,"end");markEdited()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="f"){e.preventDefault();openSearch()}});
 $("openButton").onclick=()=>$("fileInput").click();
 $("fileInput").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const text=await file.text();editor.value=text;currentFileName=file.name;$("fileName").textContent=file.name;dirty=false;updateLines();updateCursor();renderPreview();setStatus(`${file.name} を開きました`,"ok")}catch(error){setStatus("ファイルを開けませんでした","error");$("errors").textContent=error.message||String(error)}finally{e.target.value=""}};
 $("saveButton").onclick=saveFile;$("updateButton").onclick=renderPreview;$("autoUpdate").onchange=()=>{if($("autoUpdate").checked)renderPreview();else setStatus("自動更新OFF")};
 $("undoButton").onclick=()=>{editor.focus();document.execCommand("undo");markEdited()};$("redoButton").onclick=()=>{editor.focus();document.execCommand("redo");markEdited()};
+$("termHelpButton").onclick=()=>openTermHelp(termAtEditorSelection()||$("termList").value||"ID",true);
+$("termHelpClose").onclick=closeTermHelp;
+$("termList").onchange=()=>renderTermHelp($("termList").value);
+$("termSearchButton").onclick=searchTerm;
+$("termSearch").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();searchTerm()}if(e.key==="Escape")closeTermHelp()};
 $("desktopButton").onclick=()=>setDevice("desktop");$("mobileButton").onclick=()=>setDevice("mobile");
 $("safeModeButton").onclick=()=>setPreviewMode("safe");$("dataModeButton").onclick=()=>setPreviewMode("data");$("previewBase").onchange=renderPreview;
 $("searchButton").onclick=openSearch;$("searchInput").oninput=findMatches;$("searchInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();jumpSearch(e.shiftKey?-1:1)}if(e.key==="Escape")$("searchBar").hidden=true};$("searchPrev").onclick=()=>jumpSearch(-1);$("searchNext").onclick=()=>jumpSearch(1);$("searchClose").onclick=()=>{$("searchBar").hidden=true;editor.focus()};
