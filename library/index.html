@@ -260,6 +260,8 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-article-page-actions button{width:auto;font-size:12px}
 .lib-article-editor{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
 .lib-article-editor[hidden]{display:none}
+.article-save-status{margin:10px 0;padding:10px 12px;border-radius:9px;border:1px solid var(--line);font-size:13px}.article-save-status[hidden]{display:none}.article-save-status.error{border-color:#e05b67;background:rgba(224,91,103,.12);color:#ffd7da}.article-save-status.saving{border-color:var(--accent);background:rgba(210,164,72,.09)}
+.article-draft-notice{margin:10px 0;padding:12px;border:1px solid var(--accent);border-radius:9px;background:rgba(210,164,72,.1)}.article-draft-notice[hidden]{display:none}.article-draft-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.article-draft-actions button{width:auto}
 .lib-article-editor textarea{min-height:180px}
 .lib-article-share-row{display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px;align-items:end;margin-top:10px}
 .lib-article-share-note{font-size:11px;color:var(--muted);margin-top:5px}
@@ -1465,9 +1467,17 @@ const RUN_ARTICLE_PAGES_KEY="saku_meru_library_run_article_pages_v1";
 function loadRunArticlePages(){
  try{const v=JSON.parse(localStorage.getItem(RUN_ARTICLE_PAGES_KEY)||"{}");return v&&typeof v==="object"?v:{}}catch{return {}}
 }
-function saveRunArticlePages(v){try{localStorage.setItem(RUN_ARTICLE_PAGES_KEY,JSON.stringify(v))}catch{}}
+function saveRunArticlePages(v){
+ const raw=JSON.stringify(v);
+ localStorage.setItem(RUN_ARTICLE_PAGES_KEY,raw);
+ const stored=localStorage.getItem(RUN_ARTICLE_PAGES_KEY);
+ if(stored!==raw)throw new Error("卓記事の保存後検証に失敗しました。");
+ const verified=JSON.parse(stored||"{}");
+ if(!verified||typeof verified!=="object")throw new Error("卓記事を保存領域から再取得できませんでした。");
+ return verified;
+}
 function articlePagesForRun(runId){const all=loadRunArticlePages();return Array.isArray(all[runId])?all[runId]:[]}
-function saveArticlePagesForRun(runId,pages){const all=loadRunArticlePages();if(pages?.length)all[runId]=pages;else delete all[runId];saveRunArticlePages(all)}
+function saveArticlePagesForRun(runId,pages){const all=loadRunArticlePages();if(pages?.length)all[runId]=pages;else delete all[runId];const verified=saveRunArticlePages(all);return Array.isArray(verified[runId])?verified[runId]:[]}
 
 let _runCoverPositionsCache=null;
 function loadRunCoverPositions(){
@@ -2205,8 +2215,8 @@ function openLibraryFromCalendarEvent(){
    const runId=String(rec.runId||"");
    if(!runId)return edit(rec.id);
    focusedScenarioKey=groupKey(rec);focusedRunId=runId;libraryView="scenario";render();
-   requestAnimationFrame(()=>{
-     openArticleEditor(runId);
+   requestAnimationFrame(async()=>{
+     await openArticleEditor(runId);
      const ed=document.getElementById(`articleEditor-${runId}`);if(!ed)return;
      const title=ed.querySelector('.articleTitle');if(title&&!title.value.trim())title.value=`${reportDate} 卓報告`;
    });
@@ -2945,6 +2955,8 @@ function articlePagesHtml(r){
    </details>`).join(""):'<div class="small muted">卓記事ページはまだありません。</div>'}</div>
    <div class="lib-article-editor" id="articleEditor-${esc(r.id)}" hidden>
      <input type="hidden" class="articleEditId">
+     <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
+     <div class="article-save-status" role="status" aria-live="assertive" hidden></div>
      <label>ページタイトル</label><input class="articleTitle" placeholder="例：セッション感想／KPメモ／あとがき">
      <div class="article-block-toolbar"><button type="button" data-block-add-text="${esc(r.id)}">＋ 文章</button><button type="button" data-block-add-image="${esc(r.id)}">＋ 画像</button><button type="button" data-block-add-conversation="${esc(r.id)}">＋ 会話ログ</button><button type="button" data-block-add-youtube="${esc(r.id)}">＋ YouTube</button><button type="button" data-block-add-bgm="${esc(r.id)}">＋ BGM</button></div><div class="small muted article-block-help">同じ種類のブロックを何個でも追加できます。文章の一部を選んで「🙈 Xでは伏せる」を押すと、共有URLでは全文を見せたままX投稿文から除外できます。</div>
      <div class="article-blocks"></div>
@@ -2980,6 +2992,29 @@ function editorBlocks(ed){
    return true;
  });
 }
+const ARTICLE_DRAFT_DB="sakumeru-library-article-drafts",ARTICLE_DRAFT_STORE="drafts";
+const articleDirtyEditors=new Set(),articleDraftTimers=new Map();
+function articleDraftDb(){
+ return new Promise((resolve,reject)=>{const req=indexedDB.open(ARTICLE_DRAFT_DB,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(ARTICLE_DRAFT_STORE))db.createObjectStore(ARTICLE_DRAFT_STORE,{keyPath:"key"})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error("下書き保存領域を開けませんでした。"))});
+}
+async function articleDraftGet(key){const db=await articleDraftDb();try{return await new Promise((resolve,reject)=>{const req=db.transaction(ARTICLE_DRAFT_STORE,"readonly").objectStore(ARTICLE_DRAFT_STORE).get(key);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)})}finally{db.close()}}
+async function articleDraftLatestForRun(runId,excludedIds=new Set()){const db=await articleDraftDb();try{const rows=await new Promise((resolve,reject)=>{const req=db.transaction(ARTICLE_DRAFT_STORE,"readonly").objectStore(ARTICLE_DRAFT_STORE).getAll();req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);req.onerror=()=>reject(req.error)});return rows.filter(x=>String(x.runId)===String(runId)&&!excludedIds.has(String(x.articleId))).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||"")))[0]||null}finally{db.close()}}
+async function articleDraftPut(value){const db=await articleDraftDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(ARTICLE_DRAFT_STORE,"readwrite");tx.objectStore(ARTICLE_DRAFT_STORE).put(value);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}return true}
+async function articleDraftDelete(key){const db=await articleDraftDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(ARTICLE_DRAFT_STORE,"readwrite");tx.objectStore(ARTICLE_DRAFT_STORE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}return true}
+function articleDraftKey(ed){return `${ed.dataset.runId||""}:${ed.dataset.articleDraftId||""}`}
+function articleEditorSnapshot(ed){return {key:articleDraftKey(ed),runId:ed.dataset.runId||"",articleId:ed.dataset.articleDraftId||"",title:ed.querySelector('.articleTitle')?.value||"",blocks:editorBlocks(ed),shareEnabled:ed.querySelector('.articleShareEnabled')?.value==="1",passwordHint:ed.querySelector('.articlePasswordHint')?.value||"",updatedAt:new Date().toISOString()}}
+function setArticleSaveStatus(ed,message,type=""){
+ const box=ed?.querySelector('.article-save-status');if(!box)return;box.textContent=message||"";box.className=`article-save-status${type?` ${type}`:""}`;box.hidden=!message;
+}
+async function flushArticleDraft(ed){
+ const key=articleDraftKey(ed);if(!key||!articleDirtyEditors.has(key))return false;
+ try{await articleDraftPut(articleEditorSnapshot(ed));return true}catch(err){console.error("卓記事の自動下書きを保存できませんでした",err);setArticleSaveStatus(ed,"自動下書きを保存できませんでした。入力内容は画面に残っています。ページを閉じず、本文をコピーして退避してください。","error");return false}
+}
+function scheduleArticleDraft(ed){const key=articleDraftKey(ed);if(!key)return;clearTimeout(articleDraftTimers.get(key));articleDraftTimers.set(key,setTimeout(()=>{articleDraftTimers.delete(key);flushArticleDraft(ed)},700))}
+function articleEditorChanged(ed){const key=articleDraftKey(ed);if(!key)return;articleDirtyEditors.add(key);scheduleArticleDraft(ed)}
+function clearArticleDirty(ed){const key=articleDraftKey(ed);articleDirtyEditors.delete(key);clearTimeout(articleDraftTimers.get(key));articleDraftTimers.delete(key)}
+window.addEventListener("beforeunload",e=>{if(!articleDirtyEditors.size)return;e.preventDefault();e.returnValue=""});
+
 const articleRichEditors=new Map();
 function destroyArticleRichEditors(ed){
  [...ed.querySelectorAll('[data-rich-block-id]')].forEach(m=>{const id=String(m.dataset.richBlockId||"");articleRichEditors.get(id)?.destroy();articleRichEditors.delete(id)});
@@ -2988,7 +3023,7 @@ function initArticleRichEditors(ed,blocks){
  (blocks||[]).filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-  articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true}));
+  articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
@@ -3008,9 +3043,10 @@ function addEditorBlock(ed,type){
   );
   blocks[blocks.length-1].visibility="private";
   renderArticleEditorBlocks(ed,blocks);
+  articleEditorChanged(ed);
 }
 function moveEditorBlock(ed,id,delta){
- const blocks=editorBlocks(ed),i=blocks.findIndex(b=>b.id===id),j=i+delta;if(i<0||j<0||j>=blocks.length)return;[blocks[i],blocks[j]]=[blocks[j],blocks[i]];renderArticleEditorBlocks(ed,blocks);
+ const blocks=editorBlocks(ed),i=blocks.findIndex(b=>b.id===id),j=i+delta;if(i<0||j<0||j>=blocks.length)return;[blocks[i],blocks[j]]=[blocks[j],blocks[i]];renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
 }
 async function uploadArticleImageFile(file){
  if(!file)throw new Error("画像ファイルを選んでください。");
@@ -3340,7 +3376,7 @@ function renderConversationImport(row,rows){
 function bindArticleEditorBlockControls(ed){
  ed.querySelectorAll('[data-block-up]').forEach(b=>b.onclick=()=>moveEditorBlock(ed,b.dataset.blockUp,-1));
  ed.querySelectorAll('[data-block-down]').forEach(b=>b.onclick=()=>moveEditorBlock(ed,b.dataset.blockDown,1));
- ed.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{const blocks=editorBlocks(ed).filter(x=>x.id!==b.dataset.blockRemove);renderArticleEditorBlocks(ed,blocks)});
+ ed.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{const blocks=editorBlocks(ed).filter(x=>x.id!==b.dataset.blockRemove);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
 
  ed.querySelectorAll('[data-conversation-import-open]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=false});
  ed.querySelectorAll('[data-conversation-import-close]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=true});
@@ -3364,9 +3400,23 @@ function bindArticleEditorBlockControls(ed){
  ed.querySelectorAll('.articleBlockImageUrl').forEach(inp=>inp.oninput=()=>{const row=inp.closest('.article-block'),pv=row.querySelector('.article-block-preview'),note=row.querySelector('.article-image-placeholder-note'),u=inp.value.trim();pv.hidden=!u;if(note)note.hidden=!!u;pv.innerHTML=u?`<img src="${esc(u)}" alt="">`:""});
  ed.querySelectorAll('.articleBlockYoutubeUrl').forEach(inp=>{const row=inp.closest('.article-block');inp.oninput=()=>updateYoutubeEditorPreview(row);updateYoutubeEditorPreview(row)});
 }
-function openArticleEditor(runId,pageId=""){
+function restoreArticleDraft(ed,draft){
+ ed.querySelector('.articleTitle').value=draft.title||"";
+ ed.querySelector('.articleShareEnabled').value=draft.shareEnabled?"1":"0";
+ const hint=ed.querySelector('.articlePasswordHint');if(hint)hint.value=draft.passwordHint||"";
+ renderArticleEditorBlocks(ed,Array.isArray(draft.blocks)?draft.blocks:[]);
+ ed.querySelector('.article-draft-notice').hidden=true;
+ articleDirtyEditors.add(articleDraftKey(ed));
+ setArticleSaveStatus(ed,"下書きを復元しました。まだ正式保存されていません。","saving");
+}
+async function openArticleEditor(runId,pageId=""){
  const ed=document.getElementById(`articleEditor-${runId}`);if(!ed)return;
  const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId)||null;
+ const previousKey=articleDraftKey(ed);if(previousKey){articleDirtyEditors.delete(previousKey);clearTimeout(articleDraftTimers.get(previousKey));articleDraftTimers.delete(previousKey)}
+ let draft=null,draftReadError=null;
+ try{draft=page?await articleDraftGet(`${runId}:${page.id}`):await articleDraftLatestForRun(runId,new Set(pages.map(p=>String(p.id))))}catch(err){draftReadError=err;console.error("卓記事の下書きを確認できませんでした",err)}
+ const articleId=page?.id||draft?.articleId||TRPG39.uuid(),draftKey=`${runId}:${articleId}`;
+ ed.dataset.runId=runId;ed.dataset.articleDraftId=articleId;
  ed.querySelector('.articleEditId').value=page?.id||"";
  ed.querySelector('.articleTitle').value=page?.title||"";
  ed.querySelector('.articleShareEnabled').value=page?.shareEnabled?"1":"0";
@@ -3374,6 +3424,15 @@ function openArticleEditor(runId,pageId=""){
  ed.querySelector('.articlePassword').placeholder=page?.passwordProtected?"設定済み（変更する場合のみ入力）":"設定する場合のみ入力";
  const hintInput=ed.querySelector('.articlePasswordHint');if(hintInput)hintInput.value=page?.passwordHint||"";
  const blocks=page?normalizedArticleBlocks(page):[{id:TRPG39.uuid(),type:"text",text:""}];renderArticleEditorBlocks(ed,blocks);
+ clearArticleDirty(ed);setArticleSaveStatus(ed,"");
+ if(!ed.dataset.draftInputBound){ed.addEventListener("input",()=>articleEditorChanged(ed));ed.addEventListener("change",()=>articleEditorChanged(ed));ed.dataset.draftInputBound="1"}
+ const notice=ed.querySelector('.article-draft-notice');notice.hidden=true;
+ if(draft){
+   notice.hidden=false;notice.querySelector('.article-draft-time').textContent=draft.updatedAt?`更新：${new Date(draft.updatedAt).toLocaleString("ja-JP")}`:"";
+   notice.querySelector('[data-article-draft-restore]').onclick=()=>restoreArticleDraft(ed,draft);
+   notice.querySelector('[data-article-draft-discard]').onclick=async()=>{try{await articleDraftDelete(draftKey);notice.hidden=true}catch(err){console.error(err);setArticleSaveStatus(ed,"下書きを破棄できませんでした。","error")}};
+ }
+ if(draftReadError)setArticleSaveStatus(ed,"下書き保存領域を確認できませんでした。入力内容は画面に残りますが、ページを閉じないでください。","error");
  ed.hidden=false;ed.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 async function sha256Text(text){
@@ -3384,12 +3443,25 @@ async function saveArticlePage(runId){
  const title=ed.querySelector('.articleTitle').value.trim(),blocks=editorBlocks(ed);
  if(!title&&!blocks.length)return alert("ページタイトルか記事ブロックを入力してください。");
  const badYoutube=blocks.find(b=>b.type==="youtube"&&!youtubeVideoId(b.url));if(badYoutube)return alert("正しく読み込めないYouTube URLがあります。");
- const pages=articlePagesForRun(runId).slice(),id=ed.querySelector('.articleEditId').value||TRPG39.uuid(),now=new Date().toISOString().slice(0,16).replace('T',' ');
- const i=pages.findIndex(p=>p.id===id),old=i>=0?pages[i]:{},shareEnabled=ed.querySelector('.articleShareEnabled').value==="1",password=ed.querySelector('.articlePassword').value,passwordHint=ed.querySelector('.articlePasswordHint')?.value.trim()||"";
- let passwordHash=old.passwordHash||"",passwordProtected=!!old.passwordProtected;if(password){passwordHash=await sha256Text(password);passwordProtected=true}if(!shareEnabled){passwordHash="";passwordProtected=false}
- const legacyBody=blocks.filter(b=>b.type==="text").map(b=>b.text).join("\n\n");
- const page={...old,id,title:title||"無題",body:legacyBody,blocks,shareEnabled,passwordProtected,passwordHash,passwordHint,createdAt:i>=0?(old.createdAt||now):now,updatedAt:now};
- if(i>=0)pages[i]=page;else pages.push(page);saveArticlePagesForRun(runId,pages);render();
+ const saveButton=ed.querySelector('[data-article-save]');if(saveButton)saveButton.disabled=true;setArticleSaveStatus(ed,"保存しています…","saving");
+ try{
+   const pages=articlePagesForRun(runId).slice(),id=ed.querySelector('.articleEditId').value||ed.dataset.articleDraftId||TRPG39.uuid(),now=new Date().toISOString().slice(0,16).replace('T',' ');
+   const i=pages.findIndex(p=>p.id===id),old=i>=0?pages[i]:{},shareEnabled=ed.querySelector('.articleShareEnabled').value==="1",password=ed.querySelector('.articlePassword').value,passwordHint=ed.querySelector('.articlePasswordHint')?.value.trim()||"";
+   let passwordHash=old.passwordHash||"",passwordProtected=!!old.passwordProtected;if(password){passwordHash=await sha256Text(password);passwordProtected=true}if(!shareEnabled){passwordHash="";passwordProtected=false}
+   const legacyBody=blocks.filter(b=>b.type==="text").map(b=>b.text).join("\n\n");
+   const page={...old,id,title:title||"無題",body:legacyBody,blocks,shareEnabled,passwordProtected,passwordHash,passwordHint,createdAt:i>=0?(old.createdAt||now):now,updatedAt:now};
+   if(i>=0)pages[i]=page;else pages.push(page);
+   const verifiedPages=saveArticlePagesForRun(runId,pages),verified=verifiedPages.find(p=>String(p.id)===String(id));
+   const expectedText=blocks.filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
+   const actualText=(verified?.blocks||[]).filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
+   if(!verified||verified.blocks?.length!==blocks.length||JSON.stringify(actualText)!==JSON.stringify(expectedText))throw new Error("卓記事の保存内容を再確認できませんでした。編集内容は画面に残っています。");
+   try{await articleDraftDelete(articleDraftKey(ed))}catch(err){console.warn("正常保存後の下書き削除に失敗しました",err)}
+   clearArticleDirty(ed);setArticleSaveStatus(ed,"");render();
+ }catch(err){
+   console.error("卓記事を保存できませんでした",err);articleDirtyEditors.add(articleDraftKey(ed));const draftSaved=await flushArticleDraft(ed);
+   const quota=err?.name==="QuotaExceededError"||/quota|容量/i.test(String(err?.message||""));
+   setArticleSaveStatus(ed,`保存できませんでした。${quota?"ブラウザの保存容量が不足しています。":""}入力内容は画面に残っています。${draftSaved?"自動下書きは端末内に保持されています。":"自動下書きも保存できなかったため、"}ページを閉じず、本文をコピーして退避してください。`,"error");
+ }finally{if(saveButton&&document.contains(saveButton))saveButton.disabled=false}
 }
 function deleteArticlePage(runId,pageId){if(!confirm("この卓記事ページを削除しますか？"))return;saveArticlePagesForRun(runId,articlePagesForRun(runId).filter(p=>p.id!==pageId));render()}
 function articleContextForRun(runId){const groups=groupData(data),g=groups.find(x=>(x.runs||[]).some(r=>r.id===runId)),r=g?.runs?.find(x=>x.id===runId);return {group:g,run:r}}
@@ -4607,6 +4679,14 @@ function recordHasSelfPc(rec,pc){
    return !!name&&normDirectoryName(r?.pcName)===name;
  });
 }
+function recordHasExactPcId(rec,pcId){
+ const id=String(pcId||"").trim();
+ if(!id)return false;
+ if(String(rec?.pcId||"").trim()===id)return true;
+ const selfRows=[...(Array.isArray(rec?.selfPcRows)?rec.selfPcRows:[]),...(Array.isArray(rec?.selfPcs)?rec.selfPcs:[])];
+ if(selfRows.some(row=>String(row?.pcId||"").trim()===id))return true;
+ return rowsFromRecord(rec).some(row=>String(row?.pcId||"").trim()===id);
+}
 function playerNameSet(player){
  return new Set([player?.name,player?.publicName,player?.socialName]
    .map(normDirectoryName).filter(Boolean));
@@ -5569,7 +5649,7 @@ function render(){
  let xs=data.filter(x=>
    (!role||x.role===role) &&
    (!filterPlayer||recordHasPlayer(x,filterPlayer)) &&
-   (!filterPc||recordHasSelfPc(x,filterPc)) &&
+   (!filterPc||(pcId?recordHasExactPcId(x,pcId):recordHasSelfPc(x,filterPc))) &&
    (!term||[x.title,x.system,x.pcName,(x.participants||[]).join(" ")].join(" ").toLowerCase().includes(term))
  );
  const archiveMode=q("archiveFilter")?.value||"active";
