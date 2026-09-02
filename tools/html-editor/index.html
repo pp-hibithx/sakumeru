@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAKU+MERU HTML EDITOR</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0e12;--panel:#11151b;--panel2:#171c24;--line:#343b47;--line2:#4a5362;--text:#f4f0e7;--muted:#aeb7c4;--gold:#d7b65c;--gold2:#f0d889;--blue:#7ec8ff;--danger:#ff9a9a;--ok:#83d6a3;--shadow:0 18px 45px rgba(0,0,0,.32)}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--text);font:14px/1.55 system-ui,-apple-system,"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;overflow:hidden}
+button,input{font:inherit}button{border:1px solid var(--line2);border-radius:7px;background:#202631;color:var(--text);padding:8px 12px;cursor:pointer;min-height:38px}button:hover{border-color:var(--gold);background:#282f3b}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}.primary{background:var(--gold);border-color:var(--gold);color:#18140a;font-weight:800}.primary:hover{background:var(--gold2);color:#18140a}.active{border-color:var(--gold2);box-shadow:inset 0 0 0 1px var(--gold2);background:#302b1f}.icon-button{min-width:38px;padding-inline:9px}.muted{color:var(--muted)}
+.app{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto}.topbar{display:flex;gap:14px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);background:#0d1117}.brand{display:flex;align-items:center;gap:10px;white-space:nowrap}.mark{width:31px;height:31px;border:1px solid var(--gold);display:grid;place-items:center;color:var(--gold2);font-weight:900;transform:rotate(45deg);border-radius:5px}.mark span{transform:rotate(-45deg)}.brand-title{font-weight:900;letter-spacing:.12em}.brand-sub{font-size:11px;color:var(--muted);letter-spacing:.08em}.steps{display:flex;gap:5px;align-items:center;margin-left:auto}.step{font-size:12px;color:var(--muted);padding:5px 8px;border:1px solid transparent;border-radius:999px}.step.current{color:var(--gold2);border-color:#625630;background:#201d15}.step-sep{color:#56606e}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel)}.file-name{min-width:130px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--blue);margin-right:4px}.toolbar-spacer{flex:1}.switch{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.switch input{appearance:none;width:36px;height:20px;border:1px solid var(--line2);background:#282e38;border-radius:20px;position:relative;margin:0;cursor:pointer}.switch input:after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:#9da6b3;top:2px;left:2px;transition:.16s}.switch input:checked{background:#5b4c22;border-color:var(--gold)}.switch input:checked:after{left:18px;background:var(--gold2)}
+.workspace{display:grid;grid-template-columns:minmax(280px,1fr) 8px minmax(320px,1fr);min-height:0}.pane{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr)}.pane-head{height:42px;display:flex;align-items:center;gap:9px;padding:0 11px;border-bottom:1px solid var(--line);background:var(--panel2)}.pane-title{font-weight:800;letter-spacing:.04em}.pane-meta{font-size:12px;color:var(--muted)}.resizer{cursor:col-resize;background:#090c10;border-inline:1px solid #252b34;position:relative}.resizer:after{content:"";position:absolute;inset:45% 2px;border-block:2px dotted #737d8c}.resizer:hover,.resizer.dragging{background:#4c411f}
+.editor-wrap{min-height:0;display:grid;grid-template-columns:auto minmax(0,1fr);background:#0d1117;position:relative}.lines{margin:0;padding:12px 9px 40px 8px;min-width:48px;text-align:right;overflow:hidden;user-select:none;background:#0a0d12;color:#687384;border-right:1px solid #252b34;font:13px/1.58 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;white-space:pre}.code{width:100%;height:100%;resize:none;border:0;border-radius:0;margin:0;padding:12px 14px 40px;background:#0d1117;color:#e7edf5;caret-color:var(--gold2);font:13px/1.58 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;tab-size:2;white-space:pre;overflow:auto}.code:focus{outline:0}.searchbar{position:absolute;z-index:3;top:8px;right:18px;display:flex;gap:5px;align-items:center;padding:7px;background:#1b222c;border:1px solid var(--line2);border-radius:9px;box-shadow:var(--shadow)}.searchbar[hidden]{display:none}.searchbar input{width:210px;min-height:34px;border:1px solid var(--line2);border-radius:6px;background:#0e1218;color:var(--text);padding:6px 9px}.search-count{min-width:54px;text-align:center;font-size:11px;color:var(--muted)}
+.preview-area{min-height:0;overflow:auto;display:grid;place-items:start center;padding:16px;background-color:#272d36;background-image:linear-gradient(45deg,#303743 25%,transparent 25%),linear-gradient(-45deg,#303743 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#303743 75%),linear-gradient(-45deg,transparent 75%,#303743 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}.device{width:100%;height:100%;min-height:300px;background:#fff;border:1px solid #687282;box-shadow:var(--shadow);transition:width .18s}.device.mobile{width:390px;max-width:100%;height:max(720px,100%)}iframe{display:block;width:100%;height:100%;min-height:300px;border:0;background:#fff}.preview-actions{margin-left:auto;display:flex;gap:5px}.width-readout{font-variant-numeric:tabular-nums;color:var(--gold2);font-size:12px;white-space:nowrap}
+.statusbar{min-height:35px;display:flex;align-items:center;gap:13px;padding:6px 12px;border-top:1px solid var(--line);background:#0d1117;font-size:12px}.status{white-space:nowrap}.status.ok{color:var(--ok)}.status.error{color:var(--danger)}.errors{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--danger)}.privacy{margin-left:auto;color:var(--muted);white-space:nowrap}
+.help{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:20px}.help[hidden]{display:none}.help-card{width:min(620px,100%);max-height:85vh;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:13px;box-shadow:var(--shadow);padding:20px}.help-card h2{margin-top:0}.help-card ol{padding-left:22px}.help-card li{margin:9px 0}.help-close{float:right}
+@media(max-width:760px){body{overflow:auto}.app{min-height:100vh;height:auto}.topbar{align-items:flex-start}.steps{display:none}.toolbar{position:sticky;top:0;z-index:5}.workspace{height:1100px;grid-template-columns:1fr;grid-template-rows:minmax(420px,1fr) 8px minmax(420px,1fr)}.resizer{cursor:row-resize}.resizer:after{inset:2px 45%;border-block:0;border-inline:2px dotted #737d8c}.privacy{display:none}.file-name{max-width:150px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="mark"><span>S</span></div><div><div class="brand-title">SAKU+MERU HTML EDITOR</div><div class="brand-sub">LOCAL DEVELOPMENT TOOL</div></div></div>
+    <div class="steps" aria-label="使い方"><span class="step current">1 ファイルを開く</span><span class="step-sep">›</span><span class="step">2 編集する</span><span class="step-sep">›</span><span class="step">3 表示を見る</span><span class="step-sep">›</span><span class="step">4 保存する</span></div>
+  </header>
+  <div class="toolbar">
+    <input id="fileInput" type="file" accept=".html,.htm,text/html" hidden>
+    <button id="openButton" type="button">📂 HTMLを開く</button>
+    <span id="fileName" class="file-name">新しいHTML</span>
+    <button id="saveButton" type="button" class="primary">保存用HTMLを出力</button>
+    <button id="searchButton" type="button">検索</button>
+    <button id="undoButton" type="button" title="Ctrl+Z">元に戻す</button>
+    <button id="redoButton" type="button" title="Ctrl+Y">やり直す</button>
+    <span class="toolbar-spacer"></span>
+    <label class="switch"><input id="autoUpdate" type="checkbox" checked><span>自動更新</span></label>
+    <button id="updateButton" type="button">↻ プレビュー更新</button>
+    <button id="helpButton" type="button" class="icon-button" aria-label="使い方">?</button>
+  </div>
+  <main id="workspace" class="workspace">
+    <section class="pane" aria-label="HTMLコードエディター">
+      <div class="pane-head"><span class="pane-title">HTMLコード</span><span id="cursorInfo" class="pane-meta">1行 1列</span></div>
+      <div class="editor-wrap">
+        <pre id="lineNumbers" class="lines" aria-hidden="true">1</pre>
+        <textarea id="editor" class="code" aria-label="HTMLコード" spellcheck="false" wrap="off"></textarea>
+        <div id="searchBar" class="searchbar" hidden>
+          <input id="searchInput" aria-label="検索文字" placeholder="検索する文字">
+          <span id="searchCount" class="search-count">0 / 0</span>
+          <button id="searchPrev" type="button" class="icon-button" aria-label="前を検索">↑</button>
+          <button id="searchNext" type="button" class="icon-button" aria-label="次を検索">↓</button>
+          <button id="searchClose" type="button" class="icon-button" aria-label="検索を閉じる">×</button>
+        </div>
+      </div>
+    </section>
+    <div id="resizer" class="resizer" role="separator" aria-label="左右の幅を変更" aria-orientation="vertical" tabindex="0"></div>
+    <section class="pane" aria-label="プレビュー">
+      <div class="pane-head"><span class="pane-title">プレビュー</span><span id="previewWidth" class="width-readout">幅 --px</span><div class="preview-actions"><button id="desktopButton" class="active" type="button">PC表示</button><button id="mobileButton" type="button">390px表示</button></div></div>
+      <div id="previewArea" class="preview-area"><div id="device" class="device"><iframe id="preview" title="編集内容のプレビュー" sandbox="allow-scripts allow-forms allow-modals"></iframe></div></div>
+    </section>
+  </main>
+  <footer class="statusbar"><span id="status" class="status">準備完了</span><span id="errors" class="errors"></span><span class="privacy">🔒 本体データと分離・外部通信なし</span></footer>
+</div>
+<div id="help" class="help" hidden><div class="help-card"><button id="helpClose" class="help-close" type="button">閉じる</button><h2>使い方</h2><ol><li><strong>HTMLを開く</strong>で編集したいファイルを選びます。元ファイルは変更されません。</li><li>左側でHTML・CSS・JavaScriptを編集します。検索はCtrl+F、元に戻す／やり直すはCtrl+Z／Ctrl+Yです。</li><li>右側で結果を確認します。PC表示と390px表示を切り替えられます。</li><li><strong>保存用HTMLを出力</strong>を押すと、編集後のHTMLが新しいダウンロードファイルになります。</li></ol><p class="muted">プレビューは隔離されています。localStorage、sessionStorage、親画面、SAKU+MERU本体データへアクセスできません。外部URLへの通信も遮断します。</p></div></div>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const editor=$("editor"),lines=$("lineNumbers"),preview=$("preview"),device=$("device"),workspace=$("workspace");
+let currentFileName="new-page.html",updateTimer=0,searchMatches=[],searchIndex=-1,dirty=false;
+const initial=`<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新しいページ</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    h1 { color: #8a6a17; }
+  </style>
+</head>
+<body>
+  <h1>Hello, SAKU+MERU!</h1>
+  <p>左側のHTMLを編集すると、右側に表示されます。</p>
+  <script>
+    console.log("preview ready");
+  <\/script>
+</body>
+</html>`;
+
+function setStatus(text,type=""){$("status").textContent=text;$("status").className="status "+type}
+function updateLines(){const n=editor.value.split("\n").length;lines.textContent=Array.from({length:n},(_,i)=>i+1).join("\n");lines.scrollTop=editor.scrollTop}
+function updateCursor(){const before=editor.value.slice(0,editor.selectionStart),parts=before.split("\n");$("cursorInfo").textContent=`${parts.length}行 ${parts.at(-1).length+1}列`}
+function validateSource(source){
+ const found=[];
+ const doc=new DOMParser().parseFromString(source,"text/html");
+ doc.querySelectorAll("script:not([src])").forEach((script,i)=>{
+   const type=(script.getAttribute("type")||"").toLowerCase();
+   if(type&&type!=="text/javascript"&&type!=="application/javascript")return;
+   try{new Function(script.textContent)}catch(error){found.push(`JavaScript ${i+1}: ${error.message}`)}
+ });
+ return found;
+}
+function securedDocument(source){
+ const csp=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">`;
+ const reporter=`<script>(function(){function send(kind,value,line,col){parent.postMessage({source:'sakumeru-html-editor-preview',kind:kind,message:String(value||'不明なエラー'),line:line||0,col:col||0},'*')}window.addEventListener('error',function(e){send('error',e.message,e.lineno,e.colno)});window.addEventListener('unhandledrejection',function(e){send('promise',e.reason&&e.reason.message||e.reason)});try{localStorage.setItem=function(){throw new Error('プレビューではlocalStorageを使用できません')}}catch(e){};try{sessionStorage.setItem=function(){throw new Error('プレビューではsessionStorageを使用できません')}}catch(e){}})();<\/script>`;
+ const injection=csp+reporter;
+ if(/<head(?:\s[^>]*)?>/i.test(source))return source.replace(/<head(?:\s[^>]*)?>/i,m=>m+injection);
+ if(/<html(?:\s[^>]*)?>/i.test(source))return source.replace(/<html(?:\s[^>]*)?>/i,m=>m+"<head>"+injection+"</head>");
+ return "<!doctype html><html><head>"+injection+"</head><body>"+source+"</body></html>";
+}
+function renderPreview(){
+ clearTimeout(updateTimer);$("errors").textContent="";
+ const errors=validateSource(editor.value);
+ if(errors.length){$("errors").textContent=errors[0];setStatus("構文エラー","error")}else setStatus("プレビュー更新済み","ok");
+ preview.srcdoc=securedDocument(editor.value);
+ requestAnimationFrame(updateWidth);
+}
+function schedulePreview(){if(!$("autoUpdate").checked)return;clearTimeout(updateTimer);updateTimer=setTimeout(renderPreview,350)}
+function markEdited(){dirty=true;setStatus($("autoUpdate").checked?"編集中…":"未反映の変更あり");updateLines();updateCursor();schedulePreview()}
+function updateWidth(){const w=Math.round(preview.getBoundingClientRect().width);$("previewWidth").textContent=`幅 ${w}px`}
+function setDevice(mode){const mobile=mode==="mobile";device.classList.toggle("mobile",mobile);$("desktopButton").classList.toggle("active",!mobile);$("mobileButton").classList.toggle("active",mobile);requestAnimationFrame(updateWidth)}
+function openSearch(){$("searchBar").hidden=false;$("searchInput").focus();$("searchInput").select();findMatches()}
+function findMatches(){const term=$("searchInput").value;searchMatches=[];searchIndex=-1;if(term){let at=0;while((at=editor.value.indexOf(term,at))>=0){searchMatches.push(at);at+=Math.max(1,term.length)}}showSearchCount()}
+function showSearchCount(){$("searchCount").textContent=searchMatches.length?`${searchIndex+1} / ${searchMatches.length}`:"0 / 0"}
+function jumpSearch(step){if(!searchMatches.length)findMatches();if(!searchMatches.length)return;searchIndex=(searchIndex+step+searchMatches.length)%searchMatches.length;const start=searchMatches[searchIndex],len=$("searchInput").value.length;editor.focus();editor.setSelectionRange(start,start+len);const line=editor.value.slice(0,start).split("\n").length;editor.scrollTop=Math.max(0,(line-4)*20.5);lines.scrollTop=editor.scrollTop;showSearchCount();updateCursor()}
+function saveFile(){const blob=new Blob([editor.value],{type:"text/html;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");const base=currentFileName.replace(/\.(html?|HTML?)$/,'')||"page";a.href=url;a.download=`${base}-edited.html`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);dirty=false;setStatus(`${a.download} を出力しました`,"ok")}
+
+editor.value=initial;updateLines();renderPreview();
+editor.addEventListener("input",markEdited);editor.addEventListener("scroll",()=>{lines.scrollTop=editor.scrollTop});editor.addEventListener("click",updateCursor);editor.addEventListener("keyup",updateCursor);
+editor.addEventListener("keydown",e=>{if(e.key==="Tab"){e.preventDefault();const a=editor.selectionStart,b=editor.selectionEnd;editor.setRangeText("  ",a,b,"end");markEdited()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="f"){e.preventDefault();openSearch()}});
+$("openButton").onclick=()=>$("fileInput").click();
+$("fileInput").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const text=await file.text();editor.value=text;currentFileName=file.name;$("fileName").textContent=file.name;dirty=false;updateLines();updateCursor();renderPreview();setStatus(`${file.name} を開きました`,"ok")}catch(error){setStatus("ファイルを開けませんでした","error");$("errors").textContent=error.message||String(error)}finally{e.target.value=""}};
+$("saveButton").onclick=saveFile;$("updateButton").onclick=renderPreview;$("autoUpdate").onchange=()=>{if($("autoUpdate").checked)renderPreview();else setStatus("自動更新OFF")};
+$("undoButton").onclick=()=>{editor.focus();document.execCommand("undo");markEdited()};$("redoButton").onclick=()=>{editor.focus();document.execCommand("redo");markEdited()};
+$("desktopButton").onclick=()=>setDevice("desktop");$("mobileButton").onclick=()=>setDevice("mobile");
+$("searchButton").onclick=openSearch;$("searchInput").oninput=findMatches;$("searchInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();jumpSearch(e.shiftKey?-1:1)}if(e.key==="Escape")$("searchBar").hidden=true};$("searchPrev").onclick=()=>jumpSearch(-1);$("searchNext").onclick=()=>jumpSearch(1);$("searchClose").onclick=()=>{$("searchBar").hidden=true;editor.focus()};
+$("helpButton").onclick=()=>$("help").hidden=false;$("helpClose").onclick=()=>$("help").hidden=true;$("help").onclick=e=>{if(e.target===$("help"))$("help").hidden=true};
+window.addEventListener("message",e=>{if(e.data?.source!=="sakumeru-html-editor-preview")return;const where=e.data.line?`（${e.data.line}行${e.data.col?` ${e.data.col}列`:""}）`:"";$("errors").textContent=`${e.data.message}${where}`;setStatus("プレビューエラー","error")});
+window.addEventListener("beforeunload",e=>{if(!dirty)return;e.preventDefault();e.returnValue=""});
+new ResizeObserver(updateWidth).observe(device);
+
+let dragging=false;
+$("resizer").addEventListener("pointerdown",e=>{if(innerWidth<=760)return;dragging=true;$("resizer").classList.add("dragging");$("resizer").setPointerCapture(e.pointerId)});
+$("resizer").addEventListener("pointermove",e=>{if(!dragging||innerWidth<=760)return;const r=workspace.getBoundingClientRect(),left=Math.max(280,Math.min(r.width-328,e.clientX-r.left));workspace.style.gridTemplateColumns=`${left}px 8px minmax(320px,1fr)`});
+$("resizer").addEventListener("pointerup",()=>{dragging=false;$("resizer").classList.remove("dragging")});
+$("resizer").addEventListener("keydown",e=>{if(!["ArrowLeft","ArrowRight"].includes(e.key)||innerWidth<=760)return;e.preventDefault();const current=workspace.firstElementChild.getBoundingClientRect().width,next=current+(e.key==="ArrowRight"?20:-20),max=workspace.getBoundingClientRect().width-328;workspace.style.gridTemplateColumns=`${Math.max(280,Math.min(max,next))}px 8px minmax(320px,1fr)`});
+})();
+</script>
+</body>
+</html>
