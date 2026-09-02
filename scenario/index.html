@@ -23,6 +23,7 @@
 .sc-form{display:none;max-width:760px;margin:0}.sc-form.open{display:block}
 .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sc-checks{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.sc-checks label{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:5px 8px;margin:0}.sc-checks input{width:auto}
 .sc-tools{display:flex;gap:6px;flex-wrap:wrap}.sc-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap}.sc-toolbar-main{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.sc-toolbar-main>div{min-width:0}.sc-search{width:220px}.sc-filter{width:150px}.sc-number-filter{width:92px}.sc-sort{width:170px}.sc-tag-filter{width:140px}.sc-toolbar button{width:auto}
+.scenario-save-error{display:block;flex-basis:100%;color:#ffb6b6;font-weight:700;line-height:1.6}
 .sc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
 .sc-card{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel);min-width:0;transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease;cursor:pointer}
 .sc-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.16)}
@@ -323,6 +324,12 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 </div>
 </div></main>
 <dialog id="detailDialog" class="sc-detail"><div id="detailContent"></div></dialog>
+<dialog id="boothDuplicateDialog" class="sc-detail" aria-labelledby="boothDuplicateHeading">
+ <div class="sc-detail-body">
+  <div class="sc-detail-top"><div><h2 id="boothDuplicateHeading">このBOOTH作品はすでに登録されています。</h2><p>登録済みシナリオ：<strong id="boothDuplicateTitle"></strong></p><p id="boothDuplicateId" class="small muted"></p></div></div>
+  <div class="sc-detail-actions"><button id="openBoothDuplicate" type="button">登録済みSCENARIOを開く</button><button id="closeBoothDuplicate" type="button">閉じる</button></div>
+ </div>
+</dialog>
 <dialog id="kpBinderDialog" class="kp-binder"><div id="kpBinderContent"></div></dialog>
 <div data-site-footer></div>
 
@@ -359,30 +366,26 @@ function scenarioRepresentativeHtml(x={},kind="card"){
 }
 
 let data=TRPG39.loadScenarios();
-function persist(){
-  try{
-    TRPG39.saveScenarios(data);
-    return true;
-  }catch(err){
-    console.error("[SAKU+MERU] SCENARIO save failed.",err);
-
-    if(err?.name==="QuotaExceededError"){
-      alert(
-        "ブラウザの保存容量が不足しているため保存できませんでした。\n\n"+
-        "入力内容はこの画面に残しています。\n"+
-        "念のため、入力内容を別の場所へコピーして退避してください。"
-      );
-    }else{
-      alert(
-        "シナリオを保存できませんでした。\n\n"+
-        "入力内容はこの画面に残しています。\n"+
-        "念のため、入力内容を別の場所へコピーして退避してください。"
-      );
-    }
-
-    return false;
-  }
+function quotaExceeded(error){
+ return error?.name==="QuotaExceededError"||/quota|storage.*full|容量/i.test(String(error?.message||error||""));
 }
+function showSaveError(error,kind="シナリオ"){
+ const status=q("draftStatus");
+ const capacity=quotaExceeded(error)?" ブラウザの保存容量が不足しています。":"";
+ status.className="small scenario-save-error";
+ status.textContent=`${kind}を保存できませんでした。${capacity} 入力内容は画面に残っています。ページを閉じず、必要な文章をコピーして退避してください。`;
+ console.error(`${kind} save failed`,error);
+}
+function clearSaveStatus(){const status=q("draftStatus");status.className="small muted";status.textContent=""}
+function persistScenariosVerified(next,item){
+ TRPG39.saveScenarios(next);
+ const stored=TRPG39.loadScenarios();
+ if(!Array.isArray(stored)||stored.length!==next.length)throw new Error("保存後の件数が一致しませんでした。");
+ const saved=stored.find(x=>x?.id===item.id);
+ if(!saved||JSON.stringify(saved)!==JSON.stringify(item))throw new Error("保存後のシナリオ内容が一致しませんでした。");
+ return stored;
+}
+const persist=()=>TRPG39.saveScenarios(data);
 let systemTabFilter="all";
 
 function systemTabKey(value){
@@ -484,7 +487,10 @@ function loadDrafts(){
  }catch{return []}
 }
 function persistDrafts(rows){
- localStorage.setItem(SCENARIO_DRAFTS_KEY,JSON.stringify(rows));
+ const serialized=JSON.stringify(rows);
+ localStorage.setItem(SCENARIO_DRAFTS_KEY,serialized);
+ if(localStorage.getItem(SCENARIO_DRAFTS_KEY)!==serialized)throw new Error("一時保存後の内容が一致しませんでした。");
+ return rows;
 }
 function draftLabel(d){
  const x=d?.data||{};
@@ -534,7 +540,7 @@ function saveDraft(){
  const idx=rows.findIndex(d=>d.id===id);
  const pack={id,savedAt:idx>=0?(rows[idx].savedAt||now):now,updatedAt:now,data:dataNow};
  if(idx>=0)rows[idx]=pack;else rows.push(pack);
- persistDrafts(rows);
+ try{persistDrafts(rows)}catch(error){showSaveError(error,"一時保存");return false}
 
  // 登録待ちへ退避したら、すぐ次のシナリオを入力できるよう新規フォームへ戻す。
  renderDrafts();
@@ -543,6 +549,7 @@ function saveDraft(){
  openForm();
  q("draftStatus").textContent="✓ 登録待ちに保存しました。次のシナリオを入力できます。";
  q("url").focus();
+ return true;
 }
 
 function deleteDraft(id){
@@ -620,104 +627,33 @@ async function uploadRoomImage(){
  q("roomImageFile").value="";
  updateRoomImageUI();
 }
-function reset(){editingTrailerUrls=[];editingDisplayImageMode="thumbnail";q("editId").value="";q("draftId").value="";["title","shortTitle","sortKana","system","author","url","thumbnailUrl","roomImageUrl","playersMin","playersMax","hoursMin","hoursMax","summaryText","summaryBackup","summaryBackupFetchedAt","tags","privateMemo","facilitatorTermCustom"].forEach(x=>q(x).value="");document.querySelectorAll(".flag").forEach(x=>x.checked=false);q("publicationStatus").value="public";q("sourceType").value="";q("roomImageVisibility").value="private";updateRoomImageUI();q("facilitatorPresence").value="present";q("facilitatorTermMode").value="auto";q("formHeading").textContent="シナリオを登録";q("cancel").hidden=true;q("thumbStatus").textContent="";q("draftStatus").textContent="";updateFacilitatorUI();updateThumbPreview();q("scenarioForm").classList.remove("open")}
+function reset(){editingTrailerUrls=[];editingDisplayImageMode="thumbnail";q("editId").value="";q("draftId").value="";["title","shortTitle","sortKana","system","author","url","thumbnailUrl","roomImageUrl","playersMin","playersMax","hoursMin","hoursMax","summaryText","summaryBackup","summaryBackupFetchedAt","tags","privateMemo","facilitatorTermCustom"].forEach(x=>q(x).value="");document.querySelectorAll(".flag").forEach(x=>x.checked=false);q("publicationStatus").value="public";q("sourceType").value="";q("roomImageVisibility").value="private";updateRoomImageUI();q("facilitatorPresence").value="present";q("facilitatorTermMode").value="auto";q("formHeading").textContent="シナリオを登録";q("cancel").hidden=true;q("thumbStatus").textContent="";clearSaveStatus();updateFacilitatorUI();updateThumbPreview();q("scenarioForm").classList.remove("open")}
 function openForm(){q("scenarioForm").classList.add("open");scrollTo({top:q("scenarioForm").offsetTop-18,behavior:"smooth"})}
-function save(){
-  const title=q("title").value.trim();
-  if(!title)return alert("シナリオ名を入力してください。");
-
-  // 保存失敗時に元へ戻せるよう、変更前のdataを保持
-  const beforeData=data.slice();
-
-  // 新規保存で失敗した場合も同じIDで再試行できるよう保持
-  let id=q("editId").value;
-  if(!id){
-    id=TRPG39.uuid();
-    q("editId").value=id;
-  }
-
-  const i=data.findIndex(x=>x.id===id);
-  const old=i>=0?data[i]:null;
-  const now=new Date().toISOString();
-
-  const item={
-    ...(old||{}),
-    id,
-    title,
-    shortTitle:q("shortTitle").value.trim(),
-    sortKana:q("sortKana").value.trim(),
-    system:q("system").value.trim(),
-    author:q("author").value.trim(),
-    playersMin:Number(q("playersMin").value)||null,
-    playersMax:Number(q("playersMax").value)||null,
-    hoursMin:Number(q("hoursMin").value)||null,
-    hoursMax:Number(q("hoursMax").value)||null,
-    url:q("url").value.trim(),
-    thumbnailUrl:(editingTrailerUrls[0]||q("thumbnailUrl").value.trim()),
-    trailerUrls:normalizedTrailerUrls(editingTrailerUrls),
-    displayImageMode:(editingTrailerUrls.length?editingDisplayImageMode:"brand"),
-    roomImageUrl:q("roomImageUrl").value.trim(),
-    roomImageVisibility:q("roomImageVisibility").value||"private",
-    publicationStatus:q("publicationStatus").value||"public",
-    sourceType:q("sourceType").value||"",
-    summaryText:q("summaryText").value.trim(),
-    summaryBackup:q("summaryBackup").value||old?.summaryBackup||"",
-    summaryBackupFetchedAt:q("summaryBackupFetchedAt").value||old?.summaryBackupFetchedAt||"",
-    tags:q("tags").value.split(/[,、]/).map(v=>v.trim()).filter(Boolean),
-    privateMemo:q("privateMemo").value.trim(),
-    archived:!!old?.archived,
-    facilitatorPresence:q("facilitatorPresence").value||"present",
-    facilitatorTermMode:q("facilitatorTermMode").value||"auto",
-    facilitatorTermCustom:q("facilitatorTermCustom").value.trim(),
-    lastChecked:new Date().toISOString().slice(0,10),
-    flags:Object.fromEntries(
-      [...document.querySelectorAll(".flag")]
-        .map(x=>[x.value,x.checked])
-    ),
-    createdAt:old?.createdAt||now,
-    updatedAt:now
-  };
-
-  if(i>=0)data[i]=item;
-  else data.unshift(item);
-
-  // LocalStorageへ保存
-  if(!persist()){
-    // 保存失敗：メモリ上の変更だけ元に戻す
-    data=beforeData;
-
-    // フォームは絶対に閉じない
-    // 入力内容もそのまま残す
-    return;
-  }
-
-  // 本当に保存されたか再読込して確認
-  const stored=TRPG39.loadScenarios();
-  const saved=stored.find(x=>x.id===id);
-
-  if(!saved || saved.title!==item.title){
-    console.error(
-      "[SAKU+MERU] SCENARIO save verification failed.",
-      {id,item,saved}
-    );
-
-    data=beforeData;
-
-    alert(
-      "保存後の確認に失敗しました。\n\n"+
-      "入力内容はこの画面に残しています。\n"+
-      "念のため、入力内容を別の場所へコピーして退避してください。"
-    );
-
-    return;
-  }
-
-  // 保存確認まで成功して初めて画面を閉じる
-  data=stored;
-  removeActiveDraft();
-  reset();
-  render();
+function extractBoothItemId(value){
+ const raw=String(value||"").trim();if(!raw)return "";
+ try{
+   const u=new URL(raw),host=u.hostname.toLowerCase();
+   if(host!=="booth.pm"&&!host.endsWith(".booth.pm"))return "";
+   return u.pathname.match(/(?:^|\/)items\/(\d+)(?:\/|$)/i)?.[1]||"";
+ }catch{return ""}
 }
+function scenarioBoothId(x){
+ const stored=String(x?.boothId||"").trim();
+ return /^\d+$/.test(stored)?stored:extractBoothItemId(x?.url||"");
+}
+function findBoothDuplicate(boothId,currentScenarioId=""){
+ const target=String(boothId||"");if(!target)return null;
+ return data.find(x=>String(x?.id||"")!==String(currentScenarioId||"")&&scenarioBoothId(x)===target)||null;
+}
+function showBoothDuplicate(duplicate,boothId){
+ const dialog=q("boothDuplicateDialog");
+ q("boothDuplicateTitle").textContent=duplicate?.title||"名称未設定";
+ q("boothDuplicateId").textContent=`BOOTH ID：${boothId}`;
+ q("openBoothDuplicate").onclick=()=>{dialog.close();detail(duplicate.id)};
+ q("closeBoothDuplicate").onclick=()=>dialog.close();
+ if(dialog.open)dialog.close();dialog.showModal();
+}
+function save(){let title=q("title").value.trim();if(!title)return alert("シナリオ名を入力してください。");const currentScenarioId=q("editId").value||"",boothId=extractBoothItemId(q("url").value),boothDuplicate=findBoothDuplicate(boothId,currentScenarioId);if(boothDuplicate){showBoothDuplicate(boothDuplicate,boothId);return false}let id=currentScenarioId||TRPG39.uuid(),i=data.findIndex(x=>x.id===id),old=i>=0?data[i]:null,now=new Date().toISOString();let item={...(old||{}),id,title,shortTitle:q("shortTitle").value.trim(),sortKana:q("sortKana").value.trim(),system:q("system").value.trim(),author:q("author").value.trim(),playersMin:Number(q("playersMin").value)||null,playersMax:Number(q("playersMax").value)||null,hoursMin:Number(q("hoursMin").value)||null,hoursMax:Number(q("hoursMax").value)||null,url:q("url").value.trim(),thumbnailUrl:(editingTrailerUrls[0]||q("thumbnailUrl").value.trim()),trailerUrls:normalizedTrailerUrls(editingTrailerUrls),displayImageMode:(editingTrailerUrls.length?editingDisplayImageMode:"brand"),roomImageUrl:q("roomImageUrl").value.trim(),roomImageVisibility:q("roomImageVisibility").value||"private",publicationStatus:q("publicationStatus").value||"public",sourceType:q("sourceType").value||"",summaryText:q("summaryText").value.trim(),summaryBackup:q("summaryBackup").value||old?.summaryBackup||"",summaryBackupFetchedAt:q("summaryBackupFetchedAt").value||old?.summaryBackupFetchedAt||"",tags:q("tags").value.split(/[,、]/).map(v=>v.trim()).filter(Boolean),privateMemo:q("privateMemo").value.trim(),archived:!!old?.archived,facilitatorPresence:q("facilitatorPresence").value||"present",facilitatorTermMode:q("facilitatorTermMode").value||"auto",facilitatorTermCustom:q("facilitatorTermCustom").value.trim(),lastChecked:new Date().toISOString().slice(0,10),flags:Object.fromEntries([...document.querySelectorAll(".flag")].map(x=>[x.value,x.checked])),createdAt:old?.createdAt||now,updatedAt:now};const next=data.slice();if(i>=0)next[i]=item;else next.unshift(item);try{data=persistScenariosVerified(next,item)}catch(error){showSaveError(error);return false}try{removeActiveDraft()}catch(error){console.warn("Saved scenario, but could not remove its temporary draft",error)}reset();render();return true}
 function edit(id){let x=data.find(v=>v.id===id);if(!x)return;q("draftId").value="";q("draftStatus").textContent="";q("editId").value=x.id;q("title").value=x.title||"";q("shortTitle").value=x.shortTitle||"";q("sortKana").value=x.sortKana||"";q("system").value=x.system||"";q("author").value=x.author||"";q("playersMin").value=x.playersMin??"";q("playersMax").value=x.playersMax??"";q("hoursMin").value=x.hoursMin??"";q("hoursMax").value=x.hoursMax??"";q("url").value=x.url||"";editingTrailerUrls=normalizedTrailerUrls((x.trailerUrls&&x.trailerUrls.length)?x.trailerUrls:(x.thumbnailUrl?[x.thumbnailUrl]:[]));editingDisplayImageMode=x.displayImageMode||"thumbnail";renderTrailerList();q("thumbnailUrl").value=editingTrailerUrls[0]||"";q("roomImageUrl").value=x.roomImageUrl||"";q("roomImageVisibility").value=x.roomImageVisibility||"private";q("publicationStatus").value=x.publicationStatus||"public";q("sourceType").value=x.sourceType||"";q("summaryText").value=x.summaryText||"";q("summaryBackup").value=x.summaryBackup||"";q("summaryBackupFetchedAt").value=x.summaryBackupFetchedAt||"";q("tags").value=(x.tags||[]).join(", ");q("privateMemo").value=x.privateMemo||"";q("facilitatorPresence").value=x.facilitatorPresence||"present";q("facilitatorTermMode").value=x.facilitatorTermMode||"auto";q("facilitatorTermCustom").value=x.facilitatorTermCustom||"";updateFacilitatorUI();updateThumbPreview(x.ogTitle||x.title||"");document.querySelectorAll(".flag").forEach(c=>c.checked=!!(x.flags&&x.flags[c.value]));updateRoomImageUI();q("formHeading").textContent="シナリオを編集";q("cancel").hidden=false;q("scenarioForm").classList.add("open");scrollTo({top:q("scenarioForm").offsetTop-18,behavior:"smooth"})}
 function toggleArchive(id){const x=data.find(v=>v.id===id);if(!x)return;x.archived=!x.archived;x.updatedAt=new Date().toISOString();persist();render();if(q("detailDialog")?.open)q("detailDialog").close()}
 function del(id){if(confirm("このシナリオを完全に削除しますか？\n過去のLIBRARY記録は削除されません。")){data=data.filter(x=>x.id!==id);persist();render()}}
@@ -1054,6 +990,8 @@ function renderFriendResults(){
 }
 function importFriendScenario(key){
  const x=friendItems.find(v=>v._key===key);if(!x)return;
+ const boothId=scenarioBoothId(x),boothDuplicate=findBoothDuplicate(boothId);
+ if(boothDuplicate){showBoothDuplicate(boothDuplicate,boothId);return}
  if(ownScenarioMatch(x))return alert("このシナリオはすでに自分のSCENARIOに登録されています。");
  const flagsObj={};sharedScenarioStatusKeys(x).forEach(k=>flagsObj[k]=true);
  data.unshift({id:TRPG39.uuid(),title:x.title||"",shortTitle:x.shortTitle||"",sortKana:x.sortKana||"",system:x.system||"",author:x.author||"",url:x.url||"",thumbnailUrl:x.thumbnailUrl||"",trailerUrls:Array.isArray(x.trailerUrls)?x.trailerUrls:[],displayImageMode:x.displayImageMode||"thumbnail",playersMin:x.playersMin||null,playersMax:x.playersMax||null,hoursMin:x.hoursMin||null,hoursMax:x.hoursMax||null,publicationStatus:x.publicationStatus||"public",sourceType:x.sourceType||"",summaryText:"",summaryBackup:"",summaryBackupFetchedAt:"",tags:Array.isArray(x.tags)?x.tags:[],privateMemo:"",flags:flagsObj,memo:"",sourceFriend:x._friend,createdAt:new Date().toISOString()});
@@ -1591,6 +1529,7 @@ q("detailDialog").addEventListener("click",e=>{
   // 詳細カード内のクリックでは閉じない。
   if(e.target===q("detailDialog"))q("detailDialog").close();
 });
+q("boothDuplicateDialog").addEventListener("click",e=>{if(e.target===q("boothDuplicateDialog"))q("boothDuplicateDialog").close()});
 document.querySelector('.flag[value="roomReady"]')?.addEventListener("change",updateRoomImageUI);
 q("roomImageUrl").addEventListener("input",updateRoomImageUI);
 q("uploadRoomImage").onclick=async()=>{try{q("uploadRoomImage").disabled=true;q("uploadRoomImage").textContent="アップロード中…";await uploadRoomImage()}catch(e){console.error(e);alert(e.message||e)}finally{q("uploadRoomImage").disabled=false;q("uploadRoomImage").textContent="画像をアップロード"}};
@@ -1598,7 +1537,7 @@ q("addTrailerUrl").onclick=()=>{const u=q("trailerUrlAdd").value.trim();if(!u)re
 q("uploadTrailerImage").onclick=async()=>{try{if(editingTrailerUrls.length>=4)return alert("トレーラー画像は最大4枚です。");q("uploadTrailerImage").disabled=true;q("uploadTrailerImage").textContent="アップロード中…";await uploadScenarioTrailerFile()}catch(e){console.error(e);alert(e.message||e)}finally{q("uploadTrailerImage").disabled=false;q("uploadTrailerImage").textContent="画像をアップロード"}};
 bindDisplayImageChoice();
 q("shareScenarioList").onclick=shareScenarioList;q("openForm").onclick=openForm;q("fetchThumb").onclick=fetchThumbnail;q("tags").addEventListener("input",renderTagSuggestions);
-q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=render;q("filter").onchange=render;q("playersFilter").oninput=render;q("hoursFilter").oninput=render;q("tagFilter").onchange=render;q("archiveFilter").onchange=render;q("sort").onchange=render;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;migrateLegacyDraft();renderDrafts();renderFriendSources();render();loadFriendSources();
+q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=render;q("filter").onchange=render;q("playersFilter").oninput=render;q("hoursFilter").oninput=render;q("tagFilter").onchange=render;q("archiveFilter").onchange=render;q("sort").onchange=render;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
 </body></html>
