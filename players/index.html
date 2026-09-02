@@ -3247,6 +3247,15 @@ function playerAllRoleRecords(player){
    return g;
  }).sort((a,b)=>String(b.record?.date||"").localeCompare(String(a.record?.date||"")));
 }
+function playerDetailHeaderStats(player){
+ const history=playerAllRoleRecords(player);
+ const dates=history.flatMap(v=>(v.records||[v.record])
+   .map(x=>String(x?.date||"").trim())
+   .filter(Boolean)).sort();
+ const systems=[...new Set(history.map(playerRecordSystem).filter(Boolean))]
+   .sort((a,b)=>String(a).localeCompare(String(b),"ja"));
+ return {history,count:history.length,first:dates[0]||"",last:dates.at(-1)||"",systems};
+}
 function playerAvailableRoles(player){
  return [...new Set(playerAllRoleRecords(player).map(v=>v.role))].sort((a,b)=>playerRoleLabel(a).localeCompare(playerRoleLabel(b),"ja"));
 }
@@ -3723,11 +3732,10 @@ function closePlayerRelationshipGraph(){
 function renderPlayerDetail(player){
  restorePlayerRelationPanelToModal();
  q("playerDirectoryHead").hidden=true;q("playerDirectoryViews").hidden=true;q("libraryToolbar").hidden=true;
- const allHistory=playerDetailTab==="history"?playerAllRoleRecords(player):[],external=externalPlayedFor(player.id);
+ const headerStats=playerDetailHeaderStats(player),allHistory=headerStats.history,external=externalPlayedFor(player.id);
  const pcsForPlayer=playerDetailTab==="pcs"?playerOwnedPcs(player):[];
  const availableRoles=playerDetailTab==="history"?[...new Set(allHistory.map(v=>v.role))].sort((a,b)=>playerRoleLabel(a).localeCompare(playerRoleLabel(b),"ja")):[];
- const availableSystems=playerDetailTab==="history"?[...new Set(allHistory.map(playerRecordSystem).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja")):[];
- const stats=playerStats(player.name);
+ const availableSystems=headerStats.systems;
  const availablePcs=[...new Set(allHistory.map(v=>String(v.row?.pcName||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
  const filteredHistory=allHistory.filter(v=>
    (playerDetailRoleFilter==="all"||v.role===playerDetailRoleFilter) &&
@@ -3743,7 +3751,7 @@ function renderPlayerDetail(player){
    <button id="backToPlayers" class="player-detail-back" type="button">← 同卓者一覧へ</button>
    <header class="player-detail-header">
      <div><h2 class="player-detail-name">${esc(player.name)}</h2><div class="player-detail-public">公開名：${esc(player.publicName||player.name)}</div></div>
-     <div class="player-detail-stats"><span class="player-detail-stat">同卓 ${allHistory.length}卓</span><span class="player-detail-stat">初同卓 ${esc(stats.first||"記録なし")}</span><span class="player-detail-stat">最終同卓 ${esc(stats.last||"記録なし")}</span></div>
+     <div class="player-detail-stats"><span class="player-detail-stat">同卓 ${headerStats.count}卓</span><span class="player-detail-stat">初同卓 ${esc(headerStats.first||"記録なし")}</span><span class="player-detail-stat">最終同卓 ${esc(headerStats.last||"記録なし")}</span></div>
      ${availableSystems.length?`<div class="player-detail-systems">${availableSystems.map(s=>`<span class="badge">${esc(s)}</span>`).join("")}</div>`:""}
    </header>
    <nav class="player-detail-tabs" aria-label="PLAYER詳細">
