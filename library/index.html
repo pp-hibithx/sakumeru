@@ -3622,9 +3622,28 @@ async function shareArticlePage(runId,pageId,options={}){
    return previewUrl.href;
  }catch(e){console.error(e);alert(e.message||e);return ""}
 }
+function articleHtmlTextForX(html){
+ const root=document.createElement("div");root.innerHTML=String(html||"");
+ root.querySelectorAll('[data-x-hidden="true"]').forEach(node=>node.replaceWith(document.createTextNode("――")));
+ const blockTags=new Set(["P","DIV","H1","H2","H3","H4","H5","H6","BLOCKQUOTE","LI","UL","OL","SECTION","FIGURE","FIGCAPTION","DETAILS","SUMMARY"]);
+ let out="";
+ const line=()=>{if(!out.endsWith("\n"))out+="\n"};
+ const walk=node=>{
+   if(node.nodeType===Node.TEXT_NODE){out+=node.textContent||"";return}
+   if(node.nodeType!==Node.ELEMENT_NODE)return;
+   if(node.tagName==="BR"){out+="\n";return}
+   if(node.tagName==="HR"){line();out+="――";line();return}
+   const block=blockTags.has(node.tagName);
+   if(block&&out&&!out.endsWith("\n"))line();
+   [...node.childNodes].forEach(walk);
+   if(block)line();
+ };
+ [...root.childNodes].forEach(walk);
+ return out.replace(/(?:――[ \t]*){2,}/g,"――").replace(/\u200B/g,"").replace(/\r/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+}
 function articleTextForX(page){
  const blocks=normalizedArticleBlocks(page);
- return blocks.filter(b=>b.type==="text"&&(b.visibility||"public")==="public").map(b=>String(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainTextForX(b.html):(b.text||"")).trim()).filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
+ return blocks.filter(b=>b.type==="text"&&(b.visibility||"public")==="public").map(b=>String(b.html?articleHtmlTextForX(b.html):(b.text||"")).trim()).filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 function articleHasXHidden(page){
  return normalizedArticleBlocks(page).some(b=>b.type==="text"&&(b.visibility||"public")==="public"&&b.html&&window.SAKUMERichEditor&&SAKUMERichEditor.hasXHidden(b.html));
