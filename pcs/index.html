@@ -394,6 +394,8 @@ function refreshPcSystemFilter(){
 function visiblePcRows(){
  const term=normSearch(q("pcSearch").value),system=q("pcSystemFilter").value,sort=q("pcSort").value;
  const rows=pcs.map(x=>({x,st:stats(x)})).filter(({x,st})=>{
+if (x.ownerPlayerId)
+    return false;
    if(system&&String(x.system||"")!==system)return false;
    if(!term)return true;
    return [x.name,x.reading,x.system,...st.scenarios.map(s=>s.title)].some(v=>normSearch(v).includes(term));
