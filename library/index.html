@@ -1364,16 +1364,21 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=02309"></script>
-<script src="../assets/js/rich-editor.js?v=0901-common1"></script>
+<script src="../assets/js/rich-editor.js?v=0902-x-linebreak1"></script>
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id);
 const vis={private:"自分のみ",table:"同卓者のみ（準備中）",link:"リンク限定",public:"公開"};
 const statusLabel={tentative:"仮押さえ",planned:"予定",confirmed:"予定",done:"完了",rescheduling:"リスケ中",postponed:"延期",cancelled:"中止"};
 const sessionKindLabel={prelude:"事前導入",main:"本編",reserve:"予備日",aftertalk:"感想戦"};
+let sessionKindEventIndex=null;
+function refreshSessionKindEventIndex(){
+ sessionKindEventIndex=new Map((TRPG39.loadEvents?.()||[]).map(e=>[String(e.id||""),e]));
+}
 function sessionKindForRecord(x){
  if(x?.eventId){
-   const ev=(TRPG39.loadEvents?.()||[]).find(e=>e.id===x.eventId);
+   if(!sessionKindEventIndex)refreshSessionKindEventIndex();
+   const ev=sessionKindEventIndex.get(String(x.eventId));
    if(ev?.sessionKind)return ev.sessionKind;
  }
  return String(x?.sessionKind||"main");
@@ -1519,7 +1524,8 @@ let playerArchiveFilter="active";
 let playerDetailRoleFilter="all";
 let playerDetailSystemFilter="all";
 
-{let changed=false;data=data.map(x=>{if(!x.spoilerBody&&x.spoiler){changed=true;return TRPG39.normalizeAlbum({...x,spoilerBody:x.spoiler,spoiler:""})}return x});if(changed)TRPG39.saveAlbum(data);}
+// 旧spoilerは表示時だけ後方互換として参照し、ページ起動では全件を書き戻さない。
+data=data.map(x=>!x.spoilerBody&&x.spoiler?{...x,spoilerBody:x.spoiler}:x);
 
 function migrateScenarioLinks(){
   let changed=false;
@@ -5638,6 +5644,7 @@ function scheduleLibraryGridBatch(fn){
  else setTimeout(fn,16);
 }
 function render(){
+ sessionKindEventIndex=null;
  const gridGeneration=++libraryGridRenderGeneration;
  syncLibraryView();
  if(libraryView==="pc"){renderPcView();return}
