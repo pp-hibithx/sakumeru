@@ -57,6 +57,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .player-pc-card-placeholder{width:88px;aspect-ratio:1/1;border-radius:9px;display:grid;place-items:center;font-size:28px;background:rgba(255,255,255,.025)}
 .player-pc-card-body{min-width:0}.player-pc-card-name{font-size:17px;line-height:1.35;overflow-wrap:anywhere}.player-pc-card-reading,.player-pc-card-meta{font-size:12px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
 .player-pc-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:9px}.player-pc-card-actions .link{display:inline-block}
+.player-pc-card>.pc-library-detail{grid-column:1/-1;min-width:0}
 .player-pc-empty{border:1px dashed var(--line);border-radius:10px;padding:16px;display:grid;gap:9px;justify-items:start}
 .player-relation-inline{min-width:0}.player-relation-inline .pc-rel-panel{width:100%;max-height:none;overflow:visible;padding:14px}.player-relation-inline .player-relation-modal-close{display:none}.player-relation-inline .player-rel-stage{height:clamp(520px,65vh,720px)}.player-relation-inline .player-rel-stage svg{height:100%}.player-relation-inline .player-rel-detail{min-width:0}
 #playerDirectoryHead[hidden],#playerDirectoryViews[hidden],#libraryToolbar[hidden]{display:none!important}
@@ -3413,6 +3414,37 @@ function playerPcHistoryHtml(player,pcItem){
  }).join("")}</div>`;
 }
 
+function setPlayerPcDetailOpen(pcId,{updateUrl=false,scroll=true}={}){
+ const id=String(pcId||"").trim();if(!id)return false;
+ const card=document.getElementById(`player-pc-${id}`);
+ const detail=document.getElementById(`pc-library-detail-${id}`);
+ if(!card||!detail)return false;
+ detail.hidden=false;
+ const trigger=card.querySelector(`[data-player-pc-detail="${CSS.escape(id)}"]`);
+ if(trigger)trigger.setAttribute("aria-expanded","true");
+ if(updateUrl){
+   const u=new URL(location.href);
+   u.searchParams.set("focus",focusedPlayerId||"");
+   u.searchParams.set("tab","pcs");
+   u.searchParams.set("pcId",id);
+   window.history.pushState(null,"",u);
+ }
+ if(scroll)requestAnimationFrame(()=>card.scrollIntoView({behavior:"smooth",block:"center"}));
+ return true;
+}
+
+function togglePlayerPcDetail(pcId){
+ const id=String(pcId||"").trim();
+ const detail=document.getElementById(`pc-library-detail-${id}`);
+ if(!detail)return;
+ if(detail.hidden){setPlayerPcDetailOpen(id,{updateUrl:true});return;}
+ detail.hidden=true;
+ const card=document.getElementById(`player-pc-${id}`);
+ const trigger=card?.querySelector(`[data-player-pc-detail="${CSS.escape(id)}"]`);
+ if(trigger)trigger.setAttribute("aria-expanded","false");
+ const u=new URL(location.href);u.searchParams.delete("pcId");window.history.pushState(null,"",u);
+}
+
 const PLAYER_REL_SELF_ID="__self__";
 let activePlayerRelationId=PLAYER_REL_SELF_ID;
 let playerRelationShowAllEdges=false;
@@ -3847,8 +3879,9 @@ function renderPlayerDetail(player){
            ${pc.reading?`<div class="player-pc-card-reading">${esc(pc.reading)}</div>`:""}
            ${details?`<div class="player-pc-card-meta">${esc(details)}</div>`:""}
            <div class="player-pc-card-meta">使用した卓 ${item.count}卓${item.last?` ／ 最終使用 ${esc(item.last)}`:""}</div>
-           <div class="player-pc-card-actions"><a class="link" href="${esc(pcDetailHref(pc))}">PC詳細を見る</a><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
+           <div class="player-pc-card-actions"><a class="link" href="${esc(pcDetailHref(pc))}" data-player-pc-detail="${esc(pc.id)}" aria-expanded="false">PC詳細を見る</a><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
          </div>
+         ${pcLibraryDetailHtml(pc)}
        </article>`;
      }).join(""):`<div class="player-pc-empty"><div>このPLAYERが所有するPCは登録されていません。</div><a class="link" href="../pcs/index.html">PCページを見る</a></div>`}</div>
    </section>`:""}
@@ -3869,8 +3902,12 @@ function renderPlayerDetail(player){
  if(q("playerDetailSystem"))q("playerDetailSystem").onchange=()=>{playerDetailSystemFilter=q("playerDetailSystem").value;renderPlayerDetail(player)};
  if(q("playerDetailPc"))q("playerDetailPc").onchange=()=>{playerDetailPcFilter=q("playerDetailPc").value;renderPlayerDetail(player)};
  if(playerDetailTab==="pcs"){
+   document.querySelectorAll("[data-player-pc-detail]").forEach(link=>link.onclick=event=>{
+     event.preventDefault();
+     togglePlayerPcDetail(link.dataset.playerPcDetail);
+   });
    const targetPcId=new URLSearchParams(location.search).get("pcId")||"";
-   if(targetPcId)requestAnimationFrame(()=>document.getElementById(`player-pc-${targetPcId}`)?.scrollIntoView({behavior:"smooth",block:"center"}));
+   if(targetPcId)requestAnimationFrame(()=>setPlayerPcDetailOpen(targetPcId,{scroll:true}));
  }
  if(q("externalScenarioSearch"))q("externalScenarioSearch").oninput=()=>{const term=String(q("externalScenarioSearch").value||"").trim().toLowerCase();const sel=q("externalScenario"),current=sel.value;sel.innerHTML='<option value="">選択してください</option>'+scenarios.slice().sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja")).filter(sc=>!term||[sc.title,sc.sortKana,sc.kana,sc.shortTitle].some(v=>String(v||"").toLowerCase().includes(term))).map(sc=>`<option value="${esc(sc.id)}">${esc(sc.title)}</option>`).join("");if([...sel.options].some(o=>o.value===current))sel.value=current;};
  if(q("addExternalPlayed"))q("addExternalPlayed").onclick=()=>{
