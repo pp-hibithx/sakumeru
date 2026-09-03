@@ -2452,6 +2452,16 @@ function anyPcById(id){
  if(!id)return null;
  return allLibraryPcs().find(p=>String(p.id)===String(id))||null;
 }
+function pcDetailHref(pcOrId){
+ const pc=typeof pcOrId==="object"&&pcOrId
+   ?pcOrId
+   :(pcs||[]).find(p=>String(p.id||"")===String(pcOrId||""));
+ const pcId=String(pc?.id||pc?.registeredId||"").trim();if(!pcId)return "";
+ const ownerPlayerId=String(pc?.ownerPlayerId||pc?.playerId||"").trim();
+ return ownerPlayerId
+   ?`../players/index.html?focus=${encodeURIComponent(ownerPlayerId)}&tab=pcs&pcId=${encodeURIComponent(pcId)}`
+   :`../pcs/index.html?focus=${encodeURIComponent(pcId)}`;
+}
 function pcOwnerText(p){
  return p?.ownerType==="self"?"自分":(p?.ownerLabel||"同卓PC");
 }
@@ -2943,7 +2953,7 @@ function showPcRelationNodeDetail(graph,key){
      <div class="library-dir-meta">接続 ${connections.length}PC</div>
      ${manualConnections?`<div style="margin-top:8px"><strong>登録したPC関係</strong>${manualConnections}</div>`:""}
      ${n.pcRefId?`<button type="button" class="pc-rel-center-btn" data-center-pc="${esc(n.pcRefId)}">このPCを中心に見る</button>`:""}
-     ${n.registeredId?`<div style="margin-top:8px"><a class="link" href="../pcs/index.html?focus=${encodeURIComponent(n.registeredId)}">PC情報を見る</a></div>`:""}
+     ${n.registeredId?`<div style="margin-top:8px"><a class="link" href="${esc(pcDetailHref(n.registeredId))}">PC情報を見る</a></div>`:""}
    </div>
    <div class="pc-rel-detail-card">
      <strong>同卓シナリオ</strong>
@@ -3818,13 +3828,13 @@ function renderPlayerDetail(player){
      <div><h3>${esc(player.name)}のPC</h3><div class="small muted">このPLAYERが所有するPC ${pcsForPlayer.length}人</div></div>
      <div class="player-pc-grid" style="margin-top:10px">${pcsForPlayer.length?pcsForPlayer.map(item=>{
        const pc=item.pc,details=[pc.system,pc.job].filter(Boolean).join(" ／ ");
-       return `<article class="player-pc-card">
+       return `<article class="player-pc-card" id="player-pc-${esc(pc.id)}">
          ${pc.image?`<img class="player-pc-card-image" src="${esc(pc.image)}" alt="" loading="lazy">`:`<div class="player-pc-card-placeholder">🌺</div>`}
          <div class="player-pc-card-body"><div class="player-pc-card-name"><strong>${esc(pc.name||"名称未設定")}</strong></div>
            ${pc.reading?`<div class="player-pc-card-reading">${esc(pc.reading)}</div>`:""}
            ${details?`<div class="player-pc-card-meta">${esc(details)}</div>`:""}
            <div class="player-pc-card-meta">使用した卓 ${item.count}卓${item.last?` ／ 最終使用 ${esc(item.last)}`:""}</div>
-           <div class="player-pc-card-actions"><a class="link" href="../pcs/index.html?focus=${encodeURIComponent(pc.id)}">PC詳細を見る</a><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
+           <div class="player-pc-card-actions"><a class="link" href="${esc(pcDetailHref(pc))}">PC詳細を見る</a><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
          </div>
        </article>`;
      }).join(""):`<div class="player-pc-empty"><div>このPLAYERが所有するPCは登録されていません。</div><a class="link" href="../pcs/index.html">PCページを見る</a></div>`}</div>
@@ -3833,7 +3843,7 @@ function renderPlayerDetail(player){
    ${playerDetailTab==="relations"?`<section class="player-tab-panel player-section player-relation-inline"><div id="playerRelationInlineHost"></div></section>`:""}
    </div>`;
 
- q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");u.searchParams.delete("tab");window.history.pushState(null,"",u);render()};
+ q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");u.searchParams.delete("tab");u.searchParams.delete("pcId");window.history.pushState(null,"",u);render()};
  document.querySelectorAll("[data-player-tab]").forEach(button=>button.onclick=()=>{const next=button.dataset.playerTab;if(!PLAYER_DETAIL_TABS.has(next)||next===playerDetailTab)return;playerDetailTab=next;const u=new URL(location.href);u.searchParams.set("focus",player.id);u.searchParams.set("tab",next);window.history.pushState(null,"",u);renderPlayerDetail(player)});
  if(playerDetailTab==="relations")mountInlinePlayerRelationshipGraph(player.id);
  if(q("addRecordForPlayer"))q("addRecordForPlayer").onclick=()=>{
@@ -3845,6 +3855,10 @@ function renderPlayerDetail(player){
  if(q("playerDetailRole"))q("playerDetailRole").onchange=()=>{playerDetailRoleFilter=q("playerDetailRole").value;renderPlayerDetail(player)};
  if(q("playerDetailSystem"))q("playerDetailSystem").onchange=()=>{playerDetailSystemFilter=q("playerDetailSystem").value;renderPlayerDetail(player)};
  if(q("playerDetailPc"))q("playerDetailPc").onchange=()=>{playerDetailPcFilter=q("playerDetailPc").value;renderPlayerDetail(player)};
+ if(playerDetailTab==="pcs"){
+   const targetPcId=new URLSearchParams(location.search).get("pcId")||"";
+   if(targetPcId)requestAnimationFrame(()=>document.getElementById(`player-pc-${targetPcId}`)?.scrollIntoView({behavior:"smooth",block:"center"}));
+ }
  if(q("externalScenarioSearch"))q("externalScenarioSearch").oninput=()=>{const term=String(q("externalScenarioSearch").value||"").trim().toLowerCase();const sel=q("externalScenario"),current=sel.value;sel.innerHTML='<option value="">選択してください</option>'+scenarios.slice().sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja")).filter(sc=>!term||[sc.title,sc.sortKana,sc.kana,sc.shortTitle].some(v=>String(v||"").toLowerCase().includes(term))).map(sc=>`<option value="${esc(sc.id)}">${esc(sc.title)}</option>`).join("");if([...sel.options].some(o=>o.value===current))sel.value=current;};
  if(q("addExternalPlayed"))q("addExternalPlayed").onclick=()=>{
    const sid=q("externalScenario").value;
