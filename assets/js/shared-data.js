@@ -355,7 +355,13 @@ window.TRPG39 = {
     const pcs=api.loadPCs?api.loadPCs():[];
     return pcs.find(p=>norm(p.name)===norm(name))||null;
   };
-  api.isSelfPC=function(pc){return !!pc&&!String(pc.ownerPlayerId||"").trim()};
+  api.isSelfPC=function(pc){
+    if(!pc)return false;
+    const ownership=String(pc.ownershipType||"").trim();
+    if(ownership==="self")return true;
+    if(ownership==="player")return false;
+    return !String(pc.ownerPlayerId||"").trim();
+  };
   api.selfPCs=function(){return (api.loadPCs?api.loadPCs():[]).filter(api.isSelfPC)};
   api.resolvePCReference=function(ref={},options={}){
     const pcs=api.loadPCs?api.loadPCs():[];
@@ -391,8 +397,6 @@ window.TRPG39 = {
       const named=pcs.filter(p=>norm(p.name)===norm(clean));
       if(ownerPlayerId){
         found=named.find(p=>String(p.ownerPlayerId||"")===ownerPlayerId)||null;
-        // 所有者なし旧データを引き継ぐのは、同名候補がその1件だけの時に限る。
-        if(!found&&named.length===1&&!named[0].ownerPlayerId)found=named[0];
       }else{
         const self=named.filter(api.isSelfPC);
         if(self.length===1)found=self[0];
@@ -400,13 +404,12 @@ window.TRPG39 = {
     }
     if(found){
       let changed=false;
-      if(ownerPlayerId&&!found.ownerPlayerId){found.ownerPlayerId=ownerPlayerId;changed=true}
       if(defaults.system&&!found.system){found.system=defaults.system;changed=true}
       if(changed)api.savePCs&&api.savePCs(pcs);
       return found;
     }
     const id=api.uuid?api.uuid():crypto.randomUUID();
-    const pc={id,name:clean,ownerPlayerId,reading:"",system:defaults.system||"",job:"",image:"",sheet:"",visibility:"private",bio:"",autoCreated:true};
+    const pc={id,name:clean,ownershipType:ownerPlayerId?"player":"self",ownerPlayerId,reading:"",system:defaults.system||"",job:"",image:"",sheet:"",visibility:"private",bio:"",autoCreated:true};
     pcs.push(pc); api.savePCs&&api.savePCs(pcs); return pc;
   };
 })();
