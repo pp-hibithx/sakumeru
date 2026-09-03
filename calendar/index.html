@@ -2025,6 +2025,40 @@ initCalendarParticipantPicker();TRPG39.syncAllEventsToAlbum();fillScenarioSelect
    if(!p||p.kind!=="calendar-schedule-match")throw new Error("日程すり合わせデータが見つかりません。");
    return {id:caseId,p};
  }
+ async function loadCaseSubmissions(){
+   const button=$("scheduleMatchLoadSubmissions");
+   const status=$("scheduleMatchStatus");
+   try{
+     if(button)button.disabled=true;
+     if(status)status.textContent="提出済みの回答を読み込んでいます…";
+
+     const {p}=await getCurrentRoom();
+     const submissions=Array.isArray(p.submissions)?p.submissions:[];
+
+     // 共有ページに保存された現行形式を、そのまま参加者入力へ反映する。
+     // 読み込み操作では共有データや既存IDを更新しない。
+     peopleBox.innerHTML="";
+     submissions.forEach(x=>addPerson({
+       name:String(x?.name||""),
+       urls:String(x?.availabilityUrl||""),
+       submitted:true
+     }));
+     if(!peopleBox.children.length)addPerson({});
+
+     $("scheduleMatchShareState").textContent=`${statusLabelForCase(p)} ／ 共有URL発行済み`;
+     $("scheduleRoomOwnerActions").hidden=false;
+     updateScheduleGuide(p);
+     if(status)status.textContent=submissions.length?`${submissions.length}人が提出済みです。`:"まだ提出はありません。";
+     return submissions;
+   }catch(e){
+     console.error("提出済み回答の読み込みに失敗",e);
+     if(status)status.textContent="提出済み回答を読み込めませんでした。";
+     alert("提出済み回答を読み込めませんでした: "+(e.message||e));
+     return null;
+   }finally{
+     if(button)button.disabled=false;
+   }
+ }
  async function publishCandidates(){
    const dates=[...document.querySelectorAll(".schedule-candidate-check:checked")].map(x=>x.value);
    if(!dates.length)return alert("掲載する候補日を1日以上選択してください。");
