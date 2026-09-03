@@ -3430,7 +3430,9 @@ function playerRelPersonById(id){
 function playerRelPlayerForRow(row){
  if(row?.playerId){
    const hit=players.find(p=>String(p.id)===String(row.playerId)&&!p.excluded);
-   if(hit)return hit;
+   // An ID-bearing row belongs only to that PLAYER.  Falling through to a
+   // name match here can attach another person's role to the relationship.
+   return hit||null;
  }
  const name=String(row?.plName||"").trim();
  if(!name)return null;
@@ -3562,21 +3564,30 @@ function buildPlayerRelationshipGraph(focusId){
 }
 function showPlayerRelationNodeDetail(graph,id){
  const n=graph.nodes.find(x=>x.id===id);if(!n)return;
- const selfNode=graph.nodes.find(x=>x.id===PLAYER_REL_SELF_ID)||null;
+ const focusNode=graph.nodes.find(x=>x.id===graph.focusId)||null;
  const connections=graph.edges.filter(e=>e.a===id||e.b===id);
  const focusEdge=graph.edges.find(e=>(e.a===graph.focusId&&e.b===id)||(e.b===graph.focusId&&e.a===id));
 
- // The role shown beside each table is ALWAYS the browser owner's (SELF) role.
- // The clicked person's role is relationship data, not "how I joined this table".
+ // Resolve the center and selected PLAYER independently for every run.
+ // Each node's run was built from that person's own participantRow (playerId
+ // first; name fallback only for old rows without playerId).
  const baseRuns=(focusEdge?[...focusEdge.runs.values()]:[...n.runs.values()]);
  const runs=baseRuns.map(r=>{
-   const selfRun=selfNode?.runs?.get(r.id);
+   const personRun=n.runs?.get(r.id);
+   const centerRun=focusNode?.runs?.get(r.id);
    return {
      ...r,
-     roles:selfRun?.roles||[],
-     roleLabels:selfRun?.roleLabels||[]
+     roles:personRun?.roles||[],
+     roleLabels:personRun?.roleLabels||[],
+     centerRoles:centerRun?.roles||[],
+     centerRoleLabels:centerRun?.roleLabels||[]
    };
  }).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+
+ const roleLabelsFor=(labels,roles)=>{
+   const detailed=[...new Set((labels||[]).filter(Boolean))];
+   return detailed.length?detailed:[...new Set((roles||[]).filter(x=>x&&x!=="参加").map(playerRoleLabel))];
+ };
 
  q("playerRelationDetail").innerHTML=`<div class="player-rel-detail-card">
    <strong>${esc(n.name)}</strong>${n.self?` <span class="small muted">［自分］</span>`:""}
@@ -3585,9 +3596,11 @@ function showPlayerRelationNodeDetail(graph,id){
    ${id!==graph.focusId?`<button type="button" class="player-rel-center" data-player-rel-center="${esc(id)}">この人を中心に見る</button>`:""}
    <div style="margin-top:10px"><strong>${id===graph.focusId?"参加した卓":"中心人物との同卓"}</strong>
      ${runs.length?runs.map(r=>{
-       const labels=[...new Set((r.roleLabels||[]).filter(Boolean))];
-       const roles=labels.length?labels:[...new Set((r.roles||[]).filter(x=>x&&x!=="参加").map(playerRoleLabel))];
-       const roleText=roles.length?` <span class="small muted">［${esc(roles.join("・"))}］</span>`:"";
+       const personRoles=roleLabelsFor(r.roleLabels,r.roles);
+       const centerRoles=roleLabelsFor(r.centerRoleLabels,r.centerRoles);
+       const roleText=id===graph.focusId
+         ?(personRoles.length?` <span class="small muted">［${esc(personRoles.join("・"))}］</span>`:"")
+         :`<div class="small muted">${esc(focusNode?.name||"中心人物")}：${esc(centerRoles.join("・")||"役割未登録")} ／ ${esc(n.name)}：${esc(personRoles.join("・")||"役割未登録")}</div>`;
        return `<div class="player-rel-run">${r.date?`${esc(r.date)} ／ `:""}${esc(r.title)}${roleText}</div>`;
      }).join(""):'<div class="small muted">該当する記録はありません。</div>'}
    </div>
