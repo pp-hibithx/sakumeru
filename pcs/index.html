@@ -173,7 +173,14 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let pcs=TRPG39.loadPCs(),album=TRPG39.loadAlbum();
+const isMyPc=pc=>{
+ const ownership=String(pc?.ownershipType||"").trim();
+ if(ownership==="self")return true;
+ if(ownership==="player")return false;
+ // 旧データは、現行仕様どおり ownerPlayerId が空なら自PCとして読む。
+ return !String(pc?.ownerPlayerId||"").trim();
+};
+let allPcs=TRPG39.loadPCs(),pcs=allPcs.filter(isMyPc),album=TRPG39.loadAlbum();
 const pcStatsCache=new Map();
 let pcHistoryOrder="newest";
 const uuid=()=>TRPG39.uuid?TRPG39.uuid():crypto.randomUUID();
@@ -292,8 +299,8 @@ function runKey(x){return x?.runId?`run:${x.runId}`:`record:${x?.id||uuid()}`}
 function pcNameKey(name){return String(name||"").normalize("NFKC").trim().toLowerCase()}
 function registeredPc(refId,name){
  const id=String(refId||"").trim();
- if(id){const hit=pcs.find(p=>String(p.id||"")===id);if(hit)return hit}
- const k=pcNameKey(name),matches=pcs.filter(p=>pcNameKey(p.name)===k);
+ if(id){const hit=allPcs.find(p=>String(p.id||"")===id);if(hit)return hit}
+ const k=pcNameKey(name),matches=allPcs.filter(p=>pcNameKey(p.name)===k);
  return matches.length===1?matches[0]:null;
 }
 function pcDetailHref(pc){
@@ -449,7 +456,7 @@ function render(){
  document.querySelectorAll("[data-share]").forEach(b=>b.onclick=e=>{e.preventDefault();share(b.dataset.share)});
 }
 function edit(id){const x=pcs.find(v=>v.id===id);if(!x)return;q("pcId").value=x.id;q("pcName").value=x.name||"";q("pcReading").value=x.reading||"";q("pcSystem").value=x.system||"";q("pcJob").value=x.job||"";q("pcImage").value=x.image||"";q("pcSheet").value=x.sheet||"";q("pcVisibility").value=x.visibility||"private";q("pcBio").value=x.bio||"";q("pcArtService").value=x.artService||"";q("pcArtMaker").value=x.artMaker||"";q("pcArtUrl").value=x.artUrl||"";q("pcArtNote").value=x.artNote||"";setPcVariantRows(pcVariantsFrom(x));q("pcHeading").textContent="PCを編集";updatePcImagePreview();q("pcEditor").hidden=false;}
-function save(){const name=q("pcName").value.trim();if(!name)return alert("PC名を入力してください。");const id=q("pcId").value||uuid();const oldPc=pcs.find(v=>v.id===id)||{};const x={...oldPc,id,name,ownerPlayerId:oldPc.ownerPlayerId||"",reading:q("pcReading").value.trim(),system:q("pcSystem").value.trim(),job:q("pcJob").value.trim(),image:q("pcImage").value.trim(),variants:collectPcVariants(),artService:q("pcArtService").value.trim(),artMaker:q("pcArtMaker").value.trim(),artUrl:q("pcArtUrl").value.trim(),artNote:q("pcArtNote").value.trim(),sheet:q("pcSheet").value.trim(),visibility:q("pcVisibility").value,bio:q("pcBio").value.trim()};const i=pcs.findIndex(v=>v.id===id);if(i>=0)pcs[i]=x;else pcs.push(x);TRPG39.savePCs(pcs);pcStatsCache.clear();refreshPcSystemFilter();reset();q("pcEditor").hidden=true;render();}
+function save(){const name=q("pcName").value.trim();if(!name)return alert("PC名を入力してください。");const id=q("pcId").value||uuid();const oldPc=allPcs.find(v=>v.id===id)||{};const x={...oldPc,id,name,ownershipType:"self",ownerPlayerId:"",reading:q("pcReading").value.trim(),system:q("pcSystem").value.trim(),job:q("pcJob").value.trim(),image:q("pcImage").value.trim(),variants:collectPcVariants(),artService:q("pcArtService").value.trim(),artMaker:q("pcArtMaker").value.trim(),artUrl:q("pcArtUrl").value.trim(),artNote:q("pcArtNote").value.trim(),sheet:q("pcSheet").value.trim(),visibility:q("pcVisibility").value,bio:q("pcBio").value.trim()};const i=allPcs.findIndex(v=>v.id===id);if(i>=0)allPcs[i]=x;else allPcs.push(x);TRPG39.savePCs(allPcs);pcs=allPcs.filter(isMyPc);pcStatsCache.clear();refreshPcSystemFilter();reset();q("pcEditor").hidden=true;render();}
 async function share(id){const x=pcs.find(v=>v.id===id);if(!x)return;if(x.visibility==="private")return alert("このPCは「自分のみ」です。");const st=stats(x);try{const sid=await TRPG39Cloud.createSharedPage({kind:"pc-profile",version:3,...x,variants:pcVariantsFrom(x),stats:st});const u=new URL("../share/index.html",location.href);u.searchParams.set("id",sid);prompt("PC紹介の共有URLです。",u.href)}catch(e){alert("共有URLを作成できませんでした: "+(e.message||e))}}
 q("addPc").onclick=()=>{reset();q("pcEditor").hidden=false};q("addPcVariant").onclick=()=>addPcVariantRow();q("pcSave").onclick=save;q("pcCancel").onclick=()=>q("pcEditor").hidden=true;q("pcImage").oninput=updatePcImagePreview;q("pcUploadImage").onclick=async()=>{try{q("pcUploadImage").disabled=true;q("pcUploadImage").textContent="アップロード中…";await uploadPcImage()}catch(e){console.error(e);alert(e.message||e)}finally{q("pcUploadImage").disabled=false;q("pcUploadImage").textContent="画像をアップロード"}};q("pcSearch").oninput=render;q("pcSystemFilter").onchange=render;q("pcSort").onchange=render;q("pcRelationClose").onclick=closeRelationGraph;q("pcRelationModal").addEventListener("click",e=>{if(e.target===q("pcRelationModal"))closeRelationGraph()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!q("pcRelationModal").hidden)closeRelationGraph()});refreshPcSystemFilter();render();
 })();
