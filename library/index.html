@@ -3999,6 +3999,14 @@ function anyPcById(id){
  if(!id)return null;
  return allLibraryPcs().find(p=>String(p.id)===String(id))||null;
 }
+function pcDetailHref(pcOrId){
+ const pc=typeof pcOrId==="object"&&pcOrId?pcOrId:anyPcById(pcOrId);
+ const pcId=String(pc?.registeredId||pc?.id||"").trim();if(!pcId)return "";
+ const ownerPlayerId=String(pc?.playerId||pc?.ownerPlayerId||"").trim();
+ return ownerPlayerId
+   ?`../players/index.html?focus=${encodeURIComponent(ownerPlayerId)}&tab=pcs&pcId=${encodeURIComponent(pcId)}`
+   :`../pcs/index.html?focus=${encodeURIComponent(pcId)}`;
+}
 function pcOwnerText(p){
  return p?.ownerType==="self"?"自分":(p?.ownerLabel||"同卓PC");
 }
@@ -4490,7 +4498,7 @@ function showPcRelationNodeDetail(graph,key){
      <div class="library-dir-meta">接続 ${connections.length}PC</div>
      ${manualConnections?`<div style="margin-top:8px"><strong>登録したPC関係</strong>${manualConnections}</div>`:""}
      ${n.pcRefId?`<button type="button" class="pc-rel-center-btn" data-center-pc="${esc(n.pcRefId)}">このPCを中心に見る</button>`:""}
-     ${n.registeredId?`<div style="margin-top:8px"><a class="link" href="../pcs/index.html?focus=${encodeURIComponent(n.registeredId)}">PC情報を見る</a></div>`:""}
+     ${n.registeredId?`<div style="margin-top:8px"><a class="link" href="${esc(pcDetailHref(n.registeredId))}">PC情報を見る</a></div>`:""}
    </div>
    <div class="pc-rel-detail-card">
      <strong>同卓シナリオ</strong>
@@ -5384,7 +5392,7 @@ function renderPlayerDetail(player){
      <div class="player-card-grid">${pcsForPlayer.length?pcsForPlayer.map(p=>{const guestImage=guestPcImage(p.playerId,p.plName,p.name),displayImage=p.pc?.image||guestImage||"";return `<div class="player-pc-card" data-player-pc-card="${esc(p.name)}">
        <div class="player-pc-row">
          ${displayImage?`<img class="player-pc-thumb" src="${esc(displayImage)}" alt="">`:""}
-         <div><strong>${esc(p.name)}</strong><div class="small muted">${esc(p.system||p.pc?.system||"")}</div><div class="small muted">使用 ${p.count}卓</div>${p.pc?.id?`<a class="link" href="../pcs/index.html?focus=${encodeURIComponent(p.pc.id)}">PC情報を見る</a>`:""}</div>
+         <div><strong>${esc(p.name)}</strong><div class="small muted">${esc(p.system||p.pc?.system||"")}</div><div class="small muted">使用 ${p.count}卓</div>${p.pc?.id?`<a class="link" href="${esc(pcDetailHref(p.pc))}">PC情報を見る</a>`:""}</div>
        </div>
        ${!p.pc?.image?`<div class="guest-pc-image-editor" data-guest-pc-editor data-player-id="${esc(p.playerId)}" data-pl-name="${esc(p.plName)}" data-pc-name="${esc(p.name)}">
          <label>同卓PC画像 <span class="small muted">（このPC専用）</span></label>
