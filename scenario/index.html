@@ -112,6 +112,10 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 .scenario-summary-fold>summary::before{content:"▶";display:inline-block;margin-right:7px;font-size:11px;transition:transform .15s}
 .scenario-summary-fold[open]>summary::before{transform:rotate(90deg)}
 .scenario-summary-body{margin-top:10px;line-height:1.75}
+.scenario-overview{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.scenario-overview h3{margin:0 0 8px}.scenario-overview-body{white-space:pre-wrap;line-height:1.75;overflow-wrap:anywhere}
+.scenario-source{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.scenario-source-label{font-size:13px}.scenario-source a{width:auto}
 
 /* 長文入力欄はタグ欄と同じ横幅で固定 */
 #scenarioForm label:has(#summaryText),
@@ -307,7 +311,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
   <div id="roomImagePreview" style="margin-top:8px" hidden><img id="roomImagePreviewImg" alt="部屋画像プレビュー" style="width:min(100%,420px);aspect-ratio:16/10;object-fit:cover;border:1px solid var(--line);border-radius:8px"></div>
 </div>
 <div id="thumbPreview" class="sc-preview" hidden><img id="thumbPreviewImg" alt=""><div class="sc-preview-meta"><b id="thumbPreviewTitle"></b><div class="small muted">保存すると一覧に表示されます。</div></div></div>
-<label>シナリオ概要 <span class="small muted">（自分用／未公開シナリオはテスプ管理にも使用）</span></label><div class="small muted">公開中は「詳細は配布・掲載ページをご確認ください」と表示します。ページ情報取得時の概要バックアップは別に非公開保存されます。</div><textarea id="summaryText" rows="4" placeholder="自分用の概要。公開共有には本文を表示しません"></textarea>
+<label>シナリオ概要 <span class="small muted">（自分用／未公開シナリオはテスプ管理にも使用）</span></label><div class="small muted">保存した概要はSCENARIO詳細で確認できます。ページ情報取得時の概要バックアップもこの端末だけに保存され、公開共有には本文を表示しません。</div><textarea id="summaryText" rows="4" placeholder="自分用の概要。公開共有には本文を表示しません"></textarea>
 <label>タグ <span class="small muted">（カンマ区切り／過去タグをクリックで追加）</span></label>
 <input id="tags" placeholder="例：秘匿4PL, 現代日本, ホラー">
 <div id="tagSuggestions" class="tag-suggestions"></div>
@@ -1389,7 +1393,7 @@ async function fetchThumbnail(){
      applied.push("出典");
    }
 
-   if(meta.backupDescription){
+   if(!q("summaryBackup").value.trim() && meta.backupDescription){
      q("summaryBackup").value=meta.backupDescription;
      q("summaryBackupFetchedAt").value=meta.backupFetchedAt||new Date().toISOString();
      applied.push("概要バックアップ");
@@ -1400,7 +1404,7 @@ async function fetchThumbnail(){
    q("thumbStatus").textContent=`✓ ${applied.join("・")}を取得しました。概要バックアップは自分専用で保存され、共有には出ません。`;
  }catch(e){
    console.error(e);
-   q("thumbStatus").textContent="⚠ "+e.message;
+   q("thumbStatus").textContent="⚠ "+e.message+" 保存済みの情報は変更していません。";
  }finally{
    q("fetchThumb").disabled=false;
    q("fetchThumb").textContent="ページ情報を取得";
@@ -1459,13 +1463,31 @@ function bindScenarioDetailImageViewer(root){
  const viewer=root?.querySelector("[data-scenario-image-viewer]");if(!viewer)return;const main=viewer.querySelector(".sc-image-main"),image=main?.querySelector("img");
  viewer.querySelectorAll("[data-scenario-image-index]").forEach(button=>button.onclick=e=>{e.stopPropagation();if(!image)return;const index=Number(button.dataset.scenarioImageIndex)||0;image.src=button.dataset.scenarioImageUrl||"";image.alt=`トレーラー ${index+1}`;main.setAttribute("aria-label",`画像${index+1}を拡大表示`);viewer.querySelectorAll("[data-scenario-image-index]").forEach(x=>x.setAttribute("aria-selected",String(x===button)))});
 }
+function scenarioSourceLabel(x={}){
+ const url=String(x.url||"").trim();if(!url)return "";
+ let host="";try{host=new URL(url).hostname.toLowerCase().replace(/^www\./,"")}catch{}
+ if(host==="booth.pm"||host.endsWith(".booth.pm"))return "BOOTH";
+ if(host==="talto.cc"||host.endsWith(".talto.cc"))return "TALTO";
+ if(host==="pixiv.net"||host.endsWith(".pixiv.net"))return "pixiv";
+ const explicit=String(x.sourceType||"").trim(),key=explicit.toLowerCase();
+ if(key==="booth")return "BOOTH";if(key==="talto")return "TALTO";if(key==="pixiv")return "pixiv";
+ if(explicit&&explicit!=="その他")return explicit;
+ return "外部サイト";
+}
+function scenarioOverviewHtml(x={}){
+ const summary=String(x.summaryText||"").trim(),backup=String(x.summaryBackup||"").trim(),text=summary||backup,source=scenarioSourceLabel(x);
+ if(!text&&!source)return "";
+ const fetched=!summary&&backup&&x.summaryBackupFetchedAt?`<div class="small muted" style="margin-top:8px">取得：${esc(new Date(x.summaryBackupFetchedAt).toLocaleString("ja-JP"))}</div>`:"";
+ const sourceHtml=source?`<div class="scenario-source"><span class="scenario-source-label">情報出典：<strong>${esc(source)}</strong></span><a class="button" target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布・掲載ページを開く</a></div>`:"";
+ return `<section class="scenario-overview"><h3>概要</h3>${text?`<div class="scenario-overview-body">${linkifyText(text)}</div>${fetched}`:`<p class="small muted">保存済みの概要はありません。</p>`}${sourceHtml}</section>`;
+}
 function detail(id){
  const x=data.find(v=>v.id===id);if(!x)return;
  const labels=Object.entries(flags).filter(([k])=>x.flags&&x.flags[k]).map(([,v])=>`<span class="badge">${v}</span>`).join("");
  const st=scenarioStats(x),tagHtml=(x.tags||[]).map(t=>`<span class="badge">#${esc(t)}</span>`).join("");
  const detailTrailers=[...new Set(((x.trailerUrls&&x.trailerUrls.length)?x.trailerUrls:(x.thumbnailUrl?[x.thumbnailUrl]:[])).map(v=>String(v||"").trim()).filter(Boolean))];
  const detailImageHtml=scenarioDisplayMode(x)==="thumbnail"?scenarioDetailImageViewerHtml(detailTrailers):`${scenarioRepresentativeHtml(x,"detail")}${scenarioDetailImageViewerHtml(detailTrailers)}`;
- q("detailContent").innerHTML=`${detailImageHtml}<div class="sc-detail-body"><div class="sc-detail-top"><div><h2>${esc(x.title)}</h2>${x.shortTitle?`<div class="small muted">略称：${esc(x.shortTitle)}</div>`:""}${x.sortKana?`<div class="small muted">並び順：${esc(x.sortKana)}</div>`:""}<div class="sc-meta">${x.autoCreated?`<span class="badge">仮登録</span>`:""}${x.system?`<span class="badge">${esc(x.system)}</span>`:""}<span class="badge">${esc(facilitatorLabelFor(x)+(x.facilitatorPresence==="less"?"レス":""))}</span>${pubBadge(x)}${labels}</div>${tagHtml?`<div class="sc-tags">${tagHtml}</div>`:""}</div><button class="sc-detail-close" data-close type="button">×</button></div>${x.author?`<p>サークル名：${esc(x.author)}</p>`:""}${(x.playersMin||x.playersMax||x.hoursMin||x.hoursMax)?`<p class="small muted">${rangeText(x.playersMin,x.playersMax,"人")}${(x.playersMin||x.playersMax)&&(x.hoursMin||x.hoursMax)?" ／ ":""}${rangeText(x.hoursMin,x.hoursMax,"時間")}</p>`:""}<div class="sc-stats"><span class="badge">進行 ${st.facilitator}回</span><span class="badge">PL ${st.pl}回</span>${st.last?`<span class="badge">最終プレイ ${esc(st.last)}</span>`:""}</div>${x.publicationStatus==="public"?(x.url?`<section><h3>概要</h3><p>詳細は配布・掲載ページをご確認ください。</p></section>`:""):(x.summaryText?`<details class="scenario-summary-fold" open><summary>概要 <span class="small muted">（自分用）</span></summary><div class="scenario-summary-body" style="white-space:pre-wrap">${linkifyText(x.summaryText)}</div></details>`:(x.summaryBackup?`<details class="scenario-summary-fold" open><summary>保存済み概要 <span class="small muted">（自分専用バックアップ）</span></summary><div class="scenario-summary-body" style="white-space:pre-wrap">${linkifyText(x.summaryBackup)}</div>${x.summaryBackupFetchedAt?`<div class="small muted" style="margin-top:8px">取得：${esc(new Date(x.summaryBackupFetchedAt).toLocaleString("ja-JP"))}</div>`:""}</details>`:""))}${x.flags&&x.flags.roomReady?`<section><h3>部屋</h3>${x.roomImageUrl?`<img src="${esc(x.roomImageUrl)}" alt="部屋画像" style="width:min(100%,620px);border-radius:9px;border:1px solid var(--line)">`:`<p class="small muted">部屋あり（画像未登録）</p>`}</section>`:""}${x.privateMemo?`<section><h3>自分用メモ</h3><p style="white-space:pre-wrap">${esc(x.privateMemo)}</p></section>`:""}${x.sourceType||x.lastChecked?`<p class="small muted">${x.sourceType?`出典：${esc(x.sourceType)}`:""}${x.sourceType&&x.lastChecked?" ／ ":""}${x.lastChecked?`最終確認：${esc(x.lastChecked)}`:""}</p>`:""}<div class="sc-detail-actions">${x.url?`<a class="button" target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布・掲載ページ</a>`:""}${x.archived?"":`<button data-detail-prep="${x.id}">卓準備へ</button><button data-detail-record="${x.id}">LIBRARYに記録</button><button data-detail-schedule="${x.id}">卓予定を作る</button>`}<button data-detail-kp="${x.id}">KP用バインダー</button><button data-detail-library="${x.id}">過去の開催記録</button><button data-detail-edit="${x.id}">編集</button><button data-detail-archive="${x.id}">${x.archived?"アーカイブから戻す":"アーカイブ"}</button></div></div>`;
+ q("detailContent").innerHTML=`${detailImageHtml}<div class="sc-detail-body"><div class="sc-detail-top"><div><h2>${esc(x.title)}</h2>${x.shortTitle?`<div class="small muted">略称：${esc(x.shortTitle)}</div>`:""}${x.sortKana?`<div class="small muted">並び順：${esc(x.sortKana)}</div>`:""}<div class="sc-meta">${x.autoCreated?`<span class="badge">仮登録</span>`:""}${x.system?`<span class="badge">${esc(x.system)}</span>`:""}<span class="badge">${esc(facilitatorLabelFor(x)+(x.facilitatorPresence==="less"?"レス":""))}</span>${pubBadge(x)}${labels}</div>${tagHtml?`<div class="sc-tags">${tagHtml}</div>`:""}</div><button class="sc-detail-close" data-close type="button">×</button></div>${x.author?`<p>サークル名：${esc(x.author)}</p>`:""}${(x.playersMin||x.playersMax||x.hoursMin||x.hoursMax)?`<p class="small muted">${rangeText(x.playersMin,x.playersMax,"人")}${(x.playersMin||x.playersMax)&&(x.hoursMin||x.hoursMax)?" ／ ":""}${rangeText(x.hoursMin,x.hoursMax,"時間")}</p>`:""}<div class="sc-stats"><span class="badge">進行 ${st.facilitator}回</span><span class="badge">PL ${st.pl}回</span>${st.last?`<span class="badge">最終プレイ ${esc(st.last)}</span>`:""}</div>${scenarioOverviewHtml(x)}${x.flags&&x.flags.roomReady?`<section><h3>部屋</h3>${x.roomImageUrl?`<img src="${esc(x.roomImageUrl)}" alt="部屋画像" style="width:min(100%,620px);border-radius:9px;border:1px solid var(--line)">`:`<p class="small muted">部屋あり（画像未登録）</p>`}</section>`:""}${x.privateMemo?`<section><h3>自分用メモ</h3><p style="white-space:pre-wrap">${esc(x.privateMemo)}</p></section>`:""}${x.lastChecked?`<p class="small muted">最終確認：${esc(x.lastChecked)}</p>`:""}<div class="sc-detail-actions">${x.archived?"":`<button data-detail-prep="${x.id}">卓準備へ</button><button data-detail-record="${x.id}">LIBRARYに記録</button><button data-detail-schedule="${x.id}">卓予定を作る</button>`}<button data-detail-kp="${x.id}">KP用バインダー</button><button data-detail-library="${x.id}">過去の開催記録</button><button data-detail-edit="${x.id}">編集</button><button data-detail-archive="${x.id}">${x.archived?"アーカイブから戻す":"アーカイブ"}</button></div></div>`;
  q("detailDialog").showModal();
  bindScenarioDetailImageViewer(q("detailContent"));
  q("detailContent").querySelector("[data-close]").onclick=()=>q("detailDialog").close();
