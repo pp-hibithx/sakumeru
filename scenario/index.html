@@ -311,7 +311,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
   <div id="roomImagePreview" style="margin-top:8px" hidden><img id="roomImagePreviewImg" alt="部屋画像プレビュー" style="width:min(100%,420px);aspect-ratio:16/10;object-fit:cover;border:1px solid var(--line);border-radius:8px"></div>
 </div>
 <div id="thumbPreview" class="sc-preview" hidden><img id="thumbPreviewImg" alt=""><div class="sc-preview-meta"><b id="thumbPreviewTitle"></b><div class="small muted">保存すると一覧に表示されます。</div></div></div>
-<label>シナリオ概要 <span class="small muted">（自分用／未公開シナリオはテスプ管理にも使用）</span></label><div class="small muted">保存した概要はSCENARIO詳細で確認できます。ページ情報取得時の概要バックアップもこの端末だけに保存され、公開共有には本文を表示しません。</div><textarea id="summaryText" rows="4" placeholder="自分用の概要。公開共有には本文を表示しません"></textarea>
+<label>シナリオ概要 <span class="small muted">（自分用／未公開シナリオはテスプ管理にも使用）</span></label><div class="small muted">自動取得できた文章は編集可能な初期値です。不足している舞台・推奨技能・公開HO・注意事項等はここへ手動で補完してください。保存済み内容を再取得結果で上書きせず、公開共有にも本文を表示しません。</div><textarea id="summaryText" rows="4" placeholder="舞台、推奨技能、ロスト率、公開HO、注意事項、シナリオ概要など"></textarea>
 <label>タグ <span class="small muted">（カンマ区切り／過去タグをクリックで追加）</span></label>
 <input id="tags" placeholder="例：秘匿4PL, 現代日本, ホラー">
 <div id="tagSuggestions" class="tag-suggestions"></div>
@@ -595,6 +595,7 @@ function openDraft(id){
  ["editId","title","shortTitle","sortKana","system","author","playersMin","playersMax","hoursMin","hoursMax","url","thumbnailUrl","roomImageUrl","roomImageVisibility","publicationStatus","sourceType","summaryText","summaryBackup","summaryBackupFetchedAt","tags","privateMemo","facilitatorPresence","facilitatorTermMode","facilitatorTermCustom"].forEach(k=>{
    if(q(k)&&d[k]!==undefined)q(k).value=d[k];
  });
+ if(!q("summaryText").value.trim()&&q("summaryBackup").value.trim())q("summaryText").value=q("summaryBackup").value;
  editingTrailerUrls=normalizedTrailerUrls(d.trailerUrls?.length?d.trailerUrls:(d.thumbnailUrl?[d.thumbnailUrl]:[]));editingDisplayImageMode=d.displayImageMode||"thumbnail";renderTrailerList();
  document.querySelectorAll(".flag").forEach(c=>c.checked=!!d.flags?.[c.value]);
  q("formHeading").textContent=d.editId?"シナリオを編集（登録待ち）":"シナリオを登録（登録待ち）";
@@ -661,7 +662,7 @@ function save(){let title=q("title").value.trim();if(!title)return alert("シナ
  render();
  return true;
 }
-function edit(id){let x=data.find(v=>v.id===id);if(!x)return;q("draftId").value="";q("draftStatus").textContent="";q("editId").value=x.id;q("title").value=x.title||"";q("shortTitle").value=x.shortTitle||"";q("sortKana").value=x.sortKana||"";q("system").value=x.system||"";q("author").value=x.author||"";q("playersMin").value=x.playersMin??"";q("playersMax").value=x.playersMax??"";q("hoursMin").value=x.hoursMin??"";q("hoursMax").value=x.hoursMax??"";q("url").value=x.url||"";editingTrailerUrls=normalizedTrailerUrls((x.trailerUrls&&x.trailerUrls.length)?x.trailerUrls:(x.thumbnailUrl?[x.thumbnailUrl]:[]));editingDisplayImageMode=x.displayImageMode||"thumbnail";renderTrailerList();q("thumbnailUrl").value=editingTrailerUrls[0]||"";q("roomImageUrl").value=x.roomImageUrl||"";q("roomImageVisibility").value=x.roomImageVisibility||"private";q("publicationStatus").value=x.publicationStatus||"public";q("sourceType").value=x.sourceType||"";q("summaryText").value=x.summaryText||"";q("summaryBackup").value=x.summaryBackup||"";q("summaryBackupFetchedAt").value=x.summaryBackupFetchedAt||"";q("tags").value=(x.tags||[]).join(", ");q("privateMemo").value=x.privateMemo||"";q("facilitatorPresence").value=x.facilitatorPresence||"present";q("facilitatorTermMode").value=x.facilitatorTermMode||"auto";q("facilitatorTermCustom").value=x.facilitatorTermCustom||"";updateFacilitatorUI();updateThumbPreview(x.ogTitle||x.title||"");document.querySelectorAll(".flag").forEach(c=>c.checked=!!(x.flags&&x.flags[c.value]));updateRoomImageUI();q("formHeading").textContent="シナリオを編集";q("cancel").hidden=false;q("scenarioForm").classList.add("open");scrollTo({top:q("scenarioForm").offsetTop-18,behavior:"smooth"})}
+function edit(id){let x=data.find(v=>v.id===id);if(!x)return;q("draftId").value="";q("draftStatus").textContent="";q("editId").value=x.id;q("title").value=x.title||"";q("shortTitle").value=x.shortTitle||"";q("sortKana").value=x.sortKana||"";q("system").value=x.system||"";q("author").value=x.author||"";q("playersMin").value=x.playersMin??"";q("playersMax").value=x.playersMax??"";q("hoursMin").value=x.hoursMin??"";q("hoursMax").value=x.hoursMax??"";q("url").value=x.url||"";editingTrailerUrls=normalizedTrailerUrls((x.trailerUrls&&x.trailerUrls.length)?x.trailerUrls:(x.thumbnailUrl?[x.thumbnailUrl]:[]));editingDisplayImageMode=x.displayImageMode||"thumbnail";renderTrailerList();q("thumbnailUrl").value=editingTrailerUrls[0]||"";q("roomImageUrl").value=x.roomImageUrl||"";q("roomImageVisibility").value=x.roomImageVisibility||"private";q("publicationStatus").value=x.publicationStatus||"public";q("sourceType").value=x.sourceType||"";q("summaryText").value=x.summaryText||x.summaryBackup||"";q("summaryBackup").value=x.summaryBackup||"";q("summaryBackupFetchedAt").value=x.summaryBackupFetchedAt||"";q("tags").value=(x.tags||[]).join(", ");q("privateMemo").value=x.privateMemo||"";q("facilitatorPresence").value=x.facilitatorPresence||"present";q("facilitatorTermMode").value=x.facilitatorTermMode||"auto";q("facilitatorTermCustom").value=x.facilitatorTermCustom||"";updateFacilitatorUI();updateThumbPreview(x.ogTitle||x.title||"");document.querySelectorAll(".flag").forEach(c=>c.checked=!!(x.flags&&x.flags[c.value]));updateRoomImageUI();q("formHeading").textContent="シナリオを編集";q("cancel").hidden=false;q("scenarioForm").classList.add("open");scrollTo({top:q("scenarioForm").offsetTop-18,behavior:"smooth"})}
 function toggleArchive(id){const x=data.find(v=>v.id===id);if(!x)return;x.archived=!x.archived;x.updatedAt=new Date().toISOString();persist();render();if(q("detailDialog")?.open)q("detailDialog").close()}
 function del(id){if(confirm("このシナリオを完全に削除しますか？\n過去のLIBRARY記録は削除されません。")){data=data.filter(x=>x.id!==id);persist();render()}}
 function schedule(id){
@@ -1393,15 +1394,19 @@ async function fetchThumbnail(){
      applied.push("出典");
    }
 
-   if(!q("summaryBackup").value.trim() && meta.backupDescription){
+   const existingSummaryBackup=q("summaryBackup").value.trim();
+   if(!q("summaryText").value.trim() && (existingSummaryBackup||meta.backupDescription)){
+     q("summaryText").value=existingSummaryBackup||meta.backupDescription;
+     applied.push("概要の初期値");
+   }
+   if(!existingSummaryBackup && meta.backupDescription){
      q("summaryBackup").value=meta.backupDescription;
      q("summaryBackupFetchedAt").value=meta.backupFetchedAt||new Date().toISOString();
-     applied.push("概要バックアップ");
    }
 
    if(!applied.length)throw new Error("このページから自動入力できる基本情報を見つけられませんでした。");
 
-   q("thumbStatus").textContent=`✓ ${applied.join("・")}を取得しました。概要バックアップは自分専用で保存され、共有には出ません。`;
+   q("thumbStatus").textContent=`✓ 空欄へ${applied.join("・")}を補完しました。取得結果は一部だけの場合があります。内容を確認し、不足項目は手動で補完してください。`;
  }catch(e){
    console.error(e);
    q("thumbStatus").textContent="⚠ "+e.message+" 保存済みの情報は変更していません。";
