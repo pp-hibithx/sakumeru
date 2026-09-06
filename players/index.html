@@ -3358,9 +3358,13 @@ function getPlayerPcHistoryIndex(){
      if(!pcId||!playerId)return;
      const pc=byId.get(pcId);
      if(!pc||String(pc.ownerPlayerId||"").trim()!==playerId)return;
-     if(!index.has(pcId))index.set(pcId,{runs:new Set(),last:""});
+     if(!index.has(pcId))index.set(pcId,{runs:new Map(),last:""});
      const entry=index.get(pcId);
-     entry.runs.add(runKey);
+     if(!entry.runs.has(runKey))entry.runs.set(runKey,{records:[],row});
+     const run=entry.runs.get(runKey);
+     if(!run.records.some(x=>String(x.id||"")===String(record.id||"")))run.records.push(record);
+     // Keep the row with the most useful per-session information as the representative.
+     if((!run.row?.ho&&row.ho)||(!run.row?.pcName&&row.pcName))run.row=row;
      if(recordDate>entry.last)entry.last=recordDate;
    });
  });
@@ -3373,7 +3377,11 @@ function playerOwnedPcs(player){
  const history=getPlayerPcHistoryIndex();
  return pcs.filter(pc=>String(pc.ownerPlayerId||"").trim()===playerId).map(pc=>{
    const stat=history.get(String(pc.id||""));
-   return {pc,count:stat?.runs?.size||0,last:stat?.last||""};
+   const runs=[...(stat?.runs?.values?.()||[])].map(run=>{
+     run.records.sort((a,b)=>String(a.date||a.start||"").localeCompare(String(b.date||b.start||"")));
+     return {...run,record:run.records[0]};
+   }).sort((a,b)=>String(b.records.at(-1)?.date||b.records.at(-1)?.start||"").localeCompare(String(a.records.at(-1)?.date||a.records.at(-1)?.start||"")));
+   return {pc,count:runs.length,last:stat?.last||"",runs};
  }).sort((a,b)=>String(a.pc.reading||a.pc.name||"").localeCompare(String(b.pc.reading||b.pc.name||""),"ja"));
 }
 function cleanPlayerFieldValue(value,label){
@@ -3863,7 +3871,7 @@ function renderPlayerDetail(player){
        const pc=item.pc,details=[pc.system,pc.job].filter(Boolean).join(" ／ ");
        return `<article class="player-pc-card">
          ${pc.image?`<img class="player-pc-card-image" src="${esc(pc.image)}" alt="" loading="lazy">`:`<div class="player-pc-card-placeholder">🌺</div>`}
-         <div class="player-pc-card-body"><div class="player-pc-card-name"><strong>${esc(pc.name||"名称未設定")}</strong></div>
+         <div class="player-pc-card-body"><div class="small muted">参加PC</div><div class="player-pc-card-name"><strong>${esc(pc.name||"名称未設定")}</strong></div>
            ${pc.reading?`<div class="player-pc-card-reading">${esc(pc.reading)}</div>`:""}
            ${details?`<div class="player-pc-card-meta">${esc(details)}</div>`:""}
            <div class="player-pc-card-meta">使用した卓 ${item.count}卓${item.last?` ／ 最終使用 ${esc(item.last)}`:""}</div>
