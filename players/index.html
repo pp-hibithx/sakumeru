@@ -57,7 +57,6 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .player-pc-card-placeholder{width:88px;aspect-ratio:1/1;border-radius:9px;display:grid;place-items:center;font-size:28px;background:rgba(255,255,255,.025)}
 .player-pc-card-body{min-width:0}.player-pc-card-name{font-size:17px;line-height:1.35;overflow-wrap:anywhere}.player-pc-card-reading,.player-pc-card-meta{font-size:12px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
 .player-pc-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:9px}.player-pc-card-actions .link{display:inline-block}
-.player-pc-card>.pc-library-detail{grid-column:1/-1;min-width:0}
 .player-pc-empty{border:1px dashed var(--line);border-radius:10px;padding:16px;display:grid;gap:9px;justify-items:start}
 .player-relation-inline{min-width:0}.player-relation-inline .pc-rel-panel{width:100%;max-height:none;overflow:visible;padding:14px}.player-relation-inline .player-relation-modal-close{display:none}.player-relation-inline .player-rel-stage{height:clamp(520px,65vh,720px)}.player-relation-inline .player-rel-stage svg{height:100%}.player-relation-inline .player-rel-detail{min-width:0}
 #playerDirectoryHead[hidden],#playerDirectoryViews[hidden],#libraryToolbar[hidden]{display:none!important}
@@ -1367,10 +1366,7 @@ function setParticipantRows(rows=[]){
  refreshParticipantPlayerList();q("participantRows").innerHTML="";
  const groups=[],map=new Map();
  (rows||[]).forEach((r,i)=>{
-   const participantIdentity=String(r.playerId||"")||String(r.plName||"").trim();
-   // PL未定の行は「同じ空欄の人」ではなく、HO構成上の独立した参加枠として扱う。
-   // IDまたは名前がある参加者だけ、従来どおり同一参加者へまとめる。
-   const key=participantIdentity?`${r.role||"PL"}||${participantIdentity}`:`__pending_participant_slot__${i}`;
+   const key=`${r.role||"PL"}||${String(r.plName||"").trim()}`;
    let g=map.get(key);if(!g){g={role:r.role||"PL",plName:r.plName||"",pcs:[]};map.set(key,g);groups.push(g)}
    if(r.pcName||r.ho)g.pcs.push({pcName:r.pcName||"",ho:r.ho||""});
  });
@@ -2453,16 +2449,6 @@ function anyPcById(id){
  if(!id)return null;
  return allLibraryPcs().find(p=>String(p.id)===String(id))||null;
 }
-function pcDetailHref(pcOrId){
- const pc=typeof pcOrId==="object"&&pcOrId
-   ?pcOrId
-   :(pcs||[]).find(p=>String(p.id||"")===String(pcOrId||""));
- const pcId=String(pc?.id||pc?.registeredId||"").trim();if(!pcId)return "";
- const ownerPlayerId=String(pc?.ownerPlayerId||pc?.playerId||"").trim();
- return ownerPlayerId
-   ?`../players/index.html?focus=${encodeURIComponent(ownerPlayerId)}&tab=pcs&pcId=${encodeURIComponent(pcId)}`
-   :`../pcs/index.html?focus=${encodeURIComponent(pcId)}`;
-}
 function pcOwnerText(p){
  return p?.ownerType==="self"?"自分":(p?.ownerLabel||"同卓PC");
 }
@@ -2954,7 +2940,7 @@ function showPcRelationNodeDetail(graph,key){
      <div class="library-dir-meta">接続 ${connections.length}PC</div>
      ${manualConnections?`<div style="margin-top:8px"><strong>登録したPC関係</strong>${manualConnections}</div>`:""}
      ${n.pcRefId?`<button type="button" class="pc-rel-center-btn" data-center-pc="${esc(n.pcRefId)}">このPCを中心に見る</button>`:""}
-     ${n.registeredId?`<div style="margin-top:8px"><a class="link" href="${esc(pcDetailHref(n.registeredId))}">PC情報を見る</a></div>`:""}
+     ${n.registeredId?`<div style="margin-top:8px"><a class="link" href="../pcs/index.html?focus=${encodeURIComponent(n.registeredId)}">PC情報を見る</a></div>`:""}
    </div>
    <div class="pc-rel-detail-card">
      <strong>同卓シナリオ</strong>
@@ -3414,37 +3400,6 @@ function playerPcHistoryHtml(player,pcItem){
  }).join("")}</div>`;
 }
 
-function setPlayerPcDetailOpen(pcId,{updateUrl=false,scroll=true}={}){
- const id=String(pcId||"").trim();if(!id)return false;
- const card=document.getElementById(`player-pc-${id}`);
- const detail=document.getElementById(`pc-library-detail-${id}`);
- if(!card||!detail)return false;
- detail.hidden=false;
- const trigger=card.querySelector(`[data-player-pc-detail="${CSS.escape(id)}"]`);
- if(trigger)trigger.setAttribute("aria-expanded","true");
- if(updateUrl){
-   const u=new URL(location.href);
-   u.searchParams.set("focus",focusedPlayerId||"");
-   u.searchParams.set("tab","pcs");
-   u.searchParams.set("pcId",id);
-   window.history.pushState(null,"",u);
- }
- if(scroll)requestAnimationFrame(()=>card.scrollIntoView({behavior:"smooth",block:"center"}));
- return true;
-}
-
-function togglePlayerPcDetail(pcId){
- const id=String(pcId||"").trim();
- const detail=document.getElementById(`pc-library-detail-${id}`);
- if(!detail)return;
- if(detail.hidden){setPlayerPcDetailOpen(id,{updateUrl:true});return;}
- detail.hidden=true;
- const card=document.getElementById(`player-pc-${id}`);
- const trigger=card?.querySelector(`[data-player-pc-detail="${CSS.escape(id)}"]`);
- if(trigger)trigger.setAttribute("aria-expanded","false");
- const u=new URL(location.href);u.searchParams.delete("pcId");window.history.pushState(null,"",u);
-}
-
 const PLAYER_REL_SELF_ID="__self__";
 let activePlayerRelationId=PLAYER_REL_SELF_ID;
 let playerRelationShowAllEdges=false;
@@ -3462,9 +3417,7 @@ function playerRelPersonById(id){
 function playerRelPlayerForRow(row){
  if(row?.playerId){
    const hit=players.find(p=>String(p.id)===String(row.playerId)&&!p.excluded);
-   // An ID-bearing row belongs only to that PLAYER.  Falling through to a
-   // name match here can attach another person's role to the relationship.
-   return hit||null;
+   if(hit)return hit;
  }
  const name=String(row?.plName||"").trim();
  if(!name)return null;
@@ -3596,30 +3549,21 @@ function buildPlayerRelationshipGraph(focusId){
 }
 function showPlayerRelationNodeDetail(graph,id){
  const n=graph.nodes.find(x=>x.id===id);if(!n)return;
- const focusNode=graph.nodes.find(x=>x.id===graph.focusId)||null;
+ const selfNode=graph.nodes.find(x=>x.id===PLAYER_REL_SELF_ID)||null;
  const connections=graph.edges.filter(e=>e.a===id||e.b===id);
  const focusEdge=graph.edges.find(e=>(e.a===graph.focusId&&e.b===id)||(e.b===graph.focusId&&e.a===id));
 
- // Resolve the center and selected PLAYER independently for every run.
- // Each node's run was built from that person's own participantRow (playerId
- // first; name fallback only for old rows without playerId).
+ // The role shown beside each table is ALWAYS the browser owner's (SELF) role.
+ // The clicked person's role is relationship data, not "how I joined this table".
  const baseRuns=(focusEdge?[...focusEdge.runs.values()]:[...n.runs.values()]);
  const runs=baseRuns.map(r=>{
-   const personRun=n.runs?.get(r.id);
-   const centerRun=focusNode?.runs?.get(r.id);
+   const selfRun=selfNode?.runs?.get(r.id);
    return {
      ...r,
-     roles:personRun?.roles||[],
-     roleLabels:personRun?.roleLabels||[],
-     centerRoles:centerRun?.roles||[],
-     centerRoleLabels:centerRun?.roleLabels||[]
+     roles:selfRun?.roles||[],
+     roleLabels:selfRun?.roleLabels||[]
    };
  }).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
-
- const roleLabelsFor=(labels,roles)=>{
-   const detailed=[...new Set((labels||[]).filter(Boolean))];
-   return detailed.length?detailed:[...new Set((roles||[]).filter(x=>x&&x!=="参加").map(playerRoleLabel))];
- };
 
  q("playerRelationDetail").innerHTML=`<div class="player-rel-detail-card">
    <strong>${esc(n.name)}</strong>${n.self?` <span class="small muted">［自分］</span>`:""}
@@ -3628,11 +3572,9 @@ function showPlayerRelationNodeDetail(graph,id){
    ${id!==graph.focusId?`<button type="button" class="player-rel-center" data-player-rel-center="${esc(id)}">この人を中心に見る</button>`:""}
    <div style="margin-top:10px"><strong>${id===graph.focusId?"参加した卓":"中心人物との同卓"}</strong>
      ${runs.length?runs.map(r=>{
-       const personRoles=roleLabelsFor(r.roleLabels,r.roles);
-       const centerRoles=roleLabelsFor(r.centerRoleLabels,r.centerRoles);
-       const roleText=id===graph.focusId
-         ?(personRoles.length?` <span class="small muted">［${esc(personRoles.join("・"))}］</span>`:"")
-         :`<div class="small muted">${esc(focusNode?.name||"中心人物")}：${esc(centerRoles.join("・")||"役割未登録")} ／ ${esc(n.name)}：${esc(personRoles.join("・")||"役割未登録")}</div>`;
+       const labels=[...new Set((r.roleLabels||[]).filter(Boolean))];
+       const roles=labels.length?labels:[...new Set((r.roles||[]).filter(x=>x&&x!=="参加").map(playerRoleLabel))];
+       const roleText=roles.length?` <span class="small muted">［${esc(roles.join("・"))}］</span>`:"";
        return `<div class="player-rel-run">${r.date?`${esc(r.date)} ／ `:""}${esc(r.title)}${roleText}</div>`;
      }).join(""):'<div class="small muted">該当する記録はありません。</div>'}
    </div>
@@ -3873,15 +3815,19 @@ function renderPlayerDetail(player){
      <div><h3>${esc(player.name)}のPC</h3><div class="small muted">このPLAYERが所有するPC ${pcsForPlayer.length}人</div></div>
      <div class="player-pc-grid" style="margin-top:10px">${pcsForPlayer.length?pcsForPlayer.map(item=>{
        const pc=item.pc,details=[pc.system,pc.job].filter(Boolean).join(" ／ ");
-       return `<article class="player-pc-card" id="player-pc-${esc(pc.id)}">
+       return `<article class="player-pc-card">
          ${pc.image?`<img class="player-pc-card-image" src="${esc(pc.image)}" alt="" loading="lazy">`:`<div class="player-pc-card-placeholder">🌺</div>`}
          <div class="player-pc-card-body"><div class="player-pc-card-name"><strong>${esc(pc.name||"名称未設定")}</strong></div>
            ${pc.reading?`<div class="player-pc-card-reading">${esc(pc.reading)}</div>`:""}
            ${details?`<div class="player-pc-card-meta">${esc(details)}</div>`:""}
            <div class="player-pc-card-meta">使用した卓 ${item.count}卓${item.last?` ／ 最終使用 ${esc(item.last)}`:""}</div>
-           <div class="player-pc-card-actions"><a class="link" href="${esc(pcDetailHref(pc))}" data-player-pc-detail="${esc(pc.id)}" aria-expanded="false">PC詳細を見る</a><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
+           <div class="player-pc-card-actions"><button type="button" data-player-pc-detail="${esc(pc.id)}">PC詳細を見る</button><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
+           <div id="player-pc-detail-${esc(pc.id)}" class="pc-library-detail" hidden>
+             ${pc.bio?`<div class="pc-library-info-row"><strong>紹介</strong><div style="white-space:pre-wrap">${esc(pc.bio)}</div></div>`:""}
+             ${pc.sheet?`<div class="pc-library-info-row"><a class="link" href="${esc(pc.sheet)}" target="_blank" rel="noopener">キャラクターシートを開く</a></div>`:""}
+             <details class="pc-scenario-toggle"><summary>通過シナリオ ${item.count}件</summary>${playerPcHistoryHtml(player,item)}</details>
+           </div>
          </div>
-         ${pcLibraryDetailHtml(pc)}
        </article>`;
      }).join(""):`<div class="player-pc-empty"><div>このPLAYERが所有するPCは登録されていません。</div><a class="link" href="../pcs/index.html">PCページを見る</a></div>`}</div>
    </section>`:""}
@@ -3889,9 +3835,18 @@ function renderPlayerDetail(player){
    ${playerDetailTab==="relations"?`<section class="player-tab-panel player-section player-relation-inline"><div id="playerRelationInlineHost"></div></section>`:""}
    </div>`;
 
- q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");u.searchParams.delete("tab");u.searchParams.delete("pcId");window.history.pushState(null,"",u);render()};
+ q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");u.searchParams.delete("tab");window.history.pushState(null,"",u);render()};
  document.querySelectorAll("[data-player-tab]").forEach(button=>button.onclick=()=>{const next=button.dataset.playerTab;if(!PLAYER_DETAIL_TABS.has(next)||next===playerDetailTab)return;playerDetailTab=next;const u=new URL(location.href);u.searchParams.set("focus",player.id);u.searchParams.set("tab",next);window.history.pushState(null,"",u);renderPlayerDetail(player)});
  if(playerDetailTab==="relations")mountInlinePlayerRelationshipGraph(player.id);
+ document.querySelectorAll("[data-player-pc-detail]").forEach(button=>button.onclick=()=>{
+   const target=q(`player-pc-detail-${button.dataset.playerPcDetail}`);if(!target)return;
+   target.hidden=false;target.scrollIntoView({block:"nearest"});
+   const u=new URL(location.href);u.searchParams.set("focus",player.id);u.searchParams.set("tab","pcs");u.searchParams.set("pcId",button.dataset.playerPcDetail);history.replaceState(null,"",u);
+ });
+ if(playerDetailTab==="pcs"){
+   const requestedPcId=new URLSearchParams(location.search).get("pcId")||"",button=document.querySelector(`[data-player-pc-detail="${CSS.escape(requestedPcId)}"]`);
+   if(button)requestAnimationFrame(()=>button.click());
+ }
  if(q("addRecordForPlayer"))q("addRecordForPlayer").onclick=()=>{
    const params=new URLSearchParams({new:"1",participantId:String(player.id||"")});
    if(player.name)params.set("participantName",String(player.name));
@@ -3901,14 +3856,6 @@ function renderPlayerDetail(player){
  if(q("playerDetailRole"))q("playerDetailRole").onchange=()=>{playerDetailRoleFilter=q("playerDetailRole").value;renderPlayerDetail(player)};
  if(q("playerDetailSystem"))q("playerDetailSystem").onchange=()=>{playerDetailSystemFilter=q("playerDetailSystem").value;renderPlayerDetail(player)};
  if(q("playerDetailPc"))q("playerDetailPc").onchange=()=>{playerDetailPcFilter=q("playerDetailPc").value;renderPlayerDetail(player)};
- if(playerDetailTab==="pcs"){
-   document.querySelectorAll("[data-player-pc-detail]").forEach(link=>link.onclick=event=>{
-     event.preventDefault();
-     togglePlayerPcDetail(link.dataset.playerPcDetail);
-   });
-   const targetPcId=new URLSearchParams(location.search).get("pcId")||"";
-   if(targetPcId)requestAnimationFrame(()=>setPlayerPcDetailOpen(targetPcId,{scroll:true}));
- }
  if(q("externalScenarioSearch"))q("externalScenarioSearch").oninput=()=>{const term=String(q("externalScenarioSearch").value||"").trim().toLowerCase();const sel=q("externalScenario"),current=sel.value;sel.innerHTML='<option value="">選択してください</option>'+scenarios.slice().sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja")).filter(sc=>!term||[sc.title,sc.sortKana,sc.kana,sc.shortTitle].some(v=>String(v||"").toLowerCase().includes(term))).map(sc=>`<option value="${esc(sc.id)}">${esc(sc.title)}</option>`).join("");if([...sel.options].some(o=>o.value===current))sel.value=current;};
  if(q("addExternalPlayed"))q("addExternalPlayed").onclick=()=>{
    const sid=q("externalScenario").value;
