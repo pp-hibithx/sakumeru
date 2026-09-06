@@ -33,9 +33,11 @@ function htmlWithLineBreaks(root){
 }
 function plainTextForX(html){
  const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);
- d.querySelectorAll('[data-x-hidden="true"]').forEach(x=>x.replaceWith(document.createTextNode("――")));
+ // X用本文は、折りたたみを開けた時だけ読める内容を一切使用しない。
+ // details自体を先に除くため、入れ子の深さに関係なく内部本文も除外される。
+ d.querySelectorAll("details").forEach(x=>x.remove());
+ d.querySelectorAll('[data-x-hidden="true"]').forEach(x=>x.remove());
  return htmlWithLineBreaks(d)
-   .replace(/(?:――[ \t]*){2,}/g,"――")
    .replace(/\u200B/g,"")
    .replace(/\r/g,"")
    .replace(/[ \t]+\n/g,"\n")
