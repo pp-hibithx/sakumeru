@@ -220,6 +220,27 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
   letter-spacing:.12em;
 }
 </style>
+<style>
+/* Visibility-first UI shared with MY PCs. */
+main>.wrap{display:grid;gap:18px}
+main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 5px 18px rgba(0,0,0,.1)}
+.sc-toolbar{padding:13px;border:2px solid color-mix(in srgb,currentColor 28%,var(--line));border-radius:11px;background:color-mix(in srgb,var(--panel) 88%,currentColor 3%)}
+.sc-toolbar label,#scenarioForm label{font-weight:750;color:inherit;margin-bottom:5px}
+.sc-toolbar input,.sc-toolbar select,#scenarioForm input:not([type="checkbox"]):not([type="radio"]),#scenarioForm select,#scenarioForm textarea{min-height:44px;border:2px solid color-mix(in srgb,currentColor 34%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--panel) 88%,#000 12%);color:inherit;padding:9px 10px;box-sizing:border-box}
+.sc-toolbar input::placeholder,#scenarioForm input::placeholder,#scenarioForm textarea::placeholder{color:color-mix(in srgb,currentColor 62%,transparent);opacity:1}
+.sc-toolbar input:focus,.sc-toolbar select:focus,#scenarioForm input:focus,#scenarioForm select:focus,#scenarioForm textarea:focus{border-color:var(--accent);outline:3px solid color-mix(in srgb,var(--accent) 34%,transparent);outline-offset:1px}
+#openForm,#save,#saveDraft{background:var(--accent);border-color:var(--accent);color:#111;font-weight:800;box-shadow:0 2px 0 rgba(0,0,0,.28)}
+#cancel{background:transparent;border:2px solid color-mix(in srgb,currentColor 38%,var(--line));font-weight:700}
+.sc-system-tab{min-height:42px;border:2px solid color-mix(in srgb,currentColor 25%,var(--line));font-weight:700}.sc-system-tab.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:inherit;box-shadow:inset 0 -3px 0 var(--accent)}
+.sc-card{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));background:var(--panel);box-shadow:0 3px 10px rgba(0,0,0,.1);transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}.sc-card:hover,.sc-card:focus-visible{border-color:color-mix(in srgb,var(--accent) 68%,currentColor);box-shadow:0 6px 16px rgba(0,0,0,.18);transform:translateY(-1px);outline:none}.sc-card:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent),0 6px 16px rgba(0,0,0,.18)}
+.sc-card h3{font-size:16px;line-height:1.45}.sc-card .small,.sc-card .sc-meta{line-height:1.55}.sc-menu-btn{min-width:42px;min-height:42px;border:2px solid color-mix(in srgb,currentColor 30%,var(--line));background:color-mix(in srgb,var(--panel) 88%,currentColor 5%)}
+.friend-panel>summary{padding:13px 15px;outline:none}.friend-panel[open]>summary{background:color-mix(in srgb,var(--accent) 10%,var(--panel));border-bottom:2px solid color-mix(in srgb,var(--accent) 48%,var(--line))}.friend-panel>summary:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+#scenarioForm{border-color:var(--accent);border-left-width:6px;background:color-mix(in srgb,var(--panel) 96%,var(--accent) 4%)}#scenarioForm>h2{padding-bottom:10px;border-bottom:2px solid color-mix(in srgb,var(--accent) 55%,var(--line))}
+.sc-detail{border:3px solid color-mix(in srgb,var(--accent) 70%,currentColor);box-shadow:0 24px 70px rgba(0,0,0,.58)}.sc-detail::backdrop{background:rgba(0,0,0,.72)}.sc-detail-body>section,.scenario-overview{border:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-left:5px solid var(--accent);border-radius:10px;padding:13px;background:color-mix(in srgb,var(--panel) 94%,currentColor 2%)}
+.sc-detail-actions{padding-top:13px;border-top:2px solid color-mix(in srgb,currentColor 20%,var(--line));gap:8px}.sc-detail-actions button{min-height:42px;font-weight:700}
+.danger,[data-del]{border-color:color-mix(in srgb,#dc5664 72%,var(--line))!important;color:color-mix(in srgb,#ff8e98 85%,currentColor)!important}
+@media(max-width:620px){main>.wrap{gap:14px}.sc-toolbar{padding:10px}.sc-system-tab{min-height:44px}.sc-detail{width:calc(100% - 16px);max-height:calc(100vh - 16px);border-width:2px}.sc-detail-actions{display:grid}.sc-detail-actions button,.sc-detail-actions a{width:100%;box-sizing:border-box}.sc-card{transform:none!important}}
+</style>
 
 </head>
 <body>
@@ -1426,11 +1447,12 @@ function scenarioSourceLabel(x={}){
  return "外部サイト";
 }
 function scenarioOverviewHtml(x={}){
- const summary=String(x.summaryText||"").trim(),source=scenarioSourceLabel(x);
- if(!summary&&!source)return "";
+ const summary=String(x.summaryText||"").trim(),backup=String(x.summaryBackup||"").trim(),text=summary||backup,source=scenarioSourceLabel(x);
+ if(!text&&!source)return "";
+ const fetchedLabel=!summary&&backup?`<div class="small muted" style="margin-top:8px">過去に取得した概要${x.summaryBackupFetchedAt?`（${esc(new Date(x.summaryBackupFetchedAt).toLocaleString("ja-JP"))}）`:""}</div>`:"";
  const warning=x.sourceSpoilerWarning?`<div class="scenario-source-warning">⚠ URL先にネタバレを含む可能性があります</div>`:"";
  const sourceHtml=source?`<div class="scenario-source"><span class="scenario-source-label">情報出典：<strong>${esc(source)}</strong></span><div class="scenario-source-actions">${warning}<a class="button" target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布・掲載ページを開く</a></div></div>`:"";
- return `<section class="scenario-overview"><h3>概要</h3>${summary?`<div class="scenario-overview-body">${linkifyText(summary)}</div>`:`<p class="small muted">保存済みの概要はありません。編集画面から手動で補完できます。</p>`}${sourceHtml}</section>`;
+ return `<section class="scenario-overview"><h3>概要</h3>${text?`<div class="scenario-overview-body">${linkifyText(text)}</div>${fetchedLabel}`:`<p class="small muted">保存済みの概要はありません。編集画面から手動で補完できます。</p>`}${sourceHtml}</section>`;
 }
 function detail(id){
  const x=data.find(v=>v.id===id);if(!x)return;
