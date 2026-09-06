@@ -777,6 +777,52 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 #libraryEditor{display:none!important}
 .notice{display:none!important}
 </style>
+<style>
+/* Visibility-first UI shared with MY PCs. */
+.library-page{gap:18px}
+.lib-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 5px 18px rgba(0,0,0,.12)}
+#playerDirectoryHead{align-items:center;padding-bottom:12px;border-bottom:2px solid color-mix(in srgb,currentColor 18%,var(--line))}
+#playerDirectoryHead h2{margin-bottom:3px}
+#summary{color:inherit;font-weight:700}
+#addPlayerDirect,#addRecordForPlayer{background:var(--accent);border-color:var(--accent);color:#111;font-weight:800;box-shadow:0 2px 0 rgba(0,0,0,.28)}
+#addPlayerDirect:hover,#addRecordForPlayer:hover{filter:brightness(1.08)}
+.lib-toolbar.player-toolbar{padding:12px;border:2px solid color-mix(in srgb,currentColor 28%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 86%,currentColor 4%)}
+.lib-toolbar.player-toolbar label,.player-section label{font-weight:750;color:inherit;margin-bottom:5px}
+.lib-toolbar.player-toolbar input,.lib-toolbar.player-toolbar select,.player-section input:not([type="checkbox"]):not([type="radio"]),.player-section select,.player-section textarea{min-height:44px;border:2px solid color-mix(in srgb,currentColor 34%,var(--line));background:color-mix(in srgb,var(--panel) 88%,#000 12%);color:inherit;border-radius:8px;padding:9px 10px;box-sizing:border-box}
+.lib-toolbar.player-toolbar input::placeholder,.player-section input::placeholder,.player-section textarea::placeholder{color:color-mix(in srgb,currentColor 62%,transparent);opacity:1}
+.lib-toolbar.player-toolbar input:focus,.lib-toolbar.player-toolbar select:focus,.player-section input:focus,.player-section select:focus,.player-section textarea:focus{border-color:var(--accent);outline:3px solid color-mix(in srgb,var(--accent) 34%,transparent);outline-offset:1px}
+.library-directory-grid{gap:12px}
+.library-dir-card{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 3px 10px rgba(0,0,0,.1);transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}
+.library-dir-card:hover{border-color:color-mix(in srgb,var(--accent) 68%,currentColor);box-shadow:0 6px 16px rgba(0,0,0,.18);transform:translateY(-1px)}
+.player-dir-card-main{padding:2px;border-radius:8px;outline:none}
+.player-dir-card-main:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.library-dir-title{font-size:17px;line-height:1.45;font-weight:800}.library-dir-meta{font-size:13px;line-height:1.6;color:color-mix(in srgb,currentColor 78%,transparent)}
+.player-dir-actions{padding-top:10px;border-top:2px solid color-mix(in srgb,currentColor 18%,var(--line));gap:8px}
+.player-dir-actions button{min-height:40px;padding:8px 11px;border:2px solid color-mix(in srgb,currentColor 30%,var(--line));font-weight:700}
+.player-dir-actions button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.player-detail-back{min-height:42px;border:2px solid color-mix(in srgb,currentColor 32%,var(--line));font-weight:750}
+.player-detail-header{border:3px solid color-mix(in srgb,var(--accent) 64%,currentColor);border-left-width:7px;padding:18px;background:color-mix(in srgb,var(--panel) 96%,var(--accent) 4%);box-shadow:0 6px 20px rgba(0,0,0,.14)}
+.player-detail-public{color:color-mix(in srgb,currentColor 76%,transparent);font-weight:650}
+.player-detail-stat{border:2px solid color-mix(in srgb,currentColor 27%,var(--line));background:color-mix(in srgb,var(--panel) 88%,currentColor 5%);padding:6px 11px;font-size:13px;font-weight:700}
+.player-detail-systems .badge{border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));color:inherit}
+.player-detail-tabs{gap:5px;padding:5px 5px 0;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-radius:10px 10px 0 0;background:color-mix(in srgb,var(--panel) 88%,#000 12%)}
+.player-detail-tab{min-height:44px;border:2px solid transparent;border-bottom:0;color:color-mix(in srgb,currentColor 76%,transparent);font-weight:700}
+.player-detail-tab:hover{color:inherit;border-color:color-mix(in srgb,currentColor 28%,var(--line));background:color-mix(in srgb,currentColor 5%,transparent)}
+.player-detail-tab.active{color:inherit;border:2px solid var(--accent);border-bottom-color:var(--panel);background:var(--panel);box-shadow:inset 0 3px 0 var(--accent)}
+.player-detail-tab:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.player-tab-panel{margin-top:-2px;padding:16px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-top-color:var(--accent);border-radius:0 0 11px 11px;background:var(--panel)}
+.player-tab-panel h2,.player-tab-panel h3{padding-bottom:8px;border-bottom:2px solid color-mix(in srgb,currentColor 18%,var(--line))}
+.player-history-card,.player-pc-card{border:2px solid color-mix(in srgb,currentColor 23%,var(--line));box-shadow:0 3px 10px rgba(0,0,0,.09)}
+.player-history-title,.player-pc-card-name{font-weight:800}.player-history-meta,.player-pc-card-meta,.player-pc-card-reading{color:color-mix(in srgb,currentColor 76%,transparent);line-height:1.55}
+.player-pc-card-actions{padding-top:9px;border-top:1px solid color-mix(in srgb,currentColor 18%,var(--line))}.player-pc-card-actions button,.player-pc-card-actions .link{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:7px 10px;border:2px solid color-mix(in srgb,currentColor 29%,var(--line));border-radius:8px;color:inherit;font-weight:700;text-decoration:none;box-sizing:border-box}
+.player-pc-card-actions button:hover,.player-pc-card-actions .link:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.player-pc-empty{border-width:2px;border-color:color-mix(in srgb,currentColor 30%,var(--line))}
+.player-relation-inline .pc-rel-panel{border:0;box-shadow:none}.player-rel-controls{padding:10px;border:2px solid color-mix(in srgb,currentColor 25%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--panel) 88%,currentColor 4%)}
+.player-rel-stage{border:2px solid color-mix(in srgb,currentColor 30%,var(--line));background:color-mix(in srgb,var(--panel) 86%,#000 14%)}
+.player-rel-node.focus circle{fill:color-mix(in srgb,var(--accent) 13%,var(--panel));stroke-width:4}.player-rel-detail-card{border:2px solid color-mix(in srgb,currentColor 27%,var(--line));background:color-mix(in srgb,var(--panel) 92%,currentColor 3%)}
+.danger,[data-player-delete]{border-color:color-mix(in srgb,#dc5664 72%,var(--line))!important;color:color-mix(in srgb,#ff8e98 85%,currentColor)!important}
+@media(max-width:620px){.library-page{gap:14px}.lib-panel{padding:12px}.lib-toolbar.player-toolbar{padding:10px}.library-dir-card{transform:none!important}.player-dir-actions button{flex:1}.player-detail-header{padding:13px;border-width:2px;border-left-width:5px}.player-detail-tabs{padding-inline:3px}.player-tab-panel{padding:12px}.player-pc-card-actions{display:grid}.player-pc-card-actions button,.player-pc-card-actions .link{width:100%}}
+</style>
 </head>
 <body>
 <div data-site-header data-active="players"></div>
