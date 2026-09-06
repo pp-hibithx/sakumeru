@@ -1352,7 +1352,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=02309"></script>
-<script src="../assets/js/rich-editor.js?v=0902-x-linebreak1"></script>
+<script src="../assets/js/rich-editor.js?v=0906-article-share1"></script>
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id);
@@ -3614,19 +3614,21 @@ async function shareArticlePage(runId,pageId,options={}){
       if(b.type==="text"&&b.html&&window.SAKUMERichEditor)return {...b,visibility,html:SAKUMERichEditor.sanitizeHtml(b.html),text:String(b.text||SAKUMERichEditor.plainText(b.html))};
       return {...b,visibility};
     });
-    const publicBlocks=baseBlocks.filter(b=>b.visibility==="public");
+    // 「リンク限定」は共有URLを知る人へ見せる本文であり、公開本文と同様に
+    // 共有payloadへ含める。private/table は従来どおり本文を送らない。
+    const shareableBlocks=baseBlocks.filter(b=>b.visibility==="public"||b.visibility==="link");
    let articleOgpImage="",ogpSource="official";
    if(!page.passwordProtected){
-      const picked=publicBlocks.find(b=>b.type==="image"&&b.ogp&&b.url);
+      const picked=shareableBlocks.find(b=>b.type==="image"&&b.ogp&&b.url);
      if(picked){articleOgpImage=picked.url;ogpSource="image"}
      else{
        const ogpBlob=await createArticleOgpPng(group?.title||"シナリオ",page.title||"卓記事",articleTextForX(page));
        articleOgpImage=await uploadArticleOgpImage(ogpBlob,page.id);ogpSource="title";
      }
    }
-    const preparedPublic=await prepareConversationBlocksForShare(publicBlocks),preparedById=new Map(preparedPublic.map(b=>[String(b.id),b]));
-    const sharedBlocks=baseBlocks.map(b=>b.visibility==="public"?(preparedById.get(String(b.id))||b):({id:b.id,type:"restricted",visibility:b.visibility}));
-    const sharedBody=preparedPublic.filter(b=>b.type==="text").map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
+    const preparedShareable=await prepareConversationBlocksForShare(shareableBlocks),preparedById=new Map(preparedShareable.map(b=>[String(b.id),b]));
+    const sharedBlocks=baseBlocks.map(b=>(b.visibility==="public"||b.visibility==="link")?(preparedById.get(String(b.id))||b):({id:b.id,type:"restricted",visibility:b.visibility}));
+    const sharedBody=preparedShareable.filter(b=>b.type==="text").map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
     const payload={kind:"library-article",version:12,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:true,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
    let shareId=page.shareId||"";
    if(shareId)await TRPG39Cloud.updateSharedPage(shareId,payload);else shareId=await TRPG39Cloud.createSharedPage(payload);
@@ -3661,10 +3663,10 @@ function articleHtmlTextForX(html){
 }
 function articleTextForX(page){
  const blocks=normalizedArticleBlocks(page);
- return blocks.filter(b=>b.type==="text"&&(b.visibility||"public")==="public").map(b=>String(b.html?articleHtmlTextForX(b.html):(b.text||"")).trim()).filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
+ return blocks.filter(b=>b.type==="text"&&((b.visibility||"public")==="public"||b.visibility==="link")).map(b=>String(b.html?articleHtmlTextForX(b.html):(b.text||"")).trim()).filter(Boolean).join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 function articleHasXHidden(page){
- return normalizedArticleBlocks(page).some(b=>b.type==="text"&&(b.visibility||"public")==="public"&&b.html&&window.SAKUMERichEditor&&SAKUMERichEditor.hasXHidden(b.html));
+ return normalizedArticleBlocks(page).some(b=>b.type==="text"&&((b.visibility||"public")==="public"||b.visibility==="link")&&b.html&&window.SAKUMERichEditor&&SAKUMERichEditor.hasXHidden(b.html));
 }
 function trimArticleExcerpt(text,maxChars=96){
  const chars=[...String(text||"").trim()];
