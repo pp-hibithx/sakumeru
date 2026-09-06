@@ -3577,7 +3577,7 @@ function loadArticleOgpLogo(){
  });
 }
 
-async function createArticleOgpPng(scenarioTitle,articleTitle,safeExcerpt=""){
+async function createArticleOgpPng(scenarioTitle,articleTitle,_safeExcerpt=""){
  const canvas=document.createElement("canvas");
  canvas.width=1200;canvas.height=630;
  const ctx=canvas.getContext("2d");
@@ -3606,7 +3606,7 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,safeExcerpt=""){
  // scenario
  ctx.fillStyle="#f2e6bd";
  ctx.font='700 38px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- // The title and excerpt use almost the full card width. The logo no longer owns
+ // The title uses almost the full card width. The logo no longer owns
  // a right-hand column; it is rendered later as a small signature plate.
  const textWidth=980;
  const scenarioLines=articleOgpWrapLines(ctx,`『${scenarioTitle||"シナリオ"}』`,textWidth,2);
@@ -3631,24 +3631,16 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,safeExcerpt=""){
  const titleY=warningY+92;
  ctx.fillStyle="#ffffff";
  ctx.font='800 58px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",textWidth,2);
+ // 本文抜粋はX投稿本文とmeta descriptionへ任せ、画像では卓記録タイトルを主役にする。
+ // シナリオ見出しが1行なら、空いた領域を使ってタイトルを最大3行まで表示する。
+ const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",textWidth,scenarioLines.length>1?2:3);
  titleLines.forEach((line,i)=>ctx.fillText(line,110,titleY+i*66));
-
- // Only text that has already passed the X-safe extraction is used here.
- const excerpt=trimArticleExcerpt(String(safeExcerpt||"").replace(/\n+/g," "),72);
- if(excerpt){
-   const excerptY=titleY+titleLines.length*66+14;
-   const excerptWidth=700; // lower-right signature plate begins beyond this text column
-   ctx.fillStyle="rgba(255,255,255,.78)";
-   ctx.font='500 27px system-ui, "Yu Gothic", "Meiryo", sans-serif';
-   articleOgpWrapLines(ctx,excerpt,excerptWidth,2).forEach((line,i)=>ctx.fillText(line,110,excerptY+i*38));
- }
 
  // Existing approved SAKU+MERU logo, used without image processing. It sits in a
  // restrained gold-framed plate at the lower right, as a signature rather than content.
  const logo=await loadArticleOgpLogo();
  if(logo){
-   const maxW=238,maxH=82,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
+   const maxW=310,maxH=108,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
    const w=logo.naturalWidth*scale,h=logo.naturalHeight*scale;
    const padX=12,padY=9,plateW=w+padX*2,plateH=h+padY*2;
    const plateX=1128-plateW,plateY=604-plateH;
