@@ -1100,6 +1100,89 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
   min-height:1.5em;
 }
 </style>
+
+<!-- PCページ基準の視認性強化。機能・保存処理には影響しない表示専用レイヤー。 -->
+<style>
+.library-page>.hero,.library-page>.notice,.lib-panel{
+  border:2px solid color-mix(in srgb,currentColor 24%,var(--line));
+  box-shadow:0 5px 18px rgba(0,0,0,.11);
+}
+.library-page>.hero{border-left:6px solid var(--accent)}
+.library-page>.notice{padding:11px 13px;border-left:5px solid color-mix(in srgb,var(--accent) 65%,currentColor);border-radius:9px;background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);line-height:1.65}
+.lib-panel{background:var(--panel)}
+.lib-panel>h2,.library-editor>h2{margin-top:0;padding-bottom:10px;border-bottom:2px solid color-mix(in srgb,var(--accent) 52%,var(--line))}
+
+#openLibraryEditor,#save,[data-article-save],#postSaveArticle,#postSaveX,#calendarReportConfirm,#coverSave,#pcLibraryEditorSave{
+  background:var(--accent);border-color:var(--accent);color:#111;font-weight:800;box-shadow:0 2px 0 rgba(0,0,0,.28)
+}
+#cancel,[data-article-cancel],#coverCancel,#xPreviewCancel,#postSaveClose,#calendarReportCancel,#pcLibraryEditorCancel{
+  background:transparent;border:2px solid color-mix(in srgb,currentColor 38%,var(--line));font-weight:700
+}
+button,.link{min-height:40px}
+button:focus-visible,.link:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.lib-toolbar,.library-play-tabs,.library-view-tabs,.lib-year-filter-bar{
+  padding:11px;border:2px solid color-mix(in srgb,currentColor 27%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 87%,currentColor 4%)
+}
+.library-play-tabs,.library-view-tabs{gap:5px}
+.library-play-tab,.library-view-tab{min-height:42px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));font-weight:700}
+.library-play-tab.active,.library-view-tab.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:inherit;box-shadow:inset 0 -3px 0 var(--accent)}
+
+.lib-toolbar input,.lib-toolbar select,.library-editor input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),.library-editor select,.library-editor textarea,
+.lib-cover-panel input,.lib-cover-panel select,.lib-cover-panel textarea,.x-preview input,.x-preview select,.x-preview textarea,
+.bgm-library-panel input,.bgm-library-panel select,.bgm-library-panel textarea,.pc-rel-panel input,.pc-rel-panel select,.pc-rel-panel textarea{
+  min-height:44px;border:2px solid color-mix(in srgb,currentColor 34%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--panel) 88%,#000 12%);color:inherit;padding:9px 10px;box-sizing:border-box
+}
+.lib-toolbar input:focus,.lib-toolbar select:focus,.library-editor input:focus,.library-editor select:focus,.library-editor textarea:focus,
+.lib-cover-panel input:focus,.lib-cover-panel select:focus,.lib-cover-panel textarea:focus,.x-preview input:focus,.x-preview select:focus,.x-preview textarea:focus,
+.bgm-library-panel input:focus,.bgm-library-panel select:focus,.bgm-library-panel textarea:focus,.pc-rel-panel input:focus,.pc-rel-panel select:focus,.pc-rel-panel textarea:focus{
+  border-color:var(--accent);outline:3px solid color-mix(in srgb,var(--accent) 34%,transparent);outline-offset:1px
+}
+label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
+.small,.muted{line-height:1.55}
+
+.lib-group,.lib-grid-card,.lib-run-card,.library-dir-card,.album-card,.player-history-card,.player-pc-card{
+  border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 3px 10px rgba(0,0,0,.1);transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease
+}
+.lib-grid-card:hover,.lib-run-card:hover,.library-dir-card:hover,.album-card:hover{
+  border-color:color-mix(in srgb,var(--accent) 68%,currentColor);box-shadow:0 6px 16px rgba(0,0,0,.18);transform:translateY(-1px)
+}
+.lib-group[open]{border-color:color-mix(in srgb,var(--accent) 58%,currentColor)}
+.lib-group[open]>.lib-group-summary,.lib-run[open]>.lib-run-heading{background:color-mix(in srgb,var(--accent) 10%,var(--panel));border-bottom:2px solid color-mix(in srgb,var(--accent) 45%,var(--line))}
+.lib-group-summary,.lib-run-heading{min-height:48px}.lib-group-summary:focus-visible,.lib-run-heading:focus-visible{outline-offset:-3px}
+.lib-child{padding:11px 4px;border-bottom:2px solid color-mix(in srgb,currentColor 14%,transparent)}
+.lib-child-title,.lib-grid-title,.lib-run-card-title{line-height:1.5}
+.lib-child-actions button,.lib-parent-actions button,.lib-parent-actions .link,.album-actions button,.album-actions .link{
+  display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:2px solid color-mix(in srgb,currentColor 29%,var(--line));border-radius:8px;font-weight:700;text-decoration:none;box-sizing:border-box
+}
+.lib-child-actions button:hover,.lib-parent-actions button:hover,.lib-parent-actions .link:hover,.album-actions button:hover,.album-actions .link:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+
+#libraryEditor{border-color:var(--accent);border-left-width:6px;background:color-mix(in srgb,var(--panel) 96%,var(--accent) 4%)}
+.form-section,.article-block,.lib-article-page,.run-roster-bulk-card,.run-roster-self,.ext-row{
+  border:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 94%,currentColor 2%)
+}
+.article-block{border-left:5px solid var(--accent);padding:13px}.article-block-head{padding-bottom:9px;border-bottom:2px solid color-mix(in srgb,currentColor 18%,var(--line))}
+.article-block-toolbar{padding:10px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--panel) 87%,currentColor 4%)}
+.article-draft-notice{border:3px solid color-mix(in srgb,#e0a83b 72%,currentColor);background:color-mix(in srgb,var(--panel) 88%,#e0a83b 12%)}
+.danger{border-color:color-mix(in srgb,#d75b64 72%,currentColor)!important;color:color-mix(in srgb,#ff7b84 82%,currentColor)!important;background:transparent!important}
+.danger:hover{background:color-mix(in srgb,#d75b64 14%,var(--panel))!important}
+
+.x-preview,.bgm-library-dialog,.pc-rel-panel,.lib-cover-panel{
+  border:3px solid color-mix(in srgb,var(--accent) 68%,currentColor);box-shadow:0 24px 70px rgba(0,0,0,.58)
+}
+.x-preview::backdrop,.bgm-library-dialog::backdrop{background:rgba(0,0,0,.72)}
+.pc-rel-stage,.player-rel-stage{border:2px solid color-mix(in srgb,currentColor 30%,var(--line));background:color-mix(in srgb,var(--panel) 86%,#000 14%)}
+.pc-rel-detail,.player-rel-detail{border:2px solid color-mix(in srgb,currentColor 27%,var(--line));background:color-mix(in srgb,var(--panel) 92%,currentColor 3%)}
+
+@media(max-width:760px){
+  .library-page{gap:11px}.lib-panel{padding:12px}.lib-toolbar,.library-view-tabs,.library-play-tabs{padding:9px}
+  .library-view-tabs,.library-play-tabs{flex-wrap:nowrap;overflow-x:auto}.library-view-tab,.library-play-tab{flex:0 0 auto;white-space:nowrap}
+  .lib-child-actions,.lib-parent-actions,.album-actions,.x-preview-actions>.row{display:grid;grid-template-columns:1fr;width:100%}
+  .lib-child-actions button,.lib-parent-actions button,.lib-parent-actions .link,.album-actions button,.album-actions .link,.x-preview-actions button{width:100%}
+  .lib-run-detail-head{align-items:flex-start;flex-direction:column}.lib-run-detail-head button{width:100%}
+  .article-block-toolbar{display:grid;grid-template-columns:1fr 1fr}.article-block-toolbar button{width:100%}
+}
+</style>
 </head>
 <body>
 <div data-site-header data-active="library"></div>
@@ -3515,7 +3598,7 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,safeExcerpt=""){
  ctx.fillRect(72,68,8,494);
  ctx.fillRect(72,68,220,3);
 
- // brand label (the formal logo is drawn in its own right-hand area below)
+ // brand label
  ctx.fillStyle="rgba(255,255,255,.62)";
  ctx.font='600 26px system-ui, "Yu Gothic", "Meiryo", sans-serif';
  ctx.fillText("SAKU+MERU  🌺  卓記事",110,108);
@@ -3523,7 +3606,9 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,safeExcerpt=""){
  // scenario
  ctx.fillStyle="#f2e6bd";
  ctx.font='700 38px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- const textWidth=720;
+ // The title and excerpt use almost the full card width. The logo no longer owns
+ // a right-hand column; it is rendered later as a small signature plate.
+ const textWidth=980;
  const scenarioLines=articleOgpWrapLines(ctx,`『${scenarioTitle||"シナリオ"}』`,textWidth,2);
  scenarioLines.forEach((line,i)=>ctx.fillText(line,110,176+i*48));
 
@@ -3543,27 +3628,39 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,safeExcerpt=""){
  ctx.fillText(warning,131,warningY+2);
 
  // article title
- const titleY=warningY+110;
+ const titleY=warningY+92;
  ctx.fillStyle="#ffffff";
  ctx.font='800 58px system-ui, "Yu Gothic", "Meiryo", sans-serif';
  const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",textWidth,2);
- titleLines.forEach((line,i)=>ctx.fillText(line,110,titleY+i*72));
+ titleLines.forEach((line,i)=>ctx.fillText(line,110,titleY+i*66));
 
  // Only text that has already passed the X-safe extraction is used here.
  const excerpt=trimArticleExcerpt(String(safeExcerpt||"").replace(/\n+/g," "),72);
  if(excerpt){
-   const excerptY=titleY+titleLines.length*72+24;
+   const excerptY=titleY+titleLines.length*66+14;
+   const excerptWidth=700; // lower-right signature plate begins beyond this text column
    ctx.fillStyle="rgba(255,255,255,.78)";
    ctx.font='500 27px system-ui, "Yu Gothic", "Meiryo", sans-serif';
-   articleOgpWrapLines(ctx,excerpt,textWidth,3).forEach((line,i)=>ctx.fillText(line,110,excerptY+i*39));
+   articleOgpWrapLines(ctx,excerpt,excerptWidth,2).forEach((line,i)=>ctx.fillText(line,110,excerptY+i*38));
  }
 
- // Existing approved SAKU+MERU logo. Keep a dedicated area so it cannot overlap text.
+ // Existing approved SAKU+MERU logo, used without image processing. It sits in a
+ // restrained gold-framed plate at the lower right, as a signature rather than content.
  const logo=await loadArticleOgpLogo();
  if(logo){
-   const maxW=280,maxH=180,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
+   const maxW=238,maxH=82,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
    const w=logo.naturalWidth*scale,h=logo.naturalHeight*scale;
-   ctx.drawImage(logo,1140-w,315-h/2,w,h);
+   const padX=12,padY=9,plateW=w+padX*2,plateH=h+padY*2;
+   const plateX=1128-plateW,plateY=604-plateH;
+   ctx.fillStyle="#080d12";
+   ctx.beginPath();
+   if(ctx.roundRect)ctx.roundRect(plateX,plateY,plateW,plateH,7);
+   else ctx.rect(plateX,plateY,plateW,plateH);
+   ctx.fill();
+   ctx.strokeStyle="rgba(217,184,91,.82)";
+   ctx.lineWidth=2;
+   ctx.stroke();
+   ctx.drawImage(logo,plateX+padX,plateY+padY,w,h);
  }
 
  // footer
