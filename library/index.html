@@ -3640,10 +3640,12 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,_safeExcerpt=""){
  // restrained gold-framed plate at the lower right, as a signature rather than content.
  const logo=await loadArticleOgpLogo();
  if(logo){
-   const maxW=310,maxH=108,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
+   const maxW=340,maxH=118,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
    const w=logo.naturalWidth*scale,h=logo.naturalHeight*scale;
    const padX=12,padY=9,plateW=w+padX*2,plateH=h+padY*2;
-   const plateX=1128-plateW,plateY=604-plateH;
+   // SNS cards may cover the bottom edge with their own link-title strip.
+   // Keep a 100px lower safe area while preserving the lower-right signature position.
+   const plateX=1128-plateW,plateY=530-plateH;
    ctx.fillStyle="#080d12";
    ctx.beginPath();
    if(ctx.roundRect)ctx.roundRect(plateX,plateY,plateW,plateH,7);
