@@ -13,8 +13,10 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
+<link rel="stylesheet" href="../assets/css/image-lightbox.css?v=0905-1">
 <script defer src="../assets/js/common-layout.js?v=0303"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
+<script defer src="../assets/js/image-lightbox.js?v=0905-1"></script>
 <style>
 .album-grid{display:grid;grid-template-columns:1fr;gap:28px;align-items:start}
 .album-panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px}
@@ -154,12 +156,16 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .pc-rel-detail-card{border:1px solid var(--line);border-radius:9px;padding:10px}.pc-rel-scenario{padding:7px 0;border-top:1px solid var(--line)}.pc-rel-scenario:first-child{border-top:0}
 .pc-rel-legend{font-size:12px;color:var(--muted);margin-top:8px}
 @media(max-width:700px){.pc-rel-stage{min-height:440px}.pc-rel-stage svg{height:440px}}
-.pc-detail-dialog{padding:0;border:3px solid color-mix(in srgb,var(--accent) 70%,currentColor);border-radius:14px;background:var(--panel);color:inherit;width:min(820px,calc(100% - 28px));max-height:92vh;box-shadow:0 24px 70px rgba(0,0,0,.58)}
+.pc-detail-dialog{padding:0;border:3px solid color-mix(in srgb,var(--accent) 70%,currentColor);border-radius:14px;background:var(--panel);color:inherit;width:min(1080px,calc(100% - 28px));max-height:92vh;box-shadow:0 24px 70px rgba(0,0,0,.58)}
 .pc-detail-dialog::backdrop{background:rgba(0,0,0,.72)}
 .pc-detail-body{padding:18px}.pc-detail-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-bottom:13px;border-bottom:2px solid color-mix(in srgb,var(--accent) 55%,var(--line))}.pc-detail-head h2{margin:0}.pc-detail-close{width:auto;min-width:44px}
 .pc-detail-primary{display:grid;grid-template-columns:minmax(180px,280px) minmax(0,1fr);gap:18px;margin-top:16px}.pc-detail-image{width:100%;max-height:440px;object-fit:contain;object-position:center top;border:2px solid color-mix(in srgb,currentColor 25%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 86%,#000 14%)}
-.pc-detail-section{margin-top:18px;padding:14px;border:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-left:5px solid var(--accent);border-radius:10px;background:color-mix(in srgb,var(--panel) 94%,currentColor 2%)}.pc-detail-section h3{margin:0 0 10px}.pc-detail-history{display:grid;gap:0}.pc-detail-history .history-row{padding:10px 2px}.pc-detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:2px solid color-mix(in srgb,currentColor 20%,var(--line))}.pc-detail-actions a,.pc-detail-actions button{min-height:42px;font-weight:700}
+.pc-detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:2px solid color-mix(in srgb,currentColor 20%,var(--line))}.pc-detail-actions a,.pc-detail-actions button{min-height:42px;font-weight:700}
+.pc-detail-toggle{margin-top:12px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 94%,currentColor 2%);overflow:hidden}.pc-detail-toggle>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 15px;font-weight:800}.pc-detail-toggle>summary::-webkit-details-marker{display:none}.pc-detail-toggle>summary::after{content:"＋";font-size:18px}.pc-detail-toggle[open]>summary{border-bottom:2px solid color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 10%,var(--panel))}.pc-detail-toggle[open]>summary::after{content:"−"}.pc-detail-toggle-body{padding:12px 14px}.pc-detail-history{display:grid;gap:0}.pc-detail-history .history-row{padding:10px 2px}
+.pc-art-viewer-main{display:grid;place-items:center;min-height:300px;max-height:620px;padding:8px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 84%,#000 16%);cursor:zoom-in}.pc-art-viewer-main img{display:block;max-width:100%;max-height:600px;width:auto;height:auto;object-fit:contain}.pc-art-thumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 1px 3px}.pc-art-thumb{flex:0 0 92px;width:92px!important;padding:4px!important;background:transparent!important;border:2px solid color-mix(in srgb,currentColor 24%,var(--line))!important}.pc-art-thumb img{display:block;width:100%;height:92px;object-fit:cover;border-radius:5px}.pc-art-thumb span{display:block;margin-top:4px;font-size:11px;overflow-wrap:anywhere}.pc-art-thumb[aria-selected="true"]{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 12%,transparent)!important}
+.pc-coplay-list{display:grid;gap:9px}.pc-coplay-row{border:2px solid color-mix(in srgb,currentColor 20%,var(--line));border-radius:9px;padding:10px}.pc-coplay-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.pc-coplay-meta{font-size:12px;line-height:1.6;color:color-mix(in srgb,currentColor 78%,transparent)}.pc-coplay-scenarios{margin-top:6px;font-size:12px}.pc-pair-editor{display:grid;grid-template-columns:minmax(120px,1fr) minmax(160px,1.5fr) minmax(120px,1fr) auto;gap:7px;align-items:end;margin-top:9px;padding-top:9px;border-top:1px solid color-mix(in srgb,currentColor 18%,var(--line))}.pc-pair-editor label{font-size:11px;font-weight:700}.pc-pair-editor input{width:100%;min-height:40px;border:2px solid color-mix(in srgb,currentColor 28%,var(--line));border-radius:7px;background:color-mix(in srgb,var(--panel) 88%,#000 12%);color:inherit;padding:7px;box-sizing:border-box}.pc-pair-actions{display:flex;gap:6px}.pc-detail-back{width:auto;margin-bottom:8px}.pc-detail-note{white-space:pre-wrap;line-height:1.7}
 @media(max-width:620px){.pc-detail-dialog{width:calc(100% - 16px);max-height:calc(100vh - 16px);border-width:2px}.pc-detail-body{padding:12px}.pc-detail-primary{grid-template-columns:1fr}.pc-detail-image{max-height:52vh}.pc-detail-actions{display:grid}.pc-detail-actions a,.pc-detail-actions button{width:100%;box-sizing:border-box;text-align:center}}
+@media(max-width:760px){.pc-pair-editor{grid-template-columns:1fr}.pc-pair-actions button{flex:1}.pc-coplay-head{display:block}.pc-art-viewer-main{min-height:220px;max-height:65vh}.pc-art-viewer-main img{max-height:62vh}}
 </style>
 </head><body><div data-site-header data-active="pc"></div>
 <main><div class="wrap directory-page">
@@ -230,7 +236,8 @@ const isMyPc=pc=>{
 };
 let allPcs=TRPG39.loadPCs(),pcs=allPcs.filter(isMyPc),album=TRPG39.loadAlbum();
 const pcStatsCache=new Map();
-let activeDetailPcId="",returnToDetailId="";
+let activeDetailPcId="",returnToDetailId="",detailTrail=[];
+const PC_REL_EXTRAS_KEY="trpg39_pc_relation_extras";
 const uuid=()=>TRPG39.uuid?TRPG39.uuid():crypto.randomUUID();
 function updatePcImagePreview(){const u=q("pcImage").value.trim();q("pcImagePreview").hidden=!u;q("pcImagePreviewImg").src=u||""}
 function pcVariantsFrom(x){return Array.isArray(x?.variants)?x.variants.filter(v=>v&&v.url):[]}
@@ -356,6 +363,31 @@ function pcDetailHref(pc){
  const ownerPlayerId=String(pc?.ownerPlayerId||"").trim();
  return isMyPc(pc)?`?focus=${encodeURIComponent(pcId)}`:ownerPlayerId?`../players/index.html?focus=${encodeURIComponent(ownerPlayerId)}&tab=pcs&pcId=${encodeURIComponent(pcId)}`:"";
 }
+function loadPcRelationExtras(){
+ try{const v=JSON.parse(localStorage.getItem(PC_REL_EXTRAS_KEY)||'{"relations":[],"events":[]}');return {relations:Array.isArray(v?.relations)?v.relations:[],events:Array.isArray(v?.events)?v.events:[]}}
+ catch(e){console.error("PC関係情報を読み込めませんでした。",e);return {relations:[],events:[]}}
+}
+function pairRelation(a,b){
+ const aa=String(a||""),bb=String(b||"");
+ return loadPcRelationExtras().relations.find(r=>(String(r.a)===aa&&String(r.b)===bb)||(String(r.a)===bb&&String(r.b)===aa))||null;
+}
+function savePairRelation(a,b,values){
+ const extras=loadPcRelationExtras(),rels=extras.relations,old=rels.find(r=>(String(r.a)===String(a)&&String(r.b)===String(b))||(String(r.a)===String(b)&&String(r.b)===String(a)));
+ const payload={relation:String(values.relation||"").trim(),source:String(values.source||"").trim(),time:String(values.time||"").trim()};
+ const id=old?.id||uuid();
+ if(old)Object.assign(old,payload);else rels.push({id,a,b,...payload});
+ try{
+   localStorage.setItem(PC_REL_EXTRAS_KEY,JSON.stringify({relations:rels,events:extras.events}));
+   const verified=loadPcRelationExtras().relations.find(r=>String(r.id)===String(id));
+   return !!verified&&verified.relation===payload.relation&&verified.source===payload.source&&verified.time===payload.time;
+ }catch(e){console.error("PC関係情報を保存できませんでした。",e);return false}
+}
+function deletePairRelation(a,b){
+ const extras=loadPcRelationExtras(),before=extras.relations.length;
+ extras.relations=extras.relations.filter(r=>!((String(r.a)===String(a)&&String(r.b)===String(b))||(String(r.a)===String(b)&&String(r.b)===String(a))));
+ if(extras.relations.length===before)return true;
+ try{localStorage.setItem(PC_REL_EXTRAS_KEY,JSON.stringify(extras));return !pairRelation(a,b)}catch(e){console.error("PC関係情報を削除できませんでした。",e);return false}
+}
 function relationGraphForPc(pc){
   const focusName=String(pc?.name||"").trim(),focusKey=pcRefKey(pc?.id,focusName);
   const recordContainsFocus=x=>{
@@ -412,6 +444,16 @@ function relationGraphForPc(pc){
       addEdge(ka,kb,{scenario,scenarioId,date,relation,hoA:pa.ho,hoB:pb.ho});
     }
   }
+  const extras=loadPcRelationExtras();
+  (extras.relations||[]).forEach(r=>{
+    if(String(r.a)!==String(pc.id)&&String(r.b)!==String(pc.id))return;
+    const otherId=String(r.a)===String(pc.id)?String(r.b):String(r.a),node=[...nodes.values()].find(n=>String(n.registeredId)===otherId);
+    if(!node)return;
+    const edge=edges.get([focusKey,node.key].sort().join("||"));
+    if(!edge)return;
+    if(r.relation){edge.relations.add(r.relation);node.relations.add(r.relation)}
+    edge.manualRelation=r;
+  });
   return {focusKey,nodes:[...nodes.values()],edges:[...edges.values()]};
 }
 function edgeLabelText(edge){
@@ -463,19 +505,54 @@ function visiblePcRows(){
  return rows;
 }
 function pcHistoryHtml(pc,st){return st.scenarios.length?st.scenarios.map(s=>`<div class="history-row"><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}${s.scenarioId?`&scenario=${encodeURIComponent(s.scenarioId)}`:""}">${esc(s.title)}</a>${s.first?` <span class="small muted">${esc(s.first)}</span>`:""}${(s.role||s.ho)?`<div class="small muted">${[s.role,s.ho].filter(Boolean).map(esc).join(" ／ ")}</div>`:""}</div>`).join(""):'<div class="small muted">参加記録はまだありません。</div>'}
+function artViewerHtml(pc){
+ const seen=new Set(),images=[];
+ const add=(url,label)=>{url=String(url||"").trim();if(!url||seen.has(url))return;seen.add(url);images.push({url,label:String(label||"").trim()||"名称未設定"})};
+ add(pc.image,"メイン");pcVariantsFrom(pc).forEach(v=>add(v.url,v.label));
+ if(!images.length)return '<div class="small muted">立ち絵・差分は登録されていません。</div>';
+ return `<div class="pc-art-viewer" data-art-viewer><button type="button" class="pc-art-viewer-main" data-sm-image-expand="${esc(images[0].url)}" aria-label="${esc(images[0].label)}を拡大"><img src="${esc(images[0].url)}" alt="${esc(images[0].label)}"></button>${images.length>1?`<div class="pc-art-thumbs" role="listbox" aria-label="表示する立ち絵を選択">${images.map((v,i)=>`<button type="button" class="pc-art-thumb" data-art-url="${esc(v.url)}" data-art-label="${esc(v.label)}" aria-selected="${i===0}"><img src="${esc(v.url)}" alt="" loading="lazy"><span>${esc(v.label)}</span></button>`).join("")}</div>`:""}</div>`;
+}
+function coPlayEntries(pc){
+ const graph=relationGraphForPc(pc);
+ return graph.edges.filter(e=>e.count>0&&(e.a===graph.focusKey||e.b===graph.focusKey)).map(e=>{
+   const key=e.a===graph.focusKey?e.b:e.a,node=graph.nodes.find(n=>n.key===key),other=node?.registeredId?allPcs.find(p=>String(p.id)===String(node.registeredId)):null;
+   if(!node||!other)return null;
+   const scenarios=[...e.scenarios.values()].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))),dates=scenarios.map(s=>s.date).filter(Boolean).sort();
+   return {node,other,edge:e,scenarios,last:dates.at(-1)||"",manual:pairRelation(pc.id,other.id)};
+ }).filter(Boolean).sort((a,b)=>String(b.last).localeCompare(String(a.last))||a.other.name.localeCompare(b.other.name,"ja"));
+}
+function coPlayHtml(pc,entries){
+ if(!entries.length)return '<div class="small muted">PCが特定できる同卓記録はありません。</div>';
+ return `<div class="pc-coplay-list">${entries.map(({node,other,edge,scenarios,last,manual})=>{
+   const href=pcDetailHref(other),roles=[...new Set([...node.scenarios.values()].map(s=>s.role).filter(Boolean))],hos=[...node.hos];
+   return `<div class="pc-coplay-row" data-pair-pc="${esc(other.id)}"><div class="pc-coplay-head"><div><strong>${esc(other.name)}</strong>${node.players.size?`<div class="pc-coplay-meta">PL：${esc([...node.players].join("、"))}</div>`:""}<div class="pc-coplay-meta">同卓 ${edge.count}回${last?` ／ 最終 ${esc(last)}`:""}${roles.length?`<br>役割：${esc(roles.join("、"))}`:""}${hos.length?` ／ HO：${esc(hos.join("、"))}`:""}</div></div>${href?(isMyPc(other)?`<button type="button" data-open-related-self="${esc(other.id)}">PC詳細を見る</button>`:`<a class="button" href="${esc(href)}">PC詳細を見る</a>`):""}</div><div class="pc-coplay-scenarios">${scenarios.map(s=>esc(s.title)).join(" ／ ")}</div><div class="pc-pair-editor"><div><label>関係</label><input data-pair-relation value="${esc(manual?.relation||"")}" placeholder="相棒・友人など"></div><div><label>関係メモ／由来</label><input data-pair-source value="${esc(manual?.source||"")}" placeholder="一緒にいることが多い 等"></div><div><label>時系列メモ</label><input data-pair-time value="${esc(manual?.time||"")}" placeholder="過去・現在・IF 等"></div><div class="pc-pair-actions"><button type="button" data-save-pair>保存</button>${manual?`<button type="button" class="danger" data-delete-pair>削除</button>`:""}</div></div><div class="small muted" data-pair-status aria-live="polite"></div></div>`;
+ }).join("")}</div>`;
+}
+function wirePcDetail(pc){
+ const root=q("pcDetailContent");
+ root.querySelector("[data-pc-detail-close]").onclick=()=>closePcDetail();
+ root.querySelector("[data-detail-edit]").onclick=()=>{returnToDetailId=pc.id;q("pcDetailDialog").close();edit(pc.id,true)};
+ root.querySelector("[data-detail-rel]").onclick=()=>{q("pcDetailDialog").close();openRelationGraph(pc.id)};
+ root.querySelector("[data-detail-share]").onclick=()=>share(pc.id);
+ const back=root.querySelector("[data-detail-back]");if(back)back.onclick=()=>{const id=detailTrail.pop();if(id)openPcDetail(id,{updateUrl:true,fromTrail:true})};
+ root.querySelectorAll("[data-open-related-self]").forEach(b=>b.onclick=()=>{detailTrail.push(pc.id);openPcDetail(b.dataset.openRelatedSelf,{updateUrl:true,fromTrail:true})});
+ root.querySelectorAll("[data-art-thumb]").forEach(b=>b.onclick=()=>{const viewer=b.closest("[data-art-viewer]"),main=viewer.querySelector(".pc-art-viewer-main"),img=main.querySelector("img");img.src=b.dataset.artUrl;img.alt=b.dataset.artLabel;main.dataset.smImageExpand=b.dataset.artUrl;main.setAttribute("aria-label",`${b.dataset.artLabel}を拡大`);viewer.querySelectorAll("[data-art-thumb]").forEach(x=>x.setAttribute("aria-selected",String(x===b)))});
+ root.querySelectorAll("[data-pair-pc]").forEach(row=>{
+   const otherId=row.dataset.pairPc,status=row.querySelector("[data-pair-status]");
+   row.querySelector("[data-save-pair]").onclick=()=>{const values={relation:row.querySelector("[data-pair-relation]").value,source:row.querySelector("[data-pair-source]").value,time:row.querySelector("[data-pair-time]").value};if(!Object.values(values).some(v=>String(v).trim())){status.textContent="関係・関係メモ・時系列メモのいずれかを入力してください。";return}const ok=savePairRelation(pc.id,otherId,values);status.textContent=ok?"保存しました。":"保存できませんでした。入力内容は画面に残っています。"};
+   const del=row.querySelector("[data-delete-pair]");if(del)del.onclick=()=>{if(!confirm("このPCペアの関係情報を削除しますか？"))return;const ok=deletePairRelation(pc.id,otherId);status.textContent=ok?"削除しました。":"削除できませんでした。";if(ok)del.remove()};
+ });
+}
 function openPcDetail(id,{updateUrl=true}={}){
  const x=pcs.find(v=>String(v.id)===String(id));if(!x)return false;
- const st=stats(x),variants=pcVariantsFrom(x);activeDetailPcId=x.id;
- q("pcDetailContent").innerHTML=`<div class="pc-detail-body"><div class="pc-detail-head"><div><h2>${esc(x.name)}</h2>${x.reading?`<div class="small muted">${esc(x.reading)}</div>`:""}</div><button class="pc-detail-close" type="button" data-pc-detail-close aria-label="PC詳細を閉じる">×</button></div><div class="pc-detail-primary"><div>${x.image?`<img class="pc-detail-image" src="${esc(x.image)}" alt="${esc(x.name)}" loading="lazy">`:`<div class="pc-detail-image" style="min-height:220px;display:grid;place-items:center;font-size:48px">🌺</div>`}</div><div><div class="dir-meta">${x.system?`システム：${esc(x.system)}`:""}${x.job?`<br>職業・肩書き：${esc(x.job)}`:""}</div><div class="dir-meta" style="margin-top:10px">参加シナリオ ${st.count}本${st.first?`<br>初卓日：${esc(st.first)}`:""}${st.last?`<br>最終使用日：${esc(st.last)}`:""}</div>${x.bio?`<p style="white-space:pre-wrap;line-height:1.7">${esc(x.bio)}</p>`:""}${x.sheet?`<p><a class="link" href="${esc(x.sheet)}" target="_blank" rel="noopener">キャラクターシートを開く</a></p>`:""}</div></div>${variants.length?`<section class="pc-detail-section"><h3>立ち絵差分</h3><div class="pc-variants-grid">${variants.map(v=>`<div class="pc-variant-card"><img src="${esc(v.url)}" alt="${esc(v.label||"差分")}" loading="lazy"><div class="pc-variant-label">${esc(v.label||"差分")}</div>${v.url===x.image?`<div class="pc-variant-main">メイン</div>`:""}</div>`).join("")}</div></section>`:""}${(x.artService||x.artMaker||x.artUrl||x.artNote)?`<section class="pc-detail-section"><h3>立ち絵情報</h3>${x.artService?`<div>${esc(x.artService)}</div>`:""}${x.artMaker?`<div>${esc(x.artMaker)}</div>`:""}${x.artUrl?`<div><a class="link" href="${esc(x.artUrl)}" target="_blank" rel="noopener">メーカー・配布元を開く</a></div>`:""}${x.artNote?`<div class="small muted" style="margin-top:5px">${esc(x.artNote)}</div>`:""}</section>`:""}<section class="pc-detail-section"><h3>通過シナリオ</h3><div class="pc-detail-history">${pcHistoryHtml(x,st)}</div></section><section class="pc-detail-section"><h3>同卓PC</h3><p class="small muted">同じ卓に参加したPCと関係、共通シナリオを関係図で確認できます。</p><button type="button" data-detail-rel="${esc(x.id)}">同卓PCを見る</button></section><div class="pc-detail-actions"><button type="button" data-detail-edit="${esc(x.id)}">編集</button><a class="button" href="../library/index.html?new=1&selfPcId=${encodeURIComponent(x.id)}&selfPcName=${encodeURIComponent(x.name)}">＋ このPCで卓記録を追加</a><a class="button" href="../library/index.html?pcId=${encodeURIComponent(x.id)}">LIBRARYで全記録を見る</a><button type="button" data-detail-share="${esc(x.id)}">共有</button></div></div>`;
- q("pcDetailContent").querySelector("[data-pc-detail-close]").onclick=()=>closePcDetail();
- q("pcDetailContent").querySelector("[data-detail-edit]").onclick=()=>{returnToDetailId=x.id;q("pcDetailDialog").close();edit(x.id,true)};
- q("pcDetailContent").querySelector("[data-detail-rel]").onclick=()=>{q("pcDetailDialog").close();openRelationGraph(x.id)};
- q("pcDetailContent").querySelector("[data-detail-share]").onclick=()=>share(x.id);
+ const st=stats(x),coPcs=coPlayEntries(x);activeDetailPcId=x.id;
+ q("pcDetailContent").innerHTML=`<div class="pc-detail-body">${detailTrail.length?`<button type="button" class="pc-detail-back" data-detail-back>← 前のPCへ戻る</button>`:""}<div class="pc-detail-head"><div><h2>${esc(x.name)}</h2>${x.reading?`<div class="small muted">${esc(x.reading)}</div>`:""}</div><button class="pc-detail-close" type="button" data-pc-detail-close aria-label="PC詳細を閉じる">×</button></div><div class="pc-detail-primary"><div>${x.image?`<button type="button" data-sm-image-expand="${esc(x.image)}" style="display:block;width:100%;padding:0;border:0;background:transparent"><img class="pc-detail-image" src="${esc(x.image)}" alt="${esc(x.name)}"></button>`:`<div class="pc-detail-image" style="min-height:220px;display:grid;place-items:center;font-size:48px">🌺</div>`}</div><div><div class="dir-meta">${x.system?`システム：${esc(x.system)}`:""}${x.job?`<br>職業・肩書き：${esc(x.job)}`:""}</div><div class="dir-meta" style="margin-top:10px">参加シナリオ ${st.count}本${st.first?`<br>初卓日：${esc(st.first)}`:""}${st.last?`<br>最終使用日：${esc(st.last)}`:""}</div>${x.sheet?`<p><a class="link" href="${esc(x.sheet)}" target="_blank" rel="noopener">キャラクターシートを開く</a></p>`:""}<button type="button" data-detail-edit="${esc(x.id)}">編集</button></div></div><details class="pc-detail-toggle"><summary><span>通過シナリオ</span><span>${st.count}件</span></summary><div class="pc-detail-toggle-body pc-detail-history">${pcHistoryHtml(x,st)}</div></details><details class="pc-detail-toggle"><summary><span>同卓PC</span><span>${coPcs.length}人</span></summary><div class="pc-detail-toggle-body">${coPlayHtml(x,coPcs)}</div></details><details class="pc-detail-toggle"><summary><span>立ち絵・差分</span><span>${new Set([x.image,...pcVariantsFrom(x).map(v=>v.url)].filter(Boolean)).size}枚</span></summary><div class="pc-detail-toggle-body">${artViewerHtml(x)}</div></details><details class="pc-detail-toggle"><summary><span>メモ／その他</span><span>${x.bio||x.artService||x.artMaker||x.artUrl||x.artNote?"登録あり":""}</span></summary><div class="pc-detail-toggle-body">${x.bio?`<div class="pc-detail-note">${esc(x.bio)}</div>`:'<div class="small muted">メモはありません。</div>'}${(x.artService||x.artMaker||x.artUrl||x.artNote)?`<div style="margin-top:12px"><strong>立ち絵情報</strong>${x.artService?`<div>${esc(x.artService)}</div>`:""}${x.artMaker?`<div>${esc(x.artMaker)}</div>`:""}${x.artUrl?`<div><a class="link" href="${esc(x.artUrl)}" target="_blank" rel="noopener">メーカー・配布元を開く</a></div>`:""}${x.artNote?`<div class="small muted">${esc(x.artNote)}</div>`:""}</div>`:""}</div></details><div class="pc-detail-actions"><button type="button" data-detail-rel="${esc(x.id)}">このPCを中心に関係図を見る</button><a class="button" href="../library/index.html?new=1&selfPcId=${encodeURIComponent(x.id)}&selfPcName=${encodeURIComponent(x.name)}">＋ このPCで卓記録を追加</a><a class="button" href="../library/index.html?pcId=${encodeURIComponent(x.id)}">LIBRARYで全記録を見る</a><button type="button" data-detail-share="${esc(x.id)}">共有</button></div></div>`;
+ wirePcDetail(x);
  if(!q("pcDetailDialog").open)q("pcDetailDialog").showModal();
  if(updateUrl){const u=new URL(location.href);if(u.searchParams.get("focus")!==String(x.id)){u.searchParams.set("focus",x.id);history.pushState({pcId:x.id},"",u)}}
  return true;
 }
-function closePcDetail({clearUrl=true}={}){if(q("pcDetailDialog").open)q("pcDetailDialog").close();activeDetailPcId="";if(clearUrl){const u=new URL(location.href);u.searchParams.delete("focus");history.replaceState({},"",u)}}
+function closePcDetail({clearUrl=true}={}){if(q("pcDetailDialog").open)q("pcDetailDialog").close();activeDetailPcId="";detailTrail=[];if(clearUrl){const u=new URL(location.href);u.searchParams.delete("focus");history.replaceState({},"",u)}}
 function render(){const rows=visiblePcRows();q("pcSummary").textContent=`表示 ${rows.length}人 ／ 登録 ${pcs.length}人`;q("pcList").innerHTML=rows.length?rows.map(({x,st})=>`<article class="dir-card" id="pc-${esc(x.id)}"><button type="button" class="pc-card-button" data-open-pc="${esc(x.id)}">${x.image?`<img class="dir-thumb" src="${esc(x.image)}" alt="" loading="lazy">`:`<div class="dir-thumb" style="display:grid;place-items:center;font-size:30px">🌺</div>`}<h3>${esc(x.name)}</h3><div class="dir-meta">${esc(x.system||"")}${x.job?` ／ ${esc(x.job)}`:""}</div><div class="dir-meta">参加シナリオ ${st.count}本${st.first?` ／ 初卓 ${esc(st.first)}`:""}</div></button></article>`).join(""):`<div class="empty pc-list-empty">${pcs.length?"条件に一致するPCはいません。":"まだPCが登録されていません。"}</div>`;document.querySelectorAll("[data-open-pc]").forEach(b=>b.onclick=()=>openPcDetail(b.dataset.openPc));}
 function edit(id,modal=false){const x=pcs.find(v=>v.id===id);if(!x)return;q("pcId").value=x.id;q("pcName").value=x.name||"";q("pcReading").value=x.reading||"";q("pcSystem").value=x.system||"";q("pcJob").value=x.job||"";q("pcImage").value=x.image||"";q("pcSheet").value=x.sheet||"";q("pcVisibility").value=x.visibility||"private";q("pcBio").value=x.bio||"";q("pcArtService").value=x.artService||"";q("pcArtMaker").value=x.artMaker||"";q("pcArtUrl").value=x.artUrl||"";q("pcArtNote").value=x.artNote||"";setPcVariantRows(pcVariantsFrom(x));q("pcHeading").textContent="PCを編集";updatePcImagePreview();q("pcEditor").hidden=false;q("pcEditor").classList.toggle("is-modal-edit",modal);if(!modal)q("pcEditor").scrollIntoView({behavior:"smooth",block:"start"});}
 function save(){const name=q("pcName").value.trim();if(!name)return alert("PC名を入力してください。");const id=q("pcId").value||uuid();const oldPc=allPcs.find(v=>v.id===id)||{};const x={...oldPc,id,name,ownershipType:"self",ownerPlayerId:oldPc.ownerPlayerId||"",reading:q("pcReading").value.trim(),system:q("pcSystem").value.trim(),job:q("pcJob").value.trim(),image:q("pcImage").value.trim(),variants:collectPcVariants(),artService:q("pcArtService").value.trim(),artMaker:q("pcArtMaker").value.trim(),artUrl:q("pcArtUrl").value.trim(),artNote:q("pcArtNote").value.trim(),sheet:q("pcSheet").value.trim(),visibility:q("pcVisibility").value,bio:q("pcBio").value.trim()};const i=allPcs.findIndex(v=>v.id===id);if(i>=0)allPcs[i]=x;else allPcs.push(x);TRPG39.savePCs(allPcs);pcs=allPcs.filter(isMyPc);pcStatsCache.clear();refreshPcSystemFilter();const reopen=returnToDetailId===id;returnToDetailId="";reset();q("pcEditor").hidden=true;q("pcEditor").classList.remove("is-modal-edit");render();if(reopen)openPcDetail(id,{updateUrl:false});}
