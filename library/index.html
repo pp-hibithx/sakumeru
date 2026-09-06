@@ -3485,7 +3485,16 @@ function articleOgpWrapLines(ctx,text,maxWidth,maxLines=2){
  return lines;
 }
 
-async function createArticleOgpPng(scenarioTitle,articleTitle){
+function loadArticleOgpLogo(){
+ return new Promise(resolve=>{
+   const img=new Image();
+   img.onload=()=>resolve(img);
+   img.onerror=()=>resolve(null);
+   img.src="../assets/img/sakumeru-logo-horizontal-dark-smooth.png";
+ });
+}
+
+async function createArticleOgpPng(scenarioTitle,articleTitle,safeExcerpt=""){
  const canvas=document.createElement("canvas");
  canvas.width=1200;canvas.height=630;
  const ctx=canvas.getContext("2d");
@@ -3506,7 +3515,7 @@ async function createArticleOgpPng(scenarioTitle,articleTitle){
  ctx.fillRect(72,68,8,494);
  ctx.fillRect(72,68,220,3);
 
- // brand
+ // brand label (the formal logo is drawn in its own right-hand area below)
  ctx.fillStyle="rgba(255,255,255,.62)";
  ctx.font='600 26px system-ui, "Yu Gothic", "Meiryo", sans-serif';
  ctx.fillText("SAKU+MERU  🌺  卓記事",110,108);
@@ -3514,7 +3523,8 @@ async function createArticleOgpPng(scenarioTitle,articleTitle){
  // scenario
  ctx.fillStyle="#f2e6bd";
  ctx.font='700 38px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- const scenarioLines=articleOgpWrapLines(ctx,`『${scenarioTitle||"シナリオ"}』`,1000,2);
+ const textWidth=720;
+ const scenarioLines=articleOgpWrapLines(ctx,`『${scenarioTitle||"シナリオ"}』`,textWidth,2);
  scenarioLines.forEach((line,i)=>ctx.fillText(line,110,176+i*48));
 
  // spoiler warning pill
@@ -3536,8 +3546,25 @@ async function createArticleOgpPng(scenarioTitle,articleTitle){
  const titleY=warningY+110;
  ctx.fillStyle="#ffffff";
  ctx.font='800 58px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",990,3);
+ const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",textWidth,2);
  titleLines.forEach((line,i)=>ctx.fillText(line,110,titleY+i*72));
+
+ // Only text that has already passed the X-safe extraction is used here.
+ const excerpt=trimArticleExcerpt(String(safeExcerpt||"").replace(/\n+/g," "),72);
+ if(excerpt){
+   const excerptY=titleY+titleLines.length*72+24;
+   ctx.fillStyle="rgba(255,255,255,.78)";
+   ctx.font='500 27px system-ui, "Yu Gothic", "Meiryo", sans-serif';
+   articleOgpWrapLines(ctx,excerpt,textWidth,3).forEach((line,i)=>ctx.fillText(line,110,excerptY+i*39));
+ }
+
+ // Existing approved SAKU+MERU logo. Keep a dedicated area so it cannot overlap text.
+ const logo=await loadArticleOgpLogo();
+ if(logo){
+   const maxW=280,maxH=180,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
+   const w=logo.naturalWidth*scale,h=logo.naturalHeight*scale;
+   ctx.drawImage(logo,1140-w,315-h/2,w,h);
+ }
 
  // footer
  ctx.fillStyle="rgba(255,255,255,.42)";
@@ -3593,7 +3620,7 @@ async function shareArticlePage(runId,pageId,options={}){
       const picked=publicBlocks.find(b=>b.type==="image"&&b.ogp&&b.url);
      if(picked){articleOgpImage=picked.url;ogpSource="image"}
      else{
-       const ogpBlob=await createArticleOgpPng(group?.title||"シナリオ",page.title||"卓記事");
+       const ogpBlob=await createArticleOgpPng(group?.title||"シナリオ",page.title||"卓記事",articleTextForX(page));
        articleOgpImage=await uploadArticleOgpImage(ogpBlob,page.id);ogpSource="title";
      }
    }
@@ -3606,14 +3633,17 @@ async function shareArticlePage(runId,pageId,options={}){
    saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));
    const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
    previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");
-   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。金色のタイトルOGPをSNSカードに使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
+   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。タイトルと安全な本文、SAKU+MERUロゴのOGPを使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
    return previewUrl.href;
  }catch(e){console.error(e);alert(e.message||e);return ""}
 }
 function articleHtmlTextForX(html){
  const root=document.createElement("div");root.innerHTML=String(html||"");
- root.querySelectorAll('[data-x-hidden="true"]').forEach(node=>node.replaceWith(document.createTextNode("――")));
- const blockTags=new Set(["P","DIV","H1","H2","H3","H4","H5","H6","BLOCKQUOTE","LI","UL","OL","SECTION","FIGURE","FIGCAPTION","DETAILS","SUMMARY"]);
+ // Structure is filtered before flattening. Removing a details element removes every
+ // nested toggle at once while leaving ordinary text after the toggle intact.
+ root.querySelectorAll("details").forEach(node=>node.remove());
+ root.querySelectorAll('[data-x-hidden="true"]').forEach(node=>node.remove());
+ const blockTags=new Set(["P","DIV","H1","H2","H3","H4","H5","H6","BLOCKQUOTE","LI","UL","OL","SECTION","FIGURE","FIGCAPTION"]);
  let out="";
  const line=()=>{if(!out.endsWith("\n"))out+="\n"};
  const walk=node=>{
@@ -3627,7 +3657,7 @@ function articleHtmlTextForX(html){
    if(block)line();
  };
  [...root.childNodes].forEach(walk);
- return out.replace(/(?:――[ \t]*){2,}/g,"――").replace(/\u200B/g,"").replace(/\r/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+ return out.replace(/\u200B/g,"").replace(/\r/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 function articleTextForX(page){
  const blocks=normalizedArticleBlocks(page);
@@ -3647,20 +3677,30 @@ function trimArticleExcerpt(text,maxChars=96){
  if(best>0)cut=cut.slice(0,best);
  return cut.replace(/[\s、，,]+$/u,"")+"…";
 }
+function xPostWeight(text){
+ return [...String(text||"")].reduce((sum,ch)=>sum+(/[\u0000-\u10ff\u2000-\u200d\u2010-\u201f\u2032-\u2037]/u.test(ch)?1:2),0);
+}
+function trimArticleExcerptByWeight(text,maxWeight){
+ const source=String(text||"").trim();
+ if(xPostWeight(source)<=maxWeight)return source;
+ const suffix="…",limit=Math.max(0,maxWeight-xPostWeight(suffix));
+ let out="",weight=0;
+ for(const ch of source){const next=xPostWeight(ch);if(weight+next>limit)break;out+=ch;weight+=next}
+ return out.replace(/[\s、，,]+$/u,"")+suffix;
+}
 function articleXPostText(page){
- if(page.passwordProtected)return "SAKU+MERUで記事を共有しました。\n#SAKUMERU";
- const title=String(page.title||"").trim();
+ const suffix="続きはURLから\n\n#SAKUMERU";
+ if(page.passwordProtected)return `SAKU+MERUで記事を共有しました。\n\n${suffix}`;
+ const rawTitle=String(page.title||"").trim()||"SAKU+MERUで記事を共有しました。";
  const body=articleTextForX(page);
- const hasHidden=articleHasXHidden(page);
- const main=[title,body].filter(Boolean).join("\n\n");
- if(!main)return hasHidden?`続きはURLから\n\n#SAKUMERU`:`#SAKUMERU`;
- const isLong=[...main].length>140;
- if(!isLong)return `${main}${hasHidden?"\n\n続きはURLから":""}\n\n#SAKUMERU`;
- const titleChars=[...title].length;
- const bodyBudget=Math.max(28,140-titleChars-(title&&body?2:0));
- const shownBody=body?trimArticleExcerpt(body,bodyBudget):"";
- const shown=[title,shownBody].filter(Boolean).join("\n\n");
- return `${shown}\n\n詳細はこちら\n\n#SAKUMERU`;
+ // X shortens the separately supplied URL to a fixed t.co length. Keep a conservative
+ // weighted budget so title, guidance, hashtag and URL always survive.
+ const textBudget=250;
+ const titleBudget=Math.max(0,textBudget-xPostWeight(`\n\n${suffix}`));
+ const title=trimArticleExcerptByWeight(rawTitle,titleBudget);
+ const bodyBudget=Math.max(0,textBudget-xPostWeight(`${title}\n\n${suffix}`)-2);
+ const shownBody=body&&bodyBudget?trimArticleExcerptByWeight(body,bodyBudget):"";
+ return [title,shownBody,suffix].filter(Boolean).join("\n\n");
 }
 async function postArticlePageToX(runId,pageId){
  const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId);
