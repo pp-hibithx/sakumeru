@@ -15,7 +15,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0901-common1">
+<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0908-sort1">
 <link rel="stylesheet" href="../assets/css/image-lightbox.css?v=0905-1">
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script defer src="../assets/js/image-lightbox.js?v=0905-1"></script>
@@ -283,6 +283,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .article-block-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
 .article-block-label{font-weight:700;font-size:13px}
 .article-block-actions{display:flex;gap:5px;flex-wrap:wrap}.article-block-actions button{width:auto;padding:5px 8px;font-size:11px}
+.article-block-drag-handle{cursor:grab!important;font-size:18px!important;line-height:1!important}.article-block-drag-handle:active{cursor:grabbing!important}.article-block.article-block-dragging{opacity:.42}.article-block.article-block-drop-before{box-shadow:0 -3px 0 var(--accent)}.article-block.article-block-drop-after{box-shadow:0 3px 0 var(--accent)}
 .article-block textarea{min-height:120px}
 .article-block-visibility{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}.article-block-visibility label{margin:0;font-size:12px;font-weight:700}.article-block-visibility select{width:auto;min-width:150px;margin-left:auto}
 .article-image-inputs{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.55fr);gap:8px;align-items:end}
@@ -1436,7 +1437,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=02309"></script>
-<script src="../assets/js/rich-editor.js?v=0906-article-share1"></script>
+<script src="../assets/js/rich-editor.js?v=0908-sort1"></script>
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id);
@@ -3014,7 +3015,7 @@ function articleBlocksHtml(page){
 }
 function articleEditorBlockHtml(b,index,total){
  const id=esc(b.id||TRPG39.uuid());
- const actions=`<div class="article-block-actions"><button type="button" data-block-up="${id}" ${index===0?"disabled":""}>↑</button><button type="button" data-block-down="${id}" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
+ const actions=`<div class="article-block-actions"><button type="button" class="article-block-drag-handle" draggable="true" data-block-drag="${id}" title="ドラッグして並び替え" aria-label="このブロックをドラッグして並び替え">≡</button><button type="button" data-block-up="${id}" title="上へ" ${index===0?"disabled":""}>↑</button><button type="button" data-block-down="${id}" title="下へ" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
  const visibility=String(b.visibility||"public"),scope=`<div class="article-block-visibility"><label>公開範囲</label><select class="articleBlockVisibility"><option value="private" ${visibility==="private"?"selected":""}>自分のみ</option><option value="link" ${visibility==="link"?"selected":""}>共通URL限定</option><option value="public" ${visibility==="public"?"selected":""}>全体公開</option></select></div>`;
  if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div>${scope}<div class="article-image-inputs article-image-source-grid"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><div class="article-image-file-row"><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button></div><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><label class="article-ogp-pick"><input class="articleBlockOgp" type="checkbox" ${b.ogp?"checked":""}><span><strong>SNSカードに使う</strong> <span class="muted">（通常共有時のみ・1枚だけ選択）</span></span></label><div class="article-image-placeholder-note" ${b.url?"hidden":""}>画像はあとから設定できます。この枠は保存しても残ります。</div><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
  if(b.type==="bgm")return `<div class="article-block" data-block-id="${id}" data-block-type="bgm"><div class="article-block-head"><span class="article-block-label">🎵 BGM</span>${actions}</div>${scope}<input class="articleBgmLibraryId" type="hidden" value="${esc(b.libraryId||"")}"><div class="bgm-lib-actions"><button type="button" data-bgm-lib-open="${id}">BGM LIBRARYから選ぶ</button><button type="button" data-bgm-lib-save="${id}">BGM LIBRARYに登録／更新</button></div><div class="article-bgm-grid"><div><label>曲名</label><input class="articleBgmTitle" value="${esc(b.title||"")}" placeholder="曲名"></div><div><label>作者・アーティスト</label><input class="articleBgmArtist" value="${esc(b.artist||"")}" placeholder="作者名"></div><div><label>使用シーン</label><input class="articleBgmScene" value="${esc(b.scene||"")}" placeholder="例：Scene 3／終盤"></div><div><label>タグ <span class="small muted">（、区切り）</span></label><input class="articleBgmTags" value="${esc(Array.isArray(b.tags)?b.tags.join("、"):(b.tags||""))}" placeholder="不穏、戦闘、エンディング"></div><div><label>配布元名</label><input class="articleBgmSourceLabel" value="${esc(b.sourceLabel||"")}" placeholder="DOVA-SYNDROME など"></div><div><label>配布元URL</label><input class="articleBgmSourceUrl" type="url" value="${esc(b.sourceUrl||"")}" placeholder="https://..."></div><div><label>音源URL <span class="small muted">（任意）</span></label><input class="articleBgmAudioUrl" type="url" value="${esc(b.audioUrl||"")}" placeholder="直接再生できるMP3 URL"></div></div><label>手元のMP3 <span class="small muted">（自分用・このブラウザに保存）</span></label><div class="article-image-inputs"><div><input class="articleBgmFile" type="file" accept="audio/mpeg,audio/mp3,.mp3"><input class="articleBgmLocalId" type="hidden" value="${esc(b.localAudioId||"")}"><input class="articleBgmLocalName" type="hidden" value="${esc(b.localFileName||"")}"><div class="article-local-audio">${b.localFileName?`保存済み：${esc(b.localFileName)}`:"MP3本体は共有記事には含まれません。"}</div></div><div><button type="button" data-bgm-local-save="${id}">この端末に保存</button><div class="article-upload-status"></div></div></div><label>メモ <span class="small muted">（任意）</span></label><textarea class="articleBgmMemo" placeholder="この場面で流した、イントロから使用など">${esc(b.memo||"")}</textarea></div>`;
@@ -3101,7 +3102,7 @@ function initArticleRichEditors(ed,blocks){
  (blocks||[]).filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-  articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
@@ -3125,6 +3126,14 @@ function addEditorBlock(ed,type){
 }
 function moveEditorBlock(ed,id,delta){
  const blocks=editorBlocks(ed),i=blocks.findIndex(b=>b.id===id),j=i+delta;if(i<0||j<0||j>=blocks.length)return;[blocks[i],blocks[j]]=[blocks[j],blocks[i]];renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
+}
+let articleDraggedBlockId="";
+function clearArticleBlockDragUi(ed){ed.querySelectorAll('.article-block-dragging,.article-block-drop-before,.article-block-drop-after').forEach(x=>x.classList.remove('article-block-dragging','article-block-drop-before','article-block-drop-after'))}
+function moveEditorBlockTo(ed,sourceId,targetId,before){
+ const blocks=editorBlocks(ed),from=blocks.findIndex(b=>String(b.id)===String(sourceId)),target=blocks.findIndex(b=>String(b.id)===String(targetId));
+ if(from<0||target<0||from===target)return false;
+ const [moved]=blocks.splice(from,1),adjusted=blocks.findIndex(b=>String(b.id)===String(targetId));
+ blocks.splice(adjusted+(before?0:1),0,moved);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);return true;
 }
 async function uploadArticleImageFile(file){
  if(!file)throw new Error("画像ファイルを選んでください。");
@@ -3454,6 +3463,15 @@ function renderConversationImport(row,rows){
 function bindArticleEditorBlockControls(ed){
  ed.querySelectorAll('[data-block-up]').forEach(b=>b.onclick=()=>moveEditorBlock(ed,b.dataset.blockUp,-1));
  ed.querySelectorAll('[data-block-down]').forEach(b=>b.onclick=()=>moveEditorBlock(ed,b.dataset.blockDown,1));
+ ed.querySelectorAll('[data-block-drag]').forEach(handle=>{
+  handle.onclick=e=>{e.preventDefault();e.stopPropagation()};
+  handle.ondragstart=e=>{e.stopPropagation();articleDraggedBlockId=handle.dataset.blockDrag||"";handle.closest('.article-block')?.classList.add('article-block-dragging');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain','sakumeru-article-block')}catch{}};
+  handle.ondragend=()=>{articleDraggedBlockId="";clearArticleBlockDragUi(ed)};
+ });
+ ed.querySelectorAll('.article-block').forEach(row=>{
+  row.ondragover=e=>{const targetId=row.dataset.blockId;if(!articleDraggedBlockId||String(targetId)===String(articleDraggedBlockId))return;e.preventDefault();e.stopPropagation();ed.querySelectorAll('.article-block-drop-before,.article-block-drop-after').forEach(x=>x.classList.remove('article-block-drop-before','article-block-drop-after'));const r=row.getBoundingClientRect();row.classList.add(e.clientY<r.top+r.height/2?'article-block-drop-before':'article-block-drop-after');e.dataTransfer.dropEffect='move'};
+  row.ondrop=e=>{const targetId=row.dataset.blockId;if(!articleDraggedBlockId||String(targetId)===String(articleDraggedBlockId))return;e.preventDefault();e.stopPropagation();const before=row.classList.contains('article-block-drop-before'),sourceId=articleDraggedBlockId;articleDraggedBlockId="";clearArticleBlockDragUi(ed);moveEditorBlockTo(ed,sourceId,targetId,before)};
+ });
  ed.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{const blocks=editorBlocks(ed).filter(x=>x.id!==b.dataset.blockRemove);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
 
  ed.querySelectorAll('[data-conversation-import-open]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=false});
