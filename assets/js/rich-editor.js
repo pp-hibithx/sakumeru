@@ -84,8 +84,8 @@ function cleanupEditorHtml(editor,extraCleanup){
  const clone=editor.cloneNode(true);
  clone.removeAttribute("contenteditable");
  clone.querySelectorAll(".sm-rich-ui,.sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help,.kp-special-move").forEach(x=>x.remove());
- clone.querySelectorAll(".sm-rich-selected,.sm-outline-collapsed,.sm-outline-heading,.sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail").forEach(x=>{
-  x.classList.remove("sm-rich-selected","sm-outline-collapsed","sm-outline-heading","sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail");if(!x.className)x.removeAttribute("class");
+ clone.querySelectorAll(".sm-rich-selected,.sm-outline-collapsed,.sm-outline-heading,.sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.sm-rich-sort-dragging,.kp-state-open,.kp-state-fail").forEach(x=>{
+  x.classList.remove("sm-rich-selected","sm-outline-collapsed","sm-outline-heading","sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","sm-rich-sort-dragging","kp-state-open","kp-state-fail");if(!x.className)x.removeAttribute("class");
  });
  extraCleanup?.(clone);
  return clone.innerHTML||"<p><br></p>";
@@ -138,28 +138,74 @@ function create(options={}){
  mount.classList.add("sm-rich-shell");mount.innerHTML=toolbarHtml(options)+`<article class="sm-rich-editor blog-editor" contenteditable="true" role="textbox" aria-multiline="true"></article>`;
  const editor=mount.querySelector(".sm-rich-editor"),toolbar=mount.querySelector(".sm-rich-toolbar");
  editor.innerHTML=String(options.html||"").trim()||textToHtml(options.text||"");normalizeExistingEditor(editor);decorateSpecialBlocks(editor);
- let range=null,history=[cleanupEditorHtml(editor)],index=0,timer=0,destroyed=false;
+ let range=null,history=[cleanupEditorHtml(editor)],index=0,timer=0,sortTimer=0,destroyed=false,sortObserver=null,sortDecorating=false,draggedSortBlock=null;
  const saveRange=()=>{const s=getSelection();if(s?.rangeCount&&editor.contains(s.getRangeAt(0).commonAncestorContainer))range=s.getRangeAt(0).cloneRange()};
  const restoreRange=()=>{editor.focus();const s=getSelection();s.removeAllRanges();if(range)s.addRange(range);else{const r=document.createRange();r.selectNodeContents(editor);r.collapse(false);s.addRange(r)}};
  const value=()=>cleanupEditorHtml(editor,options.cleanup);
  const updateButtons=()=>{toolbar.querySelector("[data-rich-undo]").disabled=index<=0;toolbar.querySelector("[data-rich-redo]").disabled=index>=history.length-1};
  const notify=({record=true}={})=>{normalizeExistingEditor(editor);decorateSpecialBlocks(editor);const html=value();if(record&&html!==history[index]){history=history.slice(0,index+1);history.push(html);if(history.length>31)history.shift();index=history.length-1}updateButtons();options.onChange?.({html,text:plainText(html)})};
+ const sortableContainers=()=>[editor,...editor.querySelectorAll("details.sm-rich-toggle > .sm-rich-toggle-body")];
+ const sortableChildren=container=>[...container.children].filter(x=>!x.classList.contains("sm-rich-ui"));
+ const sortControlFor=block=>block?.previousElementSibling?.classList.contains("sm-rich-block-controls")?block.previousElementSibling:null;
+ const clearSortMarks=()=>editor.querySelectorAll(".sm-drop-before,.sm-drop-after,.sm-rich-sort-dragging").forEach(x=>x.classList.remove("sm-drop-before","sm-drop-after","sm-rich-sort-dragging"));
+ const moveSortableBlock=(block,target,before=true)=>{
+  if(!block||!target||block===target||block.contains(target))return false;
+  const sourceControls=sortControlFor(block),targetControls=sortControlFor(target),parent=target.parentElement;
+  if(!sourceControls||!targetControls||!parent)return false;
+  const reference=before?targetControls:target.nextSibling;
+  parent.insertBefore(sourceControls,reference);
+  parent.insertBefore(block,reference);
+  return true;
+ };
+ const moveSortableSibling=(block,delta)=>{
+  const parent=block?.parentElement;if(!parent)return false;
+  const siblings=sortableChildren(parent),i=siblings.indexOf(block),j=i+delta;if(i<0||j<0||j>=siblings.length)return false;
+  const order=siblings.slice();[order[i],order[j]]=[order[j],order[i]];
+  order.forEach(item=>{const controls=sortControlFor(item);if(controls)parent.appendChild(controls);parent.appendChild(item)});
+  return true;
+ };
+ const decorateSortableBlocks=()=>{
+  if(!options.enableBlockReorder||sortDecorating||destroyed)return;
+  sortDecorating=true;
+  try{
+   editor.querySelectorAll(".sm-rich-block-controls").forEach(x=>x.remove());
+   sortableContainers().forEach(container=>{
+    const blocks=sortableChildren(container);
+    blocks.forEach((block,index)=>{
+     const controls=document.createElement("div");controls.className="sm-rich-block-controls sm-rich-ui";controls.contentEditable="false";
+     controls.innerHTML=`<button type="button" class="sm-rich-drag-handle" draggable="true" title="ドラッグして並び替え" aria-label="このブロックをドラッグして並び替え">≡</button><button type="button" data-sm-block-up title="同じ階層で上へ" aria-label="このブロックを上へ" ${index===0?"disabled":""}>↑</button><button type="button" data-sm-block-down title="同じ階層で下へ" aria-label="このブロックを下へ" ${index===blocks.length-1?"disabled":""}>↓</button>`;
+     container.insertBefore(controls,block);
+     controls.querySelector("[data-sm-block-up]").onclick=e=>{e.preventDefault();e.stopPropagation();if(moveSortableSibling(block,-1)){notify();decorateSortableBlocks()}};
+     controls.querySelector("[data-sm-block-down]").onclick=e=>{e.preventDefault();e.stopPropagation();if(moveSortableSibling(block,1)){notify();decorateSortableBlocks()}};
+     const handle=controls.querySelector(".sm-rich-drag-handle");
+     handle.addEventListener("click",e=>{e.preventDefault();e.stopPropagation()});
+     handle.addEventListener("dragstart",e=>{e.stopPropagation();draggedSortBlock=block;block.classList.add("sm-rich-sort-dragging");e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain","sakumeru-rich-block")}catch{}});
+     handle.addEventListener("dragend",()=>{draggedSortBlock=null;clearSortMarks()});
+     block.ondragover=e=>{if(!draggedSortBlock||draggedSortBlock===block||draggedSortBlock.contains(block))return;e.preventDefault();e.stopPropagation();clearSortMarks();const r=block.getBoundingClientRect();block.classList.add(e.clientY<r.top+r.height/2?"sm-drop-before":"sm-drop-after");e.dataTransfer.dropEffect="move"};
+     block.ondrop=e=>{if(!draggedSortBlock||draggedSortBlock===block)return;e.preventDefault();e.stopPropagation();const before=block.classList.contains("sm-drop-before");const moved=moveSortableBlock(draggedSortBlock,block,before);draggedSortBlock=null;clearSortMarks();if(moved){notify();decorateSortableBlocks()}};
+    });
+    container.ondragover=e=>{if(!draggedSortBlock||e.target!==container||draggedSortBlock.contains(container))return;e.preventDefault();e.dataTransfer.dropEffect="move"};
+    container.ondrop=e=>{if(!draggedSortBlock||e.target!==container||draggedSortBlock.contains(container))return;e.preventDefault();e.stopPropagation();const controls=sortControlFor(draggedSortBlock);if(!controls)return;container.append(controls,draggedSortBlock);draggedSortBlock=null;clearSortMarks();notify();decorateSortableBlocks()};
+   });
+  }finally{sortDecorating=false}
+ };
  const exec=(cmd,arg=null)=>{restoreRange();document.execCommand(cmd,false,arg);saveRange();notify()};
  toolbar.addEventListener("mousedown",saveRange);
  toolbar.querySelectorAll("[data-rich-cmd]").forEach(b=>b.onclick=()=>exec(b.dataset.richCmd));
  toolbar.querySelector("[data-rich-format]").onchange=e=>exec("formatBlock",e.target.value);
  toolbar.querySelector("[data-rich-link]").onclick=()=>{const u=prompt("リンク先URL");if(u)exec("createLink",u)};
- toolbar.querySelector("[data-rich-hr]").onclick=()=>{restoreRange();document.execCommand("insertHTML",false,"<hr><p><br></p>");notify()};
- toolbar.querySelectorAll("[data-rich-special]").forEach(b=>b.onclick=()=>{restoreRange();document.execCommand("insertHTML",false,specialHtml(b.dataset.richSpecial));notify()});
+ toolbar.querySelector("[data-rich-hr]").onclick=()=>{restoreRange();document.execCommand("insertHTML",false,"<hr><p><br></p>");notify();decorateSortableBlocks()};
+ toolbar.querySelectorAll("[data-rich-special]").forEach(b=>b.onclick=()=>{restoreRange();document.execCommand("insertHTML",false,specialHtml(b.dataset.richSpecial));notify();decorateSortableBlocks()});
  const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("Xで伏せたい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
- toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
- toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
- editor.addEventListener("click",e=>{const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){block.remove();range=null;notify()}});
+ toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
+ toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
+ editor.addEventListener("click",e=>{const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
  editor.addEventListener("keyup",saveRange);editor.addEventListener("mouseup",saveRange);editor.addEventListener("blur",saveRange);
  editor.addEventListener("input",()=>{saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)});
  editor.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const k=e.key.toLowerCase();if(k==="z"||k==="y"){e.preventDefault();toolbar.querySelector(k==="y"||e.shiftKey?"[data-rich-redo]":"[data-rich-undo]").click()}});
+ if(options.enableBlockReorder){decorateSortableBlocks();sortObserver=new MutationObserver(mutations=>{if(sortDecorating)return;const structural=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&!n.classList?.contains("sm-rich-ui")));if(!structural)return;clearTimeout(sortTimer);sortTimer=setTimeout(()=>decorateSortableBlocks(),120)});sortObserver.observe(editor,{childList:true,subtree:true})}
  updateButtons();
- return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;updateButtons()},focus(){editor.focus()},destroy(){destroyed=true;clearTimeout(timer);mount.innerHTML=""},get destroyed(){return destroyed}};
+ return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
 window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
