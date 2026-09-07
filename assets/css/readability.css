@@ -1,0 +1,90 @@
+/* SAKU+MERU shared readability scale — display only, 2026-09-08 */
+:root{
+  --font-size-body:16px;
+  --font-size-small:13px;
+  --font-size-label:14px;
+  --font-size-control:16px;
+  --font-size-card-title:16px;
+  --font-size-section-title:19px;
+}
+
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-size:var(--font-size-body)!important;line-height:1.68!important}
+.nav a{font-size:14px!important;line-height:1.5}
+.hero h2{font-size:clamp(24px,3vw,36px)!important;line-height:1.35!important}
+.hero p{font-size:15px!important;line-height:1.7!important}
+.section-title{font-size:var(--font-size-section-title)!important;line-height:1.45!important}
+.panel>h2,.panel>h3,.album-panel>h2,.album-panel h2{font-size:18px!important;line-height:1.45!important}
+.card h3{font-size:var(--font-size-card-title)!important;line-height:1.5!important}
+.card p{font-size:14px!important;line-height:1.65!important}
+.small,.muted{font-size:var(--font-size-small)!important;line-height:1.6!important}
+.badge{font-size:12px!important;line-height:1.45!important}
+.notice,.empty{font-size:14px!important;line-height:1.65!important}
+
+label,.field label{font-size:var(--font-size-label)!important;line-height:1.45!important}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+select,textarea,.field input,.field select,.field textarea{
+  font-size:var(--font-size-control)!important;
+  line-height:1.5!important;
+}
+button,.button,.action-link{font-size:14px!important;line-height:1.45!important}
+table{font-size:14px!important}
+th{font-size:13px!important;line-height:1.45!important}
+td{font-size:14px!important;line-height:1.55!important}
+
+/* SCENARIO: titles and readable detail copy stay above metadata scale. */
+.sc-head h3,.sc-card h3{font-size:16px!important;line-height:1.5!important}
+.sc-form h2,.sc-detail-top h2{font-size:20px!important;line-height:1.4!important}
+.sc-system-tab,.sc-checks label{font-size:13px!important}
+.sc-menu button,.sc-menu a,.friend-actions button,.friend-actions a{font-size:14px!important}
+.scenario-summary-fold,.scenario-source,.spoiler-body{font-size:15px!important;line-height:1.75!important}
+.spoiler summary{font-size:14px!important}
+
+/* CALENDAR: retain seven-column density while removing the former 9.5px text. */
+.calendar-toolbar .month-nav strong{font-size:16px!important}
+.calendar-toolbar button{font-size:14px!important}
+.calendar-head,.daynum{font-size:12px!important}
+.event-chip{font-size:12px!important;line-height:1.35!important}
+.calendar-legend,.event-detail-label{font-size:13px!important}
+.event-detail-title{font-size:18px!important}
+.event-detail-value{font-size:15px!important;line-height:1.6}
+.event-editor-actions,.event-editor-actions button{font-size:13px!important}
+
+/* LIBRARY: record titles/body are primary information; timestamps remain secondary. */
+.library-dir-title,.lib-run-card-title,.lib-grid-title,.lib-focused-title,.lib-run-detail-title{font-size:16px!important;line-height:1.5!important}
+.library-dir-meta,.lib-run-card-meta,.lib-grid-sub,.lib-child-meta,.lib-child-date,.player-history-meta{font-size:13px!important;line-height:1.6!important}
+.lib-parent-title,.lib-child-title,.article-block-label{font-size:15px!important;line-height:1.55!important}
+.lib-child-note,.article-bgm-note,.share-scope-note{font-size:14px!important;line-height:1.7!important}
+.participant-head,.participant-row label,.article-block-visibility label{font-size:13px!important}
+.article-save-status{font-size:14px!important}
+
+/* PC detail: profile values, game statistics and skills are not metadata. */
+.pc-detail-head h2{font-size:24px!important;line-height:1.35!important}
+.pc-detail-head-meta,.dir-meta{font-size:13px!important;line-height:1.55!important}
+.pc-profile-summary dt,.pc-profile-summary dd{font-size:15px!important;line-height:1.55!important}
+.pc-profile-summary dt{font-weight:700}
+.pc-stat-cell{font-size:16px!important;line-height:1.45!important}
+.pc-stat-cell strong,.pc-stat-cell b{font-size:17px!important}
+.pc-skill-table th{font-size:14px!important}
+.pc-skill-table td{font-size:15px!important}
+.pc-detail-toggle>summary{font-size:16px!important;line-height:1.5!important}
+.pc-detail-toggle-body,.pc-memo-body{font-size:15px!important;line-height:1.75!important}
+
+/* PLAYERS: keep names, statistics, tabs and record titles visibly distinct. */
+.player-detail-head h2{font-size:24px!important;line-height:1.35!important}
+.player-detail-stat{font-size:14px!important;line-height:1.5!important}
+.player-detail-tabs button,[role="tab"]{font-size:15px!important}
+.player-detail-panel,.player-tab-panel{font-size:15px;line-height:1.7}
+.pc-library-info-row,.player-rel-run{font-size:14px!important;line-height:1.6!important}
+
+@media(max-width:560px){
+  :root{--font-size-body:16px;--font-size-small:13px;--font-size-label:14px;--font-size-control:16px}
+  body{line-height:1.7!important}
+  .nav a{font-size:13px!important}
+  .calendar-head,.daynum{font-size:12px!important}
+  .event-chip{font-size:11.5px!important;line-height:1.35!important}
+  .pc-detail-head h2,.player-detail-head h2{font-size:22px!important}
+  .pc-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .pc-profile-summary dl{grid-template-columns:1fr!important}
+  button,.button,.action-link{overflow-wrap:anywhere;white-space:normal}
+}
