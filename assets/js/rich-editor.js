@@ -105,11 +105,11 @@ function specialHtml(kind){
  const label=labels[kind]||"特殊ブロック";
  return `<section class="sm-special kp-special" data-kind="${esc(kind)}" data-block-id="${esc(uid())}"><div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span></div><div class="kp-special-title">${esc(label)}</div><div class="kp-special-body"><p><br></p></div></section><p><br></p>`;
 }
-function toolbarHtml(options={}){return `<div class="sm-rich-toolbar sm-rich-ui" contenteditable="false">
+function toolbarHtml(options={}){const specialKinds=Array.isArray(options.specialKinds)?options.specialKinds:["note","rp","secret","dialogue","toggle"],specialButtons=[["note","＋ メモ"],["rp","＋ RP"],["secret","＋ 秘匿"],["dialogue","💬 会話"],["toggle","▸ トグル"]].filter(([kind])=>specialKinds.includes(kind)).map(([kind,label])=>`<button type="button" data-rich-special="${kind}">${label}</button>`).join("");return `<div class="sm-rich-toolbar sm-rich-ui" contenteditable="false">
  <div class="sm-rich-group"><button type="button" data-rich-undo title="元に戻す">↶</button><button type="button" data-rich-redo title="やり直す">↷</button></div>
  <div class="sm-rich-group"><select data-rich-format aria-label="段落形式"><option value="p">本文</option><option value="h2">大見出し</option><option value="h3">小見出し</option><option value="blockquote">引用</option></select><button type="button" data-rich-cmd="bold"><b>B</b></button><button type="button" data-rich-cmd="italic"><i>I</i></button><button type="button" data-rich-cmd="underline"><u>U</u></button><button type="button" data-rich-cmd="strikeThrough"><s>S</s></button></div>
  <div class="sm-rich-group"><button type="button" data-rich-cmd="justifyLeft">左</button><button type="button" data-rich-cmd="justifyCenter">中</button><button type="button" data-rich-cmd="justifyRight">右</button><button type="button" data-rich-cmd="insertUnorderedList">• 箇条書き</button><button type="button" data-rich-cmd="insertOrderedList">1. 番号</button><button type="button" data-rich-link>🔗</button><button type="button" data-rich-hr>―</button></div>
- <div class="sm-rich-group"><button type="button" data-rich-special="note">＋ メモ</button><button type="button" data-rich-special="rp">＋ RP</button><button type="button" data-rich-special="secret">＋ 秘匿</button><button type="button" data-rich-special="dialogue">💬 会話</button><button type="button" data-rich-special="toggle">▸ トグル</button></div>
+ ${specialButtons?`<div class="sm-rich-group">${specialButtons}</div>`:""}
  ${options.enableXHide?'<div class="sm-rich-group"><button type="button" data-rich-x-hide title="選択部分をXの投稿文・OGP説明文から除外します">🙈 Xでは伏せる</button></div>':""}
  </div>`}
 function toggleXHidden(editor,range){
@@ -135,7 +135,7 @@ function decorateSpecialBlocks(editor){
 }
 function create(options={}){
  const mount=options.mount;if(!mount)throw new Error("RichEditor mount is required");
- mount.classList.add("sm-rich-shell");mount.innerHTML=toolbarHtml(options)+`<article class="sm-rich-editor blog-editor" contenteditable="true" role="textbox" aria-multiline="true"></article>`;
+ mount.classList.add("sm-rich-shell");mount.classList.toggle("sm-rich-reorder-mode",!!options.reorderMode);mount.innerHTML=toolbarHtml(options)+`<article class="sm-rich-editor blog-editor" contenteditable="true" role="textbox" aria-multiline="true"></article>`;
  const editor=mount.querySelector(".sm-rich-editor"),toolbar=mount.querySelector(".sm-rich-toolbar");
  editor.innerHTML=String(options.html||"").trim()||textToHtml(options.text||"");normalizeExistingEditor(editor);decorateSpecialBlocks(editor);
  let range=null,history=[cleanupEditorHtml(editor)],index=0,timer=0,sortTimer=0,destroyed=false,sortObserver=null,sortDecorating=false,draggedSortBlock=null;
@@ -205,7 +205,7 @@ function create(options={}){
  editor.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const k=e.key.toLowerCase();if(k==="z"||k==="y"){e.preventDefault();toolbar.querySelector(k==="y"||e.shiftKey?"[data-rich-redo]":"[data-rich-undo]").click()}});
  if(options.enableBlockReorder){decorateSortableBlocks();sortObserver=new MutationObserver(mutations=>{if(sortDecorating)return;const structural=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&!n.classList?.contains("sm-rich-ui")));if(!structural)return;clearTimeout(sortTimer);sortTimer=setTimeout(()=>decorateSortableBlocks(),120)});sortObserver.observe(editor,{childList:true,subtree:true})}
  updateButtons();
- return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
+ return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
 window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
