@@ -391,6 +391,9 @@
      return "";
    }).join("");
 
+   // 旧形式のフラットなblocksと、新形式のtoggle.childrenを同じ再帰レンダラーでHTML化する。
+   const blocksHtml=renderArticleBlocks(blocks);
+
    box.innerHTML=`<div class="share-article-head">
      <div class="small muted">${esc([p.scenarioTitle,p.runLabel].filter(Boolean).join(" ／ "))}</div>
      <h2>${esc(p.title||"卓記事")}</h2>
@@ -871,7 +874,6 @@
       const label=(i===0||[...months.values()][i-1]?.year!==m.year)?`${m.year}年${m.month}月`:`${m.month}月`;
       return `<section class="card" style="margin:12px 0;padding:16px"><h3 style="margin:0 0 10px">${esc(label)}</h3><div style="font-size:1.05rem;line-height:1.9">${m.days.map(n=>`${esc(n)}日`).join("・")}</div></section>`;
     }).join("");
-    const blocksHtml=renderArticleBlocks(blocks);
     box.innerHTML=`<h2>${esc(p.label||((p.ownerName?String(p.ownerName)+"の":"")+"空き日共有"))}</h2>${monthHtml||'<p class="muted">この期間に共有できる空き日はありません。</p>'}`;
     return
   }
