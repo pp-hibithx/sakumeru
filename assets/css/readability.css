@@ -78,6 +78,55 @@ details>summary{line-height:1.5}
 .profile-card,.profile-preview,.profile-block-row{border-width:2px!important;border-color:color-mix(in srgb,currentColor 24%,var(--line))!important}
 .profile-block-editor[open]>summary,.profile-side-toggle[open]>summary{color:inherit;background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
 
+/* Remaining primary pages: keep the PC/CALENDAR contrast and control language. */
+.home-page .notice,.home-page .home-task-panel,
+.profile-page .profile-card,.profile-page .profile-preview,
+.tools-page .card,.backup-page .panel,.help-page .panel,
+.about-page .panel,.settings-page .panel{
+  border:2px solid color-mix(in srgb,currentColor 27%,var(--line))!important;
+  background:color-mix(in srgb,var(--panel) 96%,currentColor 2%);
+  box-shadow:0 4px 14px rgba(0,0,0,.1);
+}
+.home-page .home-task{border-width:2px!important;padding:11px 13px}
+.home-page .home-task-title{font-size:16px;line-height:1.5}
+.home-page .home-task-meta,.home-page .home-task-due{font-size:13px!important;line-height:1.55}
+.home-page .grid>.card,.tools-page .grid>.card{padding:16px}
+.home-page .grid>.card:focus-visible,.tools-page .grid>.card:focus-visible{outline:3px solid var(--accent)!important;outline-offset:3px}
+
+.profile-page .profile-card-head,.profile-page .profile-page-head{padding-bottom:9px;border-bottom:2px solid color-mix(in srgb,currentColor 20%,var(--line))}
+.profile-page .profile-block-row,.profile-page .profile-page-block{background:color-mix(in srgb,var(--panel) 94%,currentColor 2%)}
+.profile-page .profile-block-editor>summary,.profile-page .profile-side-toggle>summary{min-height:40px;box-sizing:border-box}
+.profile-page .rich-toolbar button,.profile-page .profile-block-tools button,.profile-page .profile-page-block-tools button{min-height:36px!important;font-size:13px!important}
+
+.tools-page .card h3{font-size:17px!important}.tools-page .card p{font-size:15px!important}
+.tools-page .card{min-height:150px;box-sizing:border-box}
+
+.backup-page .backup-summary{gap:10px}
+.backup-page .backup-stat{border-width:2px;padding:12px}
+.backup-page .backup-stat b{font-size:21px}.backup-page .backup-stat span{font-size:13px!important;line-height:1.5}
+.backup-page .backup-warning{border-left-width:5px;font-size:14px!important;background:color-mix(in srgb,var(--accent) 7%,var(--panel));padding:12px 14px}
+.backup-page .backup-targets{border-width:2px}.backup-page .backup-targets summary{font-size:15px;min-height:42px;box-sizing:border-box}
+.backup-page .backup-actions button{min-height:44px;font-weight:750}
+.backup-page #syncId{width:min(100%,420px);display:block;margin-top:5px}
+.backup-page #fullBackupStatus,.backup-page #cloudStatus{font-size:14px!important;font-weight:700}
+
+.help-page .help-index a{border-width:2px;min-height:98px}
+.help-page .help-step{border-width:2px;padding:13px}
+.help-page .help-note{border-left-width:5px;padding:10px 13px;background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+.help-page .help-list{font-size:15px;line-height:1.75}.help-page .help-list li+li{margin-top:7px}
+.help-page .help-section>h2{padding-bottom:8px;border-bottom:2px solid color-mix(in srgb,currentColor 20%,var(--line))}
+
+.about-page .panel>h2{padding-bottom:8px;border-bottom:2px solid color-mix(in srgb,currentColor 20%,var(--line))}
+.about-page .panel p,.about-page .panel li{font-size:15px;line-height:1.75}
+.about-page .panel a{font-weight:700;text-underline-offset:3px}
+
+.settings-page .panel{max-width:760px}
+.settings-page .compact-option{min-height:48px;padding:10px 12px;border:2px solid color-mix(in srgb,currentColor 25%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--panel) 88%,#000 12%);font-size:16px!important;font-weight:750}
+.settings-page .compact-option:focus-within{border-color:var(--accent);outline:3px solid color-mix(in srgb,var(--accent) 28%,transparent);outline-offset:1px}
+.settings-page #selfSocialName{display:block;width:min(100%,520px);margin-top:6px}
+.settings-page #saveSelfSocialName{margin-top:4px;background:var(--accent);border-color:var(--accent);color:#111;font-weight:800}
+.settings-page #settingsStatus{min-height:1.5em;font-size:14px!important;font-weight:700}
+
 /* SCENARIO: titles and readable detail copy stay above metadata scale. */
 .sc-head h3,.sc-card h3{font-size:16px!important;line-height:1.5!important}
 .sc-form h2,.sc-detail-top h2{font-size:20px!important;line-height:1.4!important}
@@ -134,4 +183,10 @@ details>summary{line-height:1.5}
   .pc-profile-summary dl{grid-template-columns:1fr!important}
   button,.button,.action-link{overflow-wrap:anywhere;white-space:normal}
   .panel,.card{scroll-margin-top:10px}
+  .home-page .grid>.card,.tools-page .grid>.card{padding:14px}
+  .tools-page .card{min-height:0}
+  .backup-page .backup-actions{display:grid;grid-template-columns:1fr;width:100%}
+  .backup-page .backup-actions button{width:100%;min-width:0}
+  .profile-page .profile-card-head,.profile-page .profile-page-head{align-items:flex-start;flex-direction:column}
+  .settings-page .compact-option{align-items:flex-start!important}
 }
