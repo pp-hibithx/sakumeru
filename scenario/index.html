@@ -226,6 +226,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 /* Visibility-first UI shared with MY PCs. */
 main>.wrap{display:grid;gap:18px}
 main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 5px 18px rgba(0,0,0,.1)}
+.sc-layout>.sc-browser-section{border:0;border-radius:0;background:transparent;box-shadow:none;padding:0}
 .sc-toolbar{padding:4px 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none}
 .sc-toolbar label,#scenarioForm label{font-weight:750;color:inherit;margin-bottom:5px}
 .sc-toolbar input,.sc-toolbar select,#scenarioForm input:not([type="checkbox"]):not([type="radio"]),#scenarioForm select,#scenarioForm textarea{min-height:44px;border:2px solid color-mix(in srgb,currentColor 34%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--panel) 88%,#000 12%);color:inherit;padding:9px 10px;box-sizing:border-box}
@@ -253,7 +254,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 <div class="hero"><h2>SCENARIO</h2><p>所持・通過済み・通過予定・回す予定など、シナリオの状況をまとめて管理できます。</p></div>
 <div class="notice small">登録内容は、お使いのブラウザ内に保存されます。 他の利用者には共有されません。</div>
 <div class="sc-layout">
-<section>
+<section class="sc-browser-section">
 <div class="sc-toolbar"><div class="sc-toolbar-main">
 <div class="sc-search"><label>検索</label><input id="search" type="search" placeholder="タイトル・作者・システム"></div>
 <div class="sc-filter"><label>状態</label><select id="filter"><option value="">すべて</option><option value="owned">所持</option><option value="played">通過済み</option><option value="planned">通過予定</option><option value="watched">視聴済み</option><option value="kpDone">回した</option><option value="kpPlanned">回す予定</option><option value="wish">気になる</option><option value="roomReady">部屋あり</option></select></div>
