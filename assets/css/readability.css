@@ -32,6 +32,52 @@ table{font-size:14px!important}
 th{font-size:13px!important;line-height:1.45!important}
 td{font-size:14px!important;line-height:1.55!important}
 
+/* Shared visibility baseline for the simpler pages (HOME / PROFILE / TOOLS /
+   BACKUP / HELP / ABOUT / SETTINGS). Feature-heavy pages may refine it locally. */
+.panel,.card,.home-task-panel{
+  border-width:2px!important;
+  border-color:color-mix(in srgb,currentColor 24%,var(--line))!important;
+}
+.card,.home-task,.panel,details{transition:border-color .15s ease,background .15s ease,box-shadow .15s ease}
+.card:hover,.card:focus-visible,.home-task:hover,.home-task:focus-visible{
+  border-color:color-mix(in srgb,var(--accent) 70%,currentColor)!important;
+  box-shadow:0 5px 16px rgba(0,0,0,.16);
+  outline:none;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),select,textarea{
+  min-height:42px!important;
+  border-width:2px!important;
+  border-color:color-mix(in srgb,currentColor 32%,var(--line))!important;
+  background:color-mix(in srgb,var(--panel) 88%,#000 12%)!important;
+  box-sizing:border-box;
+}
+textarea{min-height:88px!important}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
+select:focus,textarea:focus{
+  border-color:var(--accent)!important;
+  outline:3px solid color-mix(in srgb,var(--accent) 30%,transparent)!important;
+  outline-offset:1px;
+}
+button,.button,.action-link{min-height:40px}
+button:focus-visible,.button:focus-visible,.action-link:focus-visible,summary:focus-visible{
+  outline:3px solid var(--accent)!important;
+  outline-offset:2px;
+}
+details>summary{line-height:1.5}
+.badge{
+  min-height:24px;
+  display:inline-flex;
+  align-items:center;
+  padding:3px 8px!important;
+}
+
+/* Prevent older compact PROFILE overrides from shrinking primary controls. */
+.profile-editor-side input,.profile-editor-side textarea,.profile-editor-side select{font-size:14px!important}
+.profile-editor-side .profile-field label,.profile-side-toggle>summary{font-size:14px!important}
+.profile-editor-side .profile-help,.profile-editor-side .small,.profile-editor-side .muted{font-size:13px!important}
+.profile-card,.profile-preview,.profile-block-row{border-width:2px!important;border-color:color-mix(in srgb,currentColor 24%,var(--line))!important}
+.profile-block-editor[open]>summary,.profile-side-toggle[open]>summary{color:inherit;background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+
 /* SCENARIO: titles and readable detail copy stay above metadata scale. */
 .sc-head h3,.sc-card h3{font-size:16px!important;line-height:1.5!important}
 .sc-form h2,.sc-detail-top h2{font-size:20px!important;line-height:1.4!important}
@@ -87,4 +133,5 @@ td{font-size:14px!important;line-height:1.55!important}
   .pc-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   .pc-profile-summary dl{grid-template-columns:1fr!important}
   button,.button,.action-link{overflow-wrap:anywhere;white-space:normal}
+  .panel,.card{scroll-margin-top:10px}
 }
