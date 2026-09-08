@@ -282,9 +282,12 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .article-block{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(255,255,255,.015)}
 .article-block-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
 .article-block-label{font-weight:700;font-size:13px}
-.article-block-actions{display:flex;gap:5px;flex-wrap:wrap}.article-block-actions button{width:auto;padding:5px 8px;font-size:11px}
+.article-block-actions{display:flex;gap:5px;flex-wrap:wrap}.article-block-actions button{width:auto;padding:5px 8px;font-size:11px}.article-block-actions .article-sort-only{display:none}.lib-article-editor.article-reorder-mode .article-block-actions .article-sort-only{display:inline-grid}.article-reorder-status{display:none;padding:7px 10px;border:2px solid var(--accent);border-radius:8px;background:color-mix(in srgb,var(--accent) 12%,var(--panel));font-weight:800}.lib-article-editor.article-reorder-mode .article-reorder-status{display:inline-flex;align-items:center}.lib-article-editor.article-reorder-mode .article-block{border-width:2px}.lib-article-editor.article-reorder-mode .articleRichMount{user-select:none}
 .article-block-drag-handle{cursor:grab!important;font-size:18px!important;line-height:1!important}.article-block-drag-handle:active{cursor:grabbing!important}.article-block.article-block-dragging{opacity:.42}.article-block.article-block-drop-before{box-shadow:0 -3px 0 var(--accent)}.article-block.article-block-drop-after{box-shadow:0 3px 0 var(--accent)}
 .article-block textarea{min-height:120px}
+.article-toggle-block{margin-left:0}.article-toggle-children{display:grid;gap:9px;margin-top:10px;padding:10px;border-left:3px solid color-mix(in srgb,var(--accent) 52%,var(--line));background:color-mix(in srgb,var(--panel) 94%,var(--accent) 2%)}.article-toggle-children>.article-block{margin:0}.article-nested-toolbar{margin:9px 0 0}.lib-article-structured-toggle{border:1px solid var(--line);border-radius:9px;margin:10px 0;overflow:hidden}.lib-article-structured-toggle>summary{cursor:pointer;padding:10px 12px;font-weight:800}.lib-article-structured-toggle-body{display:grid;gap:10px;padding:4px 12px 12px}.lib-article-structured-toggle .lib-article-structured-toggle{margin-left:12px}
+.article-tree-dropzone{display:none;padding:8px;border:1px dashed var(--line);border-radius:7px;text-align:center;color:var(--muted);font-size:13px}.article-reorder-mode .article-tree-dropzone{display:block}.article-tree-dropzone.article-drop-active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--text)}
+@media(max-width:620px){.article-toggle-children{padding:8px;margin-left:0}.article-nested-toolbar button{flex:1 1 calc(50% - 6px)}.lib-article-structured-toggle .lib-article-structured-toggle{margin-left:6px}}
 .article-block-visibility{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}.article-block-visibility label{margin:0;font-size:12px;font-weight:700}.article-block-visibility select{width:auto;min-width:150px;margin-left:auto}
 .article-image-inputs{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.55fr);gap:8px;align-items:end}
 .article-image-source-grid{align-items:start}
@@ -2887,10 +2890,12 @@ function articleShareLabel(p){
  return p.passwordProtected?"リンク限定・パスワード":"リンク限定";
 }
 function normalizedArticleBlocks(page){
- if(Array.isArray(page?.blocks)&&page.blocks.length)return page.blocks.map(b=>({...b,id:b.id||TRPG39.uuid()}));
+ const normalize=blocks=>(Array.isArray(blocks)?blocks:[]).map(b=>{const out={...b,id:b.id||TRPG39.uuid()};if(out.type==="toggle")out.children=normalize(out.children);return out});
+ if(Array.isArray(page?.blocks)&&page.blocks.length)return normalize(page.blocks);
  if(String(page?.body||"").trim())return [{id:TRPG39.uuid(),type:"text",text:String(page.body||"")}];
  return [];
 }
+function flattenArticleBlocks(blocks){const out=[];(function walk(items){(items||[]).forEach(b=>{out.push(b);if(b.type==="toggle")walk(b.children)})})(blocks);return out}
 function youtubeVideoId(url=""){
  try{
    const u=new URL(String(url).trim());
@@ -2948,7 +2953,7 @@ function saveBgmTrackFromEditorRow(row){
  const track=bgmLibraryTrackFromBlock(b),lib=loadBgmLibrary(),i=lib.findIndex(x=>x.id===track.id);if(i>=0)lib[i]={...lib[i],...track};else lib.unshift(track);saveBgmLibrary(lib);row.querySelector('.articleBgmLibraryId').value=track.id;alert(i>=0?"BGM LIBRARYを更新しました。":"BGM LIBRARYへ登録しました。");
 }
 let bgmLibraryTargetRow=null;
-function bgmUsageCount(id){let n=0;const all=loadRunArticlePages();Object.values(all).forEach(pages=>(pages||[]).forEach(p=>normalizedArticleBlocks(p).forEach(b=>{if(b.type==="bgm"&&b.libraryId===id)n++})));return n}
+function bgmUsageCount(id){let n=0;const all=loadRunArticlePages();Object.values(all).forEach(pages=>(pages||[]).forEach(p=>flattenArticleBlocks(normalizedArticleBlocks(p)).forEach(b=>{if(b.type==="bgm"&&b.libraryId===id)n++})));return n}
 function renderBgmLibrary(){
  const dlg=q("bgmLibraryDialog"),list=q("bgmLibraryList"),term=String(q("bgmLibrarySearch")?.value||"").trim().toLowerCase(),tag=String(q("bgmLibraryTag")?.value||"");let lib=loadBgmLibrary();
  const tags=[...new Set(lib.flatMap(x=>Array.isArray(x.tags)?x.tags:[]))].sort((a,b)=>a.localeCompare(b,"ja"));if(q("bgmLibraryTag")){const cur=q("bgmLibraryTag").value;q("bgmLibraryTag").innerHTML='<option value="">すべて</option>'+tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");q("bgmLibraryTag").value=tags.includes(cur)?cur:""}
@@ -2983,7 +2988,11 @@ function conversationBlockHasContent(b){return normalizeConversationLines(b).som
 function articleBlocksHtml(page){
  const blocks=normalizedArticleBlocks(page);
  if(!blocks.length)return '<div class="lib-article-render"><div class="small muted">本文はまだありません。</div></div>';
- return `<div class="lib-article-render">${blocks.map(b=>{
+ return `<div class="lib-article-render">${articleBlockListHtml(blocks)}</div>`;
+}
+function articleBlockListHtml(blocks){
+ return (Array.isArray(blocks)?blocks:[]).map(b=>{
+    if(b.type==="toggle")return `<details class="lib-article-structured-toggle"><summary>${esc(b.title||"トグル")}</summary><div class="lib-article-structured-toggle-body">${articleBlockListHtml(b.children||[])}</div></details>`;
    if(b.type==="image"){
      const url=String(b.url||"").trim();
      if(!url)return `<div class="lib-article-image-placeholder">🖼 画像未設定</div>`;
@@ -3011,22 +3020,24 @@ function articleBlocksHtml(page){
       return `<div class="lib-article-text sm-rich-render">${SAKUMERichEditor.sanitizeHtml(b.html)}</div>`;
     }
     return `<div class="lib-article-text">${esc(b.text||"")}</div>`;
- }).join("")}</div>`;
+ }).join("");
 }
 function articleEditorBlockHtml(b,index,total){
  const id=esc(b.id||TRPG39.uuid());
- const actions=`<div class="article-block-actions"><button type="button" class="article-block-drag-handle" draggable="true" data-block-drag="${id}" title="ドラッグして並び替え" aria-label="このブロックをドラッグして並び替え">≡</button><button type="button" data-block-up="${id}" title="上へ" ${index===0?"disabled":""}>↑</button><button type="button" data-block-down="${id}" title="下へ" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
+ const actions=`<div class="article-block-actions"><button type="button" class="article-block-drag-handle article-sort-only" draggable="true" data-block-drag="${id}" title="ドラッグして並び替え" aria-label="このブロックをドラッグして並び替え">≡</button><button type="button" class="article-sort-only" data-block-up="${id}" title="上へ" ${index===0?"disabled":""}>↑</button><button type="button" class="article-sort-only" data-block-down="${id}" title="下へ" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
  const visibility=String(b.visibility||"public"),scope=`<div class="article-block-visibility"><label>公開範囲</label><select class="articleBlockVisibility"><option value="private" ${visibility==="private"?"selected":""}>自分のみ</option><option value="link" ${visibility==="link"?"selected":""}>共通URL限定</option><option value="public" ${visibility==="public"?"selected":""}>全体公開</option></select></div>`;
+ if(b.type==="toggle")return `<div class="article-block article-toggle-block" data-block-id="${id}" data-block-type="toggle"><div class="article-block-head"><span class="article-block-label">▸ トグル</span>${actions}</div>${scope}<label>トグル見出し</label><input class="articleToggleTitle" value="${esc(b.title||"")}" placeholder="例：HO1／セッション後半"><div class="article-block-toolbar article-nested-toolbar"><button type="button" data-nested-add="text" data-parent-id="${id}">＋ 文章</button><button type="button" data-nested-add="image" data-parent-id="${id}">＋ 画像</button><button type="button" data-nested-add="youtube" data-parent-id="${id}">＋ YouTube</button><button type="button" data-nested-add="bgm" data-parent-id="${id}">＋ BGM</button><button type="button" data-nested-add="toggle" data-parent-id="${id}">＋ トグル</button></div><div class="article-toggle-children"><div class="article-tree-dropzone" data-drop-parent="${id}">このトグル内へ移動</div>${(b.children||[]).map((child,i,all)=>articleEditorBlockHtml(child,i,all.length)).join("")}</div></div>`;
  if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div>${scope}<div class="article-image-inputs article-image-source-grid"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><div class="article-image-file-row"><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button></div><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><label class="article-ogp-pick"><input class="articleBlockOgp" type="checkbox" ${b.ogp?"checked":""}><span><strong>SNSカードに使う</strong> <span class="muted">（通常共有時のみ・1枚だけ選択）</span></span></label><div class="article-image-placeholder-note" ${b.url?"hidden":""}>画像はあとから設定できます。この枠は保存しても残ります。</div><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
  if(b.type==="bgm")return `<div class="article-block" data-block-id="${id}" data-block-type="bgm"><div class="article-block-head"><span class="article-block-label">🎵 BGM</span>${actions}</div>${scope}<input class="articleBgmLibraryId" type="hidden" value="${esc(b.libraryId||"")}"><div class="bgm-lib-actions"><button type="button" data-bgm-lib-open="${id}">BGM LIBRARYから選ぶ</button><button type="button" data-bgm-lib-save="${id}">BGM LIBRARYに登録／更新</button></div><div class="article-bgm-grid"><div><label>曲名</label><input class="articleBgmTitle" value="${esc(b.title||"")}" placeholder="曲名"></div><div><label>作者・アーティスト</label><input class="articleBgmArtist" value="${esc(b.artist||"")}" placeholder="作者名"></div><div><label>使用シーン</label><input class="articleBgmScene" value="${esc(b.scene||"")}" placeholder="例：Scene 3／終盤"></div><div><label>タグ <span class="small muted">（、区切り）</span></label><input class="articleBgmTags" value="${esc(Array.isArray(b.tags)?b.tags.join("、"):(b.tags||""))}" placeholder="不穏、戦闘、エンディング"></div><div><label>配布元名</label><input class="articleBgmSourceLabel" value="${esc(b.sourceLabel||"")}" placeholder="DOVA-SYNDROME など"></div><div><label>配布元URL</label><input class="articleBgmSourceUrl" type="url" value="${esc(b.sourceUrl||"")}" placeholder="https://..."></div><div><label>音源URL <span class="small muted">（任意）</span></label><input class="articleBgmAudioUrl" type="url" value="${esc(b.audioUrl||"")}" placeholder="直接再生できるMP3 URL"></div></div><label>手元のMP3 <span class="small muted">（自分用・このブラウザに保存）</span></label><div class="article-image-inputs"><div><input class="articleBgmFile" type="file" accept="audio/mpeg,audio/mp3,.mp3"><input class="articleBgmLocalId" type="hidden" value="${esc(b.localAudioId||"")}"><input class="articleBgmLocalName" type="hidden" value="${esc(b.localFileName||"")}"><div class="article-local-audio">${b.localFileName?`保存済み：${esc(b.localFileName)}`:"MP3本体は共有記事には含まれません。"}</div></div><div><button type="button" data-bgm-local-save="${id}">この端末に保存</button><div class="article-upload-status"></div></div></div><label>メモ <span class="small muted">（任意）</span></label><textarea class="articleBgmMemo" placeholder="この場面で流した、イントロから使用など">${esc(b.memo||"")}</textarea></div>`;
- if(b.type==="conversation")return `<div class="article-block" data-block-id="${id}" data-block-type="conversation"><div class="article-block-head"><span class="article-block-label">💬 会話ログ</span>${actions}</div>${scope}<label>見出し <span class="small muted">（任意）</span></label><input class="articleConversationCaption" value="${esc(b.caption||"")}" placeholder="例：終盤／この場面好き"><label>会話</label><textarea class="articleConversationRaw" placeholder="1行ごとに「発言者｜発言」の形で入力します。&#10;A｜こんにちは。&#10;B｜確認しました。">${esc(conversationRaw(normalizeConversationLines(b)))}</textarea><div class="article-conversation-tools"><button type="button" data-conversation-import-open="${id}">ログを読み込む</button></div><div class="conversation-importer" data-conversation-importer="${id}" hidden><div class="conversation-importer-head"><strong>会話ログを読み込む</strong><button type="button" data-conversation-import-close="${id}">閉じる</button></div><label>ログを貼り付け</label><textarea class="conversationImportText" placeholder="A：こんにちは&#10;B：確認しました"></textarea><div class="conversation-import-file-row"><input class="conversationImportFile" type="file" accept=".txt,.json,text/plain,application/json"><button type="button" data-conversation-file-load="${id}">TXT / JSONを読み込む</button><button type="button" data-conversation-parse="${id}">発言を抽出</button></div><div class="small muted conversation-txt-note">YouTube Summaryなどで保存した全文TXTをそのまま読み込めます。タイムスタンプは自動で除外して発言を抽出します。</div><div class="conversation-import-results" data-conversation-results="${id}"></div><div class="conversation-import-footer" hidden><button type="button" data-conversation-select-all="${id}">すべて選択</button><button type="button" data-conversation-select-none="${id}">選択解除</button><button type="button" data-conversation-insert="${id}">選択した発言を追加</button></div></div><div class="small muted">「｜」「:」「：」で発言者と台詞を分けられます。TXT / JSONはファイル選択だけでも自動解析します。</div></div>`;
+ // 旧記事の会話ブロックは互換表示・編集のみ残す。新規追加とログ解析はTOOLS側の責務とする。
+ if(b.type==="conversation")return `<div class="article-block article-block-legacy" data-block-id="${id}" data-block-type="conversation"><div class="article-block-head"><span class="article-block-label">💬 会話ログ（旧形式）</span>${actions}</div>${scope}<label>見出し <span class="small muted">（任意）</span></label><input class="articleConversationCaption" value="${esc(b.caption||"")}" placeholder="例：終盤／この場面好き"><label>会話</label><textarea class="articleConversationRaw" placeholder="既存の会話ログを編集できます。">${esc(conversationRaw(normalizeConversationLines(b)))}</textarea><div class="small muted">既存記事との互換用です。新しい会話ログはTOOLSで整形し、文章ブロックへ貼り付けてください。</div></div>`;
  if(b.type==="youtube")return `<div class="article-block" data-block-id="${id}" data-block-type="youtube"><div class="article-block-head"><span class="article-block-label">▶ YouTube</span>${actions}</div>${scope}<label>YouTube URL</label><input class="articleBlockYoutubeUrl" type="url" value="${esc(b.url||"")}" placeholder="https://www.youtube.com/watch?v=..."><label>見出し <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="セッション録画 など"><div class="article-youtube-preview"></div></div>`;
  return `<div class="article-block" data-block-id="${id}" data-block-type="text"><div class="article-block-head"><span class="article-block-label">✎ 文章</span>${actions}</div>${scope}<div class="articleRichMount" data-rich-block-id="${id}"></div></div>`;
 }
 function articlePagesHtml(r){
  const pages=articlePagesForRun(r.id).slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
  return `<section class="lib-article-pages">
-   <div class="lib-article-pages-head"><div><strong>卓記事</strong><div class="small muted">1ページの中に文章・画像・会話ログ・YouTube・BGMを好きな順で何個でも追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div></div>
+   <div class="lib-article-pages-head"><div><strong>卓記事</strong><div class="small muted">1ページの中に文章・画像・YouTube・BGM・トグルを好きな順で追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div></div>
    <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page">
      <summary><div><div class="lib-article-page-title">${esc(p.title||`ページ ${i+1}`)} <span class="lib-article-share-badge">${esc(articleShareLabel(p))}</span></div><div class="lib-article-page-meta">${esc(p.updatedAt||p.createdAt||"")}</div></div><span>▼</span></summary>
      ${articleBlocksHtml(p)}
@@ -3037,7 +3048,7 @@ function articlePagesHtml(r){
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
      <div class="article-save-status" role="status" aria-live="assertive" hidden></div>
      <label>ページタイトル</label><input class="articleTitle" placeholder="例：セッション感想／KPメモ／あとがき">
-     <div class="article-block-toolbar"><button type="button" data-block-add-text="${esc(r.id)}">＋ 文章</button><button type="button" data-block-add-image="${esc(r.id)}">＋ 画像</button><button type="button" data-block-add-conversation="${esc(r.id)}">＋ 会話ログ</button><button type="button" data-block-add-youtube="${esc(r.id)}">＋ YouTube</button><button type="button" data-block-add-bgm="${esc(r.id)}">＋ BGM</button></div><div class="small muted article-block-help">同じ種類のブロックを何個でも追加できます。文章の一部を選んで「🙈 Xでは伏せる」を押すと、共有URLでは全文を見せたままX投稿文から除外できます。</div>
+      <div class="article-block-toolbar"><button type="button" data-block-add-text="${esc(r.id)}">＋ 文章</button><button type="button" data-block-add-image="${esc(r.id)}">＋ 画像</button><button type="button" data-block-add-youtube="${esc(r.id)}">＋ YouTube</button><button type="button" data-block-add-bgm="${esc(r.id)}">＋ BGM</button><button type="button" data-block-add-toggle="${esc(r.id)}">＋ トグル</button><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div><div class="small muted article-block-help">文章・画像・YouTube・BGM・トグルを好きな順で追加できます。通常時は文章編集、［並び替え］を押すと構造整理の操作へ切り替わります。</div>
      <div class="article-blocks"></div>
      <div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
@@ -3048,10 +3059,11 @@ function articlePagesHtml(r){
    </div>
  </section>`;
 }
-function editorBlocks(ed){
- const rows=[...ed.querySelectorAll('.article-block')];
+function editorBlocksIn(container){
+ const rows=[...container.children].filter(x=>x.classList?.contains('article-block'));
  return rows.map(row=>{
-   const type=row.dataset.blockType,id=row.dataset.blockId||TRPG39.uuid();
+    const type=row.dataset.blockType,id=row.dataset.blockId||TRPG39.uuid();
+    if(type==="toggle")return {id,type,title:row.querySelector(':scope > .articleToggleTitle')?.value.trim()||"",children:editorBlocksIn(row.querySelector(':scope > .article-toggle-children'))};
    if(type==="image")return {id,type,url:row.querySelector('.articleBlockImageUrl')?.value.trim()||"",caption:row.querySelector('.articleBlockCaption')?.value.trim()||"",ogp:!!row.querySelector('.articleBlockOgp')?.checked};
    if(type==="youtube")return {id,type,url:row.querySelector('.articleBlockYoutubeUrl')?.value.trim()||"",caption:row.querySelector('.articleBlockCaption')?.value.trim()||""};
    if(type==="conversation"){
@@ -3063,7 +3075,7 @@ function editorBlocks(ed){
     const rich=articleRichEditors.get(String(id));
     if(rich){const html=rich.getHtml();return {id,type:"text",html,text:rich.getText()}}
     return {id,type:"text",text:row.querySelector('.articleBlockText')?.value||""};
- }).map((b,i)=>({...b,visibility:rows[i].querySelector('.articleBlockVisibility')?.value||"public"})).filter(b=>{
+ }).map((b,i)=>({...b,visibility:rows[i].querySelector(':scope > .article-block-visibility .articleBlockVisibility')?.value||"public"})).filter(b=>{
    if(b.type==="image"||b.type==="youtube")return true;
    if(b.type==="text")return true;
    if(b.type==="conversation")return true;
@@ -3071,6 +3083,7 @@ function editorBlocks(ed){
    return true;
  });
 }
+function editorBlocks(ed){const root=ed.querySelector('.article-blocks');return root?editorBlocksIn(root):[]}
 const ARTICLE_DRAFT_DB="sakumeru-library-article-drafts",ARTICLE_DRAFT_STORE="drafts";
 const articleDirtyEditors=new Set(),articleDraftTimers=new Map();
 function articleDraftDb(){
@@ -3099,41 +3112,59 @@ function destroyArticleRichEditors(ed){
  [...ed.querySelectorAll('[data-rich-block-id]')].forEach(m=>{const id=String(m.dataset.richBlockId||"");articleRichEditors.get(id)?.destroy();articleRichEditors.delete(id)});
 }
 function initArticleRichEditors(ed,blocks){
- (blocks||[]).filter(b=>b.type==="text").forEach(b=>{
+ const flat=[];(function walk(items){(items||[]).forEach(b=>{flat.push(b);if(b.type==="toggle")walk(b.children)})})(blocks);
+ flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
  const wrap=ed.querySelector('.article-blocks');if(!wrap)return;
  destroyArticleRichEditors(ed);
- wrap.innerHTML=(blocks||[]).map((b,i)=>articleEditorBlockHtml(b,i,blocks.length)).join("");
+ wrap.innerHTML=(blocks||[]).map((b,i)=>articleEditorBlockHtml(b,i,blocks.length)).join("")+`<div class="article-tree-dropzone" data-drop-parent="">トップレベルへ移動</div>`;
  bindArticleEditorBlockControls(ed);
  initArticleRichEditors(ed,blocks);
 }
-function addEditorBlock(ed,type){
+function setArticleReorderMode(ed,active){
+ ed.classList.toggle("article-reorder-mode",!!active);
+ const button=ed.querySelector('[data-article-reorder-toggle]');if(button){button.textContent=active?"完了":"並び替え";button.setAttribute("aria-pressed",active?"true":"false")}
+ ed.querySelectorAll('input,textarea,select').forEach(control=>{if(control.closest('.article-block'))control.disabled=!!active});
+ articleRichEditors.forEach((instance,id)=>{if(ed.querySelector(`[data-rich-block-id="${CSS.escape(String(id))}"]`))instance.setReorderMode?.(!!active)});
+}
+function articleBlockContainer(blocks,parentId=""){
+ if(!parentId)return blocks;
+ for(const block of blocks){if(String(block.id)===String(parentId)&&block.type==="toggle")return block.children||(block.children=[]);const nested=articleBlockContainer(block.children||[],parentId);if(nested)return nested}
+ return null;
+}
+function articleBlockLocation(blocks,id){
+ for(let i=0;i<blocks.length;i++){if(String(blocks[i].id)===String(id))return {list:blocks,index:i,block:blocks[i]};const nested=articleBlockLocation(blocks[i].children||[],id);if(nested)return nested}
+ return null;
+}
+function articleBlockContains(block,id){return String(block?.id)===String(id)||(block?.children||[]).some(child=>articleBlockContains(child,id))}
+function newArticleBlock(type){return type==="text"?{id:TRPG39.uuid(),type,text:""}:type==="toggle"?{id:TRPG39.uuid(),type,title:"トグル",children:[]}:type==="conversation"?{id:TRPG39.uuid(),type,caption:"",raw:"",lines:[]}:type==="bgm"?{id:TRPG39.uuid(),type,libraryId:"",title:"",artist:"",scene:"",tags:[],sourceLabel:"",sourceUrl:"",audioUrl:"",localAudioId:"",localFileName:"",memo:""}:{id:TRPG39.uuid(),type,url:"",caption:""}}
+function addEditorBlock(ed,type,parentId=""){
  const blocks=editorBlocks(ed);
-  blocks.push(
-   type==="text"?{id:TRPG39.uuid(),type,text:""}:
-   type==="conversation"?{id:TRPG39.uuid(),type,caption:"",raw:"",lines:[]}:
-   type==="bgm"?{id:TRPG39.uuid(),type,libraryId:"",title:"",artist:"",scene:"",tags:[],sourceLabel:"",sourceUrl:"",audioUrl:"",localAudioId:"",localFileName:"",memo:""}:
-   {id:TRPG39.uuid(),type,url:"",caption:""}
-  );
-  blocks[blocks.length-1].visibility="private";
+  const target=articleBlockContainer(blocks,parentId);if(!target)return;
+  const block=newArticleBlock(type);block.visibility="private";target.push(block);
   renderArticleEditorBlocks(ed,blocks);
   articleEditorChanged(ed);
 }
 function moveEditorBlock(ed,id,delta){
- const blocks=editorBlocks(ed),i=blocks.findIndex(b=>b.id===id),j=i+delta;if(i<0||j<0||j>=blocks.length)return;[blocks[i],blocks[j]]=[blocks[j],blocks[i]];renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
+ const blocks=editorBlocks(ed),found=articleBlockLocation(blocks,id);if(!found)return;const j=found.index+delta;if(j<0||j>=found.list.length)return;[found.list[found.index],found.list[j]]=[found.list[j],found.list[found.index]];renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
 }
 let articleDraggedBlockId="";
 function clearArticleBlockDragUi(ed){ed.querySelectorAll('.article-block-dragging,.article-block-drop-before,.article-block-drop-after').forEach(x=>x.classList.remove('article-block-dragging','article-block-drop-before','article-block-drop-after'))}
 function moveEditorBlockTo(ed,sourceId,targetId,before){
- const blocks=editorBlocks(ed),from=blocks.findIndex(b=>String(b.id)===String(sourceId)),target=blocks.findIndex(b=>String(b.id)===String(targetId));
- if(from<0||target<0||from===target)return false;
- const [moved]=blocks.splice(from,1),adjusted=blocks.findIndex(b=>String(b.id)===String(targetId));
- blocks.splice(adjusted+(before?0:1),0,moved);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);return true;
+ const blocks=editorBlocks(ed),source=articleBlockLocation(blocks,sourceId),target=articleBlockLocation(blocks,targetId);
+ if(!source||!target||source===target||articleBlockContains(source.block,targetId))return false;
+ const [moved]=source.list.splice(source.index,1),updatedTarget=articleBlockLocation(blocks,targetId);if(!updatedTarget)return false;
+ updatedTarget.list.splice(updatedTarget.index+(before?0:1),0,moved);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);return true;
+}
+function moveEditorBlockInto(ed,sourceId,parentId){
+ const blocks=editorBlocks(ed),source=articleBlockLocation(blocks,sourceId);if(!source||articleBlockContains(source.block,parentId))return false;
+ const target=articleBlockContainer(blocks,parentId);if(!target||source.list===target&&source.index===target.length-1)return false;
+ const [moved]=source.list.splice(source.index,1);target.push(moved);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);return true;
 }
 async function uploadArticleImageFile(file){
  if(!file)throw new Error("画像ファイルを選んでください。");
@@ -3192,6 +3223,8 @@ async function prepareConversationBlocksForShare(blocks){
  const cache=new Map();
  const out=[];
  for(const b of blocks){
+   if(!(b.visibility==="public"||b.visibility==="link")){out.push({id:b.id,type:"restricted",visibility:b.visibility});continue}
+   if(b.type==="toggle"){out.push({...b,children:await prepareConversationBlocksForShare(b.children||[])});continue}
    if(b.type!=="conversation"){out.push(b);continue}
    const lines=[];
    for(const line of normalizeConversationLines(b)){
@@ -3472,7 +3505,9 @@ function bindArticleEditorBlockControls(ed){
   row.ondragover=e=>{const targetId=row.dataset.blockId;if(!articleDraggedBlockId||String(targetId)===String(articleDraggedBlockId))return;e.preventDefault();e.stopPropagation();ed.querySelectorAll('.article-block-drop-before,.article-block-drop-after').forEach(x=>x.classList.remove('article-block-drop-before','article-block-drop-after'));const r=row.getBoundingClientRect();row.classList.add(e.clientY<r.top+r.height/2?'article-block-drop-before':'article-block-drop-after');e.dataTransfer.dropEffect='move'};
   row.ondrop=e=>{const targetId=row.dataset.blockId;if(!articleDraggedBlockId||String(targetId)===String(articleDraggedBlockId))return;e.preventDefault();e.stopPropagation();const before=row.classList.contains('article-block-drop-before'),sourceId=articleDraggedBlockId;articleDraggedBlockId="";clearArticleBlockDragUi(ed);moveEditorBlockTo(ed,sourceId,targetId,before)};
  });
- ed.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{const blocks=editorBlocks(ed).filter(x=>x.id!==b.dataset.blockRemove);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
+ ed.querySelectorAll('[data-drop-parent]').forEach(zone=>{zone.ondragover=e=>{if(!articleDraggedBlockId)return;e.preventDefault();e.stopPropagation();zone.classList.add('article-drop-active');e.dataTransfer.dropEffect='move'};zone.ondragleave=()=>zone.classList.remove('article-drop-active');zone.ondrop=e=>{if(!articleDraggedBlockId)return;e.preventDefault();e.stopPropagation();const sourceId=articleDraggedBlockId,parentId=zone.dataset.dropParent||"";articleDraggedBlockId="";clearArticleBlockDragUi(ed);moveEditorBlockInto(ed,sourceId,parentId)}});
+ ed.querySelectorAll('[data-nested-add]').forEach(b=>b.onclick=()=>addEditorBlock(ed,b.dataset.nestedAdd,b.dataset.parentId||""));
+ ed.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{const blocks=editorBlocks(ed),found=articleBlockLocation(blocks,b.dataset.blockRemove);if(!found)return;found.list.splice(found.index,1);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
 
  ed.querySelectorAll('[data-conversation-import-open]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=false});
  ed.querySelectorAll('[data-conversation-import-close]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=true});
@@ -3519,7 +3554,7 @@ async function openArticleEditor(runId,pageId=""){
  ed.querySelector('.articlePassword').value="";
  ed.querySelector('.articlePassword').placeholder=page?.passwordProtected?"設定済み（変更する場合のみ入力）":"設定する場合のみ入力";
  const hintInput=ed.querySelector('.articlePasswordHint');if(hintInput)hintInput.value=page?.passwordHint||"";
- const blocks=page?normalizedArticleBlocks(page):[{id:TRPG39.uuid(),type:"text",text:""}];renderArticleEditorBlocks(ed,blocks);
+ const blocks=page?normalizedArticleBlocks(page):[{id:TRPG39.uuid(),type:"text",text:""}];renderArticleEditorBlocks(ed,blocks);setArticleReorderMode(ed,false);
  clearArticleDirty(ed);setArticleSaveStatus(ed,"");
  if(!ed.dataset.draftInputBound){ed.addEventListener("input",()=>articleEditorChanged(ed));ed.addEventListener("change",()=>articleEditorChanged(ed));ed.dataset.draftInputBound="1"}
  const notice=ed.querySelector('.article-draft-notice');notice.hidden=true;
@@ -3548,9 +3583,9 @@ async function saveArticlePage(runId){
    const page={...old,id,title:title||"無題",body:legacyBody,blocks,shareEnabled,passwordProtected,passwordHash,passwordHint,createdAt:i>=0?(old.createdAt||now):now,updatedAt:now};
    if(i>=0)pages[i]=page;else pages.push(page);
    const verifiedPages=saveArticlePagesForRun(runId,pages),verified=verifiedPages.find(p=>String(p.id)===String(id));
-   const expectedText=blocks.filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
-   const actualText=(verified?.blocks||[]).filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
-   if(!verified||verified.blocks?.length!==blocks.length||JSON.stringify(actualText)!==JSON.stringify(expectedText))throw new Error("卓記事の保存内容を再確認できませんでした。編集内容は画面に残っています。");
+   const expectedFlat=flattenArticleBlocks(blocks),actualFlat=flattenArticleBlocks(verified?.blocks||[]),expectedText=expectedFlat.filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
+   const actualText=actualFlat.filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
+   if(!verified||actualFlat.length!==expectedFlat.length||JSON.stringify(actualText)!==JSON.stringify(expectedText))throw new Error("卓記事の保存内容を再確認できませんでした。編集内容は画面に残っています。");
    try{await articleDraftDelete(articleDraftKey(ed))}catch(err){console.warn("正常保存後の下書き削除に失敗しました",err)}
    clearArticleDirty(ed);setArticleSaveStatus(ed,"");render();
  }catch(err){
@@ -3717,13 +3752,15 @@ async function shareArticlePage(runId,pageId,options={}){
  if(!(TRPG39Cloud&&TRPG39Cloud.configured()))return alert("共有機能の設定がありません。");
  const {group,run}=articleContextForRun(runId);
  try{
-   const baseBlocks=normalizedArticleBlocks(page).map(b=>{
-      const visibility=["private","link","public"].includes(String(b.visibility||""))?String(b.visibility):"public";
-      if(b.type==="conversation")return {...b,visibility,lines:normalizeConversationLines(b)};
+    const normalizeShareTree=blocks=>(blocks||[]).map(b=>{
+       const visibility=["private","link","public"].includes(String(b.visibility||""))?String(b.visibility):"public";
+       if(b.type==="toggle")return {...b,visibility,title:String(b.title||""),children:normalizeShareTree(b.children||[])};
+       if(b.type==="conversation")return {...b,visibility,lines:normalizeConversationLines(b)};
       if(b.type==="image")return {...b,visibility,url:String(b.url||"").trim(),caption:String(b.caption||"").trim(),ogp:!!b.ogp};
       if(b.type==="text"&&b.html&&window.SAKUMERichEditor)return {...b,visibility,html:SAKUMERichEditor.sanitizeHtml(b.html),text:String(b.text||SAKUMERichEditor.plainText(b.html))};
       return {...b,visibility};
     });
+    const baseBlocks=normalizeShareTree(normalizedArticleBlocks(page));
     // 「リンク限定」は共有URLを知る人へ見せる本文であり、公開本文と同様に
     // 共有payloadへ含める。private/table は従来どおり本文を送らない。
     const shareableBlocks=baseBlocks.filter(b=>b.visibility==="public"||b.visibility==="link");
@@ -3736,9 +3773,8 @@ async function shareArticlePage(runId,pageId,options={}){
        articleOgpImage=await uploadArticleOgpImage(ogpBlob,page.id);ogpSource="title";
      }
    }
-    const preparedShareable=await prepareConversationBlocksForShare(shareableBlocks),preparedById=new Map(preparedShareable.map(b=>[String(b.id),b]));
-    const sharedBlocks=baseBlocks.map(b=>(b.visibility==="public"||b.visibility==="link")?(preparedById.get(String(b.id))||b):({id:b.id,type:"restricted",visibility:b.visibility}));
-    const sharedBody=preparedShareable.filter(b=>b.type==="text").map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
+     const sharedBlocks=await prepareConversationBlocksForShare(baseBlocks);
+     const sharedBody=baseBlocks.filter(b=>b.type==="text"&&(b.visibility==="public"||b.visibility==="link")).map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
     const payload={kind:"library-article",version:12,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:true,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
    let shareId=page.shareId||"";
    if(shareId)await TRPG39Cloud.updateSharedPage(shareId,payload);else shareId=await TRPG39Cloud.createSharedPage(payload);
@@ -3838,11 +3874,13 @@ function bindArticlePageButtons(){
  document.querySelectorAll('[data-article-x]').forEach(b=>b.onclick=()=>postArticlePageToX(b.dataset.runId,b.dataset.articleX));
  document.querySelectorAll('[data-article-save]').forEach(b=>b.onclick=()=>saveArticlePage(b.dataset.articleSave));
  document.querySelectorAll('[data-article-cancel]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.articleCancel}`);if(ed)ed.hidden=true});
+ document.querySelectorAll('[data-article-reorder-toggle]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.articleReorderToggle}`);if(ed)setArticleReorderMode(ed,!ed.classList.contains('article-reorder-mode'))});
  document.querySelectorAll('[data-block-add-text]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddText}`);if(ed)addEditorBlock(ed,"text")});
  document.querySelectorAll('[data-block-add-image]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddImage}`);if(ed)addEditorBlock(ed,"image")});
  document.querySelectorAll('[data-block-add-conversation]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddConversation}`);if(ed)addEditorBlock(ed,"conversation")});
  document.querySelectorAll('[data-block-add-youtube]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddYoutube}`);if(ed)addEditorBlock(ed,"youtube")});
  document.querySelectorAll('[data-block-add-bgm]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddBgm}`);if(ed)addEditorBlock(ed,"bgm")});
+ document.querySelectorAll('[data-block-add-toggle]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddToggle}`);if(ed)addEditorBlock(ed,"toggle")});
 }
 
 
