@@ -1203,17 +1203,10 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
     <div><h2>TRPG ALBUM</h2><div id="summary" class="small"></div></div>
     <button id="openLibraryEditor" type="button">＋ 記録を追加</button>
   </div>
-  <div class="library-view-tabs" role="tablist">
-<button type="button" class="library-view-tab active" data-library-view="scenario">シナリオ</button>
-<button type="button" class="library-view-tab" data-library-view="pc">PC</button>
-<button type="button" class="library-view-tab" data-library-view="player">同卓者</button>
-</div>
 <div class="lib-toolbar" id="libraryToolbar">
-    <div id="librarySearchField"><label>検索</label><input id="search" type="search" placeholder="シナリオ・PC・友達"></div>
+    <div id="librarySearchField"><label>卓記録を検索</label><input id="search" type="search" placeholder="シナリオ・PC・同卓者"></div>
     <div id="libraryRoleField"><label>役割</label><select id="filter"><option value="">すべて</option><option>PL</option><option>KP</option><option>DL</option><option>GM</option><option>SKP</option><option>見学</option><option>その他</option></select></div>
     <div id="libraryDisplayField"><label>表示</label><select id="archiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
-    <div id="playerSortField" hidden><label>並び順</label><select id="playerListSort"><option value="name">50音順</option><option value="count">同卓回数順</option><option value="recent">最終同卓日順</option></select></div>
-    <div id="playerArchiveField" hidden><label>表示</label><select id="playerArchiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
   </div>
   <div id="list" class="lib-list"></div>
 </section>
@@ -1582,7 +1575,9 @@ const runCoverY=id=>{
  const n=Number(all[id]);
  return Number.isFinite(n)?Math.max(0,Math.min(100,n)):50;
 };
-let libraryView=new URLSearchParams(location.search).get("view")||"scenario";
+// LIBRARY is the canonical session-record view. Legacy ?view=pc/player URLs
+// continue to open safely, but no longer trigger directory-wide aggregation.
+let libraryView="scenario";
 let pcs=TRPG39.loadPCs(),players=TRPG39.loadPlayers();
 
 const PLAYER_EXTERNAL_PLAYED_KEY="saku_meru_player_external_played_v1";
@@ -5742,14 +5737,11 @@ function renderPlayerView(){
  });
 }
 function syncLibraryView(){
- document.querySelectorAll("[data-library-view]").forEach(b=>b.classList.toggle("active",b.dataset.libraryView===libraryView));
- const scenario=libraryView==="scenario",player=libraryView==="player";
- q("libraryToolbar").classList.toggle("player-toolbar",player);
- q("libraryRoleField").hidden=!scenario;
- q("libraryDisplayField").hidden=!scenario;
- q("playerSortField").hidden=!player;
- q("playerArchiveField").hidden=!player;
- q("search").placeholder=scenario?"検索":(player?"名前で検索":"検索");
+ libraryView="scenario";
+ q("libraryToolbar").classList.remove("player-toolbar");
+ q("libraryRoleField").hidden=false;
+ q("libraryDisplayField").hidden=false;
+ q("search").placeholder="シナリオ・PC・同卓者";
 }
 let coverEditingRunId="",coverEditingY=50,coverDragStartY=0,coverDragStartPos=50;
 function updateCoverPreview(){q("coverPreviewImage").style.objectPosition=`50% ${coverEditingY}%`}
@@ -5872,8 +5864,6 @@ function render(){
  sessionKindEventIndex=null;
  const gridGeneration=++libraryGridRenderGeneration;
  syncLibraryView();
- if(libraryView==="pc"){renderPcView();return}
- if(libraryView==="player"){renderPlayerView();return}
  const term=q("search").value.trim().toLowerCase(),role=q("filter").value,params=new URLSearchParams(location.search);
  const player=params.get("player")||"",playerId=params.get("playerId")||"",pc=params.get("pc")||"",pcId=params.get("pcId")||"";
  const filterPlayer=playerId?players.find(p=>String(p.id)===String(playerId)):players.find(p=>playerNameSet(p).has(normDirectoryName(player)));
@@ -6038,9 +6028,8 @@ q("cancel").onclick=()=>{reset();hideEditor()};
 q("openLibraryEditor").onclick=()=>{reset();showEditor();q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"})};q("xReportGalleryClose").onclick=()=>q("xReportGallery").close();q("xReportGallery").addEventListener("click",e=>{if(e.target===q("xReportGallery"))q("xReportGallery").close()});
 q("xPreviewText").oninput=updateXPreviewCount;q("xPreviewCancel").onclick=()=>q("xPreviewDialog").close();q("xPreviewPost").onclick=confirmPostAlbumToX;q("postSaveClose").onclick=()=>q("postSaveDialog").close();q("postSaveX").onclick=()=>{const c=postSaveContext;q("postSaveDialog").close();if(c?.id)postAlbumToX(c.id)};q("postSaveArticle").onclick=()=>{const c=postSaveContext;q("postSaveDialog").close();if(c?.runId)openArticleEditor(c.runId)};
 q("search").oninput=()=>{focusedScenarioKey="";focusedRunId="";focusedPlayerId="";render()};
-q("playerListSort").onchange=()=>{playerListSort=q("playerListSort").value;render()};
-q("playerArchiveFilter").onchange=()=>{playerArchiveFilter=q("playerArchiveFilter").value;focusedPlayerId="";render()};q("filter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};q("archiveFilter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};
-document.querySelectorAll("[data-library-view]").forEach(b=>b.onclick=()=>{libraryView=b.dataset.libraryView||"scenario";focusedScenarioKey="";focusedPlayerId="";playerListSort="name";playerListSort="name";playerArchiveFilter="active";playerDetailRoleFilter="all";playerDetailSystemFilter="all";focusedRunId="";const u=new URL(location.href);u.searchParams.set("view",libraryView);u.searchParams.delete("scenario");u.searchParams.delete("pc");u.searchParams.delete("player");history.replaceState(null,"",u);render()});q("addExternalLink").onclick=()=>addLinkRow();q("addSelfPc").onclick=()=>addSelfPcRow({});q("addParticipantRow").onclick=()=>addParticipantRow();
+q("filter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};q("archiveFilter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};
+q("addExternalLink").onclick=()=>addLinkRow();q("addSelfPc").onclick=()=>addSelfPcRow({});q("addParticipantRow").onclick=()=>addParticipantRow();
 q("coverCancel").onclick=closeCoverEditor;
 q("coverReset").onclick=()=>{coverEditingY=50;updateCoverPreview()};
 q("coverSave").onclick=()=>{
