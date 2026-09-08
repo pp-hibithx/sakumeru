@@ -15,7 +15,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0908-sort1">
+<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0908-toolbar1">
 <link rel="stylesheet" href="../assets/css/image-lightbox.css?v=0905-1">
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script defer src="../assets/js/image-lightbox.js?v=0905-1"></script>
@@ -1107,11 +1107,11 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
 <!-- PCページ基準の視認性強化。機能・保存処理には影響しない表示専用レイヤー。 -->
 <style>
-.library-page>.hero,.library-page>.notice,.lib-panel{
+.library-page>.notice,.lib-panel{
   border:2px solid color-mix(in srgb,currentColor 24%,var(--line));
   box-shadow:0 5px 18px rgba(0,0,0,.11);
 }
-.library-page>.hero{border-left:6px solid var(--accent)}
+.library-page>.hero{border:0;box-shadow:none;padding-left:0;background:transparent}
 .library-page>.notice{padding:11px 13px;border-left:5px solid color-mix(in srgb,var(--accent) 65%,currentColor);border-radius:9px;background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);line-height:1.65}
 .lib-panel{background:var(--panel)}
 .lib-panel>h2,.library-editor>h2{margin-top:0;padding-bottom:10px;border-bottom:2px solid color-mix(in srgb,var(--accent) 52%,var(--line))}
@@ -1167,6 +1167,8 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 }
 .article-block{border-left:5px solid var(--accent);padding:13px}.article-block-head{padding-bottom:9px;border-bottom:2px solid color-mix(in srgb,currentColor 18%,var(--line))}
 .article-block-toolbar{padding:10px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--panel) 87%,currentColor 4%)}
+.article-editor-modebar{display:flex;justify-content:flex-end;background:transparent;border:0;padding:4px 0}
+.article-empty-toggle-add{width:auto;justify-self:start;margin:8px 0;min-height:40px}
 .article-draft-notice{border:3px solid color-mix(in srgb,#e0a83b 72%,currentColor);background:color-mix(in srgb,var(--panel) 88%,#e0a83b 12%)}
 .danger{border-color:color-mix(in srgb,#d75b64 72%,currentColor)!important;color:color-mix(in srgb,#ff7b84 82%,currentColor)!important;background:transparent!important}
 .danger:hover{background:color-mix(in srgb,#d75b64 14%,var(--panel))!important}
@@ -1187,7 +1189,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
   .article-block-toolbar{display:grid;grid-template-columns:1fr 1fr}.article-block-toolbar button{width:100%}
 }
 </style>
-<link rel="stylesheet" href="../assets/css/readability.css?v=0908-1">
+<link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head>
 <body>
 <div data-site-header data-active="library"></div>
@@ -1440,7 +1442,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=02309"></script>
-<script src="../assets/js/rich-editor.js?v=0908-sort1"></script>
+<script src="../assets/js/rich-editor.js?v=0908-toolbar1"></script>
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id);
@@ -3026,7 +3028,7 @@ function articleEditorBlockHtml(b,index,total){
  const id=esc(b.id||TRPG39.uuid());
  const actions=`<div class="article-block-actions"><button type="button" class="article-block-drag-handle article-sort-only" draggable="true" data-block-drag="${id}" title="ドラッグして並び替え" aria-label="このブロックをドラッグして並び替え">≡</button><button type="button" class="article-sort-only" data-block-up="${id}" title="上へ" ${index===0?"disabled":""}>↑</button><button type="button" class="article-sort-only" data-block-down="${id}" title="下へ" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
  const visibility=String(b.visibility||"public"),scope=`<div class="article-block-visibility"><label>公開範囲</label><select class="articleBlockVisibility"><option value="private" ${visibility==="private"?"selected":""}>自分のみ</option><option value="link" ${visibility==="link"?"selected":""}>共通URL限定</option><option value="public" ${visibility==="public"?"selected":""}>全体公開</option></select></div>`;
- if(b.type==="toggle")return `<div class="article-block article-toggle-block" data-block-id="${id}" data-block-type="toggle"><div class="article-block-head"><span class="article-block-label">▸ トグル</span>${actions}</div>${scope}<label>トグル見出し</label><input class="articleToggleTitle" value="${esc(b.title||"")}" placeholder="例：HO1／セッション後半"><div class="article-block-toolbar article-nested-toolbar"><button type="button" data-nested-add="text" data-parent-id="${id}">＋ 文章</button><button type="button" data-nested-add="image" data-parent-id="${id}">＋ 画像</button><button type="button" data-nested-add="youtube" data-parent-id="${id}">＋ YouTube</button><button type="button" data-nested-add="bgm" data-parent-id="${id}">＋ BGM</button><button type="button" data-nested-add="toggle" data-parent-id="${id}">＋ トグル</button></div><div class="article-toggle-children"><div class="article-tree-dropzone" data-drop-parent="${id}">このトグル内へ移動</div>${(b.children||[]).map((child,i,all)=>articleEditorBlockHtml(child,i,all.length)).join("")}</div></div>`;
+ if(b.type==="toggle")return `<div class="article-block article-toggle-block" data-block-id="${id}" data-block-type="toggle"><div class="article-block-head"><span class="article-block-label">▸ トグル</span>${actions}</div>${scope}<label>トグル見出し</label><input class="articleToggleTitle" value="${esc(b.title||"")}" placeholder="例：HO1／セッション後半"><div class="article-toggle-children"><div class="article-tree-dropzone" data-drop-parent="${id}">このトグル内へ移動</div>${(b.children||[]).map((child,i,all)=>articleEditorBlockHtml(child,i,all.length)).join("")}${(b.children||[]).length?"":`<button type="button" class="article-empty-toggle-add" data-nested-add="text" data-parent-id="${id}">文章を追加</button>`}</div></div>`;
  if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div>${scope}<div class="article-image-inputs article-image-source-grid"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><div class="article-image-file-row"><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button></div><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><label class="article-ogp-pick"><input class="articleBlockOgp" type="checkbox" ${b.ogp?"checked":""}><span><strong>SNSカードに使う</strong> <span class="muted">（通常共有時のみ・1枚だけ選択）</span></span></label><div class="article-image-placeholder-note" ${b.url?"hidden":""}>画像はあとから設定できます。この枠は保存しても残ります。</div><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
  if(b.type==="bgm")return `<div class="article-block" data-block-id="${id}" data-block-type="bgm"><div class="article-block-head"><span class="article-block-label">🎵 BGM</span>${actions}</div>${scope}<input class="articleBgmLibraryId" type="hidden" value="${esc(b.libraryId||"")}"><div class="bgm-lib-actions"><button type="button" data-bgm-lib-open="${id}">BGM LIBRARYから選ぶ</button><button type="button" data-bgm-lib-save="${id}">BGM LIBRARYに登録／更新</button></div><div class="article-bgm-grid"><div><label>曲名</label><input class="articleBgmTitle" value="${esc(b.title||"")}" placeholder="曲名"></div><div><label>作者・アーティスト</label><input class="articleBgmArtist" value="${esc(b.artist||"")}" placeholder="作者名"></div><div><label>使用シーン</label><input class="articleBgmScene" value="${esc(b.scene||"")}" placeholder="例：Scene 3／終盤"></div><div><label>タグ <span class="small muted">（、区切り）</span></label><input class="articleBgmTags" value="${esc(Array.isArray(b.tags)?b.tags.join("、"):(b.tags||""))}" placeholder="不穏、戦闘、エンディング"></div><div><label>配布元名</label><input class="articleBgmSourceLabel" value="${esc(b.sourceLabel||"")}" placeholder="DOVA-SYNDROME など"></div><div><label>配布元URL</label><input class="articleBgmSourceUrl" type="url" value="${esc(b.sourceUrl||"")}" placeholder="https://..."></div><div><label>音源URL <span class="small muted">（任意）</span></label><input class="articleBgmAudioUrl" type="url" value="${esc(b.audioUrl||"")}" placeholder="直接再生できるMP3 URL"></div></div><label>手元のMP3 <span class="small muted">（自分用・このブラウザに保存）</span></label><div class="article-image-inputs"><div><input class="articleBgmFile" type="file" accept="audio/mpeg,audio/mp3,.mp3"><input class="articleBgmLocalId" type="hidden" value="${esc(b.localAudioId||"")}"><input class="articleBgmLocalName" type="hidden" value="${esc(b.localFileName||"")}"><div class="article-local-audio">${b.localFileName?`保存済み：${esc(b.localFileName)}`:"MP3本体は共有記事には含まれません。"}</div></div><div><button type="button" data-bgm-local-save="${id}">この端末に保存</button><div class="article-upload-status"></div></div></div><label>メモ <span class="small muted">（任意）</span></label><textarea class="articleBgmMemo" placeholder="この場面で流した、イントロから使用など">${esc(b.memo||"")}</textarea></div>`;
  // 旧記事の会話ブロックは互換表示・編集のみ残す。新規追加とログ解析はTOOLS側の責務とする。
@@ -3048,7 +3050,7 @@ function articlePagesHtml(r){
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
      <div class="article-save-status" role="status" aria-live="assertive" hidden></div>
      <label>ページタイトル</label><input class="articleTitle" placeholder="例：セッション感想／KPメモ／あとがき">
-      <div class="article-block-toolbar"><button type="button" data-block-add-text="${esc(r.id)}">＋ 文章</button><button type="button" data-block-add-image="${esc(r.id)}">＋ 画像</button><button type="button" data-block-add-youtube="${esc(r.id)}">＋ YouTube</button><button type="button" data-block-add-bgm="${esc(r.id)}">＋ BGM</button><button type="button" data-block-add-toggle="${esc(r.id)}">＋ トグル</button><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div><div class="small muted article-block-help">文章・画像・YouTube・BGM・トグルを好きな順で追加できます。通常時は文章編集、［並び替え］を押すと構造整理の操作へ切り替わります。</div>
+      <div class="article-block-toolbar article-editor-modebar"><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div><div class="small muted article-block-help">文章ツールバーの［トグル］［画像］［URL取り込み］から、現在の階層へ内容を追加できます。［並び替え］で構造整理へ切り替わります。</div>
      <div class="article-blocks"></div>
      <div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
@@ -3116,7 +3118,7 @@ function initArticleRichEditors(ed,blocks){
  flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["toggle","image","url"],onInsertBlock:kind=>insertArticleBlockAfter(ed,id,kind),onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
@@ -3142,13 +3144,39 @@ function articleBlockLocation(blocks,id){
  return null;
 }
 function articleBlockContains(block,id){return String(block?.id)===String(id)||(block?.children||[]).some(child=>articleBlockContains(child,id))}
-function newArticleBlock(type){return type==="text"?{id:TRPG39.uuid(),type,text:""}:type==="toggle"?{id:TRPG39.uuid(),type,title:"トグル",children:[]}:type==="conversation"?{id:TRPG39.uuid(),type,caption:"",raw:"",lines:[]}:type==="bgm"?{id:TRPG39.uuid(),type,libraryId:"",title:"",artist:"",scene:"",tags:[],sourceLabel:"",sourceUrl:"",audioUrl:"",localAudioId:"",localFileName:"",memo:""}:{id:TRPG39.uuid(),type,url:"",caption:""}}
+function newArticleBlock(type,values={}){return type==="text"?{id:TRPG39.uuid(),type,text:"",...values}:type==="toggle"?{id:TRPG39.uuid(),type,title:"トグル",children:[newArticleBlock("text")],...values}:type==="conversation"?{id:TRPG39.uuid(),type,caption:"",raw:"",lines:[],...values}:type==="bgm"?{id:TRPG39.uuid(),type,libraryId:"",title:"",artist:"",scene:"",tags:[],sourceLabel:"",sourceUrl:"",audioUrl:"",localAudioId:"",localFileName:"",memo:"",...values}:{id:TRPG39.uuid(),type,url:"",caption:"",...values}}
 function addEditorBlock(ed,type,parentId=""){
  const blocks=editorBlocks(ed);
   const target=articleBlockContainer(blocks,parentId);if(!target)return;
   const block=newArticleBlock(type);block.visibility="private";target.push(block);
   renderArticleEditorBlocks(ed,blocks);
   articleEditorChanged(ed);
+}
+function articleBlockFromImportedUrl(raw){
+ const url=String(raw||"").trim();if(!url)return null;
+ let parsed;try{parsed=new URL(url)}catch{return null}
+ if(!/^https?:$/.test(parsed.protocol))return null;
+ if(youtubeVideoId(url))return newArticleBlock("youtube",{url});
+ if(/\.mp3(?:$|[?#])/i.test(url))return newArticleBlock("bgm",{audioUrl:url,title:"BGM"});
+ const safe=esc(url);return newArticleBlock("text",{html:`<p><a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a></p>`,text:url});
+}
+function insertArticleBlockAfter(ed,sourceId,kind){
+ const blocks=editorBlocks(ed),source=articleBlockLocation(blocks,sourceId);if(!source)return false;
+ let block=null;
+ if(kind==="url"){
+   const value=prompt("取り込むURLを入力してください。\nYouTube・MP3は対応ブロック、それ以外は安全なリンクとして追加します。");
+   if(value===null)return false;
+   block=articleBlockFromImportedUrl(value);
+   if(!block)return alert("http:// または https:// で始まるURLを入力してください。"),false;
+ }else if(kind==="toggle")block=newArticleBlock("toggle");
+ else if(kind==="image")block=newArticleBlock("image");
+ if(!block)return false;
+ block.visibility=source.block.visibility||"private";
+ if(block.type==="toggle"&&Array.isArray(block.children)&&block.children[0])block.children[0].visibility=block.visibility;
+ source.list.splice(source.index+1,0,block);
+ renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
+ const target=ed.querySelector(`[data-block-id="${CSS.escape(String(block.id))}"]`);target?.scrollIntoView({behavior:"smooth",block:"nearest"});
+ return true;
 }
 function moveEditorBlock(ed,id,delta){
  const blocks=editorBlocks(ed),found=articleBlockLocation(blocks,id);if(!found)return;const j=found.index+delta;if(j<0||j>=found.list.length)return;[found.list[found.index],found.list[j]]=[found.list[j],found.list[found.index]];renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
