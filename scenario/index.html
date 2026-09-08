@@ -122,8 +122,10 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 #scenarioForm label:has(#summaryText),
 #scenarioForm label:has(#privateMemo){grid-column:1 / -1;width:100%;max-width:none}
 #summaryText,#privateMemo{display:block;width:100%;max-width:none;box-sizing:border-box;resize:vertical}
-.tag-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
-.tag-suggestion{width:auto!important;padding:4px 8px!important;border-radius:999px!important;font-size:11px!important}
+.tag-suggestions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.tag-suggestion-wrap{display:inline-flex;align-items:stretch;border:1px solid color-mix(in srgb,currentColor 30%,var(--line));border-radius:999px;overflow:hidden;background:var(--panel)}
+.tag-suggestion{width:auto!important;min-height:34px!important;padding:6px 10px!important;border:0!important;border-radius:0!important;font-size:13px!important}
+.tag-delete{width:34px!important;min-width:34px!important;min-height:34px!important;padding:0!important;border:0!important;border-left:1px solid color-mix(in srgb,currentColor 28%,var(--line))!important;border-radius:0!important;color:#ff9b9b!important}
 .tag-suggestion.used{opacity:.45}
 .sc-system-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .sc-system-tab{width:auto!important;padding:5px 10px!important;border-radius:999px!important;font-size:12px!important}
@@ -224,7 +226,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 /* Visibility-first UI shared with MY PCs. */
 main>.wrap{display:grid;gap:18px}
 main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 5px 18px rgba(0,0,0,.1)}
-.sc-toolbar{padding:13px;border:2px solid color-mix(in srgb,currentColor 28%,var(--line));border-radius:11px;background:color-mix(in srgb,var(--panel) 88%,currentColor 3%)}
+.sc-toolbar{padding:4px 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none}
 .sc-toolbar label,#scenarioForm label{font-weight:750;color:inherit;margin-bottom:5px}
 .sc-toolbar input,.sc-toolbar select,#scenarioForm input:not([type="checkbox"]):not([type="radio"]),#scenarioForm select,#scenarioForm textarea{min-height:44px;border:2px solid color-mix(in srgb,currentColor 34%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--panel) 88%,#000 12%);color:inherit;padding:9px 10px;box-sizing:border-box}
 .sc-toolbar input::placeholder,#scenarioForm input::placeholder,#scenarioForm textarea::placeholder{color:color-mix(in srgb,currentColor 62%,transparent);opacity:1}
@@ -234,6 +236,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 .sc-system-tab{min-height:42px;border:2px solid color-mix(in srgb,currentColor 25%,var(--line));font-weight:700}.sc-system-tab.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:inherit;box-shadow:inset 0 -3px 0 var(--accent)}
 .sc-card{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));background:var(--panel);box-shadow:0 3px 10px rgba(0,0,0,.1);transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}.sc-card:hover,.sc-card:focus-visible{border-color:color-mix(in srgb,var(--accent) 68%,currentColor);box-shadow:0 6px 16px rgba(0,0,0,.18);transform:translateY(-1px);outline:none}.sc-card:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent),0 6px 16px rgba(0,0,0,.18)}
 .sc-card h3{font-size:16px;line-height:1.45}.sc-card .small,.sc-card .sc-meta{line-height:1.55}.sc-menu-btn{min-width:42px;min-height:42px;border:2px solid color-mix(in srgb,currentColor 30%,var(--line));background:color-mix(in srgb,var(--panel) 88%,currentColor 5%)}
+.sc-tags .badge,.friend-tag-pill{font-size:13px!important;min-height:28px;padding:4px 9px!important;line-height:1.35!important}
 .friend-panel>summary{padding:13px 15px;outline:none}.friend-panel[open]>summary{background:color-mix(in srgb,var(--accent) 10%,var(--panel));border-bottom:2px solid color-mix(in srgb,var(--accent) 48%,var(--line))}.friend-panel>summary:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
 #scenarioForm{border-color:var(--accent);border-left-width:6px;background:color-mix(in srgb,var(--panel) 96%,var(--accent) 4%)}#scenarioForm>h2{padding-bottom:10px;border-bottom:2px solid color-mix(in srgb,var(--accent) 55%,var(--line))}
 .sc-detail{border:3px solid color-mix(in srgb,var(--accent) 70%,currentColor);box-shadow:0 24px 70px rgba(0,0,0,.58)}.sc-detail::backdrop{background:rgba(0,0,0,.72)}.sc-detail-body>section,.scenario-overview{border:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-left:5px solid var(--accent);border-radius:10px;padding:13px;background:color-mix(in srgb,var(--panel) 94%,currentColor 2%)}
@@ -242,7 +245,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 @media(max-width:620px){main>.wrap{gap:14px}.sc-toolbar{padding:10px}.sc-system-tab{min-height:44px}.sc-detail{width:calc(100% - 16px);max-height:calc(100vh - 16px);border-width:2px}.sc-detail-actions{display:grid}.sc-detail-actions button,.sc-detail-actions a{width:100%;box-sizing:border-box}.sc-card{transform:none!important}}
 </style>
 
-<link rel="stylesheet" href="../assets/css/readability.css?v=0908-1">
+<link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head>
 <body>
 <div data-site-header data-active="scenario"></div>
@@ -485,7 +488,7 @@ function renderTagSuggestions(){
  const used=new Set(currentTagValues());
  const tags=allKnownTags();
  box.innerHTML=tags.length
-   ? tags.map(t=>`<button type="button" class="tag-suggestion${used.has(t)?" used":""}" data-add-tag="${esc(t)}">#${esc(t)}</button>`).join("")
+   ? tags.map(t=>`<span class="tag-suggestion-wrap"><button type="button" class="tag-suggestion${used.has(t)?" used":""}" data-add-tag="${esc(t)}">#${esc(t)}</button><button type="button" class="tag-delete" data-delete-tag="${esc(t)}" title="このタグを登録済みシナリオから削除" aria-label="タグ ${esc(t)} を削除">×</button></span>`).join("")
    : '<span class="small muted">登録済みタグはまだありません。</span>';
  box.querySelectorAll("[data-add-tag]").forEach(b=>b.onclick=()=>{
    const tag=b.dataset.addTag;
@@ -493,6 +496,15 @@ function renderTagSuggestions(){
    if(!vals.includes(tag)) vals.push(tag);
    q("tags").value=vals.join(", ");
    renderTagSuggestions();
+ });
+ box.querySelectorAll("[data-delete-tag]").forEach(b=>b.onclick=()=>{
+   const tag=b.dataset.deleteTag||"";
+   const affected=data.filter(x=>Array.isArray(x.tags)&&x.tags.includes(tag));
+   if(!affected.length)return renderTagSuggestions();
+   if(!confirm(`タグ「${tag}」は${affected.length}件のシナリオで使用中です。\n\nこのタグだけを登録済みシナリオから削除しますか？\nシナリオ本体や他のタグは削除されません。`))return;
+   data=data.map(x=>Array.isArray(x.tags)&&x.tags.includes(tag)?{...x,tags:x.tags.filter(t=>t!==tag)}:x);
+   const inputTags=currentTagValues().filter(t=>t!==tag);q("tags").value=inputTags.join(", ");
+   persist();refreshTagFilter();renderTagSuggestions();render();
  });
 }
 
