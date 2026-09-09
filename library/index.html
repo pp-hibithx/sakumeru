@@ -794,11 +794,20 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .article-conversation-line{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr);gap:9px;align-items:start}
 .article-conversation-speaker{font-weight:700;padding:7px 9px;border-radius:8px;background:rgba(255,255,255,.035);overflow-wrap:anywhere}
 .article-conversation-text{padding:7px 10px;border-radius:8px;background:rgba(255,255,255,.025);white-space:pre-wrap;overflow-wrap:anywhere}
+.article-conversation-dice{grid-column:1/-1;padding:8px 10px;border-left:3px solid var(--accent);border-radius:7px;background:rgba(210,164,72,.08);font-weight:700}
+.article-conversation-editor{display:grid;gap:8px;margin-top:8px}
+.article-conversation-edit-line{display:grid;grid-template-columns:92px minmax(130px,.45fr) minmax(220px,1fr) auto;gap:7px;align-items:start;padding:8px 0;border-top:1px solid var(--line)}
+.article-conversation-edit-line:first-child{border-top:0}.article-conversation-edit-line textarea{min-height:72px!important}.article-conversation-edit-line button{width:auto}.article-conversation-dice-fields{display:grid;grid-template-columns:minmax(100px,1fr) 90px 90px minmax(100px,.7fr);gap:7px}
+.article-conversation-add{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.article-conversation-add button{width:auto}
+.lib-article-media-group{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}.lib-article-media-group.media-count-2{grid-template-columns:repeat(2,minmax(0,1fr))}.lib-article-media-group.media-count-3{grid-template-columns:repeat(3,minmax(0,1fr))}.lib-article-media-group>.lib-article-media{width:100%;max-width:none;margin:0}.lib-article-media-group .article-bgm-card{height:100%}
+.article-media-group-editor{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}.article-media-group-editor>.article-block{min-width:0}.article-media-group-actions{display:flex;gap:7px;flex-wrap:wrap}.article-media-group-actions button{width:auto}
 .articleConversationRaw{min-height:180px!important;font-family:inherit}
 @media(max-width:620px){
  .article-conversation-line{grid-template-columns:1fr;gap:3px}
  .article-conversation-speaker{padding:5px 8px}
+ .article-conversation-edit-line{grid-template-columns:1fr}.article-conversation-dice-fields{grid-template-columns:1fr 1fr}.lib-article-media-group,.article-media-group-editor{grid-template-columns:1fr}
 }
+@media(min-width:621px) and (max-width:980px){.lib-article-media-group,.article-media-group-editor{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 
 <style>
@@ -1531,7 +1540,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=02309"></script>
-<script src="../assets/js/rich-editor.js?v=0908-toolbar1"></script>
+<script src="../assets/js/rich-editor.js?v=0909-conversation-media1"></script>
 <script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";
@@ -2995,12 +3004,12 @@ function articleShareLabel(p){
  return p.passwordProtected?"リンク限定・パスワード":"リンク限定";
 }
 function normalizedArticleBlocks(page){
- const normalize=blocks=>(Array.isArray(blocks)?blocks:[]).map(b=>{const out={...b,id:b.id||TRPG39.uuid()};if(out.type==="toggle")out.children=normalize(out.children);return out});
+ const normalize=blocks=>(Array.isArray(blocks)?blocks:[]).map(b=>{const out={...b,id:b.id||TRPG39.uuid()};if(out.type==="toggle")out.children=normalize(out.children);if(out.type==="mediaGroup")out.items=normalize(out.items);return out});
  if(Array.isArray(page?.blocks)&&page.blocks.length)return normalize(page.blocks);
  if(String(page?.body||"").trim())return [{id:TRPG39.uuid(),type:"text",text:String(page.body||"")}];
  return [];
 }
-function flattenArticleBlocks(blocks){const out=[];(function walk(items){(items||[]).forEach(b=>{out.push(b);if(b.type==="toggle")walk(b.children)})})(blocks);return out}
+function flattenArticleBlocks(blocks){const out=[];(function walk(items){(items||[]).forEach(b=>{out.push(b);if(b.type==="toggle")walk(b.children);if(b.type==="mediaGroup")walk(b.items)})})(blocks);return out}
 function youtubeVideoId(url=""){
  try{
    const u=new URL(String(url).trim());
@@ -3072,24 +3081,30 @@ function bgmBlockHasContent(b){return [b.title,b.artist,b.scene,b.sourceLabel,b.
 
 function normalizeConversationLines(block){
  if(Array.isArray(block?.lines))return block.lines.map(v=>({
+   id:String(v?.id||TRPG39.uuid()),
+   kind:String(v?.kind||v?.speakerType||"").toUpperCase()==="DICE"?"dice":"speech",
+   speakerType:["PC","PL","KP"].includes(String(v?.speakerType||"").toUpperCase())?String(v.speakerType).toUpperCase():"PC",
    speaker:String(v?.speaker||"").trim(),
    text:String(v?.text||"").trim(),
    pcRefId:String(v?.pcRefId||""),
+   playerRefId:String(v?.playerRefId||""),
    pcName:String(v?.pcName||""),
-   pcImage:String(v?.pcImage||"")
- })).filter(v=>v.speaker||v.text);
+   pcImage:String(v?.pcImage||""),
+   dice:{label:String(v?.dice?.label||v?.label||"").trim(),target:String(v?.dice?.target??v?.target??"").trim(),roll:String(v?.dice?.roll??v?.roll??"").trim(),result:String(v?.dice?.result||v?.result||"").trim()}
+ })).filter(v=>v.speaker||v.text||v.kind==="dice"&&Object.values(v.dice).some(Boolean));
  const raw=String(block?.raw||block?.text||"");
  return raw.split(/\r?\n/).map(line=>{
    const t=String(line||"").trim();
    if(!t)return null;
    const m=t.match(/^(.{1,40}?)[｜|：:]\s*(.*)$/);
-   return m?{speaker:m[1].trim(),text:m[2].trim(),pcRefId:"",pcName:"",pcImage:""}:{speaker:"",text:t,pcRefId:"",pcName:"",pcImage:""};
+   return m?{id:TRPG39.uuid(),kind:"speech",speakerType:"PC",speaker:m[1].trim(),text:m[2].trim(),pcRefId:"",playerRefId:"",pcName:"",pcImage:"",dice:{label:"",target:"",roll:"",result:""}}:{id:TRPG39.uuid(),kind:"speech",speakerType:"PC",speaker:"",text:t,pcRefId:"",playerRefId:"",pcName:"",pcImage:"",dice:{label:"",target:"",roll:"",result:""}};
  }).filter(Boolean);
 }
 function conversationRaw(lines){
  return (Array.isArray(lines)?lines:[]).map(v=>`${String(v?.speaker||"").trim()}｜${String(v?.text||"").trim()}`).join("\n");
 }
-function conversationBlockHasContent(b){return normalizeConversationLines(b).some(v=>v.speaker||v.text)}
+function conversationBlockHasContent(b){return normalizeConversationLines(b).length>0}
+function conversationDiceText(v){const d=v?.dice||{};return [d.label,d.target?`目標 ${d.target}`:"",d.roll?`→ ${d.roll}`:"",d.result].filter(Boolean).join("　")}
 function articleBlocksHtml(page){
  const blocks=normalizedArticleBlocks(page);
  if(!blocks.length)return '<div class="lib-article-render"><div class="small muted">本文はまだありません。</div></div>';
@@ -3098,6 +3113,7 @@ function articleBlocksHtml(page){
 function articleBlockListHtml(blocks){
  return (Array.isArray(blocks)?blocks:[]).map(b=>{
     if(b.type==="toggle")return `<details class="lib-article-structured-toggle"><summary>${esc(b.title||"トグル")}</summary><div class="lib-article-structured-toggle-body">${articleBlockListHtml(b.children||[])}</div></details>`;
+   if(b.type==="mediaGroup"){const items=Array.isArray(b.items)?b.items:[];return `<div class="lib-article-media-group media-count-${Math.min(3,Math.max(1,items.length))}">${articleBlockListHtml(items)}</div>`}
    if(b.type==="image"){
      const url=String(b.url||"").trim();
      if(!url)return `<div class="lib-article-image-placeholder">🖼 画像未設定</div>`;
@@ -3112,7 +3128,8 @@ function articleBlockListHtml(blocks){
    if(b.type==="conversation"){
      const lines=normalizeConversationLines(b);if(!lines.length)return "";
      return `<section class="article-conversation">${b.caption?`<div class="article-conversation-caption">${esc(b.caption)}</div>`:""}${lines.map(v=>{
-       const pc=conversationResolvedPc(v),name=pc?.name||v.pcName||v.speaker||"",image=pc?.image||v.pcImage||"",guestMeta=pc?.ownerType==="guest"?guestPcImageMeta(pc.playerId,pc.plName,pc.name):null;
+       if(v.kind==="dice")return `<div class="article-conversation-dice">🎲 ${esc(conversationDiceText(v))}</div>`;
+       const pc=v.speakerType==="PC"?conversationResolvedPc(v):null,name=pc?.name||(v.speakerType==="PC"?v.pcName:"")||v.speaker||"",image=pc?.image||(v.speakerType==="PC"?v.pcImage:"")||"",guestMeta=pc?.ownerType==="guest"?guestPcImageMeta(pc.playerId,pc.plName,pc.name):null;
        const localAttrs=guestMeta?.local?` data-guest-avatar-player="${esc(pc.playerId||"")}" data-guest-avatar-pl="${esc(pc.plName||"")}" data-guest-avatar-pc="${esc(pc.name||"")}"`:"";
        return `<div class="article-conversation-line">${name?`<div class="article-conversation-speaker">${image?`<img class="article-conversation-avatar" src="${esc(image)}" alt="" loading="lazy">`:(guestMeta?.local?`<img class="article-conversation-avatar" alt=""${localAttrs}>`:"")}<span>${esc(name)}</span></div>`:""}<div class="article-conversation-text">${esc(v.text)}</div></div>`;
      }).join("")}</section>`;
@@ -3127,6 +3144,14 @@ function articleBlockListHtml(blocks){
     return `<div class="lib-article-text">${esc(b.text||"")}</div>`;
  }).join("");
 }
+function conversationSpeakerOptions(type){
+ const source=type==="PC"?(typeof allLibraryPcs==="function"?allLibraryPcs():(TRPG39.loadPCs?TRPG39.loadPCs():pcs)):(TRPG39.loadPlayers?TRPG39.loadPlayers():players);
+ return (Array.isArray(source)?source:[]).map(v=>String(type==="PC"?v.name:(v.name||v.displayName||v.publicName)||"").trim()).filter(Boolean).map(name=>`<option value="${esc(name)}"></option>`).join("");
+}
+function conversationEditorLineHtml(v,index,blockId){
+ const type=v.kind==="dice"?"DICE":(["PC","PL","KP"].includes(v.speakerType)?v.speakerType:"PC"),listId=`conversation-speakers-${blockId}-${index}`,d=v.dice||{};
+ return `<div class="article-conversation-edit-line" data-conversation-line="${index}" data-line-id="${esc(v.id||TRPG39.uuid())}" data-pc-ref-id="${esc(v.pcRefId||"")}" data-player-ref-id="${esc(v.playerRefId||"")}" data-pc-name="${esc(v.pcName||"")}" data-pc-image="${esc(v.pcImage||"")}"><select class="articleConversationLineType" aria-label="発言種別"><option value="PC" ${type==="PC"?"selected":""}>PC</option><option value="PL" ${type==="PL"?"selected":""}>PL</option><option value="KP" ${type==="KP"?"selected":""}>KP</option><option value="DICE" ${type==="DICE"?"selected":""}>ダイス</option></select><div class="article-conversation-speaker-fields" ${type==="DICE"?"hidden":""}><input class="articleConversationSpeaker" value="${esc(v.speaker||v.pcName||"")}" list="${listId}" placeholder="発言者名（手入力可）"><datalist id="${listId}">${conversationSpeakerOptions(type)}</datalist></div><textarea class="articleConversationText" ${type==="DICE"?"hidden":""} placeholder="発言内容">${esc(v.text||"")}</textarea><div class="article-conversation-dice-fields" ${type==="DICE"?"":"hidden"}><input class="articleConversationDiceLabel" value="${esc(d.label||"")}" placeholder="技能・判定名"><input class="articleConversationDiceTarget" value="${esc(d.target||"")}" placeholder="目標値"><input class="articleConversationDiceRoll" value="${esc(d.roll||"")}" placeholder="出目"><input class="articleConversationDiceResult" value="${esc(d.result||"")}" placeholder="結果"></div><button type="button" class="danger" data-conversation-line-remove="${index}" aria-label="この行を削除">削除</button></div>`;
+}
 function articleEditorBlockHtml(b,index,total){
  const id=esc(b.id||TRPG39.uuid());
  const actions=`<div class="article-block-actions"><button type="button" class="article-block-drag-handle article-sort-only" draggable="true" data-block-drag="${id}" title="ドラッグして並び替え" aria-label="このブロックをドラッグして並び替え">≡</button><button type="button" class="article-sort-only" data-block-up="${id}" title="上へ" ${index===0?"disabled":""}>↑</button><button type="button" class="article-sort-only" data-block-down="${id}" title="下へ" ${index===total-1?"disabled":""}>↓</button><button type="button" class="danger" data-block-remove="${id}">削除</button></div>`;
@@ -3134,8 +3159,8 @@ function articleEditorBlockHtml(b,index,total){
  if(b.type==="toggle")return `<details class="article-block article-toggle-block" data-block-id="${id}" data-block-type="toggle"><summary class="article-toggle-summary"><input class="articleToggleTitle article-toggle-title" value="${esc(b.title||"")}" placeholder="新しいトグル" aria-label="トグル見出し">${scope}${actions}</summary><div class="article-toggle-children"><div class="article-tree-dropzone" data-drop-parent="${id}">このトグル内へ移動</div>${(b.children||[]).map((child,i,all)=>articleEditorBlockHtml(child,i,all.length)).join("")}${(b.children||[]).length?"":`<button type="button" class="article-empty-toggle-add" data-nested-add="text" data-parent-id="${id}">本文を書き始める</button>`}</div></details>`;
  if(b.type==="image")return `<div class="article-block" data-block-id="${id}" data-block-type="image"><div class="article-block-head"><span class="article-block-label">🖼 画像</span>${actions}</div>${scope}<div class="article-image-inputs article-image-source-grid"><div><label>画像URL</label><input class="articleBlockImageUrl" type="url" value="${esc(b.url||"")}" placeholder="https://..."></div><div><label>画像ファイル</label><div class="article-image-file-row"><input class="articleBlockImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button type="button" data-block-upload="${id}">アップロード</button></div><div class="article-upload-status"></div></div></div><label>キャプション <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="画像の説明"><label class="article-ogp-pick"><input class="articleBlockOgp" type="checkbox" ${b.ogp?"checked":""}><span><strong>SNSカードに使う</strong> <span class="muted">（通常共有時のみ・1枚だけ選択）</span></span></label><div class="article-image-placeholder-note" ${b.url?"hidden":""}>画像はあとから設定できます。この枠は保存しても残ります。</div><div class="article-block-preview" ${b.url?"":"hidden"}>${b.url?`<img src="${esc(b.url)}" alt="">`:""}</div></div>`;
  if(b.type==="bgm")return `<div class="article-block" data-block-id="${id}" data-block-type="bgm"><div class="article-block-head"><span class="article-block-label">🎵 BGM</span>${actions}</div>${scope}<input class="articleBgmLibraryId" type="hidden" value="${esc(b.libraryId||"")}"><div class="bgm-lib-actions"><button type="button" data-bgm-lib-open="${id}">BGM LIBRARYから選ぶ</button><button type="button" data-bgm-lib-save="${id}">BGM LIBRARYに登録／更新</button></div><div class="article-bgm-grid"><div><label>曲名</label><input class="articleBgmTitle" value="${esc(b.title||"")}" placeholder="曲名"></div><div><label>作者・アーティスト</label><input class="articleBgmArtist" value="${esc(b.artist||"")}" placeholder="作者名"></div><div><label>使用シーン</label><input class="articleBgmScene" value="${esc(b.scene||"")}" placeholder="例：Scene 3／終盤"></div><div><label>タグ <span class="small muted">（、区切り）</span></label><input class="articleBgmTags" value="${esc(Array.isArray(b.tags)?b.tags.join("、"):(b.tags||""))}" placeholder="不穏、戦闘、エンディング"></div><div><label>配布元名</label><input class="articleBgmSourceLabel" value="${esc(b.sourceLabel||"")}" placeholder="DOVA-SYNDROME など"></div><div><label>配布元URL</label><input class="articleBgmSourceUrl" type="url" value="${esc(b.sourceUrl||"")}" placeholder="https://..."></div><div><label>音源URL <span class="small muted">（任意）</span></label><input class="articleBgmAudioUrl" type="url" value="${esc(b.audioUrl||"")}" placeholder="直接再生できるMP3 URL"></div></div><label>手元のMP3 <span class="small muted">（自分用・このブラウザに保存）</span></label><div class="article-image-inputs"><div><input class="articleBgmFile" type="file" accept="audio/mpeg,audio/mp3,.mp3"><input class="articleBgmLocalId" type="hidden" value="${esc(b.localAudioId||"")}"><input class="articleBgmLocalName" type="hidden" value="${esc(b.localFileName||"")}"><div class="article-local-audio">${b.localFileName?`保存済み：${esc(b.localFileName)}`:"MP3本体は共有記事には含まれません。"}</div></div><div><button type="button" data-bgm-local-save="${id}">この端末に保存</button><div class="article-upload-status"></div></div></div><label>メモ <span class="small muted">（任意）</span></label><textarea class="articleBgmMemo" placeholder="この場面で流した、イントロから使用など">${esc(b.memo||"")}</textarea></div>`;
- // 旧記事の会話ブロックは互換表示・編集のみ残す。新規追加とログ解析はTOOLS側の責務とする。
- if(b.type==="conversation")return `<div class="article-block article-block-legacy" data-block-id="${id}" data-block-type="conversation"><div class="article-block-head"><span class="article-block-label">💬 会話ログ（旧形式）</span>${actions}</div>${scope}<label>見出し <span class="small muted">（任意）</span></label><input class="articleConversationCaption" value="${esc(b.caption||"")}" placeholder="例：終盤／この場面好き"><label>会話</label><textarea class="articleConversationRaw" placeholder="既存の会話ログを編集できます。">${esc(conversationRaw(normalizeConversationLines(b)))}</textarea><div class="small muted">既存記事との互換用です。新しい会話ログはTOOLSで整形し、文章ブロックへ貼り付けてください。</div></div>`;
+ if(b.type==="conversation"){const lines=normalizeConversationLines(b);return `<div class="article-block" data-block-id="${id}" data-block-type="conversation"><div class="article-block-head"><span class="article-block-label">💬 簡易会話ログ</span>${actions}</div>${scope}<input class="articleConversationCaption" value="${esc(b.caption||"")}" placeholder="見出し（任意）"><div class="article-conversation-editor">${lines.map((v,i)=>conversationEditorLineHtml(v,i,id)).join("")}</div><div class="article-conversation-add"><button type="button" data-conversation-line-add="speech">＋ 発言</button><button type="button" data-conversation-line-add="dice">＋ ダイス</button></div></div>`}
+ if(b.type==="mediaGroup")return `<div class="article-block" data-block-id="${id}" data-block-type="mediaGroup"><div class="article-block-head"><span class="article-block-label">▦ メディアグループ</span>${actions}</div>${scope}<div class="article-media-group-actions"><button type="button" data-media-group-add="image">＋ 画像</button><button type="button" data-media-group-add="url">＋ URL／音声</button></div><div class="article-media-group-editor"><div class="article-tree-dropzone" data-drop-parent="${id}">このグループ内へ移動</div>${(b.items||[]).map((item,i,all)=>articleEditorBlockHtml(item,i,all.length)).join("")}</div></div>`;
  if(b.type==="youtube")return `<div class="article-block" data-block-id="${id}" data-block-type="youtube"><div class="article-block-head"><span class="article-block-label">▶ YouTube</span>${actions}</div>${scope}<label>YouTube URL</label><input class="articleBlockYoutubeUrl" type="url" value="${esc(b.url||"")}" placeholder="https://www.youtube.com/watch?v=..."><label>見出し <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="セッション録画 など"><div class="article-youtube-preview"></div></div>`;
  return `<div class="article-block" data-block-id="${id}" data-block-type="text"><div class="article-block-head"><span class="article-block-label">✎ 文章</span>${actions}</div>${scope}<div class="articleRichMount" data-rich-block-id="${id}"></div></div>`;
 }
@@ -3169,12 +3194,16 @@ function editorBlocksIn(container){
  return rows.map(row=>{
     const type=row.dataset.blockType,id=row.dataset.blockId||TRPG39.uuid();
     if(type==="toggle")return {id,type,title:row.querySelector(':scope > summary .articleToggleTitle')?.value.trim()||row.querySelector(':scope > .articleToggleTitle')?.value.trim()||"",children:editorBlocksIn(row.querySelector(':scope > .article-toggle-children'))};
+   if(type==="mediaGroup")return {id,type,items:editorBlocksIn(row.querySelector(':scope > .article-media-group-editor'))};
    if(type==="image")return {id,type,url:row.querySelector('.articleBlockImageUrl')?.value.trim()||"",caption:row.querySelector('.articleBlockCaption')?.value.trim()||"",ogp:!!row.querySelector('.articleBlockOgp')?.checked};
    if(type==="youtube")return {id,type,url:row.querySelector('.articleBlockYoutubeUrl')?.value.trim()||"",caption:row.querySelector('.articleBlockCaption')?.value.trim()||""};
    if(type==="conversation"){
-     const raw=row.querySelector('.articleConversationRaw')?.value||"";
-     const lines=conversationEnrichLines(row,normalizeConversationLines({raw}));
-     return {id,type,caption:row.querySelector('.articleConversationCaption')?.value.trim()||"",raw,lines};
+     const lines=[...row.querySelectorAll(':scope > .article-conversation-editor > .article-conversation-edit-line')].map(line=>{
+       const speakerType=line.querySelector('.articleConversationLineType')?.value||"PC",kind=speakerType==="DICE"?"dice":"speech",speaker=line.querySelector('.articleConversationSpeaker')?.value.trim()||"";
+       const base={id:line.dataset.lineId||TRPG39.uuid(),kind,speakerType:kind==="dice"?"DICE":speakerType,speaker,text:line.querySelector('.articleConversationText')?.value||"",pcRefId:line.dataset.pcRefId||"",playerRefId:line.dataset.playerRefId||"",pcName:line.dataset.pcName||"",pcImage:line.dataset.pcImage||"",dice:{label:line.querySelector('.articleConversationDiceLabel')?.value.trim()||"",target:line.querySelector('.articleConversationDiceTarget')?.value.trim()||"",roll:line.querySelector('.articleConversationDiceRoll')?.value.trim()||"",result:line.querySelector('.articleConversationDiceResult')?.value.trim()||""}};
+       return conversationEnrichLineReference(row,base);
+     });
+     return {id,type,caption:row.querySelector('.articleConversationCaption')?.value.trim()||"",lines};
    }
    if(type==="bgm")return {id,type,libraryId:row.querySelector('.articleBgmLibraryId')?.value||"",title:row.querySelector('.articleBgmTitle')?.value.trim()||"",artist:row.querySelector('.articleBgmArtist')?.value.trim()||"",scene:row.querySelector('.articleBgmScene')?.value.trim()||"",tags:normalizeBgmTags(row.querySelector('.articleBgmTags')?.value||""),sourceLabel:row.querySelector('.articleBgmSourceLabel')?.value.trim()||"",sourceUrl:row.querySelector('.articleBgmSourceUrl')?.value.trim()||"",audioUrl:row.querySelector('.articleBgmAudioUrl')?.value.trim()||"",localAudioId:row.querySelector('.articleBgmLocalId')?.value||"",localFileName:row.querySelector('.articleBgmLocalName')?.value||"",memo:row.querySelector('.articleBgmMemo')?.value||""};
     const rich=articleRichEditors.get(String(id));
@@ -3217,11 +3246,11 @@ function destroyArticleRichEditors(ed){
  [...ed.querySelectorAll('[data-rich-block-id]')].forEach(m=>{const id=String(m.dataset.richBlockId||"");articleRichEditors.get(id)?.destroy();articleRichEditors.delete(id)});
 }
 function initArticleRichEditors(ed,blocks){
- const flat=[];(function walk(items){(items||[]).forEach(b=>{flat.push(b);if(b.type==="toggle")walk(b.children)})})(blocks);
+ const flat=[];(function walk(items){(items||[]).forEach(b=>{flat.push(b);if(b.type==="toggle")walk(b.children);if(b.type==="mediaGroup")walk(b.items)})})(blocks);
  flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["toggle","image","url"],onInsertBlock:kind=>insertArticleBlockAfter(ed,id,kind),onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["toggle","image","url","conversation","mediaGroup"],onInsertBlock:kind=>insertArticleBlockAfter(ed,id,kind),onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
@@ -3241,15 +3270,15 @@ function setArticleReorderMode(ed,active){
 }
 function articleBlockContainer(blocks,parentId=""){
  if(!parentId)return blocks;
- for(const block of blocks){if(String(block.id)===String(parentId)&&block.type==="toggle")return block.children||(block.children=[]);const nested=articleBlockContainer(block.children||[],parentId);if(nested)return nested}
+ for(const block of blocks){if(String(block.id)===String(parentId)&&block.type==="toggle")return block.children||(block.children=[]);if(String(block.id)===String(parentId)&&block.type==="mediaGroup")return block.items||(block.items=[]);const nested=articleBlockContainer(block.type==="mediaGroup"?(block.items||[]):(block.children||[]),parentId);if(nested)return nested}
  return null;
 }
 function articleBlockLocation(blocks,id){
- for(let i=0;i<blocks.length;i++){if(String(blocks[i].id)===String(id))return {list:blocks,index:i,block:blocks[i]};const nested=articleBlockLocation(blocks[i].children||[],id);if(nested)return nested}
+ for(let i=0;i<blocks.length;i++){if(String(blocks[i].id)===String(id))return {list:blocks,index:i,block:blocks[i]};const nested=articleBlockLocation(blocks[i].type==="mediaGroup"?(blocks[i].items||[]):(blocks[i].children||[]),id);if(nested)return nested}
  return null;
 }
-function articleBlockContains(block,id){return String(block?.id)===String(id)||(block?.children||[]).some(child=>articleBlockContains(child,id))}
-function newArticleBlock(type,values={}){return type==="text"?{id:TRPG39.uuid(),type,text:"",...values}:type==="toggle"?{id:TRPG39.uuid(),type,title:"トグル",children:[newArticleBlock("text")],...values}:type==="conversation"?{id:TRPG39.uuid(),type,caption:"",raw:"",lines:[],...values}:type==="bgm"?{id:TRPG39.uuid(),type,libraryId:"",title:"",artist:"",scene:"",tags:[],sourceLabel:"",sourceUrl:"",audioUrl:"",localAudioId:"",localFileName:"",memo:"",...values}:{id:TRPG39.uuid(),type,url:"",caption:"",...values}}
+function articleBlockContains(block,id){return String(block?.id)===String(id)||([...(block?.children||[]),...(block?.items||[])]).some(child=>articleBlockContains(child,id))}
+function newArticleBlock(type,values={}){return type==="text"?{id:TRPG39.uuid(),type,text:"",...values}:type==="toggle"?{id:TRPG39.uuid(),type,title:"トグル",children:[newArticleBlock("text")],...values}:type==="conversation"?{id:TRPG39.uuid(),type,caption:"",lines:[{id:TRPG39.uuid(),kind:"speech",speakerType:"PC",speaker:"",text:"",pcRefId:"",playerRefId:"",pcName:"",pcImage:"",dice:{label:"",target:"",roll:"",result:""}}],...values}:type==="mediaGroup"?{id:TRPG39.uuid(),type,items:[],...values}:type==="bgm"?{id:TRPG39.uuid(),type,libraryId:"",title:"",artist:"",scene:"",tags:[],sourceLabel:"",sourceUrl:"",audioUrl:"",localAudioId:"",localFileName:"",memo:"",...values}:{id:TRPG39.uuid(),type,url:"",caption:"",...values}}
 function addEditorBlock(ed,type,parentId=""){
  const blocks=editorBlocks(ed);
   const target=articleBlockContainer(blocks,parentId);if(!target)return;
@@ -3283,6 +3312,8 @@ function insertArticleBlockAfter(ed,sourceId,kind){
    if(!block)return alert("http:// または https:// で始まるURLを入力してください。"),false;
  }else if(kind==="toggle")block=newArticleBlock("toggle");
  else if(kind==="image")block=newArticleBlock("image");
+ else if(kind==="conversation")block=newArticleBlock("conversation");
+ else if(kind==="mediaGroup")block=newArticleBlock("mediaGroup");
  if(!block)return false;
  block.visibility=source.block.visibility||"private";
  if(block.type==="toggle"&&Array.isArray(block.children)&&block.children[0])block.children[0].visibility=block.visibility;
@@ -3305,6 +3336,7 @@ function moveEditorBlockTo(ed,sourceId,targetId,before){
 }
 function moveEditorBlockInto(ed,sourceId,parentId){
  const blocks=editorBlocks(ed),source=articleBlockLocation(blocks,sourceId);if(!source||articleBlockContains(source.block,parentId))return false;
+ const parent=parentId?articleBlockLocation(blocks,parentId)?.block:null;if(parent?.type==="mediaGroup"&&!['image','youtube','bgm'].includes(source.block.type))return false;
  const target=articleBlockContainer(blocks,parentId);if(!target||source.list===target&&source.index===target.length-1)return false;
  const [moved]=source.list.splice(source.index,1);target.push(moved);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);return true;
 }
@@ -3341,6 +3373,7 @@ async function imageSourceToShareUrl(src,name="pc-avatar.png"){
  return "";
 }
 async function conversationLineShareImage(line){
+ if(line?.speakerType&&line.speakerType!=="PC")return "";
  const pc=conversationResolvedPc(line);
  if(!pc)return String(line?.pcImage||"");
 
@@ -3367,10 +3400,11 @@ async function prepareConversationBlocksForShare(blocks){
  for(const b of blocks){
    if(!(b.visibility==="public"||b.visibility==="link")){out.push({id:b.id,type:"restricted",visibility:b.visibility});continue}
    if(b.type==="toggle"){out.push({...b,children:await prepareConversationBlocksForShare(b.children||[])});continue}
+   if(b.type==="mediaGroup"){out.push({...b,items:await prepareConversationBlocksForShare(b.items||[])});continue}
    if(b.type!=="conversation"){out.push(b);continue}
    const lines=[];
    for(const line of normalizeConversationLines(b)){
-     const pc=conversationResolvedPc(line);
+     const pc=line.speakerType==="PC"?conversationResolvedPc(line):null;
      const cacheKey=pc?`${pc.ownerType||""}:${pc.id||pc.playerId||""}:${pc.name||line.speaker||""}`:`line:${line.pcImage||""}`;
      let image=cache.get(cacheKey);
      if(image===undefined){
@@ -3492,6 +3526,16 @@ function conversationEnrichLines(row,lines){
      pcImage:ref?.image||v.pcImage||""
    };
  });
+}
+function conversationEnrichLineReference(row,line){
+ if(line.kind==="dice")return line;
+ if(line.speakerType==="PC"){
+   const ref=conversationPcRefForName(row,line.speaker);
+   return {...line,pcRefId:ref?.id||line.pcRefId||"",pcName:ref?.name||line.speaker||line.pcName||"",pcImage:ref?.image||line.pcImage||""};
+ }
+ const source=TRPG39.loadPlayers?TRPG39.loadPlayers():players,name=String(line.speaker||"").trim();
+ const matches=(Array.isArray(source)?source:[]).filter(v=>[v.name,v.displayName,v.publicName].some(x=>String(x||"").trim()===name));
+ return {...line,playerRefId:matches.length===1?String(matches[0].id||""):line.playerRefId||""};
 }
 function conversationResolvedPc(line){
  const names=[line?.pcName,line?.speaker].map(v=>String(v||"").trim()).filter(Boolean);
@@ -3651,6 +3695,11 @@ function bindArticleEditorBlockControls(ed){
  ed.querySelectorAll('[data-drop-parent]').forEach(zone=>{zone.ondragover=e=>{if(!articleDraggedBlockId)return;e.preventDefault();e.stopPropagation();zone.classList.add('article-drop-active');e.dataTransfer.dropEffect='move'};zone.ondragleave=()=>zone.classList.remove('article-drop-active');zone.ondrop=e=>{if(!articleDraggedBlockId)return;e.preventDefault();e.stopPropagation();const sourceId=articleDraggedBlockId,parentId=zone.dataset.dropParent||"";articleDraggedBlockId="";clearArticleBlockDragUi(ed);moveEditorBlockInto(ed,sourceId,parentId)}});
  ed.querySelectorAll('[data-nested-add]').forEach(b=>b.onclick=()=>addEditorBlock(ed,b.dataset.nestedAdd,b.dataset.parentId||""));
  ed.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{const blocks=editorBlocks(ed),found=articleBlockLocation(blocks,b.dataset.blockRemove);if(!found)return;found.list.splice(found.index,1);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
+
+ ed.querySelectorAll('.articleConversationLineType').forEach(select=>select.onchange=()=>{const line=select.closest('.article-conversation-edit-line'),dice=select.value==="DICE";line.querySelector('.article-conversation-speaker-fields').hidden=dice;line.querySelector('.articleConversationText').hidden=dice;line.querySelector('.article-conversation-dice-fields').hidden=!dice;const datalist=line.querySelector('datalist');if(datalist)datalist.innerHTML=conversationSpeakerOptions(select.value);articleEditorChanged(ed)});
+ ed.querySelectorAll('[data-conversation-line-add]').forEach(button=>button.onclick=()=>{const row=button.closest('.article-block'),blocks=editorBlocks(ed),found=articleBlockLocation(blocks,row?.dataset.blockId);if(!found)return;const dice=button.dataset.conversationLineAdd==="dice";found.block.lines.push({id:TRPG39.uuid(),kind:dice?"dice":"speech",speakerType:dice?"DICE":"PC",speaker:"",text:"",pcRefId:"",playerRefId:"",pcName:"",pcImage:"",dice:{label:"",target:"",roll:"",result:""}});renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
+ ed.querySelectorAll('[data-conversation-line-remove]').forEach(button=>button.onclick=()=>{const row=button.closest('.article-block'),blocks=editorBlocks(ed),found=articleBlockLocation(blocks,row?.dataset.blockId);if(!found)return;found.block.lines.splice(Number(button.dataset.conversationLineRemove),1);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
+ ed.querySelectorAll('[data-media-group-add]').forEach(button=>button.onclick=()=>{const row=button.closest('.article-block'),parentId=row?.dataset.blockId||"";if(button.dataset.mediaGroupAdd==="image")return addEditorBlock(ed,"image",parentId);const value=prompt("追加する画像・YouTube・MP3のURLを入力してください。");if(value===null)return;const url=String(value||"").trim();let block=null;if(youtubeVideoId(url))block=newArticleBlock("youtube",{url});else if(/\.mp3(?:$|[?#])/i.test(url))block=newArticleBlock("bgm",{audioUrl:url,title:"BGM"});else if(/\.(?:png|jpe?g|gif|webp|avif)(?:$|[?#])/i.test(url))block=newArticleBlock("image",{url});if(!block)return alert("画像・YouTube・MP3のURLを入力してください。");const blocks=editorBlocks(ed),target=articleBlockContainer(blocks,parentId);if(!target)return;block.visibility=row.querySelector(':scope > .article-block-visibility .articleBlockVisibility')?.value||"private";target.push(block);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
 
  ed.querySelectorAll('[data-conversation-import-open]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=false});
  ed.querySelectorAll('[data-conversation-import-close]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=true});
@@ -3898,6 +3947,7 @@ async function shareArticlePage(runId,pageId,options={}){
     const normalizeShareTree=blocks=>(blocks||[]).map(b=>{
        const visibility=["private","link","public"].includes(String(b.visibility||""))?String(b.visibility):"public";
        if(b.type==="toggle")return {...b,visibility,title:String(b.title||""),children:normalizeShareTree(b.children||[])};
+       if(b.type==="mediaGroup")return {...b,visibility,items:normalizeShareTree(b.items||[])};
        if(b.type==="conversation")return {...b,visibility,lines:normalizeConversationLines(b)};
       if(b.type==="image")return {...b,visibility,url:String(b.url||"").trim(),caption:String(b.caption||"").trim(),ogp:!!b.ogp};
       if(b.type==="text"&&b.html&&window.SAKUMERichEditor)return {...b,visibility,html:SAKUMERichEditor.sanitizeHtml(b.html),text:String(b.text||SAKUMERichEditor.plainText(b.html))};
