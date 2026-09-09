@@ -1172,6 +1172,20 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .article-block{border-left:5px solid var(--accent);padding:13px}.article-block-head{padding-bottom:9px;border-bottom:2px solid color-mix(in srgb,currentColor 18%,var(--line))}
 .article-block-toolbar{padding:10px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--panel) 87%,currentColor 4%)}
 .article-editor-modebar{display:flex;justify-content:flex-end;background:transparent;border:0;padding:4px 0}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks{gap:3px;padding:4px 0}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:2px 0!important}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block-head{min-height:28px;margin:0;padding:0 2px;border:0;align-items:center}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block-label{font-size:.78rem;color:var(--muted);font-weight:650}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block-actions{margin-left:auto}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block-actions button{padding:3px 6px;font-size:.75rem;background:transparent;border-color:transparent}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block>.article-block-visibility{min-height:28px;margin:0;padding:0 2px;border:0;border-radius:0;background:transparent;justify-content:flex-end}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block>.article-block-visibility label{display:none}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block>.article-block-visibility select{width:auto;min-width:104px;margin:0;padding:4px 24px 4px 7px;font-size:.78rem;background:transparent}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .articleRichMount .sm-rich-shell{border:0;border-radius:0;background:transparent;box-shadow:none}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .articleRichMount .sm-rich-toolbar{border:1px solid color-mix(in srgb,currentColor 18%,var(--line));border-radius:7px;background:color-mix(in srgb,var(--panel) 94%,transparent);box-shadow:none}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .articleRichMount .sm-rich-editor{padding:10px 4px;min-height:120px}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-toggle-block>summary{border:0;background:transparent}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-toggle-children{margin-top:1px;margin-bottom:5px}
 .article-empty-toggle-add{width:auto;justify-self:start;margin:8px 0;min-height:40px}
 .article-draft-notice{border:3px solid color-mix(in srgb,#e0a83b 72%,currentColor);background:color-mix(in srgb,var(--panel) 88%,#e0a83b 12%)}
 .danger{border-color:color-mix(in srgb,#d75b64 72%,currentColor)!important;color:color-mix(in srgb,#ff7b84 82%,currentColor)!important;background:transparent!important}
