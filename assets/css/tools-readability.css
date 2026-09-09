@@ -11,17 +11,21 @@ body{font-size:var(--tool-readable-body);line-height:1.65}
 main .hero p,main p,main li{line-height:1.7}
 main .small,main .muted,main .status-note,main .dm-note{font-size:var(--tool-readable-small)!important;line-height:1.65!important}
 main label{font-size:var(--tool-readable-label)!important;line-height:1.5;font-weight:700}
-main input,main select,main textarea,main button{
+main input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),main select,main textarea,main button{
   min-height:42px;font-size:var(--tool-readable-control)!important;line-height:1.45
 }
-main input,main select,main textarea{
+main input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),main select,main textarea{
   border-width:2px!important;border-color:var(--tool-readable-line)!important
 }
+main input,main select,main textarea{box-sizing:border-box;max-width:100%}
 main input:focus-visible,main select:focus-visible,main textarea:focus-visible,main button:focus-visible{
   outline:3px solid color-mix(in srgb,var(--accent,#d9b85b) 72%,transparent)!important;
   outline-offset:2px;box-shadow:none
 }
 main button{font-weight:750}
+main button:not(.text-action){border:1px solid var(--tool-readable-line);border-radius:8px;background:color-mix(in srgb,var(--panel,#181b21) 82%,white 8%);color:var(--text,#eee)}
+main button:not(.text-action):hover{border-color:var(--accent,#d9b85b)}
+main button.primary{border-color:var(--accent,#d9b85b)!important;background:var(--accent,#d9b85b)!important;color:#17130c!important;font-weight:800!important}
 main .panel,main .card,main .option-box,main .dm-panel,main .tool-card{
   border-width:2px!important;border-color:var(--tool-readable-line)!important
 }
@@ -43,6 +47,29 @@ main .checkline{font-size:.9375rem!important;line-height:1.5!important}
 main input[type=file]{font-size:.875rem!important;padding:6px!important}
 main input[type=file]::file-selector-button{font-size:.875rem!important;padding:7px 10px!important}
 
+/* Conversation log: prevent form controls from pushing through the saved-log column. */
+.conversation-layout,.conversation-panel,.conversation-grid>div{min-width:0}
+.conversation-panel input:not([type="checkbox"]),.conversation-panel select,.conversation-panel textarea{width:100%}
+.conversation-panel{padding:18px!important}
+.conversation-panel h3{margin-top:0;font-size:1.15rem}
+.conversation-actions button{min-height:40px!important;padding:8px 12px!important;border:1px solid var(--tool-readable-line)!important;background:color-mix(in srgb,var(--panel,#181b21) 82%,white 8%)!important;color:var(--text,#eee)!important}
+.conversation-actions #parseLog,.conversation-actions #saveLog{border-color:var(--accent,#d9b85b)!important;background:var(--accent,#d9b85b)!important;color:#17130c!important}
+
+/* PDF cleaner: its intentionally quiet text actions still need obvious boundaries. */
+.pdf-cleaner-panel{padding:18px!important;border:2px solid var(--tool-readable-line)!important;border-radius:12px;background:var(--panel,#181b21)}
+.pdf-cleaner-options{padding:12px;border:1px solid var(--tool-readable-line);border-radius:9px;background:color-mix(in srgb,var(--panel,#181b21) 88%,white 4%)}
+.pdf-cleaner-grid{gap:16px!important}
+.pdf-cleaner-grid textarea{padding:12px;font-size:1rem!important;line-height:1.7}
+.pdf-cleaner-panel .text-action{min-height:36px;padding:6px 10px;border:1px solid var(--tool-readable-line);border-radius:7px;background:transparent;color:var(--text,#eee);font-weight:700}
+.pdf-cleaner-panel .compact-primary{min-height:42px!important;padding:9px 16px!important}
+
+/* Dice log's late quiet-theme rules used !important to turn controls into tiny links. */
+main .panel button:not(.ghost),main .card button:not(.ghost){
+ min-height:38px!important;padding:7px 10px!important;border:1px solid var(--tool-readable-line)!important;
+ background:color-mix(in srgb,var(--dl-panel,#181b21) 82%,white 8%)!important;color:var(--dl-text,var(--text,#eee))!important;font-size:.875rem!important
+}
+main .panel button.primary,main .card button.primary{border-color:var(--dl-accent,var(--accent,#d9b85b))!important;background:var(--dl-accent,var(--accent,#d9b85b))!important;color:#17130c!important}
+
 /* HTML editor intentionally stays dense, but navigation and editable text must be readable. */
 .app .brand-sub,.app .step,.app .switch,.app .base-select,.app .pane-meta,.app .width-readout,.app .statusbar{
   font-size:.8125rem!important
@@ -57,7 +84,7 @@ main input[type=file]::file-selector-button{font-size:.875rem!important;padding:
 
 @media(max-width:620px){
   :root{--tool-readable-body:1rem;--tool-readable-small:.875rem;--tool-readable-label:.9375rem}
-  main input,main select,main textarea{font-size:1rem!important}
+  main input:not([type="checkbox"]):not([type="radio"]),main select,main textarea{font-size:1rem!important}
   main .row,main .inline2{align-items:stretch}
   main button{min-height:44px}
   .app .topbar,.app .toolbar{gap:8px}
