@@ -1,0 +1,14 @@
+(()=>{
+"use strict";
+const DB_NAME="sakumeru-conversation-logs",DB_VERSION=1,STORE="logs";
+function openDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=()=>{const db=req.result,store=db.objectStoreNames.contains(STORE)?req.transaction.objectStore(STORE):db.createObjectStore(STORE,{keyPath:"id"});if(!store.indexNames.contains("runIds"))store.createIndex("runIds","runIds",{multiEntry:true});if(!store.indexNames.contains("updatedAt"))store.createIndex("updatedAt","updatedAt")};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error("会話ログ保存領域を開けませんでした。"))})}
+async function withStore(mode,work){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,mode),store=tx.objectStore(STORE);let result;try{result=work(store,tx)}catch(e){reject(e);return}tx.oncomplete=()=>resolve(result?.result??result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}}
+function ids(value){return [...new Set((Array.isArray(value)?value:[]).map(x=>String(x||"").trim()).filter(Boolean))]}
+function normalize(value={}){const now=new Date().toISOString(),processed=value.processed&&typeof value.processed==="object"?value.processed:{};return {...value,id:String(value.id||crypto.randomUUID()),title:String(value.title||"会話ログ"),sourceType:String(value.sourceType||"text"),source:value.source&&typeof value.source==="object"?{...value.source}:{},rawText:String(value.rawText||""),processed:{...processed,lines:(Array.isArray(processed.lines)?processed.lines:[]).map((x,i)=>({id:String(x?.id||`${value.id||"line"}-${i}`),speaker:String(x?.speaker||""),text:String(x?.text||""),kind:String(x?.kind||"speech"),sourceLine:Number(x?.sourceLine||i+1)})),excludedCount:Number(processed.excludedCount||0),speakers:ids(processed.speakers)},runIds:ids(value.runIds),albumIds:ids(value.albumIds),eventIds:ids(value.eventIds),createdAt:String(value.createdAt||now),updatedAt:now}}
+async function put(value){const row=normalize(value);await withStore("readwrite",store=>store.put(row));return row}
+async function get(id){return await withStore("readonly",store=>store.get(String(id||"")))||null}
+async function all(){const rows=await withStore("readonly",store=>store.getAll());return (Array.isArray(rows)?rows:[]).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||"")))}
+async function remove(id){await withStore("readwrite",store=>store.delete(String(id||"")));return true}
+async function byRun(runId,keysOnly=false){const key=String(runId||"");if(!key)return [];return await withStore("readonly",store=>{const index=store.index("runIds");return keysOnly?index.getAllKeys(key):index.getAll(key)})||[]}
+window.SAKUMERUConversationLogs={dbName:DB_NAME,storeName:STORE,normalize,put,get,all,remove,listByRun:runId=>byRun(runId,false),keysByRun:runId=>byRun(runId,true)};
+})();
