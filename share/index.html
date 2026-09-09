@@ -214,7 +214,10 @@
 .shared-conversation-speaker{display:flex;align-items:center;gap:7px;font-weight:700}
 .shared-conversation-speaker img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
 .shared-conversation-text{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.025);white-space:pre-wrap;overflow-wrap:anywhere}
-@media(max-width:650px){.shared-conversation-line{grid-template-columns:1fr}.shared-conversation-speaker{margin-top:5px}}
+.shared-conversation-dice{padding:8px 10px;border-left:3px solid var(--accent);border-radius:7px;background:rgba(210,164,72,.08);font-weight:700}
+.shared-article-media-group{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}.shared-article-media-group.media-count-2{grid-template-columns:repeat(2,minmax(0,1fr))}.shared-article-media-group.media-count-3{grid-template-columns:repeat(3,minmax(0,1fr))}.shared-article-media-group>.shared-article-image{width:100%;max-width:none;margin:0}.shared-article-media-group .shared-article-bgm{height:100%}
+@media(min-width:651px) and (max-width:980px){.shared-article-media-group{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.shared-conversation-line{grid-template-columns:1fr}.shared-conversation-speaker{margin-top:5px}.shared-article-media-group{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-1">
 </head>
@@ -222,7 +225,7 @@
 <div data-site-header></div>
 <main><div class="wrap share-page"><div class="hero"><h2>SHARED</h2><p>SAKU+MERUで共有されたページです。</p></div><div id="shareContent" class="share-card"><p>読み込み中...</p></div></div></main>
 <div data-site-footer></div>
-<script src="../assets/js/main.js?v=0292"></script><script src="../assets/js/supabase-config.js?v=0292"></script><script src="../assets/js/supabase-share.js?v=02307"></script><script src="../assets/js/rich-editor.js?v=0901-common1"></script>
+<script src="../assets/js/main.js?v=0292"></script><script src="../assets/js/supabase-config.js?v=0292"></script><script src="../assets/js/supabase-share.js?v=02307"></script><script src="../assets/js/rich-editor.js?v=0909-conversation-media1"></script>
 <script>
 (async()=>{
  const box=document.getElementById("shareContent");
@@ -325,6 +328,7 @@
        const type=String(b?.type||"").toLowerCase();
 
        if(type==="toggle")return `<details class="shared-article-toggle level-${level}"><summary>${esc(b.title||"トグル")}</summary><div class="shared-article-toggle-body">${renderArticleBlocks(b.children||[],level+1)}</div></details>`;
+      if(type==="mediagroup"){const mediaItems=Array.isArray(b.items)?b.items:[];return `<div class="shared-article-media-group media-count-${Math.min(3,Math.max(1,mediaItems.length))}">${renderArticleBlocks(mediaItems,level)}</div>`}
 
       if(type==="restricted"){
         return `<div class="share-article-restricted small muted">このブロックは公開範囲が限定されています。</div>`;
@@ -378,6 +382,7 @@
        return `<section class="shared-conversation">
          ${b.caption?`<div class="shared-conversation-caption">${esc(b.caption)}</div>`:""}
          ${lines.map(v=>{
+           if(String(v.kind||v.speakerType||"").toLowerCase()==="dice"){const d=v.dice||{},label=String(d.label||v.label||"").trim(),target=String(d.target??v.target??"").trim(),roll=String(d.roll??v.roll??"").trim(),result=String(d.result||v.result||"").trim();return `<div class="shared-conversation-dice">🎲 ${esc([label,target?`目標 ${target}`:"",roll?`→ ${roll}`:"",result].filter(Boolean).join("　"))}</div>`}
            const name=String(v.pcName||v.speaker||"").trim();
            const image=String(v.pcImage||"").trim();
            return `<div class="shared-conversation-line">
