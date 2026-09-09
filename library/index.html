@@ -3091,7 +3091,7 @@ function normalizeConversationLines(block){
    pcName:String(v?.pcName||""),
    pcImage:String(v?.pcImage||""),
    dice:{label:String(v?.dice?.label||v?.label||"").trim(),target:String(v?.dice?.target??v?.target??"").trim(),roll:String(v?.dice?.roll??v?.roll??"").trim(),result:String(v?.dice?.result||v?.result||"").trim()}
- })).filter(v=>v.speaker||v.text||v.kind==="dice"&&Object.values(v.dice).some(Boolean));
+ }));
  const raw=String(block?.raw||block?.text||"");
  return raw.split(/\r?\n/).map(line=>{
    const t=String(line||"").trim();
@@ -3103,7 +3103,8 @@ function normalizeConversationLines(block){
 function conversationRaw(lines){
  return (Array.isArray(lines)?lines:[]).map(v=>`${String(v?.speaker||"").trim()}｜${String(v?.text||"").trim()}`).join("\n");
 }
-function conversationBlockHasContent(b){return normalizeConversationLines(b).length>0}
+function conversationLineHasContent(v){return !!(v?.speaker||v?.text||v?.kind==="dice"&&Object.values(v.dice||{}).some(Boolean))}
+function conversationBlockHasContent(b){return normalizeConversationLines(b).some(conversationLineHasContent)}
 function conversationDiceText(v){const d=v?.dice||{};return [d.label,d.target?`目標 ${d.target}`:"",d.roll?`→ ${d.roll}`:"",d.result].filter(Boolean).join("　")}
 function articleBlocksHtml(page){
  const blocks=normalizedArticleBlocks(page);
@@ -3126,7 +3127,7 @@ function articleBlockListHtml(blocks){
      return `<section class="article-bgm-card"><div class="article-bgm-title">🎵 ${esc(b.title||"BGM")}</div><div class="article-bgm-meta">${[b.artist?`作者：${esc(b.artist)}`:"",b.scene?`使用シーン：${esc(b.scene)}`:""].filter(Boolean).join(" ／ ")}</div>${audio}${b.localAudioId?`<div class="article-local-audio">この端末の音源を読み込みます…</div>`:""}${source?`<div class="article-bgm-meta">配布元：${source}</div>`:""}${b.memo?`<div class="article-bgm-note">${esc(b.memo)}</div>`:""}</section>`;
    }
    if(b.type==="conversation"){
-     const lines=normalizeConversationLines(b);if(!lines.length)return "";
+     const lines=normalizeConversationLines(b).filter(conversationLineHasContent);if(!lines.length)return "";
      return `<section class="article-conversation">${b.caption?`<div class="article-conversation-caption">${esc(b.caption)}</div>`:""}${lines.map(v=>{
        if(v.kind==="dice")return `<div class="article-conversation-dice">🎲 ${esc(conversationDiceText(v))}</div>`;
        const pc=v.speakerType==="PC"?conversationResolvedPc(v):null,name=pc?.name||(v.speakerType==="PC"?v.pcName:"")||v.speaker||"",image=pc?.image||(v.speakerType==="PC"?v.pcImage:"")||"",guestMeta=pc?.ownerType==="guest"?guestPcImageMeta(pc.playerId,pc.plName,pc.name):null;
@@ -3403,7 +3404,7 @@ async function prepareConversationBlocksForShare(blocks){
    if(b.type==="mediaGroup"){out.push({...b,items:await prepareConversationBlocksForShare(b.items||[])});continue}
    if(b.type!=="conversation"){out.push(b);continue}
    const lines=[];
-   for(const line of normalizeConversationLines(b)){
+   for(const line of normalizeConversationLines(b).filter(conversationLineHasContent)){
      const pc=line.speakerType==="PC"?conversationResolvedPc(line):null;
      const cacheKey=pc?`${pc.ownerType||""}:${pc.id||pc.playerId||""}:${pc.name||line.speaker||""}`:`line:${line.pcImage||""}`;
      let image=cache.get(cacheKey);
@@ -3679,7 +3680,30 @@ function renderConversationImport(row,rows){
    });
  });
 }
+function bindConversationEditorDelegation(ed){
+ if(ed.dataset.conversationDelegationBound)return;
+ ed.dataset.conversationDelegationBound="1";
+ ed.addEventListener("click",event=>{
+   const add=event.target.closest('[data-conversation-line-add]'),remove=event.target.closest('[data-conversation-line-remove]');
+   const control=add||remove;if(!control||!ed.contains(control))return;
+   const row=control.closest('.article-block[data-block-type="conversation"]');if(!row)return;
+   event.preventDefault();
+   const blocks=editorBlocks(ed),found=articleBlockLocation(blocks,row.dataset.blockId);if(!found||found.block.type!=="conversation")return;
+   found.block.lines=Array.isArray(found.block.lines)?found.block.lines:[];
+   let focusId="";
+   if(add){const dice=add.dataset.conversationLineAdd==="dice";focusId=TRPG39.uuid();found.block.lines.push({id:focusId,kind:dice?"dice":"speech",speakerType:dice?"DICE":"PC",speaker:"",text:"",pcRefId:"",playerRefId:"",pcName:"",pcImage:"",dice:{label:"",target:"",roll:"",result:""}})}
+   else{const index=Number(remove.dataset.conversationLineRemove);if(Number.isInteger(index)&&index>=0)found.block.lines.splice(index,1)}
+   renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
+   if(focusId){const added=ed.querySelector(`[data-line-id="${CSS.escape(focusId)}"]`);(added?.querySelector('.articleConversationSpeaker')||added?.querySelector('.articleConversationDiceLabel'))?.focus()}
+ });
+ ed.addEventListener("change",event=>{
+   const select=event.target.closest('.articleConversationLineType');if(!select||!ed.contains(select))return;
+   const line=select.closest('.article-conversation-edit-line'),dice=select.value==="DICE";if(!line)return;
+   line.querySelector('.article-conversation-speaker-fields').hidden=dice;line.querySelector('.articleConversationText').hidden=dice;line.querySelector('.article-conversation-dice-fields').hidden=!dice;const datalist=line.querySelector('datalist');if(datalist)datalist.innerHTML=conversationSpeakerOptions(select.value);articleEditorChanged(ed);
+ });
+}
 function bindArticleEditorBlockControls(ed){
+ bindConversationEditorDelegation(ed);
  ed.querySelectorAll('.article-toggle-summary input,.article-toggle-summary select,.article-toggle-summary button').forEach(control=>control.addEventListener('click',e=>e.stopPropagation()));
  ed.querySelectorAll('[data-block-up]').forEach(b=>b.onclick=()=>moveEditorBlock(ed,b.dataset.blockUp,-1));
  ed.querySelectorAll('[data-block-down]').forEach(b=>b.onclick=()=>moveEditorBlock(ed,b.dataset.blockDown,1));
@@ -3696,9 +3720,6 @@ function bindArticleEditorBlockControls(ed){
  ed.querySelectorAll('[data-nested-add]').forEach(b=>b.onclick=()=>addEditorBlock(ed,b.dataset.nestedAdd,b.dataset.parentId||""));
  ed.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{const blocks=editorBlocks(ed),found=articleBlockLocation(blocks,b.dataset.blockRemove);if(!found)return;found.list.splice(found.index,1);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
 
- ed.querySelectorAll('.articleConversationLineType').forEach(select=>select.onchange=()=>{const line=select.closest('.article-conversation-edit-line'),dice=select.value==="DICE";line.querySelector('.article-conversation-speaker-fields').hidden=dice;line.querySelector('.articleConversationText').hidden=dice;line.querySelector('.article-conversation-dice-fields').hidden=!dice;const datalist=line.querySelector('datalist');if(datalist)datalist.innerHTML=conversationSpeakerOptions(select.value);articleEditorChanged(ed)});
- ed.querySelectorAll('[data-conversation-line-add]').forEach(button=>button.onclick=()=>{const row=button.closest('.article-block'),blocks=editorBlocks(ed),found=articleBlockLocation(blocks,row?.dataset.blockId);if(!found)return;const dice=button.dataset.conversationLineAdd==="dice";found.block.lines.push({id:TRPG39.uuid(),kind:dice?"dice":"speech",speakerType:dice?"DICE":"PC",speaker:"",text:"",pcRefId:"",playerRefId:"",pcName:"",pcImage:"",dice:{label:"",target:"",roll:"",result:""}});renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
- ed.querySelectorAll('[data-conversation-line-remove]').forEach(button=>button.onclick=()=>{const row=button.closest('.article-block'),blocks=editorBlocks(ed),found=articleBlockLocation(blocks,row?.dataset.blockId);if(!found)return;found.block.lines.splice(Number(button.dataset.conversationLineRemove),1);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
  ed.querySelectorAll('[data-media-group-add]').forEach(button=>button.onclick=()=>{const row=button.closest('.article-block'),parentId=row?.dataset.blockId||"";if(button.dataset.mediaGroupAdd==="image")return addEditorBlock(ed,"image",parentId);const value=prompt("追加する画像・YouTube・MP3のURLを入力してください。");if(value===null)return;const url=String(value||"").trim();let block=null;if(youtubeVideoId(url))block=newArticleBlock("youtube",{url});else if(/\.mp3(?:$|[?#])/i.test(url))block=newArticleBlock("bgm",{audioUrl:url,title:"BGM"});else if(/\.(?:png|jpe?g|gif|webp|avif)(?:$|[?#])/i.test(url))block=newArticleBlock("image",{url});if(!block)return alert("画像・YouTube・MP3のURLを入力してください。");const blocks=editorBlocks(ed),target=articleBlockContainer(blocks,parentId);if(!target)return;block.visibility=row.querySelector(':scope > .article-block-visibility .articleBlockVisibility')?.value||"private";target.push(block);renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed)});
 
  ed.querySelectorAll('[data-conversation-import-open]').forEach(b=>b.onclick=()=>{const row=b.closest('.article-block'),box=row?.querySelector('.conversation-importer');if(box)box.hidden=false});
