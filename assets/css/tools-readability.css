@@ -1,0 +1,65 @@
+/* TOOLS shared readability layer. Tool logic and layout dimensions stay page-owned. */
+:root{
+  --tool-readable-body:1rem;
+  --tool-readable-small:.875rem;
+  --tool-readable-label:.9375rem;
+  --tool-readable-control:1rem;
+  --tool-readable-line:color-mix(in srgb,currentColor 30%,transparent);
+}
+
+body{font-size:var(--tool-readable-body);line-height:1.65}
+main .hero p,main p,main li{line-height:1.7}
+main .small,main .muted,main .status-note,main .dm-note{font-size:var(--tool-readable-small)!important;line-height:1.65!important}
+main label{font-size:var(--tool-readable-label)!important;line-height:1.5;font-weight:700}
+main input,main select,main textarea,main button{
+  min-height:42px;font-size:var(--tool-readable-control)!important;line-height:1.45
+}
+main input,main select,main textarea{
+  border-width:2px!important;border-color:var(--tool-readable-line)!important
+}
+main input:focus-visible,main select:focus-visible,main textarea:focus-visible,main button:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--accent,#d9b85b) 72%,transparent)!important;
+  outline-offset:2px;box-shadow:none
+}
+main button{font-weight:750}
+main .panel,main .card,main .option-box,main .dm-panel,main .tool-card{
+  border-width:2px!important;border-color:var(--tool-readable-line)!important
+}
+main .panel h2,main .card h2{font-size:1.2rem!important;line-height:1.45}
+main .panel h3,main .card h3{font-size:1.05rem!important;line-height:1.5}
+main details>summary{min-height:42px;font-size:1rem;font-weight:750}
+
+/* Tool list: cards remain compact, while their targets and descriptions are legible. */
+main .tool-grid .card,main .tools-grid .card{padding:16px}
+main .tool-grid .card p,main .tools-grid .card p{font-size:.9375rem}
+
+/* Dice log had several late 10.5-12.5px overrides. */
+main .dice-table th{font-size:.8125rem!important;padding:8px!important}
+main .dice-table td{font-size:.875rem!important;padding:8px!important;line-height:1.5!important}
+main .source-preview{font-size:.875rem!important;line-height:1.6!important}
+main .badge{font-size:.8125rem!important;padding:3px 7px!important}
+main .stat,main .stat b{font-size:.875rem!important}
+main .checkline{font-size:.9375rem!important;line-height:1.5!important}
+main input[type=file]{font-size:.875rem!important;padding:6px!important}
+main input[type=file]::file-selector-button{font-size:.875rem!important;padding:7px 10px!important}
+
+/* HTML editor intentionally stays dense, but navigation and editable text must be readable. */
+.app .brand-sub,.app .step,.app .switch,.app .base-select,.app .pane-meta,.app .width-readout,.app .statusbar{
+  font-size:.8125rem!important
+}
+.app button,.app select,.app input{min-height:38px;font-size:.875rem!important}
+.app button:focus-visible,.app select:focus-visible,.app input:focus-visible,.app textarea:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--gold,#d9b85b) 75%,transparent);outline-offset:2px
+}
+.app .code,.app .lines{font-size:.875rem!important;line-height:1.65!important}
+.app .pane-head,.app .toolbar,.app .topbar,.app .statusbar{border-color:var(--tool-readable-line)!important}
+.app .searchbar,.app .preview-mode,.app .base-select select{border-width:2px!important}
+
+@media(max-width:620px){
+  :root{--tool-readable-body:1rem;--tool-readable-small:.875rem;--tool-readable-label:.9375rem}
+  main input,main select,main textarea{font-size:1rem!important}
+  main .row,main .inline2{align-items:stretch}
+  main button{min-height:44px}
+  .app .topbar,.app .toolbar{gap:8px}
+  .app .code,.app .lines{font-size:.875rem!important}
+}
