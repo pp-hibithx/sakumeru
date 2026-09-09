@@ -3109,6 +3109,12 @@ function conversationRaw(lines){
 function conversationLineHasContent(v){return !!(v?.speaker||v?.text||v?.kind==="dice"&&Object.values(v.dice||{}).some(Boolean))}
 function conversationBlockHasContent(b){return normalizeConversationLines(b).some(conversationLineHasContent)}
 function conversationDiceText(v){const d=v?.dice||{};return [d.label,d.target?`目標 ${d.target}`:"",d.roll?`→ ${d.roll}`:"",d.result].filter(Boolean).join("　")}
+function conversationPresentation(v){
+ const role=String(v?.speakerType||"PC").toUpperCase(),rawSpeaker=String(v?.speaker||"").trim();let text=String(v?.text||"");let speaker=rawSpeaker;
+ if((role==="KP"||role==="PL")&&!text&&(/[「」『』\n]/.test(speaker)||speaker.length>14)){text=speaker;speaker=""}
+ const roleName=role==="KP"?(speaker&&speaker!=="KP"?`KP：${speaker}`:"KP"):role==="PL"?(speaker&&speaker!=="PL"?`PL：${speaker}`:"PL"):speaker;
+ return {role,name:roleName,text};
+}
 function articleBlocksHtml(page){
  const blocks=normalizedArticleBlocks(page);
  if(!blocks.length)return '<div class="lib-article-render"><div class="small muted">本文はまだありません。</div></div>';
@@ -3133,9 +3139,9 @@ function articleBlockListHtml(blocks){
      const lines=normalizeConversationLines(b).filter(conversationLineHasContent);if(!lines.length)return "";
      return `<section class="article-conversation">${b.caption?`<div class="article-conversation-caption">${esc(b.caption)}</div>`:""}${lines.map(v=>{
        if(v.kind==="dice")return `<div class="article-conversation-dice">🎲 ${esc(conversationDiceText(v))}</div>`;
-       const pc=v.speakerType==="PC"?conversationResolvedPc(v):null,name=pc?.name||(v.speakerType==="PC"?v.pcName:"")||v.speaker||"",image=pc?.image||(v.speakerType==="PC"?v.pcImage:"")||"",guestMeta=pc?.ownerType==="guest"?guestPcImageMeta(pc.playerId,pc.plName,pc.name):null;
+       const shown=conversationPresentation(v),pc=shown.role==="PC"?conversationResolvedPc(v):null,name=pc?.name||(shown.role==="PC"?v.pcName:"")||shown.name||"",image=pc?.image||(shown.role==="PC"?v.pcImage:"")||"",guestMeta=pc?.ownerType==="guest"?guestPcImageMeta(pc.playerId,pc.plName,pc.name):null;
        const localAttrs=guestMeta?.local?` data-guest-avatar-player="${esc(pc.playerId||"")}" data-guest-avatar-pl="${esc(pc.plName||"")}" data-guest-avatar-pc="${esc(pc.name||"")}"`:"";
-       return `<div class="article-conversation-line">${name?`<div class="article-conversation-speaker">${image?`<img class="article-conversation-avatar" src="${esc(image)}" alt="" loading="lazy">`:(guestMeta?.local?`<img class="article-conversation-avatar" alt=""${localAttrs}>`:"")}<span>${esc(name)}</span></div>`:""}<div class="article-conversation-text">${esc(v.text)}</div></div>`;
+       return `<div class="article-conversation-line">${name?`<div class="article-conversation-speaker">${image?`<img class="article-conversation-avatar" src="${esc(image)}" alt="" loading="lazy">`:(guestMeta?.local?`<img class="article-conversation-avatar" alt=""${localAttrs}>`:"")}<span>${esc(name)}</span></div>`:""}<div class="article-conversation-text">${esc(shown.text)}</div></div>`;
      }).join("")}</section>`;
    }
    if(b.type==="youtube"){
