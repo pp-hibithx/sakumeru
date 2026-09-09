@@ -1196,6 +1196,74 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"] .sm-rich-editor{min-height:52px;padding:9px 4px}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks .article-toggle-block{margin:3px 0}
 @media(max-width:620px){.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-head,.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-visibility{position:static;float:none}.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-head{display:flex;justify-content:flex-end;height:28px}.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-visibility{display:flex;min-height:28px;margin-top:-28px;padding-right:52px;justify-content:flex-end}.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"] .sm-rich-toolbar{padding-right:8px;margin-top:3px}}
+
+/* 卓記事は一枚の編集面として見せる。block/children[] は保存と並び替えのために維持する。 */
+.lib-article-editor:not(.article-reorder-mode) .article-blocks{
+ display:block;padding:0;border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--panel);overflow:visible
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block{
+ margin:0!important;padding:0 14px!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]:first-child{
+ padding-top:10px!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-head,
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block[data-block-type="text"]>.article-block-head{
+ display:none!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-visibility{
+ position:static;width:100%;min-height:36px;margin:0 0 6px;padding:0 0 6px;border-bottom:1px solid var(--line);justify-content:flex-end
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-visibility label{
+ display:block;font-size:.78rem
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-toolbar{
+ padding:7px 0!important;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-shell{
+ border:0;border-radius:0;background:transparent
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-editor{
+ min-height:120px;padding:12px 2px
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-block{
+ margin:4px 14px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-block>summary{
+ min-height:38px;padding:4px 0;border-bottom:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));background:transparent
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children{
+ display:block;margin:0 0 8px 7px;padding:5px 0 5px 14px;border-left:2px solid color-mix(in srgb,var(--accent) 68%,var(--line));background:transparent
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block{
+ margin:0!important;padding:0 0 0 2px!important;border:0!important;background:transparent!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block>.article-block-visibility{
+ min-height:0;margin:0;padding:2px 0;border:0;background:transparent;opacity:.72
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block>.article-block-visibility label{display:none}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children .sm-rich-shell{
+ border:0!important;border-radius:0!important;background:transparent!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children .sm-rich-editor{
+ min-height:54px;padding:7px 2px
+}
+/* 子本文は読む形を優先し、操作中だけ同じRichEditorツールバーを出す。 */
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children .sm-rich-toolbar{
+ display:none;position:static;padding:6px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children .sm-rich-shell:focus-within>.sm-rich-toolbar{
+ display:flex
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children .article-toggle-block{
+ margin:3px 0 3px 5px!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-tree-dropzone{display:none}
+@media(max-width:620px){
+ .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block{padding-left:9px!important;padding-right:9px!important}
+ .lib-article-editor:not(.article-reorder-mode) .article-toggle-block{margin-left:9px!important;margin-right:9px!important}
+ .lib-article-editor:not(.article-reorder-mode) .article-toggle-children{margin-left:4px;padding-left:9px}
+}
 .article-empty-toggle-add{width:auto;justify-self:start;margin:8px 0;min-height:40px}
 .article-draft-notice{border:3px solid color-mix(in srgb,#e0a83b 72%,currentColor);background:color-mix(in srgb,var(--panel) 88%,#e0a83b 12%)}
 .danger{border-color:color-mix(in srgb,#d75b64 72%,currentColor)!important;color:color-mix(in srgb,#ff7b84 82%,currentColor)!important;background:transparent!important}
@@ -3085,7 +3153,7 @@ function articlePagesHtml(r){
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
      <div class="article-save-status" role="status" aria-live="assertive" hidden></div>
      <label>ページタイトル</label><input class="articleTitle" placeholder="例：セッション感想／KPメモ／あとがき">
-      <div class="article-block-toolbar article-editor-modebar"><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div><div class="small muted article-block-help">文章ツールバーの［トグル］［画像］［URL取り込み］は、本文HTMLではなく現在の階層へ独立ブロックとして追加されます。［並び替え］で構造整理へ切り替わります。</div>
+      <div class="article-block-toolbar article-editor-modebar"><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div><div class="small muted article-block-help">本文ツールバーから、現在書いている場所にトグル・画像・URL・音声を追加できます。トグルの中でも同じ操作が使えます。</div>
      <div class="article-blocks"></div>
      <div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
