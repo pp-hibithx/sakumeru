@@ -36,6 +36,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-run-thumbs{display:inline-flex;align-items:center;gap:4px;margin-left:6px}.lib-run-thumbs img{width:46px;height:34px;object-fit:cover;border-radius:5px;border:1px solid var(--line)}
 .lib-run-more{display:grid;place-items:center;min-width:34px;height:34px;padding:0 5px;border-radius:5px;background:rgba(255,255,255,.06);font-size:12px}
 .lib-dice{margin-top:8px;padding:7px 9px;border:1px solid var(--line);border-radius:7px}.lib-dice>summary{cursor:pointer;font-weight:600}.lib-dice-card{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
+.lib-conversation-logs{margin:12px 0;border:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-left:5px solid var(--accent);border-radius:10px;background:var(--panel)}.lib-conversation-logs[hidden]{display:none}.lib-conversation-logs>details>summary{cursor:pointer;padding:11px 13px;font-weight:800}.lib-conversation-log-list{display:grid;gap:8px;padding:0 12px 12px}.lib-conversation-log{border:1px solid var(--line);border-radius:8px;overflow:hidden}.lib-conversation-log>summary{cursor:pointer;padding:9px 11px;font-weight:700}.lib-conversation-log-body{display:grid;gap:6px;padding:4px 10px 10px;max-height:520px;overflow:auto}.lib-conversation-line{display:grid;grid-template-columns:minmax(90px,160px) minmax(0,1fr);gap:8px;padding:7px;border-top:1px solid var(--line)}.lib-conversation-speaker{font-weight:800;overflow-wrap:anywhere}.lib-conversation-text{white-space:pre-wrap;overflow-wrap:anywhere}.lib-conversation-tools{padding:0 12px 12px}.lib-conversation-tools a{display:inline-block}@media(max-width:560px){.lib-conversation-line{grid-template-columns:1fr;gap:2px}}
 
 .library-play-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px;grid-column:1/-1}
 .library-play-tab{width:auto}
@@ -1439,6 +1440,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=02309"></script>
 <script src="../assets/js/rich-editor.js?v=0908-toolbar1"></script>
+<script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id);
@@ -2661,6 +2663,17 @@ function addForRun(scenarioId,runId,runLabel=""){
 function diceAnalysisHtml(x){
  const list=x.diceAnalyses||[];if(!list.length)return "";
  return `<details class="lib-dice"><summary>🎲 ダイスログ解析結果${list.length>1?` (${list.length})`:""}</summary>${list.map(a=>{const cf=a.criticalFumble||{},growth=a.growth||[];return `<div class="lib-dice-card"><div class="small muted">${esc(a.label||"解析結果")}</div><div><b>クリティカル ${Number(cf.critical||0)}</b> ／ <b>ファンブル ${Number(cf.fumble||0)}</b> ／ 成長候補 ${growth.length}</div>${(a.bySpeaker||[]).map(r=>`<div class="small"><b>${esc(r.speaker)}</b>：クリ ${r.critical||0} ／ ファン ${r.fumble||0}</div>`).join("")}${growth.length?`<details><summary class="small">成長候補を見る</summary>${growth.map(g=>`<div class="small">${esc(g.speaker)}｜${esc(g.skill)}｜${esc(g.roll)}</div>`).join("")}</details>`:""}</div>`}).join("")}</details>`;
+}
+function conversationLogsSectionHtml(runId){
+ const id=esc(runId||"");return `<section class="lib-conversation-logs" data-conversation-run="${id}" hidden><details><summary>💬 会話ログ <span class="small muted" data-conversation-count></span></summary><div class="lib-conversation-log-list" data-conversation-list><div class="small muted">開くと会話ログを読み込みます。</div></div><div class="lib-conversation-tools"><a class="link" href="../tools/conversation-log/index.html?runId=${encodeURIComponent(runId||"")}">会話ログを追加・編集</a></div></details></section>`;
+}
+function conversationLogLinesHtml(log){
+ const lines=Array.isArray(log?.processed?.lines)?log.processed.lines:[];return lines.length?lines.map(x=>`<div class="lib-conversation-line"><div class="lib-conversation-speaker">${esc(x.speaker||"発言者未設定")}</div><div class="lib-conversation-text">${esc(x.text||"")}</div></div>`).join(""):'<div class="small muted">表示できる発言はありません。</div>';
+}
+async function hydrateConversationLogSections(root=document){
+ if(!window.SAKUMERUConversationLogs)return;
+ const sections=[...root.querySelectorAll('[data-conversation-run]')];
+ await Promise.all(sections.map(async section=>{try{const runId=section.dataset.conversationRun||"",keys=await SAKUMERUConversationLogs.keysByRun(runId);if(!keys.length)return;section.hidden=false;section.querySelector('[data-conversation-count]').textContent=`${keys.length}件`;const outer=section.querySelector(':scope > details'),list=section.querySelector('[data-conversation-list]');outer.addEventListener('toggle',async()=>{if(!outer.open||outer.dataset.loaded)return;outer.dataset.loaded="1";list.innerHTML='<div class="small muted">読み込み中…</div>';try{const logs=await SAKUMERUConversationLogs.listByRun(runId);list.innerHTML=logs.map(log=>`<details class="lib-conversation-log" data-conversation-log="${esc(log.id)}"><summary>${esc(log.title||"会話ログ")} <span class="small muted">${Number(log.processed?.lines?.length||0)}行</span></summary><div class="lib-conversation-log-body"><div class="small muted">開くと本文を表示します。</div></div></details>`).join("");const byId=new Map(logs.map(x=>[String(x.id),x]));list.querySelectorAll('[data-conversation-log]').forEach(details=>details.addEventListener('toggle',()=>{if(!details.open||details.dataset.rendered)return;details.dataset.rendered="1";const log=byId.get(details.dataset.conversationLog),body=details.querySelector('.lib-conversation-log-body');if(body)body.innerHTML=conversationLogLinesHtml(log)}))}catch(e){console.error("会話ログを読み込めませんでした",e);list.innerHTML='<div class="small muted">会話ログを読み込めませんでした。</div>'}}, {passive:true})}catch(e){console.error("会話ログの関連確認に失敗しました",e)}}));
 }
 
 function xReportsForRun(run){
@@ -4064,6 +4077,7 @@ function runDetailHtml(g,r){
  <div id="runRosterBulk-${esc(r.id)}" class="run-roster-bulk" hidden></div>
  ${xReportsRunHtml(r)}
  ${images.length?`<div class="lib-run-gallery">${images.map((u,i)=>`<img src="${esc(u)}" alt="スクリーンショット ${i+1}" loading="lazy" data-sm-image-expand>`).join("")}</div>`:""}
+ ${conversationLogsSectionHtml(r.id)}
  ${articlePagesHtml(r)}
  <div class="lib-session-groups">
    ${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="prelude"),"prelude","事前導入")}
@@ -5940,7 +5954,7 @@ function render(){
    });
    bindRunMergeRepair();
    bindCoverAdjustButtons();
-   bindArticlePageButtons();hydrateGuestPcAvatars(document);hydrateLocalArticleAudio(q("list"));
+   bindArticlePageButtons();hydrateGuestPcAvatars(document);hydrateLocalArticleAudio(q("list"));hydrateConversationLogSections(q("list"));
  }else{
    q("list").classList.remove("library-grid");
    const visibleGroupsAll=groups.filter(groupMatchesPlayFilter);
