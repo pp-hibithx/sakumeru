@@ -6048,6 +6048,36 @@ function bindRunMergeRepair(){
 
 
 let libraryYearFilter=String(new Date().getFullYear());
+let librarySearchTerm="";
+
+function normalizeLibrarySearch(value){
+ return String(value||"").normalize("NFKC").trim().toLocaleLowerCase("ja");
+}
+function libraryRecordSearchText(record){
+ const x=record||{},scenario=scenarioById(x.scenarioId||"")||{};
+ const participantRows=rowsFromRecord(x);
+ const selfRows=storedSelfPcRows(x);
+ const participantText=participantRows.flatMap(row=>[
+   row?.plName,row?.pcName,row?.ho,row?.role,
+   row?.playerId&&players.find(p=>String(p.id)===String(row.playerId))?.name,
+   row?.pcId&&pcs.find(p=>String(p.id)===String(row.pcId))?.name
+ ]);
+ const selfPcText=selfRows.flatMap(row=>[
+   row?.pcName,row?.ho,row?.pcId&&pcs.find(p=>String(p.id)===String(row.pcId))?.name
+ ]);
+ return normalizeLibrarySearch([
+   x.title,scenario.title,scenario.shortTitle,scenario.system,scenario.author,
+   x.runLabel,x.system,x.role,displayRoleForRecord(x),x.pcName,
+   ...(x.participants||[]),...participantText,...selfPcText,
+   x.comment,x.xReportText
+ ].filter(Boolean).join(" "));
+}
+function libraryRecordMatchesSearch(record,term=librarySearchTerm){
+ const words=normalizeLibrarySearch(term).split(/\s+/).filter(Boolean);
+ if(!words.length)return true;
+ const haystack=libraryRecordSearchText(record);
+ return words.every(word=>haystack.includes(word));
+}
 
 function libraryGroupYear(g){
  const d=String(g.lastDate||g.firstDate||"").trim();
@@ -6078,7 +6108,8 @@ function render(){
  sessionKindEventIndex=null;
  const gridGeneration=++libraryGridRenderGeneration;
  syncLibraryView();
- const term=q("search").value.trim().toLowerCase(),role=q("filter").value,params=new URLSearchParams(location.search);
+ librarySearchTerm=normalizeLibrarySearch(q("search").value);
+ const term=librarySearchTerm,role=q("filter").value,params=new URLSearchParams(location.search);
  const player=params.get("player")||"",playerId=params.get("playerId")||"",pc=params.get("pc")||"",pcId=params.get("pcId")||"";
  const filterPlayer=playerId?players.find(p=>String(p.id)===String(playerId)):players.find(p=>playerNameSet(p).has(normDirectoryName(player)));
  const filterPc=pcId?pcs.find(p=>String(p.id)===String(pcId)):pcs.find(p=>normDirectoryName(p.name)===normDirectoryName(pc));
@@ -6086,7 +6117,7 @@ function render(){
    (!role||x.role===role) &&
    (!filterPlayer||recordHasPlayer(x,filterPlayer)) &&
    (!filterPc||(pcId?recordHasExactPcId(x,pcId):recordHasSelfPc(x,filterPc))) &&
-   (!term||[x.title,x.system,x.pcName,(x.participants||[]).join(" ")].join(" ").toLowerCase().includes(term))
+   libraryRecordMatchesSearch(x,term)
  );
  const archiveMode=q("archiveFilter")?.value||"active";
  xs=xs.filter(x=>archiveMode==="all"||(archiveMode==="archived"?!!x.archived:!x.archived));
@@ -6241,7 +6272,7 @@ q("cancel").onclick=()=>{reset();hideEditor()};
 
 q("openLibraryEditor").onclick=()=>{reset();showEditor();q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"})};q("xReportGalleryClose").onclick=()=>q("xReportGallery").close();q("xReportGallery").addEventListener("click",e=>{if(e.target===q("xReportGallery"))q("xReportGallery").close()});
 q("xPreviewText").oninput=updateXPreviewCount;q("xPreviewCancel").onclick=()=>q("xPreviewDialog").close();q("xPreviewPost").onclick=confirmPostAlbumToX;q("postSaveClose").onclick=()=>q("postSaveDialog").close();q("postSaveX").onclick=()=>{const c=postSaveContext;q("postSaveDialog").close();if(c?.id)postAlbumToX(c.id)};q("postSaveArticle").onclick=()=>{const c=postSaveContext;q("postSaveDialog").close();if(c?.runId)openArticleEditor(c.runId)};
-q("search").oninput=()=>{focusedScenarioKey="";focusedRunId="";focusedPlayerId="";render()};
+q("search").oninput=()=>{librarySearchTerm=normalizeLibrarySearch(q("search").value);focusedScenarioKey="";focusedRunId="";focusedPlayerId="";render()};
 q("filter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};q("archiveFilter").onchange=()=>{focusedScenarioKey="";focusedRunId="";render()};
 q("addExternalLink").onclick=()=>addLinkRow();q("addSelfPc").onclick=()=>addSelfPcRow({});q("addParticipantRow").onclick=()=>addParticipantRow();
 q("coverCancel").onclick=closeCoverEditor;
