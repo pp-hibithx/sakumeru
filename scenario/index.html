@@ -303,8 +303,18 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 <div class="sc-row"><div><label>公開状況</label><select id="publicationStatus"><option value="public">公開中</option><option value="private">現在非公開</option><option value="unpublished">未公開（自作・テストプレイ等）</option><option value="ended">頒布終了</option><option value="unknown">未確認</option></select></div><div><label>情報の出典</label><select id="sourceType"><option value="">未設定</option><option>BOOTH</option><option>pixiv</option><option>TALTO</option><option>公式ページ</option><option>手入力</option><option>その他</option></select></div></div>
 <div class="sc-row"><div><label>参加人数</label><div class="sc-row"><input id="playersMin" type="number" min="1" step="1" placeholder="最少"><input id="playersMax" type="number" min="1" step="1" placeholder="最大"></div></div><div><label>プレイ時間（時間）</label><div class="sc-row"><input id="hoursMin" type="number" min="0.5" step="0.5" placeholder="最短"><input id="hoursMax" type="number" min="0.5" step="0.5" placeholder="最長"></div></div></div>
 <label>配布・販売ページ</label>
-<div class="sc-inline"><input id="url" type="url" placeholder="https://booth.pm/ja/items/..."><button id="fetchThumb" type="button">URLからサムネイル取得</button></div>
+<div class="sc-inline"><input id="url" type="url" placeholder="https://booth.pm/ja/items/..."><button id="fetchThumb" type="button">URLから情報取得</button></div>
 <div id="thumbStatus" class="small muted"></div>
+<div id="urlInfoPreview" class="card" style="margin-top:8px;padding:10px" hidden>
+  <strong>取得した情報（候補）</strong>
+  <div class="small muted" style="margin-top:4px">空欄の基本情報だけ自動入力します。入力済み項目と概要は、下の候補から明示的に採用するまで変更しません。</div>
+  <div id="urlInfoCandidateList" class="small" style="display:grid;gap:6px;margin-top:8px"></div>
+  <div id="urlSummaryCandidateWrap" hidden style="margin-top:9px">
+    <label for="urlSummaryCandidate">取得した概要</label>
+    <textarea id="urlSummaryCandidate" rows="4" readonly></textarea>
+    <button id="applyUrlSummary" type="button">概要欄へ採用</button>
+  </div>
+</div>
 <label class="sc-source-warning-setting"><input id="sourceSpoilerWarning" type="checkbox"> URL先ネタバレ注意</label>
 <div class="small muted">掲載ページを確認し、リンク先に真相・秘匿・ネタバレを含む可能性がある場合に設定してください。自動判定はしません。</div>
 <label>トレーラー画像 <span class="small muted">（最大4枚／1枚目が一覧サムネ）</span></label>
@@ -374,7 +384,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=0292"></script>
-<script src="../assets/js/og-preview.js?v=0910-manual-thumb1"></script>
+<script src="../assets/js/og-preview.js?v=0910-manual-info1"></script>
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id),flags={owned:"所持",played:"通過済み",watched:"視聴済み",planned:"通過予定",kpDone:"回した",kpPlanned:"回す予定",wish:"気になる",roomReady:"部屋あり"};
@@ -688,7 +698,7 @@ async function uploadRoomImage(){
  q("roomImageFile").value="";
  updateRoomImageUI();
 }
-function reset(){editingTrailerUrls=[];editingDisplayImageMode="thumbnail";q("editId").value="";q("draftId").value="";["title","shortTitle","sortKana","system","author","url","thumbnailUrl","roomImageUrl","playersMin","playersMax","hoursMin","hoursMax","summaryText","summaryBackup","summaryBackupFetchedAt","tags","privateMemo","facilitatorTermCustom"].forEach(x=>q(x).value="");document.querySelectorAll(".flag").forEach(x=>x.checked=false);q("sourceSpoilerWarning").checked=false;q("publicationStatus").value="public";q("sourceType").value="";q("roomImageVisibility").value="private";updateRoomImageUI();q("facilitatorPresence").value="present";q("facilitatorTermMode").value="auto";q("formHeading").textContent="シナリオを登録";q("cancel").hidden=true;q("thumbStatus").textContent="";clearSaveStatus();updateLegacySummaryNotice();updateFacilitatorUI();updateThumbPreview();q("scenarioForm").classList.remove("open")}
+function reset(){editingTrailerUrls=[];editingDisplayImageMode="thumbnail";q("editId").value="";q("draftId").value="";["title","shortTitle","sortKana","system","author","url","thumbnailUrl","roomImageUrl","playersMin","playersMax","hoursMin","hoursMax","summaryText","summaryBackup","summaryBackupFetchedAt","tags","privateMemo","facilitatorTermCustom"].forEach(x=>q(x).value="");document.querySelectorAll(".flag").forEach(x=>x.checked=false);q("sourceSpoilerWarning").checked=false;q("publicationStatus").value="public";q("sourceType").value="";q("roomImageVisibility").value="private";updateRoomImageUI();q("facilitatorPresence").value="present";q("facilitatorTermMode").value="auto";q("formHeading").textContent="シナリオを登録";q("cancel").hidden=true;q("thumbStatus").textContent="";q("urlInfoPreview").hidden=true;q("urlInfoCandidateList").innerHTML="";q("urlSummaryCandidate").value="";clearSaveStatus();updateLegacySummaryNotice();updateFacilitatorUI();updateThumbPreview();q("scenarioForm").classList.remove("open")}
 function openForm(){q("scenarioForm").classList.add("open");scrollTo({top:q("scenarioForm").offsetTop-18,behavior:"smooth"})}
 function save(){let title=q("title").value.trim();if(!title)return alert("シナリオ名を入力してください。");let id=q("editId").value||TRPG39.uuid(),i=data.findIndex(x=>x.id===id),old=i>=0?data[i]:null,now=new Date().toISOString();let item={...(old||{}),id,title,shortTitle:q("shortTitle").value.trim(),sortKana:q("sortKana").value.trim(),system:q("system").value.trim(),author:q("author").value.trim(),playersMin:Number(q("playersMin").value)||null,playersMax:Number(q("playersMax").value)||null,hoursMin:Number(q("hoursMin").value)||null,hoursMax:Number(q("hoursMax").value)||null,url:q("url").value.trim(),thumbnailUrl:(editingTrailerUrls[0]||q("thumbnailUrl").value.trim()),trailerUrls:normalizedTrailerUrls(editingTrailerUrls),displayImageMode:(editingTrailerUrls.length?editingDisplayImageMode:"brand"),roomImageUrl:q("roomImageUrl").value.trim(),roomImageVisibility:q("roomImageVisibility").value||"private",publicationStatus:q("publicationStatus").value||"public",sourceType:q("sourceType").value||"",sourceSpoilerWarning:!!q("sourceSpoilerWarning").checked,summaryText:q("summaryText").value.trim(),summaryBackup:q("summaryBackup").value||old?.summaryBackup||"",summaryBackupFetchedAt:q("summaryBackupFetchedAt").value||old?.summaryBackupFetchedAt||"",tags:q("tags").value.split(/[,、]/).map(v=>v.trim()).filter(Boolean),privateMemo:q("privateMemo").value.trim(),archived:!!old?.archived,facilitatorPresence:q("facilitatorPresence").value||"present",facilitatorTermMode:q("facilitatorTermMode").value||"auto",facilitatorTermCustom:q("facilitatorTermCustom").value.trim(),lastChecked:new Date().toISOString().slice(0,10),flags:Object.fromEntries([...document.querySelectorAll(".flag")].map(x=>[x.value,x.checked])),createdAt:old?.createdAt||now,updatedAt:now};
  const next=data.slice();
@@ -1385,34 +1395,65 @@ function cleanScenarioTitle(rawTitle, circleName=""){
  return s;
 }
 
+function manualInfoRange(text,labelPattern,unitPattern){
+ const normalized=String(text||"").replace(/[０-９．]/g,c=>c==="．"?".":String(c.charCodeAt(0)-0xFEE0));
+ const labeled=normalized.match(new RegExp(`(?:${labelPattern})\\s*[：:]?\\s*([^\\n]{1,100})`,"i"));
+ if(!labeled)return {min:"",max:"",text:""};
+ const range=labeled[1].match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:${unitPattern})?\\s*[～〜~\\-–—\\/]\\s*(?:最大|約)?\\s*(\\d+(?:\\.\\d+)?)\\s*(?:${unitPattern})`,"i"));
+ if(range)return {min:range[1],max:range[2],text:labeled[0].trim()};
+ const single=labeled[1].match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:${unitPattern})`,"i"));
+ return single?{min:single[1],max:single[1],text:labeled[0].trim()}:{min:"",max:"",text:labeled[0].trim()};
+}
+function manualInfoSystem(text){
+ const rows=[[/新クトゥルフ神話TRPG|(?:CoC)\s*(?:7版|7th)/i,"CoC7版"],[/クトゥルフ神話TRPG\s*(?:第?6版|6th)|(?:CoC)\s*(?:6版|6th)/i,"CoC6版"],[/クトゥルフ神話TRPG/i,"CoC"],[/エモクロアTRPG/i,"エモクロアTRPG"],[/ダブルクロス(?:The\s*3rd\s*Edition)?/i,"ダブルクロス3rd"],[/マーダーミステリー/i,"マーダーミステリー"]];
+ return rows.find(([re])=>re.test(text))?.[1]||"";
+}
+function deriveManualScenarioInfo(meta,source){
+ const rawTitle=String(meta?.title||""),description=String(meta?.backupDescription||meta?.description||"").trim();
+ let author=String(meta?.author||"").trim();
+ if(!author&&source==="BOOTH")author=rawTitle.match(/\s+-\s+(.+?)\s+-\s+BOOTH\s*$/i)?.[1]||"";
+ if(!author&&source==="pixiv")author=rawTitle.match(/\|\s*([^|]+?)\s*(?:#pixiv)?\s*$/i)?.[1]||"";
+ const searchable=[rawTitle,description].join("\n");
+ const players=(meta?.playersMin||meta?.playersMax)?{min:meta.playersMin||"",max:meta.playersMax||meta.playersMin||"",text:meta.playersText||""}:manualInfoRange(searchable,"プレイ人数|PL人数|推奨人数|参加人数|プレイヤー人数|人数","人|PL");
+ const hours=(meta?.hoursMin||meta?.hoursMax)?{min:meta.hoursMin||"",max:meta.hoursMax||meta.hoursMin||"",text:meta.hoursText||""}:manualInfoRange(searchable,"プレイ時間|想定時間|所要時間|セッション時間|時間","時間|h|hr");
+ return {...meta,author,backupDescription:description,system:String(meta?.system||"").trim()||manualInfoSystem(searchable),playersMin:players.min,playersMax:players.max,playersText:players.text,hoursMin:hours.min,hoursMax:hours.max,hoursText:hours.text};
+}
+
 async function fetchThumbnail(){
  const url=q("url").value.trim();
  if(!url)return alert("配布・掲載ページのURLを入力してください。");
  const button=q("fetchThumb"),previousMode=editingDisplayImageMode;
- button.disabled=true;button.textContent="取得中…";q("thumbStatus").textContent="サムネイルを取得しています…";
+ button.disabled=true;button.textContent="取得中…";q("thumbStatus").textContent="ページの公開情報を取得しています…";
  try{
    const parsed=new URL(url);
    if(!/^https?:$/.test(parsed.protocol))throw new Error("http/httpsのURLを入力してください。");
    const source=scenarioSourceLabel({url});
    const sourceValue=source==="外部サイト"?"その他":source;
-   q("sourceType").value=sourceValue;
-   if(!window.TRPG39OG)throw new Error("サムネイル取得機能を読み込めませんでした。");
-   const meta=await TRPG39OG.fetch(url),image=String(meta?.image||"").trim();
-   if(!image)throw new Error("このページからサムネイル画像を取得できませんでした。");
-   const duplicate=editingTrailerUrls.includes(image);
-   if(!duplicate){
-     if(editingTrailerUrls.length>=4)throw new Error("トレーラー画像は最大4枚です。既存画像を整理してから再度取得してください。");
-     editingTrailerUrls=[...editingTrailerUrls,image];
-   }
+   if(!q("sourceType").value)q("sourceType").value=sourceValue;
+   if(!window.TRPG39OG)throw new Error("URL情報取得機能を読み込めませんでした。");
+   const meta=deriveManualScenarioInfo(await TRPG39OG.fetch(url),source);
+   const image=String(meta?.image||"").trim(),duplicate=image&&editingTrailerUrls.includes(image);
+   if(image&&!duplicate&&editingTrailerUrls.length<4)editingTrailerUrls=[...editingTrailerUrls,image];
    editingDisplayImageMode=previousMode;
    renderTrailerList();editingDisplayImageMode=previousMode;updateDisplayImageChoice();updateThumbPreview(meta.title||"");
-   q("thumbStatus").textContent=duplicate?`✓ ${source}のサムネイルはすでに候補へ登録されています。`:`✓ ${source}のサムネイルを候補の末尾へ追加しました。表示画像は自動変更していません。`;
+   const candidates={title:cleanScenarioTitle(meta?.title||"",meta?.author||q("author").value),author:String(meta?.author||"").trim(),system:String(meta?.system||"").trim(),playersMin:meta?.playersMin??"",playersMax:meta?.playersMax??"",hoursMin:meta?.hoursMin??"",hoursMax:meta?.hoursMax??""};
+   const fieldLabels={title:"シナリオ名",author:"作者・サークル",system:"システム",playersMin:"最少人数",playersMax:"最大人数",hoursMin:"最短時間",hoursMax:"最長時間"};
+   Object.entries(candidates).forEach(([key,value])=>{if(String(value).trim()&&!q(key).value.trim())q(key).value=value;});
+   const candidateRows=Object.entries(candidates).filter(([,v])=>String(v).trim()).map(([key,value])=>{const current=q(key).value.trim(),needsChoice=current&&current!==String(value);return `<div><b>${esc(fieldLabels[key])}：</b>${esc(value)} ${needsChoice?`<button type="button" data-apply-url-field="${key}" data-value="${esc(value)}">この候補を採用</button>`:'<span class="muted">（反映済み）</span>'}</div>`;});
+   if(meta?.playersText&&!candidates.playersMin)candidateRows.push(`<div><b>人数表記：</b>${esc(meta.playersText)} <span class="muted">（現在欄へ安全に分解できないため候補のみ）</span></div>`);
+   if(meta?.hoursText&&!candidates.hoursMin)candidateRows.push(`<div><b>時間表記：</b>${esc(meta.hoursText)} <span class="muted">（現在欄へ安全に分解できないため候補のみ）</span></div>`);
+   if(image)candidateRows.push(`<div><b>画像：</b>${duplicate?'登録済み':editingTrailerUrls.includes(image)?'候補の末尾へ追加':'候補上限のため未追加'}</div>`);
+   q("urlInfoCandidateList").innerHTML=candidateRows.join("")||'<span class="muted">現在の入力欄へ利用できる基本情報は見つかりませんでした。</span>';
+   q("urlInfoCandidateList").querySelectorAll("[data-apply-url-field]").forEach(b=>b.onclick=()=>{q(b.dataset.applyUrlField).value=b.dataset.value;updateThumbPreview(meta?.title||"");});
+   const description=String(meta?.backupDescription||meta?.description||"").trim();
+   q("urlSummaryCandidate").value=description;q("urlSummaryCandidateWrap").hidden=!description;q("urlInfoPreview").hidden=false;
+   q("thumbStatus").textContent=`✓ ${source}から公開情報を取得しました。${image&&!duplicate&&editingTrailerUrls.includes(image)?" サムネイル候補を追加しました。":""}既存入力は上書きしていません。`;
  }catch(e){
    editingDisplayImageMode=previousMode;
    console.error(e);
    q("thumbStatus").textContent=`⚠ ${e?.message||"サムネイルを取得できませんでした。"} 既存画像は変更していません。`;
  }finally{
-   button.disabled=false;button.textContent="URLからサムネイル取得";
+   button.disabled=false;button.textContent="URLから情報取得";
  }
 }
 const publicationLabels={public:"公開中",private:"現在非公開",unpublished:"未公開",ended:"頒布終了",unknown:"未確認"};
@@ -1574,6 +1615,7 @@ q("addTrailerUrl").onclick=()=>{const u=q("trailerUrlAdd").value.trim();if(!u)re
 q("uploadTrailerImage").onclick=async()=>{try{if(editingTrailerUrls.length>=4)return alert("トレーラー画像は最大4枚です。");q("uploadTrailerImage").disabled=true;q("uploadTrailerImage").textContent="アップロード中…";await uploadScenarioTrailerFile()}catch(e){console.error(e);alert(e.message||e)}finally{q("uploadTrailerImage").disabled=false;q("uploadTrailerImage").textContent="画像をアップロード"}};
 bindDisplayImageChoice();
 q("shareScenarioList").onclick=shareScenarioList;q("openForm").onclick=openForm;q("fetchThumb").onclick=fetchThumbnail;q("tags").addEventListener("input",renderTagSuggestions);
+q("applyUrlSummary").onclick=()=>{const candidate=q("urlSummaryCandidate").value.trim();if(!candidate)return;const current=q("summaryText").value.trim();if(current&&current!==candidate&&!confirm("入力済みの概要を取得候補で置き換えますか？"))return;q("summaryText").value=candidate;q("summaryText").dispatchEvent(new Event("input",{bubbles:true}));q("summaryText").focus();q("thumbStatus").textContent="✓ 取得した概要を概要欄へ反映しました。保存するまではシナリオデータを変更しません。";};
 q("useSummaryBackup").onclick=()=>{q("summaryText").value=q("summaryBackup").value;updateLegacySummaryNotice();q("summaryText").focus()};q("summaryText").addEventListener("input",updateLegacySummaryNotice);
 q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=render;q("filter").onchange=render;q("playersFilter").oninput=render;q("hoursFilter").oninput=render;q("tagFilter").onchange=render;q("archiveFilter").onchange=render;q("sort").onchange=render;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
