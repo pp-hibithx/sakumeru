@@ -637,14 +637,47 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 </style>
 
 <style>
-/* v0.2.35.0 — participant -> multiple PCs */
+/* v0.2.35.0 — participant -> multiple PCs / compact layout restored */
 .participant-head{display:none!important}
-.participant-row{display:block!important;border:1px solid var(--line);border-radius:10px;padding:10px!important;margin-bottom:8px}
-.participant-person{display:grid;grid-template-columns:120px minmax(180px,1fr) auto;gap:8px;align-items:end}
-.participant-pcs{display:grid;gap:6px;margin:8px 0 0 128px}
-.participant-pc-row{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(180px,1.2fr) auto;gap:7px;align-items:end}
-.participant-pc-add{margin:8px 0 0 128px;width:auto}.participant-pc-remove{width:auto}
-@media(max-width:760px){.participant-person{grid-template-columns:1fr}.participant-pcs,.participant-pc-add{margin-left:0}.participant-pc-row{grid-template-columns:1fr}}
+.participant-row{
+ display:grid!important;
+ grid-template-columns:92px minmax(170px,.8fr) minmax(260px,1.35fr) 36px;
+ gap:6px 8px;align-items:start;
+ border:0;border-top:1px solid var(--line);border-radius:0;
+ padding:8px 0!important;margin:0;
+}
+.participant-person{display:contents}
+.participant-person>div:first-child{grid-column:1;grid-row:1}
+.participant-person>.participant-field-wrap{grid-column:2;grid-row:1}
+.participant-person>.participant-remove{grid-column:4;grid-row:1}
+.participant-pcs{display:grid;grid-column:3;grid-row:1 / span 2;gap:5px;margin:0;min-width:0}
+.participant-pc-row{display:grid;grid-template-columns:minmax(96px,.65fr) minmax(150px,1.35fr) 32px;gap:6px;align-items:start;min-width:0}
+.participant-pc-add{grid-column:3;grid-row:2;margin:0;width:max-content;padding:5px 9px}
+.participant-remove,.participant-pc-remove{
+ width:32px!important;height:32px;padding:0!important;margin:0!important;
+ display:grid;place-items:center;font-size:0;align-self:start!important;
+}
+.participant-remove::after,.participant-pc-remove::after{content:"×";font-size:18px;line-height:1}
+@media(max-width:900px){
+ .participant-row{grid-template-columns:82px minmax(150px,.85fr) minmax(220px,1.15fr) 34px}
+}
+@media(max-width:760px){
+ .participant-row{grid-template-columns:82px minmax(0,1fr) 34px}
+ .participant-person>div:first-child{grid-column:1;grid-row:1}
+ .participant-person>.participant-field-wrap{grid-column:2;grid-row:1}
+ .participant-person>.participant-remove{grid-column:3;grid-row:1}
+ .participant-pcs{grid-column:2 / 4;grid-row:2;margin:0}
+ .participant-pc-add{grid-column:2 / 4;grid-row:3}
+}
+@media(max-width:520px){
+ .participant-row{grid-template-columns:minmax(0,1fr) 34px}
+ .participant-person>div:first-child{grid-column:1;grid-row:1}
+ .participant-person>.participant-field-wrap{grid-column:1;grid-row:2}
+ .participant-person>.participant-remove{grid-column:2;grid-row:1}
+ .participant-pcs{grid-column:1 / -1;grid-row:3}
+ .participant-pc-row{grid-template-columns:minmax(86px,.65fr) minmax(0,1.35fr) 32px}
+ .participant-pc-add{grid-column:1 / -1;grid-row:4}
+}
 </style>
 
 <style>
@@ -2083,7 +2116,7 @@ function addParticipantRow(v={},opts={}){
  row.innerHTML=`<div class="participant-person">
    <div><label>役割</label><select class="partRole">${roleOptions(role,cfg.label)}</select></div>
    <div class="participant-field-wrap"><label>参加者</label><input class="partPl" value="${esc(pl)}" placeholder="参加者名を検索・選択（よく同卓する人を優先）" autocomplete="off"><div class="participant-picker-results partPlResults"></div></div>
-   <button type="button" class="danger participant-remove">参加者を削除</button>
+   <button type="button" class="danger participant-remove" aria-label="参加者を削除" title="参加者を削除">参加者を削除</button>
  </div><div class="participant-pcs"></div><button type="button" class="participant-pc-add">＋ PC追加</button>`;
  const plInput=row.querySelector(".partPl"),plResults=row.querySelector(".partPlResults"),pcBox=row.querySelector(".participant-pcs");
  function participantPlayCount(player){
@@ -2121,7 +2154,7 @@ function addParticipantRow(v={},opts={}){
    const pr=document.createElement("div");pr.className="participant-pc-row";pr.dataset.pcId=String(pc.pcId||"");
    pr.innerHTML=`<div><label>HO / 役割</label><input class="partPcHo" value="${esc(pc.ho||"")}" placeholder="HO1 / KPC など"></div>
    <div class="participant-field-wrap"><label>PC</label><input class="partPcName" value="${esc(pc.pcName||"")}" placeholder="PC名を検索・入力" autocomplete="off"><div class="participant-picker-results partPcResults"></div></div>
-   <button type="button" class="danger participant-pc-remove">削除</button>`;
+   <button type="button" class="danger participant-pc-remove" aria-label="このPCを削除" title="このPCを削除">削除</button>`;
    pcBox.appendChild(pr);
    const inp=pr.querySelector(".partPcName"),res=pr.querySelector(".partPcResults");
    const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),names=playerPcCandidates().filter(n=>!term||n.normalize("NFKC").toLowerCase().includes(term));if(names.length){res.innerHTML=names.map(n=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(n)}">${esc(n)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;res.classList.remove("open")})};
