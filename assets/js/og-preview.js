@@ -8,9 +8,9 @@ async function fetchPreview(url){
   let res;
   try{
     res=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","apikey":c.publishableKey},body:JSON.stringify({url})});
-  }catch(e){throw new Error("サムネイル取得サーバーに接続できませんでした。");}
+  }catch(e){throw new Error("URL情報取得サーバーに接続できませんでした。");}
   let body={};try{body=await res.json()}catch{}
-  if(!res.ok)throw new Error(body.error||("サムネイル取得に失敗しました（"+res.status+"）"));
+  if(!res.ok)throw new Error(body.error||("URL情報の取得に失敗しました（"+res.status+"）"));
   return body;
 }
 window.TRPG39OG={fetch:fetchPreview,configured};
