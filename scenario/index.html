@@ -303,7 +303,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 <div class="sc-row"><div><label>公開状況</label><select id="publicationStatus"><option value="public">公開中</option><option value="private">現在非公開</option><option value="unpublished">未公開（自作・テストプレイ等）</option><option value="ended">頒布終了</option><option value="unknown">未確認</option></select></div><div><label>情報の出典</label><select id="sourceType"><option value="">未設定</option><option>BOOTH</option><option>pixiv</option><option>TALTO</option><option>公式ページ</option><option>手入力</option><option>その他</option></select></div></div>
 <div class="sc-row"><div><label>参加人数</label><div class="sc-row"><input id="playersMin" type="number" min="1" step="1" placeholder="最少"><input id="playersMax" type="number" min="1" step="1" placeholder="最大"></div></div><div><label>プレイ時間（時間）</label><div class="sc-row"><input id="hoursMin" type="number" min="0.5" step="0.5" placeholder="最短"><input id="hoursMax" type="number" min="0.5" step="0.5" placeholder="最長"></div></div></div>
 <label>配布・販売ページ</label>
-<div class="sc-inline"><input id="url" type="url" placeholder="https://booth.pm/ja/items/..."><button id="fetchThumb" type="button">URLから出典を判定</button></div>
+<div class="sc-inline"><input id="url" type="url" placeholder="https://booth.pm/ja/items/..."><button id="fetchThumb" type="button">URLからサムネイル取得</button></div>
 <div id="thumbStatus" class="small muted"></div>
 <label class="sc-source-warning-setting"><input id="sourceSpoilerWarning" type="checkbox"> URL先ネタバレ注意</label>
 <div class="small muted">掲載ページを確認し、リンク先に真相・秘匿・ネタバレを含む可能性がある場合に設定してください。自動判定はしません。</div>
@@ -374,6 +374,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=0292"></script>
+<script src="../assets/js/og-preview.js?v=0910-manual-thumb1"></script>
 <script>
 (()=>{"use strict";
 const q=id=>document.getElementById(id),flags={owned:"所持",played:"通過済み",watched:"視聴済み",planned:"通過予定",kpDone:"回した",kpPlanned:"回す予定",wish:"気になる",roomReady:"部屋あり"};
@@ -1384,18 +1385,34 @@ function cleanScenarioTitle(rawTitle, circleName=""){
  return s;
 }
 
-function fetchThumbnail(){
+async function fetchThumbnail(){
  const url=q("url").value.trim();
  if(!url)return alert("配布・掲載ページのURLを入力してください。");
+ const button=q("fetchThumb"),previousMode=editingDisplayImageMode;
+ button.disabled=true;button.textContent="取得中…";q("thumbStatus").textContent="サムネイルを取得しています…";
  try{
    const parsed=new URL(url);
    if(!/^https?:$/.test(parsed.protocol))throw new Error("http/httpsのURLを入力してください。");
    const source=scenarioSourceLabel({url});
    const sourceValue=source==="外部サイト"?"その他":source;
    q("sourceType").value=sourceValue;
-   q("thumbStatus").textContent=`✓ 情報出典を「${source}」として設定しました。本文と画像は安全性を確認して手動登録してください。`;
+   if(!window.TRPG39OG)throw new Error("サムネイル取得機能を読み込めませんでした。");
+   const meta=await TRPG39OG.fetch(url),image=String(meta?.image||"").trim();
+   if(!image)throw new Error("このページからサムネイル画像を取得できませんでした。");
+   const duplicate=editingTrailerUrls.includes(image);
+   if(!duplicate){
+     if(editingTrailerUrls.length>=4)throw new Error("トレーラー画像は最大4枚です。既存画像を整理してから再度取得してください。");
+     editingTrailerUrls=[...editingTrailerUrls,image];
+   }
+   editingDisplayImageMode=previousMode;
+   renderTrailerList();editingDisplayImageMode=previousMode;updateDisplayImageChoice();updateThumbPreview(meta.title||"");
+   q("thumbStatus").textContent=duplicate?`✓ ${source}のサムネイルはすでに候補へ登録されています。`:`✓ ${source}のサムネイルを候補の末尾へ追加しました。表示画像は自動変更していません。`;
  }catch(e){
-   q("thumbStatus").textContent="⚠ URLの形式を確認してください。保存済みの情報は変更していません。";
+   editingDisplayImageMode=previousMode;
+   console.error(e);
+   q("thumbStatus").textContent=`⚠ ${e?.message||"サムネイルを取得できませんでした。"} 既存画像は変更していません。`;
+ }finally{
+   button.disabled=false;button.textContent="URLからサムネイル取得";
  }
 }
 const publicationLabels={public:"公開中",private:"現在非公開",unpublished:"未公開",ended:"頒布終了",unknown:"未確認"};
