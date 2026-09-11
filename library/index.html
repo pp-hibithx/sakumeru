@@ -2594,6 +2594,46 @@ function reportRowsWithSelf(x){
  if(anonPl.length)visible.push({role:"_anonymousPL",plName:`PL：他${anonPl.length}名`,_anonymousSummary:true});
  return visible;
 }
+function publicParticipantSummary(x){
+ return reportRowsWithSelf(x).map(r=>({
+  role:String(r.role||""),ho:String(r.ho||""),plName:String(r.plName||""),pcName:String(r.pcName||"")
+ }));
+}
+function buildSharedScenarioNavigation(scenarioId,scenarioTitle,current={}){
+ const sid=String(scenarioId||"").trim();
+ if(!sid)return null;
+ const records=data.filter(x=>String(x.scenarioId||"")===sid),runs=new Map();
+ const ensureRun=(runId,albumId="",label="")=>{
+  const rid=String(runId||"").trim(),aid=String(albumId||"").trim();
+  // runIdのない旧記録は、既存albumIdを識別子として使う。陣名からIDは生成しない。
+  const key=rid?`run:${rid}`:(aid?`album:${aid}`:"");
+  if(!key)return null;
+  if(!runs.has(key))runs.set(key,{key,runId:rid,albumId:aid,label:String(label||""),date:"",status:"",participants:[],sessions:[],articles:[]});
+  const row=runs.get(key);if(!row.label&&label)row.label=String(label);return row;
+ };
+ const addSession=(record,shareId)=>{
+  if(!record||!shareId||!["link","public"].includes(String(record.visibility||"")))return;
+  const row=ensureRun(record.runId,record.id,record.runLabel);if(!row)return;
+  if(!row.sessions.some(v=>v.shareId===shareId))row.sessions.push({shareId:String(shareId),albumId:String(record.id||""),title:String(record.title||"卓記録"),date:String(record.date||""),status:String(record.status||"")});
+  if(!row.date)row.date=String(record.date||"");if(!row.status)row.status=String(record.status||"");
+  if(!row.participants.length)row.participants=publicParticipantSummary(record);
+ };
+ const addArticle=(runId,article,shareId,albumId="",label="")=>{
+  if(!article||!shareId||!article.shareEnabled)return;
+  const row=ensureRun(runId,albumId,label);if(!row)return;
+  if(!row.articles.some(v=>v.shareId===shareId))row.articles.push({shareId:String(shareId),articleId:String(article.id||""),title:String(article.title||"卓記事")});
+ };
+ records.forEach(x=>addSession(x,x.shareId));
+ [...new Set(records.map(x=>String(x.runId||"")).filter(Boolean))].forEach(runId=>{
+  const record=records.find(x=>String(x.runId||"")===runId);
+  articlePagesForRun(runId).forEach(page=>addArticle(runId,page,page.shareId,record?.id,record?.runLabel));
+ });
+ if(current.kind==="library-session")addSession(current.record,current.shareId);
+ if(current.kind==="library-article")addArticle(current.runId,current.page,current.shareId,current.albumId,current.runLabel);
+ const publicRuns=[...runs.values()].filter(r=>r.sessions.length||r.articles.length).sort((a,b)=>String(a.date||"9999").localeCompare(String(b.date||"9999")));
+ if(!publicRuns.length)return null;
+ return {version:1,scenario:{id:sid,title:String(scenarioTitle||records[0]?.title||"")},current:{kind:String(current.kind||""),shareId:String(current.shareId||""),runKey:String(current.runId?`run:${current.runId}`:(current.albumId?`album:${current.albumId}`:"")),runId:String(current.runId||""),albumId:String(current.albumId||""),articleId:String(current.page?.id||"")},runs:publicRuns};
+}
 function buildXReportText(x){
  const rows=reportRowsWithSelf(x),groups=new Map();
  rows.forEach(r=>{const role=String(r.role||"PL");if(!groups.has(role))groups.set(role,[]);groups.get(role).push(r)});
@@ -2627,11 +2667,12 @@ async function prepareShareUrl(id){
  if(!(TRPG39Cloud&&TRPG39Cloud.configured()))throw new Error("共有機能の設定がありません。");
 
  const ogVersion=Date.now();
- const payload={kind:"library-session",version:5,ogVersion,title:x.title,date:x.date,start:x.start||"",end:x.end||"",status:x.status||"done",system:x.system,facilitatorLabel:facilitatorConfig(x).label,facilitatorless:facilitatorConfig(x).less,selfRole:x.role||"",selfHo:x.selfHo||"",selfPcName:x.pcName||"",participantRows:rowsFromRecord(x),image:(x.imageUrls||[])[0]||"",images:normalizedReportImages(x.imageUrls||[]),comment:x.comment||"",spoiler:x.spoilerVisibility==="link"?(x.spoilerBody||x.spoiler||""):"",externalLinks:x.externalLinks||[],visibility:x.visibility||"link"};
+ let payload={kind:"library-session",version:6,ogVersion,title:x.title,scenarioId:x.scenarioId||"",runId:x.runId||"",albumId:x.id||"",runLabel:x.runLabel||"",date:x.date,start:x.start||"",end:x.end||"",status:x.status||"done",system:x.system,facilitatorLabel:facilitatorConfig(x).label,facilitatorless:facilitatorConfig(x).less,selfRole:x.role||"",selfHo:x.selfHo||"",selfPcName:x.pcName||"",participantRows:rowsFromRecord(x),image:(x.imageUrls||[])[0]||"",images:normalizedReportImages(x.imageUrls||[]),comment:x.comment||"",spoiler:x.spoilerVisibility==="link"?(x.spoilerBody||x.spoiler||""):"",externalLinks:x.externalLinks||[],visibility:x.visibility||"link"};
 
  let shareId=x.shareId||"";
- if(shareId)await TRPG39Cloud.updateSharedPage(shareId,payload);
- else shareId=await TRPG39Cloud.createSharedPage(payload);
+ if(!shareId)shareId=await TRPG39Cloud.createSharedPage(payload);
+ payload={...payload,shareNavigation:buildSharedScenarioNavigation(x.scenarioId,x.title,{kind:"library-session",shareId,runId:x.runId||"",albumId:x.id,record:x})};
+ await TRPG39Cloud.updateSharedPage(shareId,payload);
 
  const i=data.findIndex(v=>v.id===x.id);
  if(i>=0){
@@ -4044,9 +4085,12 @@ async function shareArticlePage(runId,pageId,options={}){
    }
      const sharedBlocks=await prepareConversationBlocksForShare(baseBlocks);
      const sharedBody=baseBlocks.filter(b=>b.type==="text"&&(b.visibility==="public"||b.visibility==="link")).map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
-    const payload={kind:"library-article",version:12,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:true,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
+    let payload={kind:"library-article",version:13,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioId:group?.scenarioId||"",runId:runId||"",articleId:page.id||"",scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:true,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
    let shareId=page.shareId||"";
-   if(shareId)await TRPG39Cloud.updateSharedPage(shareId,payload);else shareId=await TRPG39Cloud.createSharedPage(payload);
+   if(!shareId)shareId=await TRPG39Cloud.createSharedPage(payload);
+   const albumId=String(run?.items?.[0]?.id||"");
+   payload={...payload,shareNavigation:buildSharedScenarioNavigation(group?.scenarioId,group?.title,{kind:"library-article",shareId,runId,page,albumId,runLabel:run?.label||""})};
+   await TRPG39Cloud.updateSharedPage(shareId,payload);
    saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));
    const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
    previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");
