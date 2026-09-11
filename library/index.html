@@ -1321,6 +1321,69 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .pc-rel-stage,.player-rel-stage{border:2px solid color-mix(in srgb,currentColor 30%,var(--line));background:color-mix(in srgb,var(--panel) 86%,#000 14%)}
 .pc-rel-detail,.player-rel-detail{border:2px solid color-mix(in srgb,currentColor 27%,var(--line));background:color-mix(in srgb,var(--panel) 92%,currentColor 3%)}
 
+/* 卓記録のアウトラインと予定情報：構造は変えず、操作できる見出しだけを明確にする。 */
+.lib-session-group{
+ border:2px solid color-mix(in srgb,currentColor 27%,var(--line));
+ background:color-mix(in srgb,var(--panel) 96%,currentColor 2%)
+}
+.lib-session-group>summary{
+ min-height:50px;padding:12px 15px;gap:10px;
+ border-bottom:1px solid transparent;
+ background:color-mix(in srgb,var(--panel) 88%,currentColor 5%);
+ font-size:16px;font-weight:750;transition:background .15s ease,border-color .15s ease
+}
+.lib-session-group>summary::before{
+ content:"▶";flex:0 0 auto;color:var(--accent);font-size:16px;line-height:1
+}
+.lib-session-group[open]>summary::before{content:"▼"}
+.lib-session-group>summary:hover{background:color-mix(in srgb,var(--accent) 13%,var(--panel))}
+.lib-session-group[open]>summary{
+ border-bottom-color:color-mix(in srgb,var(--accent) 48%,var(--line));
+ background:color-mix(in srgb,var(--accent) 10%,var(--panel))
+}
+.lib-session-group-arrow{display:none}
+.lib-session-group>summary .badge{
+ margin-left:3px;padding:4px 9px;min-height:25px;font-size:13px;line-height:1.2;
+ border:1px solid color-mix(in srgb,var(--accent) 58%,var(--line));
+ background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:inherit
+}
+.lib-child-date,.lib-run-detail-title .small{
+ font-size:14px;line-height:1.55;color:color-mix(in srgb,currentColor 82%,var(--muted));font-weight:600
+}
+.lib-child-date>.badge{margin-top:6px;font-size:13px;line-height:1.25;padding:4px 8px}
+.lib-child-date>.lib-session-status{
+ border-color:color-mix(in srgb,var(--accent) 55%,var(--line));
+ background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:inherit;font-weight:750
+}
+
+/* 閲覧時のstructured toggle。枠の入れ子ではなく、見出しと縦線で階層を示す。 */
+.lib-article-structured-toggle{border:0;border-radius:0;overflow:visible;background:transparent}
+.lib-article-structured-toggle>summary{
+ min-height:46px;display:flex;align-items:center;padding:10px 12px;list-style:none;
+ border:1px solid color-mix(in srgb,currentColor 28%,var(--line));border-left:4px solid var(--accent);border-radius:8px;
+ background:color-mix(in srgb,var(--panel) 88%,currentColor 5%);font-size:16px;font-weight:800;
+ transition:background .15s ease,border-color .15s ease
+}
+.lib-article-structured-toggle>summary::-webkit-details-marker{display:none}
+.lib-article-structured-toggle>summary::before{content:"▶";margin-right:9px;color:var(--accent);font-size:16px}
+.lib-article-structured-toggle[open]>summary::before{content:"▼"}
+.lib-article-structured-toggle>summary:hover{background:color-mix(in srgb,var(--accent) 13%,var(--panel));border-color:color-mix(in srgb,var(--accent) 58%,var(--line))}
+.lib-article-structured-toggle-body{
+ margin:4px 0 7px 10px;padding:7px 0 7px 15px;border-left:2px solid color-mix(in srgb,var(--accent) 62%,var(--line))
+}
+.lib-article-structured-toggle .lib-article-structured-toggle{margin-left:4px}
+
+/* 編集中のtoggleも同じ見出し感を持たせる。children[]や開閉処理には触れない。 */
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-block>summary{
+ min-height:46px;padding:7px 10px!important;border:1px solid color-mix(in srgb,currentColor 27%,var(--line))!important;
+ border-left:4px solid var(--accent)!important;border-radius:8px;background:color-mix(in srgb,var(--panel) 89%,currentColor 5%)!important;
+ transition:background .15s ease,border-color .15s ease
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-block>summary:hover{background:color-mix(in srgb,var(--accent) 12%,var(--panel))!important}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-block>summary::before{font-size:16px;margin-right:2px}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-title{font-size:16px!important;font-weight:800}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children{margin-top:4px!important}
+
 @media(max-width:760px){
   .library-page{gap:11px}.lib-panel{padding:12px}.lib-toolbar,.library-view-tabs,.library-play-tabs{padding:9px}
   .library-view-tabs,.library-play-tabs{flex-wrap:nowrap;overflow-x:auto}.library-view-tab,.library-play-tab{flex:0 0 auto;white-space:nowrap}
@@ -4204,7 +4267,7 @@ function selfPcSummaryHtml(x){
 }
 function sessionRecordHtml(x,i){
  return `<article class="lib-child" id="record-${esc(x.id)}">
-   <div class="lib-child-date">${esc(x.date||`記録 ${i+1}`)}${x.start&&String(x.start).slice(11,16)?` ${esc(String(x.start).slice(11,16))}`:""}<br><span class="badge">${esc(sessionKindLabel[sessionKindForRecord(x)]||"本編")}</span> <span class="badge">${esc(statusLabel[x.status]||"完了")}</span></div>
+   <div class="lib-child-date">${esc(x.date||`記録 ${i+1}`)}${x.start&&String(x.start).slice(11,16)?` ${esc(String(x.start).slice(11,16))}`:""}<br><span class="badge lib-session-kind">${esc(sessionKindLabel[sessionKindForRecord(x)]||"本編")}</span> <span class="badge lib-session-status" data-session-status="${esc(x.status||"done")}">${esc(statusLabel[x.status]||"完了")}</span></div>
    <div>${(x.imageUrls||[]).length?`<button type="button" class="lib-report-thumb-button" data-report-gallery="${esc(x.id)}"><img class="lib-child-thumb" src="${esc(normalizedReportImages(x.imageUrls)[0])}" alt="スクリーンショット" loading="lazy">${normalizedReportImages(x.imageUrls).length>1?`<span>＋${normalizedReportImages(x.imageUrls).length-1}</span>`:""}</button>`:""}
      ${selfPcSummaryHtml(x)}${x.articleBody?`<div class="lib-article-body">${esc(x.articleBody).replace(/\n/g,"<br>")}</div>`:""}${x.spoilerBody?`<details class="lib-spoiler"><summary>ネタバレを表示</summary><div class="spoiler-body">${esc(x.spoilerBody).replace(/\n/g,"<br>")}</div></details>`:""}
      <div class="lib-child-meta">${participantHtml(x)}<span class="badge lib-visibility">公開設定：${esc(vis[x.visibility]||"自分のみ")}</span></div>
