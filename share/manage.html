@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SHARE｜SAKU+MERU</title>
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem("39x2_theme")||"dark"}catch(_){}</script>
+  <link rel="stylesheet" href="../assets/css/style-v0303.css">
+  <style>
+    .share-manage-page{min-height:100vh}.share-manage-intro{margin-bottom:24px}.share-manage-intro h1{margin-bottom:6px}.share-manage-note{max-width:760px;color:var(--muted);line-height:1.7}
+    .share-manage-list{display:grid;gap:10px;max-width:980px}.share-manage-group{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+    .share-manage-group>summary{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;font-size:16px;font-weight:700;list-style:none}.share-manage-group>summary::-webkit-details-marker{display:none}.share-manage-group>summary::before{content:"▶";font-size:13px;color:var(--accent)}.share-manage-group[open]>summary::before{content:"▼"}.share-manage-count{margin-left:auto;font-size:13px;font-weight:600;color:var(--muted)}.share-manage-group>summary:hover{background:rgba(255,255,255,.035)}
+    .share-manage-rows{border-top:1px solid var(--line);padding:0 16px}.share-manage-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.share-manage-row:last-child{border-bottom:0}.share-manage-title{font-weight:700;overflow-wrap:anywhere}.share-manage-meta{margin-top:4px;color:var(--muted);font-size:13px;line-height:1.55}.share-manage-state{color:var(--accent);font-size:13px}.share-manage-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.share-manage-actions a,.share-manage-actions button{width:auto;white-space:nowrap}.share-manage-empty{padding:15px 0;color:var(--muted)}.share-copy-status{min-height:1.5em;margin-top:14px;color:var(--accent);font-size:14px}
+    @media(max-width:700px){.share-manage-row{grid-template-columns:1fr}.share-manage-actions{justify-content:flex-start}.share-manage-actions a,.share-manage-actions button{flex:1 1 auto}.share-manage-group>summary{padding:13px}}
+  </style>
+</head>
+<body class="share-manage-page">
+<div data-site-header data-active="share"></div>
+<main class="wrap">
+  <section class="share-manage-intro">
+    <h1>SHARE</h1>
+    <p>外へ共有したもの</p>
+    <p class="share-manage-note">SAKU+MERUの各機能で作成した共有URLを、種類ごとに確認できます。このページは保存済みの共有IDを参照する索引で、共有本文を複製したり、公開状態を変更したりしません。</p>
+  </section>
+  <section id="shareManageList" class="share-manage-list" aria-label="共有したものの一覧"></section>
+  <p id="shareCopyStatus" class="share-copy-status" role="status" aria-live="polite"></p>
+</main>
+<div data-site-footer></div>
+<script src="../assets/js/common-layout.js"></script>
+<script>
+(()=>{
+ "use strict";
+ const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const json=(key,fallback)=>{try{const v=JSON.parse(localStorage.getItem(key)||"null");return v??fallback}catch{return fallback}};
+ const text=key=>String(localStorage.getItem(key)||"").trim();
+ const arr=v=>Array.isArray(v)?v:[];
+ const local=path=>new URL(path,location.href).href;
+ const workerUrl=(id,type="")=>{const u=new URL("https://sakumeru-share.sakumeru.workers.dev/");u.searchParams.set("id",id);if(type)u.searchParams.set("type",type);return u.href};
+ const viewerUrl=(id,type="")=>{const u=new URL("index.html",location.href);u.searchParams.set("id",id);if(type)u.searchParams.set("type",type);return u.href};
+ const unique=rows=>{const seen=new Set;return rows.filter(row=>{const key=String(row.shareId||"");if(!key||seen.has(key))return false;seen.add(key);return true})};
+ const profile=json("39x2_profile_v1",{}),profileName=String(profile.socialName||profile.displayName||"").trim();
+
+ const albums=arr(json("39x2_album_v2",[]));
+ const sessions=unique(albums.filter(x=>x&&x.shareId).map(x=>({shareId:x.shareId,title:x.title||x.runLabel||"卓記録",meta:[x.runLabel,x.date].filter(Boolean).join(" ／ "),shareUrl:workerUrl(x.shareId),fallbackUrl:viewerUrl(x.shareId),sourceUrl:local("../library/index.html")})));
+
+ const articleStore=json("saku_meru_library_run_article_pages_v1",{}),articles=[];
+ Object.entries(articleStore&&typeof articleStore==="object"?articleStore:{}).forEach(([runId,pages])=>arr(pages).forEach(p=>{if(p?.shareId)articles.push({shareId:p.shareId,title:p.title||"卓記事",meta:runId?`卓ID：${runId}`:"",shareUrl:workerUrl(p.shareId,"article"),fallbackUrl:viewerUrl(p.shareId,"article"),sourceUrl:local("../library/index.html")})}));
+
+ const scenarioShareId=text("39x2_fixed_scenario_share_id_v1");
+ const scenarios=scenarioShareId?[{shareId:scenarioShareId,title:"シナリオ一覧",meta:"固定共有URL",state:"固定共有URLあり",shareUrl:workerUrl(scenarioShareId,"scenario-list"),fallbackUrl:viewerUrl(scenarioShareId,"scenario-list"),sourceUrl:local("../scenario/index.html")}]:[];
+
+ const availability=json("trpg39.calendar.availabilityShare.v2",null),availabilityRows=availability?.id?[{shareId:availability.id,title:"空き日共有",meta:arr(availability.selectedMonths).join(" ／ "),state:"共有データあり",shareUrl:workerUrl(availability.id,"availability"),fallbackUrl:viewerUrl(availability.id,"availability"),sourceUrl:local("../calendar/index.html")}]:[];
+
+ const scheduleCases=[...arr(json("trpg39.scheduleMatch.cases.v2",[]))];
+ const legacyCase=json("trpg39.scheduleMatch.case.v1",null);if(legacyCase?.id)scheduleCases.push(legacyCase);
+ const schedules=unique(scheduleCases.filter(x=>x?.id&&x?.payload?.kind!=="calendar-schedule-deleted").map(x=>({shareId:x.id,title:x.payload?.title||x.title||"日程調整",meta:x.payload?.updatedAt||x.updatedAt||"",shareUrl:workerUrl(x.id,"calendar"),fallbackUrl:viewerUrl(x.id,"calendar"),sourceUrl:local("../calendar/index.html")})));
+
+ const profileShareId=text("39x2_fixed_profile_share_id_v1");
+ const profiles=profileShareId?[{shareId:profileShareId,title:profileName?`${profileName}のプロフィール`:"プロフィール",meta:"固定共有URL",state:"固定共有URLあり",shareUrl:workerUrl(profileShareId,"profile"),fallbackUrl:viewerUrl(profileShareId,"profile"),sourceUrl:local("../profile/index.html")}]:[];
+ const profilePages=unique(arr(json("39x2_profile_pages_v1",[])).filter(p=>p?.shareId).map(p=>({shareId:p.shareId,title:p.title||"プロフィール付属ページ",meta:"",shareUrl:workerUrl(p.shareId,"profile-page"),fallbackUrl:viewerUrl(p.shareId,"profile-page"),sourceUrl:local("../profile/index.html")})));
+
+ const binders=json("39x2_scenario_kp_binders_v1",{}),kpRows=[];
+ Object.entries(binders&&typeof binders==="object"?binders:{}).forEach(([scenarioId,binder])=>{
+   const runs=[...arr(binder?.shareSessions),binder?.currentShareSession].filter(Boolean);
+   runs.forEach(run=>{
+     const base=[binder?.scenarioTitle,run?.runLabel].filter(Boolean).join(" ／ ")||"KPライブ共有";
+     if(run.shareId)kpRows.push({shareId:run.shareId,title:base,meta:"共通URL",state:"共有データあり",shareUrl:local(`kp-live.html?id=${encodeURIComponent(run.shareId)}`),sourceUrl:local(`../scenario/kp-binder.html?id=${encodeURIComponent(scenarioId)}`)});
+     arr(run.participants).forEach(p=>{if(p?.shareId)kpRows.push({shareId:p.shareId,title:`${base} ／ ${p.name||"参加者"}`,meta:"参加者専用URL",state:"共有データあり",shareUrl:local(`kp-live.html?id=${encodeURIComponent(p.shareId)}`),sourceUrl:local(`../scenario/kp-binder.html?id=${encodeURIComponent(scenarioId)}`)})});
+   });
+ });
+
+ const groups=[
+  {label:"LIBRARY 卓記録",rows:sessions},{label:"LIBRARY 卓記事",rows:unique(articles)},
+  {label:"SCENARIO シナリオ一覧",rows:scenarios},{label:"CALENDAR 空き日共有",rows:availabilityRows},
+  {label:"CALENDAR 日程調整",rows:schedules},{label:"PROFILE",rows:profiles},
+  {label:"PROFILE 付属ページ",rows:profilePages},{label:"KPライブ共有",rows:unique(kpRows)}
+ ];
+ const rowHtml=row=>`<article class="share-manage-row"><div><div class="share-manage-title">${esc(row.title)}</div>${row.meta?`<div class="share-manage-meta">${esc(row.meta)}</div>`:""}<div class="share-manage-state">${esc(row.state||"共有URLあり")}</div></div><div class="share-manage-actions"><a class="button" href="${esc(row.shareUrl||row.fallbackUrl)}" target="_blank" rel="noopener">共有ページを開く</a><a class="button secondary" href="${esc(row.sourceUrl)}">元の記録を開く</a><button type="button" class="secondary" data-copy-url="${esc(row.shareUrl||row.fallbackUrl)}">URLをコピー</button></div></article>`;
+ const host=$("#shareManageList");
+ host.innerHTML=groups.map((g,i)=>`<details class="share-manage-group" data-group-index="${i}"><summary><span>${esc(g.label)}</span><span class="share-manage-count">${g.rows.length}件</span></summary><div class="share-manage-rows" data-group-body></div></details>`).join("");
+ host.addEventListener("toggle",event=>{const detail=event.target;if(!(detail instanceof HTMLDetailsElement)||!detail.open||detail.dataset.rendered)return;const group=groups[Number(detail.dataset.groupIndex)],body=detail.querySelector("[data-group-body]");body.innerHTML=group.rows.length?group.rows.map(rowHtml).join(""):'<p class="share-manage-empty">保存済みの共有URLはありません。</p>';detail.dataset.rendered="1"},true);
+ host.addEventListener("click",async event=>{const button=event.target.closest("[data-copy-url]");if(!button)return;const value=button.dataset.copyUrl||"";let copied=false;try{await navigator.clipboard.writeText(value);copied=true}catch{const ta=document.createElement("textarea");ta.value=value;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();copied=document.execCommand("copy");ta.remove()}$("#shareCopyStatus").textContent=copied?"共有URLをコピーしました。":"コピーできませんでした。共有ページを開いてURLをご確認ください。"});
+})();
+</script>
+</body>
+</html>
