@@ -30,4 +30,5 @@
   function footerHtml(){return `<footer class="footer"><div class="wrap">© ${new Date().getFullYear()} SAKU+MERU</div></footer>`;}
   document.querySelectorAll("[data-site-header]").forEach(slot=>{const active=(slot.dataset.active||"").trim().toLowerCase();slot.outerHTML=headerHtml(active);});
   document.querySelectorAll("[data-site-footer]").forEach(slot=>{slot.outerHTML=footerHtml();});
+  const guideText=document.createElement("script");guideText.src=url("assets/js/home-guide-text.js");guideText.onload=()=>{const guide=document.createElement("script");guide.src=url("assets/js/home-guide-tour.js");document.body.appendChild(guide);};document.body.appendChild(guideText);
 })();
