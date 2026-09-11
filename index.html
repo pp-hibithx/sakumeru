@@ -37,12 +37,16 @@
 .home-task-due{font-size:12px;white-space:nowrap;font-weight:700}
 .home-task-overdue .home-task-due{color:#c94b4b}
 .home-task-today .home-task-due{color:#b56b00}
-@media(max-width:620px){.home-task{grid-template-columns:1fr}.home-task-due{white-space:normal}}
+.home-guide{display:grid;grid-template-columns:170px minmax(0,1fr);gap:18px;align-items:center;margin:18px 0;padding:16px 18px;border:2px solid color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%)}
+.home-guide-art{width:170px;height:220px;display:grid;place-items:center;overflow:hidden;border-radius:10px;background:color-mix(in srgb,var(--panel) 82%,#000 18%)}.home-guide-art img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}.home-guide-art-placeholder{font-size:44px}
+.home-guide-name{margin:0;font-size:1.35rem}.home-guide-line{margin:9px 0 12px;font-size:1.05rem;line-height:1.65;font-weight:650}.home-guide-schedule{display:grid;gap:6px}.home-guide-event{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border-top:1px solid var(--line)}.home-guide-event:first-child{border-top:0}.home-guide-time{font-variant-numeric:tabular-nums;font-weight:800}.home-guide-status{font-size:12px;padding:2px 7px;border:1px solid var(--line);border-radius:999px}.home-guide-anniversary{margin-top:9px;font-size:13px;color:color-mix(in srgb,currentColor 78%,transparent)}.home-guide-link{display:inline-block;margin-top:10px;font-weight:700}
+@media(max-width:620px){.home-task{grid-template-columns:1fr}.home-task-due{white-space:normal}.home-guide{grid-template-columns:100px minmax(0,1fr);gap:12px;padding:12px}.home-guide-art{width:100px;height:150px}.home-guide-event{grid-template-columns:auto minmax(0,1fr)}.home-guide-status{grid-column:2}}
 </style>
 <link rel="stylesheet" href="./assets/css/readability.css?v=0908-3">
 </head><body class="home-page">
 <div data-site-header data-active="home"></div>
 <main><div class="wrap"><div class="notice" style="margin:16px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px"><strong>テスト公開中</strong><br><span class="small">現在、SAKU+MERU本体は開発者・テスター向けです。TOOLSはどなたでもご利用いただけます。</span></div>
+<section id="homeGuide" class="home-guide" hidden aria-label="HOMEの案内人"></section>
 <section id="prepTasks" class="home-task-panel" hidden>
   <div class="home-task-head"><h2>卓準備</h2><span id="prepTaskCount" class="small muted"></span></div>
   <div id="prepTaskList" class="home-task-list"></div>
@@ -79,6 +83,12 @@
 </div></section></div></main><div data-site-footer></div><script>
 (()=>{"use strict";
 const KEY="39x2_prep_v1";
+const HOME_GUIDE_SETTINGS_KEY="trpg39_home_guide_v1";
+const HOME_GUIDE_PERIODS={lateNight:[0,5],morning:[5,11],afternoon:[11,16],evening:[16,19],night:[19,24]};
+const HOME_GUIDE_DEFAULT_LINES={
+ morning:["おはよう。今日の予定を確認しよう。"],afternoon:["今日も記録を整えていこう。"],evening:["夕方だ。今夜の予定を確認しておこう。"],night:["こんばんは。今日の卓を振り返る？"],lateNight:["深夜だ。無理は禁物だよ。"],
+ sessionToday:["今日は{time}から{scenario}。{runName}の予定だ。"],sessionSoon:["{scenario}まであと1時間以内だ。準備はできている？"],noSchedule:["今日は予定なし。過去の記録を眺めるのもいいね。"],anniversary:["{years}年前の今日は「{scenario}」の記録があるよ。"]
+};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let homeScenariosCache=null;
 function localYmd(d=new Date()){const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
@@ -90,6 +100,31 @@ function loadScenarios(){
    if(window.TRPG39?.loadScenarios){homeScenariosCache=window.TRPG39.loadScenarios()||[];return homeScenariosCache}
    return [];
  }catch{return []}
+}
+function homeGuideSettings(){try{const v=JSON.parse(localStorage.getItem(HOME_GUIDE_SETTINGS_KEY)||"{}");return v&&typeof v==="object"?v:{}}catch{return {}}}
+function guidePeriod(date=new Date()){const hour=date.getHours();return Object.entries(HOME_GUIDE_PERIODS).find(([,range])=>hour>=range[0]&&hour<range[1])?.[0]||"lateNight"}
+function dateKey(value){const raw=String(value||"");if(/^\d{4}-\d{2}-\d{2}/.test(raw))return raw.slice(0,10);const d=new Date(raw);return Number.isNaN(d.getTime())?"":localYmd(d)}
+function clockText(event){const raw=String(event?.start||event?.startTime||"");const m=raw.match(/(?:T|\s)(\d{2}:\d{2})/)||raw.match(/^(\d{1,2}:\d{2})/);return m?m[1]:"時間未定"}
+function eventDate(event,kind="start"){const direct=String(event?.[kind]||"");if(direct&&/T|\s\d{1,2}:\d{2}/.test(direct)){const d=new Date(direct);if(!Number.isNaN(d.getTime()))return d}const day=dateKey(event?.date||event?.start),time=String(event?.[kind+"Time"]||event?.[kind]||"").match(/\d{1,2}:\d{2}/)?.[0];if(!day||!time)return null;const d=new Date(`${day}T${time}:00`);return Number.isNaN(d.getTime())?null:d}
+function eventScenarioTitle(event,scenarioMap){return String(scenarioMap.get(String(event?.scenarioId||""))?.title||event?.scenarioTitle||event?.title||"予定").trim()}
+function stableIndex(seed,length){let h=2166136261;for(const ch of String(seed)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return length?Math.abs(h>>>0)%length:0}
+function applyGuideTemplate(line,values){return String(line||"").replace(/\{(time|scenario|runName|count|years)\}/g,(_,key)=>String(values[key]??""))}
+function guideLineFor(pc,category,period,values,today){const own=pc.guideLines&&typeof pc.guideLines==="object"?pc.guideLines:{},categories=[category,period,!today.length?"noSchedule":""].filter(Boolean);let chosenCategory="",lines=[];for(const key of categories){lines=Array.isArray(own[key])?own[key].filter(Boolean):[];if(!lines.length)lines=HOME_GUIDE_DEFAULT_LINES[key]||[];if(lines.length){chosenCategory=key;break}}if(!lines.length)return {category:period,line:"今日もSAKU+MERUを案内するよ。"};const seed=`${localYmd()}|${period}|${pc.id}|${chosenCategory}`;return {category:chosenCategory,line:applyGuideTemplate(lines[stableIndex(seed,lines.length)],values)}}
+function guideImage(pc,category){const config=pc.guideVariants&&typeof pc.guideVariants==="object"?pc.guideVariants:{},variantId=String(config[category]||config.default||"");if(variantId&&variantId!=="__main__"){const hit=(Array.isArray(pc.variants)?pc.variants:[]).find(v=>String(v?.id||"")===variantId&&v.url);if(hit)return hit.url}return String(pc.image||"").trim()}
+function renderHomeGuide(){
+ const host=document.getElementById("homeGuide");if(!host)return;
+ const guideId=String(homeGuideSettings().homeGuidePcId||"");if(!guideId){host.hidden=true;host.innerHTML="";return}
+ const pc=(window.TRPG39?.loadPCs?.()||[]).find(v=>String(v.id)===guideId);if(!pc){host.hidden=true;host.innerHTML="";return}
+ const now=new Date(),todayKey=localYmd(now),period=guidePeriod(now),scenarios=loadScenarios(),scenarioMap=new Map(scenarios.map(s=>[String(s.id),s]));
+ const allToday=(window.TRPG39?.loadEvents?.()||[]).filter(e=>dateKey(e.date||e.start)===todayKey&&!/中止|cancel/i.test(String(e.status||""))).sort((a,b)=>String(a.start||a.startTime||"").localeCompare(String(b.start||b.startTime||"")));
+ const activeToday=allToday.filter(e=>{const end=eventDate(e,"end");return !end||end>now}),soon=activeToday.find(e=>{const start=eventDate(e,"start");if(!start)return false;const mins=(start-now)/60000;return mins>=0&&mins<=60});
+ const md=todayKey.slice(5),anniversaries=(window.TRPG39?.loadAlbum?.()||[]).filter(a=>dateKey(a.date||a.start).slice(5)===md&&dateKey(a.date||a.start)<todayKey).sort((a,b)=>String(b.date||b.start||"").localeCompare(String(a.date||a.start||"")));
+ const anniversary=anniversaries[0]||null,primary=soon||activeToday[0]||anniversary||null,primaryDate=dateKey(primary?.date||primary?.start),years=primaryDate?now.getFullYear()-Number(primaryDate.slice(0,4)):0;
+ const values={time:primary?clockText(primary):"",scenario:primary?eventScenarioTitle(primary,scenarioMap):"",runName:String(primary?.runLabel||primary?.runName||"").trim(),count:activeToday.length||anniversaries.length,years};
+ let category=soon?"sessionSoon":activeToday.length?"sessionToday":anniversary?"anniversary":period;
+ const speech=guideLineFor(pc,category,period,values,allToday),image=guideImage(pc,speech.category);
+ host.innerHTML=`${image?`<div class="home-guide-art"><img src="${esc(image)}" alt="${esc(pc.name||"案内人")}の立ち絵"></div>`:'<div class="home-guide-art home-guide-art-placeholder">🌺</div>'}<div class="home-guide-body"><h2 class="home-guide-name">${esc(pc.name||"案内人")}</h2><div class="small muted">${esc(now.toLocaleString("ja-JP",{month:"long",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit"}))}</div><div class="home-guide-line">${esc(speech.line)}</div>${allToday.length?`<div class="home-guide-schedule"><strong>今日の予定</strong>${allToday.map(e=>`<div class="home-guide-event"><span class="home-guide-time">${esc(clockText(e))}</span><span><strong>${esc(eventScenarioTitle(e,scenarioMap))}</strong>${e.runLabel?`<br><span class="small muted">${esc(e.runLabel)}</span>`:""}</span>${e.status?`<span class="home-guide-status">${esc(e.status)}</span>`:""}</div>`).join("")}</div>`:'<div class="small muted">今日の予定はありません。</div>'}${anniversary?`<div class="home-guide-anniversary">今日は何の日：${years}年前「${esc(eventScenarioTitle(anniversary,scenarioMap))}」</div>`:""}<a class="home-guide-link" href="pcs/index.html?focus=${encodeURIComponent(pc.id)}">PC詳細を見る →</a></div>`;
+ host.hidden=false;
 }
 function renderLastKpBinder(){
  const panel=document.getElementById("lastKpBinder"),body=document.getElementById("lastKpBinderBody");
@@ -154,7 +189,7 @@ function renderPrepTasks(){
    return `<a class="home-task${cls}" href="${href}"><div class="home-task-main"><div class="home-task-title">${esc(t.item.title)}</div><div class="home-task-meta">${esc(t.title)}${esc(label)} ／ 締切 ${esc(t.deadline.replaceAll("-","/"))}</div></div><div class="home-task-due">${esc(dueText(t.deadline))}</div></a>`;
  }).join("");
 }
-function renderHomePanels(){renderPrepTasks();renderLastKpBinder()}
+function renderHomePanels(){renderHomeGuide();renderPrepTasks();renderLastKpBinder()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",renderHomePanels);else renderHomePanels();
 })();
 </script>
