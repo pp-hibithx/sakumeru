@@ -21,7 +21,8 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="./assets/css/style-v0303.css">
-<script defer src="assets/js/common-layout.js?v=0303"></script>
+<script src="assets/js/home-guide-text.js?v=0911"></script>
+<script defer src="assets/js/common-layout.js?v=0911-share-nav2"></script>
 <script defer src="./assets/js/theme-v0296.js"></script><script src="assets/js/optional-features.js?v=0292" defer></script>
 
 <style>
@@ -76,26 +77,7 @@ const HOME_TUTORIAL_KEY="trpg39_home_tutorial_v1",POMODORO_KEY="trpg39_home_pomo
 const INITIAL_GUIDE_ASSET="./assets/img/home-guide-shirato-mini.png";
 const POMODORO_MODES={focus:{label:"25分集中",durationSec:1500},short:{label:"5分休憩",durationSec:300},long:{label:"15分休憩",durationSec:900}};
 const HOME_GUIDE_PERIODS={lateNight:[0,5],morning:[5,11],afternoon:[11,16],evening:[16,19],night:[19,24]};
-const HOME_GUIDE_TEXT={
- welcome:"初めまして。SAKU+MERUへようこそ。当サイトの案内役を務めます、白十字と申します。まずは、このサイトの使い方をご案内いたしますね。",
- tutorial:{
-  scenario:"まずはSCENARIOです。遊びたいシナリオや、これまで遊んだシナリオを登録して整理できます。登録したシナリオから卓の予定や記録へ繋げられるので、シナリオを追加したい時や探したい時は、まずこちらを開いてみてください。",
-  calendar:"CALENDARでは、これから遊ぶ卓の予定を登録したり、過去にいつ遊んだのかを日付から確認できます。日程が決まったら予定を登録しておくと、今日の予定としてHOMEからも確認できますよ。",
-  library:"遊び終わった卓の記録はLIBRARYに残せます。セッションの感想や出来事、画像などをまとめて、あとから読み返すための場所です。シナリオや参加したPCとも繋がるので、過去の卓を振り返りたい時はこちらをご覧ください。",
-  pc:"PCでは、ご自身の探索者をまとめて管理できます。プロフィールや能力値、技能、参加したシナリオなどを確認できます。お気に入りの探索者はHOMEに表示することもできますよ。",
-  players:"PLAYERSでは、一緒に遊んだ方と、その方が使っていたPCを確認できます。誰とどの卓で遊んだのか、どんなPC同士で一緒になったのかを振り返りたい時にお使いください。",
-  share:"SHAREでは、SAKU+MERUに残した情報のうち、ご自身で公開すると決めたものを共有できます。卓の記録などを誰かに見てもらいたい時はこちらをお使いください。公開しない情報まで自動で共有されることはありません。",
-  tools:"TOOLSには、卓の準備や記録を少し便利にする道具をまとめています。ログの整形やダイスの解析など、必要なものだけ自由にお使いください。TOOLSはSAKU+MERU本体を使っていない方にもご利用いただけます。"
- },
- tutorialComplete:"以上がSAKU+MERUの基本的なご案内です。すべての機能を最初から使う必要はありません。まずは必要なところから、少しずつお使いください。分からないことがありましたら、いつでも『案内人を呼ぶ』からお声がけくださいね。",
- normal:"どうしました？",
- help:{greeting:"もちろんです。どちらからご案内しましょうか？",noSchedule:"今日の予定はありません。",unavailable:"案内先を表示できませんでした。"},
- pomodoro:{focusStart:"では、25分だけ集中しましょう。",focusPaused:"一時停止しました。作業時間には含めません。",focusDone:"お疲れさまでした。どこまで進みました？",breakStart:"少し休みましょう。",breakPaused:"休憩を一時停止しています。",breakDone:"そろそろ戻りますか？"},
- favoritePcDefaults:{
-  morning:["おはよう。今日の予定を確認しよう。"],afternoon:["今日も記録を整えていこう。"],evening:["夕方だ。今夜の予定を確認しておこう。"],night:["こんばんは。今日の卓を振り返る？"],lateNight:["深夜だ。無理は禁物だよ。"],
-  sessionToday:["今日は{time}から{scenario}。{runName}の予定だ。"],sessionSoon:["{scenario}まであと1時間以内だ。準備はできている？"],noSchedule:["今日は予定なし。過去の記録を眺めるのもいいね。"],anniversary:["{years}年前の今日は「{scenario}」の記録があるよ。"],fallback:"今日もSAKU+MERUを案内するよ。"
- }
-};
+const HOME_GUIDE_TEXT=window.SAKUMERU_HOME_GUIDE_TEXT;
 const HOME_TUTORIAL_TOPICS=[{key:"scenario",label:"SCENARIO"},{key:"calendar",label:"CALENDAR"},{key:"library",label:"LIBRARY"},{key:"pc",label:"PC"},{key:"players",label:"PLAYERS"},{key:"share",label:"SHARE"},{key:"tools",label:"TOOLS"}];
 const HOME_TUTORIAL_STEPS=HOME_TUTORIAL_TOPICS.map(topic=>HOME_GUIDE_TEXT.tutorial[topic.key]);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -142,13 +124,13 @@ function focusHomeTarget(target){if(!target)return false;if(target.tagName==="DE
 function renderHomeConcierge(){
  const host=document.getElementById("homeConcierge"),call=document.getElementById("callHomeGuide");if(!host||!call)return;
  const tutorial=tutorialState();
- if(!tutorial.completed&&!homeTutorialDismissed&&!homeConciergeOpen){homeConciergeOpen=true;homeConciergeMode="welcome"}
+ if((!tutorial.completed||tutorial.review)&&!homeTutorialDismissed&&!homeConciergeOpen){homeConciergeOpen=true;if(tutorial.mode==="tutorial"){homeConciergeMode="tutorial";homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(tutorial.step)||0));homeTutorialReview=!!tutorial.review}else homeConciergeMode="welcome"}
  call.onclick=()=>{homeConciergeOpen=true;homeConciergeMode=tutorialState().completed?"menu":"welcome";renderHomeConcierge();focusHomeTarget(host)};
  if(!homeConciergeOpen){host.hidden=true;host.innerHTML="";call.setAttribute("aria-expanded","false");return}
  let label="",message="",actions="";
  if(homeConciergeMode==="welcome"){
-   message=HOME_GUIDE_TEXT.welcome;
-   actions='<button type="button" data-concierge-action="tutorial-start">案内を始める</button><button type="button" data-concierge-action="later">あとで</button>';
+   message=tutorial.mode==="paused"?HOME_GUIDE_TEXT.help.resume:HOME_GUIDE_TEXT.welcome;
+   actions=`<button type="button" data-concierge-action="${tutorial.mode==="paused"?"tutorial-resume":"tutorial-start"}">${tutorial.mode==="paused"?"案内を続ける":"案内を始める"}</button><button type="button" data-concierge-action="later">あとで</button>`;
  }else if(homeConciergeMode==="help"){
    message=HOME_GUIDE_TEXT.help.greeting;
    actions=`<button type="button" data-concierge-action="tutorial-all">最初から案内して</button>${HOME_TUTORIAL_TOPICS.map((topic,index)=>`<button type="button" data-tutorial-topic="${index}">${topic.label}</button>`).join("")}`;
@@ -165,16 +147,16 @@ function renderHomeConcierge(){
  }
  host.innerHTML=`${initialGuideArtHtml()}<div><div class="home-guide-head"><span class="small muted">${esc(label)}</span><button type="button" class="home-concierge-close" data-concierge-close aria-label="案内人を閉じる">閉じる</button></div><div class="home-guide-line" data-concierge-message>${esc(message)}</div><div class="home-concierge-choices">${actions}</div></div>`;
  host.hidden=false;call.setAttribute("aria-expanded","true");
- host.querySelector("[data-concierge-close]").onclick=()=>{if(!tutorialState().completed)homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();call.focus()};
+ host.querySelector("[data-concierge-close]").onclick=()=>{const current=tutorialState();if(homeConciergeMode==="tutorial")writeJson(HOME_TUTORIAL_KEY,{...current,mode:"paused",step:homeTutorialStep,targetPage:HOME_TUTORIAL_TOPICS[homeTutorialStep].key,updatedAt:new Date().toISOString()});if(!current.completed)homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();call.focus()};
  host.querySelectorAll("[data-tutorial-topic]").forEach(button=>button.onclick=()=>{homeTutorialReview=true;homeTutorialStep=Number(button.dataset.tutorialTopic)||0;homeConciergeMode="tutorial";renderHomeConcierge()});
  host.querySelectorAll("[data-concierge-action]").forEach(button=>button.onclick=()=>{
    const action=button.dataset.conciergeAction,message=host.querySelector("[data-concierge-message]");
-   if(action==="later"){homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();return}
+   if(action==="later"){const current=tutorialState();writeJson(HOME_TUTORIAL_KEY,{...current,mode:"deferred",updatedAt:new Date().toISOString()});homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();return}
    if(action==="tutorial-close"){homeConciergeOpen=false;homeConciergeMode="";homeTutorialReview=false;renderHomeConcierge();return}
    if(action==="help"){homeConciergeMode="help";renderHomeConcierge();return}
    if(action==="help-menu"){homeConciergeMode="help";renderHomeConcierge();return}
-   if(action==="tutorial-start"||action==="tutorial-all"){homeTutorialReview=action==="tutorial-all";homeTutorialStep=0;homeConciergeMode="tutorial";if(!tutorialState().completed)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:0,completed:false,updatedAt:new Date().toISOString()});renderHomeConcierge();return}
-   if(action==="tutorial-prev"||action==="tutorial-next"){homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,homeTutorialStep+(action==="tutorial-next"?1:-1)));if(!tutorialState().completed)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:homeTutorialStep,completed:false,updatedAt:new Date().toISOString()});renderHomeConcierge();return}
+   if(action==="tutorial-start"||action==="tutorial-resume"||action==="tutorial-all"){const current=tutorialState(),review=action==="tutorial-all",step=action==="tutorial-resume"?Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(current.step)||0)):0;writeJson(HOME_TUTORIAL_KEY,{...current,completed:review?true:false,mode:"tutorial",review,step,targetPage:HOME_TUTORIAL_TOPICS[step].key,updatedAt:new Date().toISOString()});location.href=`${HOME_TUTORIAL_TOPICS[step].key==="pc"?"pcs":HOME_TUTORIAL_TOPICS[step].key}/index.html`;return}
+   if(action==="tutorial-prev"||action==="tutorial-next"){homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,homeTutorialStep+(action==="tutorial-next"?1:-1)));const current=tutorialState(),topic=HOME_TUTORIAL_TOPICS[homeTutorialStep];writeJson(HOME_TUTORIAL_KEY,{...current,mode:"tutorial",review:homeTutorialReview,step:homeTutorialStep,targetPage:topic.key,updatedAt:new Date().toISOString()});location.href=topic.key==="pc"?"pcs/index.html":topic.key==="share"?"share/manage.html":`${topic.key}/index.html`;return}
    if(action==="tutorial-finish"){if(!homeTutorialReview)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:HOME_TUTORIAL_STEPS.length-1,completed:true,updatedAt:new Date().toISOString()});homeConciergeMode="tutorial-complete";renderHomeConcierge();renderHomeGuide();return}
    let target=null;
    if(action==="timer")target=document.getElementById("pomodoroPanel");
