@@ -7,8 +7,9 @@
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .share-page{display:grid;gap:14px}.share-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}.share-meta{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}.share-list{display:grid;gap:8px}.share-row{border-top:1px solid rgba(255,255,255,.07);padding-top:8px}.share-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}.share-day{min-height:68px;background:var(--panel);padding:6px;font-size:12px}.share-day .num{color:var(--muted);font-size:11px}.free{margin-top:6px;font-weight:700}.busy{margin-top:6px;color:var(--muted)}
-.share-article-body{white-space:pre-wrap;line-height:1.9;margin-top:16px}.share-article-head{border-bottom:1px solid var(--line);padding-bottom:12px}.share-password{max-width:480px;margin:12px auto;text-align:left}.share-password-row{display:flex;gap:8px;align-items:end}.share-password-row>div{flex:1}.share-password-row button{width:auto;white-space:nowrap}.share-password-error{font-size:12px;margin-top:6px;color:var(--muted)}
-.share-breadcrumb{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;font-size:.95rem}.share-breadcrumb a{color:var(--gold);font-weight:700;text-decoration:none}.share-breadcrumb a:hover{text-decoration:underline}.share-breadcrumb-sep{color:var(--muted)}
+.share-article-body{white-space:pre-wrap;line-height:1.9;margin-top:16px}.share-article-head{border-bottom:2px solid color-mix(in srgb,var(--accent) 34%,var(--line));padding:2px 0 14px;margin-bottom:18px}.share-article-head h2{font-size:clamp(1.35rem,2.5vw,1.5rem);font-weight:750;line-height:1.45;margin:0 0 7px}.share-article-updated{font-size:14px;line-height:1.5;color:color-mix(in srgb,currentColor 78%,var(--muted));font-weight:550}.share-password{max-width:480px;margin:12px auto;text-align:left}.share-password-row{display:flex;gap:8px;align-items:end}.share-password-row>div{flex:1}.share-password-row button{width:auto;white-space:nowrap}.share-password-error{font-size:12px;margin-top:6px;color:var(--muted)}
+.share-breadcrumb{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 14px;font-size:14px;line-height:1.55}.share-breadcrumb a{color:color-mix(in srgb,var(--gold) 82%,#fff);font-weight:700;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;cursor:pointer}.share-breadcrumb a:hover{text-decoration-color:currentColor;color:color-mix(in srgb,var(--gold) 68%,#fff)}.share-breadcrumb a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}.share-breadcrumb [aria-current="page"]{color:color-mix(in srgb,currentColor 72%,var(--muted));font-weight:550}.share-breadcrumb-sep{color:color-mix(in srgb,currentColor 48%,var(--muted))}
+.share-article-warning{margin:0 0 18px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));border-left:5px solid var(--accent);border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));line-height:1.65}.share-article-warning strong{display:block;margin-bottom:2px;font-size:1rem}.share-article-warning span{font-size:14px;color:color-mix(in srgb,currentColor 82%,var(--muted))}
 .share-scenario-public{max-width:900px;margin:auto}.share-scenario-public>header{margin-bottom:18px}.share-run-list{display:grid;gap:9px}.share-run{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}.share-run>summary{cursor:pointer;padding:11px 13px;font-weight:800}.share-run-body{padding:2px 14px 14px;border-top:1px solid var(--line)}.share-run-meta{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.share-run-participants{display:grid;gap:4px;margin:10px 0}.share-run-links{display:grid;gap:6px;margin-top:12px}.share-run-links a{display:block;width:max-content;max-width:100%;overflow-wrap:anywhere}
 .share-scenario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:12px}.share-scenario-card{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}.share-scenario-thumb{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}.share-scenario-placeholder{width:100%;aspect-ratio:16/10;display:grid;place-items:center;font-size:34px}.share-scenario-body{padding:12px}.share-scenario-title{font-weight:700}.share-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.share-report-block{margin-top:12px;line-height:1.7}.share-report-block>strong{display:block;margin-bottom:4px}.share-spoiler{margin-top:10px;border:1px solid var(--line);border-radius:8px;overflow:hidden}.share-spoiler summary{cursor:pointer;padding:9px 11px;font-weight:700}.share-spoiler .spoiler-body{padding:10px 12px;border-top:1px solid var(--line)}
 @media(max-width:760px){.share-cal{font-size:11px}.share-day{min-height:54px;padding:4px}.share-password-row{display:grid}}
@@ -197,9 +198,9 @@
 </style>
 
 <style>
-.shared-article-blocks{display:grid;gap:16px;margin-top:16px}
-.shared-article-toggle{border:1px solid var(--line);border-radius:9px;overflow:hidden}.shared-article-toggle>summary{cursor:pointer;padding:10px 12px;font-weight:800}.shared-article-toggle-body{display:grid;gap:14px;padding:4px 12px 12px}.shared-article-toggle .shared-article-toggle{margin-left:12px}@media(max-width:620px){.shared-article-toggle .shared-article-toggle{margin-left:6px}}
-.share-article-text{white-space:pre-wrap;line-height:1.9;overflow-wrap:anywhere}
+.shared-article-blocks{display:grid;gap:20px;margin-top:16px}
+.shared-article-toggle{border:0;border-radius:0;overflow:visible;background:transparent}.shared-article-toggle>summary{display:flex;align-items:center;min-height:46px;cursor:pointer;padding:10px 12px;list-style:none;border:1px solid color-mix(in srgb,currentColor 28%,var(--line));border-left:4px solid var(--accent);border-radius:8px;background:color-mix(in srgb,var(--panel) 88%,currentColor 5%);font-size:16px;font-weight:800;transition:background .15s ease,border-color .15s ease}.shared-article-toggle>summary::-webkit-details-marker{display:none}.shared-article-toggle>summary::before{content:"▶";margin-right:9px;color:var(--accent);font-size:16px}.shared-article-toggle[open]>summary::before{content:"▼"}.shared-article-toggle>summary:hover{background:color-mix(in srgb,var(--accent) 13%,var(--panel));border-color:color-mix(in srgb,var(--accent) 58%,var(--line))}.shared-article-toggle>summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}.shared-article-toggle-body{display:grid;gap:16px;margin:4px 0 7px 10px;padding:9px 0 9px 15px;border-left:2px solid color-mix(in srgb,var(--accent) 62%,var(--line))}.shared-article-toggle .shared-article-toggle{margin-left:4px}@media(max-width:620px){.shared-article-toggle-body{margin-left:5px;padding-left:10px}.shared-article-toggle .shared-article-toggle{margin-left:2px}}
+.share-article-text{white-space:pre-wrap;line-height:1.95;overflow-wrap:anywhere}.share-article-text p{margin:.65em 0 1em}.share-article-text blockquote{margin:1em 0;padding:.55em .9em;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--panel) 90%,currentColor 4%)}
 .shared-article-image{max-width:520px;margin:0 auto;text-align:center}
 .shared-article-image img{display:block;width:auto;max-width:100%;max-height:360px;height:auto;object-fit:contain;margin:auto;border:1px solid var(--line);border-radius:10px;cursor:zoom-in}
 .shared-article-image figcaption{margin-top:6px}
@@ -331,20 +332,23 @@
    const nav=shareNav(p),scenario=String(p.scenarioTitle||nav?.scenario?.title||"シナリオ").trim(),run=String(p.runLabel||runForPayload(p)?.label||"").trim(),title=String(p.title||"卓記録").trim();
    const parts=[];
    if(scenario)parts.push(nav?`<a href="${esc(shareUrl(id,"scenario"))}">${esc(scenario)}</a>`:`<span>${esc(scenario)}</span>`);
-   if(run)parts.push(nav?`<a href="${esc(shareUrl(id,"scenario",nav.current?.runKey||""))}">${esc(run)}</a>`:`<span>${esc(run)}</span>`);
+   if(run)parts.push(nav?`<a href="${esc(shareUrl(id,"run",nav.current?.runKey||""))}">${esc(run)}</a>`:`<span>${esc(run)}</span>`);
    parts.push(`<span aria-current="page">${esc(title)}</span>`);
    return `<nav class="share-breadcrumb" aria-label="パンくず">${parts.join('<span class="share-breadcrumb-sep" aria-hidden="true">›</span>')}</nav>`;
  };
- const renderScenarioPublic=p=>{
+ const renderScenarioPublic=(p,mode="scenario")=>{
    const nav=shareNav(p);if(!nav)return false;
    const requested=String(new URLSearchParams(location.search).get("run")||"");
-   const rows=nav.runs.filter(r=>r&&Array.isArray(r.sessions)&&Array.isArray(r.articles)&&(r.sessions.length||r.articles.length));
+   let rows=nav.runs.filter(r=>r&&Array.isArray(r.sessions)&&Array.isArray(r.articles)&&(r.sessions.length||r.articles.length));
+   if(mode==="run")rows=rows.filter(r=>String(r.key||"")===requested);
    const participantHtml=participants=>(Array.isArray(participants)?participants:[]).length?`<div class="share-run-participants"><strong>公開参加者</strong>${participants.map(v=>`<div>${esc([v.role,v.ho].filter(Boolean).join(" / "))}${(v.role||v.ho)&&(v.plName||v.pcName)?"：":""}${esc(v.plName||"")}${v.pcName?` / PC：${esc(v.pcName)}`:""}</div>`).join("")}</div>`:"";
    const runHtml=rows.map(r=>{
      const links=[...r.sessions.map(v=>({shareId:v.shareId,title:v.title||"卓記録"})),...r.articles.map(v=>({shareId:v.shareId,title:v.title||"卓記事"}))].filter(v=>v.shareId);
-     return `<details class="share-run" ${requested&&requested===r.key?"open":""}><summary>▶ ${esc(r.label||"陣名未設定")} <span class="small muted">${links.length}件</span></summary><div class="share-run-body"><div class="share-run-meta">${r.date?`<span class="badge">${esc(r.date)}</span>`:""}${r.status?`<span class="badge">${esc(r.status)}</span>`:""}</div>${participantHtml(r.participants)}<div class="share-run-links"><strong>共有卓記録</strong>${links.map(v=>`<a href="${esc(shareUrl(v.shareId))}">› ${esc(v.title)}</a>`).join("")}</div></div></details>`;
+     return `<details class="share-run" ${requested&&requested===r.key?"open":""}><summary>▶ ${esc(r.label||"陣名未設定")} <span class="small muted">${links.length}件</span></summary><div class="share-run-body"><div class="share-run-meta">${r.date?`<span class="badge">${esc(r.date)}</span>`:""}${r.status?`<span class="badge">${esc(r.status)}</span>`:""}</div>${mode==="scenario"?`<a href="${esc(shareUrl(id,"run",r.key||""))}">この陣の公開ページ</a>`:""}${participantHtml(r.participants)}<div class="share-run-links"><strong>共有卓記録</strong>${links.map(v=>`<a href="${esc(shareUrl(v.shareId))}">› ${esc(v.title)}</a>`).join("")}</div></div></details>`;
    }).join("");
-   box.innerHTML=`<article class="share-scenario-public"><header><div class="small muted">SHARE内の公開情報</div><h2>${esc(nav.scenario?.title||p.scenarioTitle||"シナリオ")}</h2><p class="small muted">共有者が明示的に公開した陣・卓記録だけを表示しています。</p></header><div class="share-run-list">${runHtml||'<p class="muted">公開済みの卓記録はありません。</p>'}</div></article>`;
+   const selected=mode==="run"?rows[0]:null;
+   const crumbs=mode==="run"?`<nav class="share-breadcrumb" aria-label="パンくず"><a href="${esc(shareUrl(id,"scenario"))}">${esc(nav.scenario?.title||p.scenarioTitle||"シナリオ")}</a><span class="share-breadcrumb-sep" aria-hidden="true">›</span><span aria-current="page">${esc(selected?.label||"陣")}</span></nav>`:"";
+   box.innerHTML=`<article class="share-scenario-public">${crumbs}<header><div class="small muted">SHARE内の公開情報</div><h2>${esc(mode==="run"?(selected?.label||"陣"):(nav.scenario?.title||p.scenarioTitle||"シナリオ"))}</h2><p class="small muted">共有者が明示的に公開した陣・卓記録だけを表示しています。</p></header><div class="share-run-list">${runHtml||'<p class="muted">公開済みの卓記録はありません。</p>'}</div></article>`;
    return true;
  };
  const renderArticle=p=>{
@@ -426,8 +430,9 @@
 
    box.innerHTML=`${breadcrumbHtml(p)}<div class="share-article-head">
      <h2>${esc(p.title||"卓記事")}</h2>
-     ${p.updatedAt?`<div class="small muted">更新 ${esc(p.updatedAt)}</div>`:""}
+     ${p.updatedAt?`<div class="share-article-updated">更新 ${esc(p.updatedAt)}</div>`:""}
    </div>
+   ${p.spoilerWarning?`<aside class="share-article-warning" role="note"><strong>⚠ この先、${esc(p.scenarioTitle?`【${p.scenarioTitle}】の`:"")}ネタバレを含みます。</strong><span>未通過の方は閲覧にご注意ください。</span></aside>`:""}
    ${p.body&&!blocks.some(b=>String(b?.type||"").toLowerCase()==="text"&&String(b?.text||"").trim())?`<div class="share-article-text">${esc(p.body)}</div>`:""}
    <div class="shared-article-blocks">${blocksHtml}</div>`;
  };
@@ -601,7 +606,7 @@
       p={kind:"scenario-list",version:p.version||1,title:p.title||"シナリオ一覧",updatedAt:p.updatedAt||"",items};
     }
   }
-  if(new URLSearchParams(location.search).get("view")==="scenario"&&renderScenarioPublic(p))return;
+  {const publicView=new URLSearchParams(location.search).get("view")||"";if((publicView==="scenario"||publicView==="run")&&renderScenarioPublic(p,publicView))return}
   if(p.kind==="kp-live-share"){
     const items=Array.isArray(p.items)?p.items:[];
     const itemId=(x,i)=>"kp-item-"+String(x?.id||i+1).replace(/[^a-zA-Z0-9_-]/g,"-");
