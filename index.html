@@ -40,13 +40,19 @@
 .home-guide{display:grid;grid-template-columns:170px minmax(0,1fr);gap:18px;align-items:center;margin:18px 0;padding:16px 18px;border:2px solid color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%)}
 .home-guide-art{width:170px;height:220px;display:grid;place-items:center;overflow:hidden;border-radius:10px;background:color-mix(in srgb,var(--panel) 82%,#000 18%)}.home-guide-art img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}.home-guide-art-placeholder{font-size:44px}
 .home-guide-name{margin:0;font-size:1.35rem}.home-guide-line{margin:9px 0 12px;font-size:1.05rem;line-height:1.65;font-weight:650}.home-guide-schedule{display:grid;gap:6px}.home-guide-event{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border-top:1px solid var(--line)}.home-guide-event:first-child{border-top:0}.home-guide-time{font-variant-numeric:tabular-nums;font-weight:800}.home-guide-status{font-size:12px;padding:2px 7px;border:1px solid var(--line);border-radius:999px}.home-guide-anniversary{margin-top:9px;font-size:13px;color:color-mix(in srgb,currentColor 78%,transparent)}.home-guide-link{display:inline-block;margin-top:10px;font-weight:700}
-@media(max-width:620px){.home-task{grid-template-columns:1fr}.home-task-due{white-space:normal}.home-guide{grid-template-columns:100px minmax(0,1fr);gap:12px;padding:12px}.home-guide-art{width:100px;height:150px}.home-guide-event{grid-template-columns:auto minmax(0,1fr)}.home-guide-status{grid-column:2}}
+.home-guide-line{position:relative;padding:11px 14px;border:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-radius:12px;background:var(--panel)}.home-guide-line::before{content:"";position:absolute;left:-9px;top:18px;width:14px;height:14px;border-left:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-bottom:2px solid color-mix(in srgb,currentColor 22%,var(--line));background:var(--panel);transform:rotate(45deg)}
+.home-guide-head{display:flex;justify-content:space-between;gap:10px;align-items:start}.home-guide-help{width:auto;min-height:34px;padding:5px 10px}.home-tutorial-actions,.pomo-actions,.work-progress-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.home-tutorial-actions button,.pomo-actions button,.work-progress-actions button{width:auto}
+.home-work{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.2fr);gap:14px;margin:18px 0}.home-work-panel{min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.home-work-panel h2,.home-work-panel h3{margin:0 0 10px}.pomo-clock{font-size:clamp(2.1rem,5vw,3.4rem);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:.04em}.pomo-mode-row{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.pomo-mode-row button,.pomo-actions button{width:auto}.pomo-mode-row button[aria-pressed="true"]{border-color:var(--accent);font-weight:800}.pomo-fields{display:grid;gap:7px}.pomo-ref-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.pomo-status{min-height:1.5em;margin-top:7px;color:var(--muted)}
+.work-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.work-stat{padding:9px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--panel) 88%,currentColor 3%)}.work-stat strong{display:block;font-size:1.15rem}.work-now{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:9px}.work-now-title{font-weight:800}.work-latest{margin-top:9px}.work-log-days{display:grid;gap:7px;margin-top:9px}.work-log-day{border-top:1px solid var(--line);padding-top:7px}.work-log-day summary{cursor:pointer;font-weight:800}.work-log-row{padding:7px 4px;border-top:1px dashed var(--line)}.work-log-progress{white-space:pre-wrap;color:var(--muted);margin-top:2px}.work-progress-form{margin-top:10px;padding:10px;border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));border-radius:9px}.work-progress-form textarea{min-height:70px}
+@media(max-width:760px){.home-work{grid-template-columns:1fr}.pomo-ref-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.home-task{grid-template-columns:1fr}.home-task-due{white-space:normal}.home-guide{grid-template-columns:100px minmax(0,1fr);gap:12px;padding:12px}.home-guide-art{width:100px;height:150px}.home-guide-event{grid-template-columns:auto minmax(0,1fr)}.home-guide-status{grid-column:2}.home-guide-line::before{left:-8px}.work-summary{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="./assets/css/readability.css?v=0908-3">
 </head><body class="home-page">
 <div data-site-header data-active="home"></div>
 <main><div class="wrap"><div class="notice" style="margin:16px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px"><strong>テスト公開中</strong><br><span class="small">現在、SAKU+MERU本体は開発者・テスター向けです。TOOLSはどなたでもご利用いただけます。</span></div>
 <section id="homeGuide" class="home-guide" hidden aria-label="HOMEの案内人"></section>
+<section class="home-work" aria-label="作業タイマーとWORK LOG"><div id="pomodoroPanel" class="home-work-panel"></div><div id="workLogPanel" class="home-work-panel"></div></section>
 <section id="prepTasks" class="home-task-panel" hidden>
   <div class="home-task-head"><h2>卓準備</h2><span id="prepTaskCount" class="small muted"></span></div>
   <div id="prepTaskList" class="home-task-list"></div>
@@ -55,42 +61,29 @@
   <div class="home-task-head"><h2>最後に開いたKPバインダー</h2></div>
   <div id="lastKpBinderBody" class="home-task-list"></div>
 </section>
-<section><div class="grid">
-<a class="card" href="scenario/index.html?v=0292"><span class="badge">SCENARIO</span><h3>遊ぶシナリオをまとめる</h3><p>所持・通過・予定・KP状況を、 自分用のシナリオ棚にまとめられます。</p></a>
-<a class="card" href="calendar/index.html?v=0292"><span class="badge">CALENDAR</span><h3>卓予定をまとめる</h3><p>予定と遊んだ記録を、日付から確認できます。</p></a>
-<a class="card" href="library/index.html?v=0292"><span class="badge">LIBRARY</span><h3>セッション記録をまとめる</h3><p>友達と遊んだ卓を、 ネタバレに配慮したアルバムとして残せます。</p></a>
-<a class="card" href="pcs/index.html?v=0292">
-  <span class="badge">PC</span>
-  <h3>キャラクターをまとめる</h3>
-  <p>PC紹介・キャラクターシート・参加シナリオ履歴をまとめます。</p>
-</a>
-
-<a class="card" href="players/index.html?v=0292" data-home-players-card>
-  <span class="badge">PLAYERS</span>
-  <h3>同卓者をまとめる</h3>
-  <p>一緒に遊んだ人と、同卓したシナリオや履歴をまとめます。</p>
-</a>
-
-
-<a class="card" href="profile/index.html">
-  <span class="badge">PROFILE</span>
-  <h3>自己紹介をまとめる</h3>
-  <p>卓の好みや遊び方をまとめて、必要な項目だけ共有できます。</p>
-</a>
-<a class="card" href="tools/index.html"><span class="badge">TOOLS</span><h3>卓を少し便利に</h3><p>ダイスログ解析などのWebツール。</p></a>
-<a class="card" href="help/index.html"><span class="badge">HELP</span><h3>使い方を見る</h3><p>やりたいことから、各機能の操作方法を確認できます。</p></a>
-<a class="card" href="backup/index.html"><span class="badge">BACKUP</span><h3>データを守る</h3><p>SCENARIOとLIBRARYに保存したデータを、 書き出して保管できます。</p></a>
-</div></section></div></main><div data-site-footer></div><script>
+</div></main><div data-site-footer></div><script>
 (()=>{"use strict";
 const KEY="39x2_prep_v1";
 const HOME_GUIDE_SETTINGS_KEY="trpg39_home_guide_v1";
+const HOME_TUTORIAL_KEY="trpg39_home_tutorial_v1",POMODORO_KEY="trpg39_home_pomodoro_v1",WORK_LOG_KEY="trpg39_work_logs_v1";
+const POMODORO_MODES={focus:{label:"25分集中",durationSec:1500},short:{label:"5分休憩",durationSec:300},long:{label:"15分休憩",durationSec:900}};
+const POMODORO_LINES={focusStart:"では、25分だけ集中しましょう。",focusPaused:"一時停止しました。作業時間には含めません。",focusDone:"お疲れさまでした。どこまで進みました？",breakStart:"少し休みましょう。",breakDone:"そろそろ戻りますか？"};
+const HOME_TUTORIAL_STEPS=[
+ "初めまして。白十字 土布岐です。この本の使い方をご案内しますね。",
+ "SCENARIOは、遊びたい・通過したシナリオを整理する棚です。",
+ "CALENDARでは今後の予定と、いつ遊んだかを日付から確認できます。",
+ "LIBRARYは卓記録を探し、読み、残すための場所です。",
+ "PCは自分の探索者を管理する正本。PLAYERSでは一緒に遊んだ方を確認できます。",
+ "SHAREは公開を選んだ情報だけを共有します。TOOLSには卓を支える小道具があります。",
+ "案内は以上です。HOMEには、お好きなPCを案内人として表示することもできます。"
+];
 const HOME_GUIDE_PERIODS={lateNight:[0,5],morning:[5,11],afternoon:[11,16],evening:[16,19],night:[19,24]};
 const HOME_GUIDE_DEFAULT_LINES={
  morning:["おはよう。今日の予定を確認しよう。"],afternoon:["今日も記録を整えていこう。"],evening:["夕方だ。今夜の予定を確認しておこう。"],night:["こんばんは。今日の卓を振り返る？"],lateNight:["深夜だ。無理は禁物だよ。"],
  sessionToday:["今日は{time}から{scenario}。{runName}の予定だ。"],sessionSoon:["{scenario}まであと1時間以内だ。準備はできている？"],noSchedule:["今日は予定なし。過去の記録を眺めるのもいいね。"],anniversary:["{years}年前の今日は「{scenario}」の記録があるよ。"]
 };
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let homeScenariosCache=null;
+let homeScenariosCache=null,homeTutorialOpen=false,homeTimerTick=0;
 function localYmd(d=new Date()){const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
 function dayDiff(ymd){const [y,m,d]=String(ymd).split("-").map(Number),t=new Date(y,m-1,d),now=new Date();now.setHours(0,0,0,0);return Math.round((t-now)/86400000)}
 function dueText(ymd){const n=dayDiff(ymd);if(n<0)return `期限切れ ${Math.abs(n)}日`;if(n===0)return "今日";if(n===1)return "明日";return `あと${n}日`}
@@ -111,10 +104,32 @@ function stableIndex(seed,length){let h=2166136261;for(const ch of String(seed))
 function applyGuideTemplate(line,values){return String(line||"").replace(/\{(time|scenario|runName|count|years)\}/g,(_,key)=>String(values[key]??""))}
 function guideLineFor(pc,category,period,values,today){const own=pc.guideLines&&typeof pc.guideLines==="object"?pc.guideLines:{},categories=[category,period,!today.length?"noSchedule":""].filter(Boolean);let chosenCategory="",lines=[];for(const key of categories){lines=Array.isArray(own[key])?own[key].filter(Boolean):[];if(!lines.length)lines=HOME_GUIDE_DEFAULT_LINES[key]||[];if(lines.length){chosenCategory=key;break}}if(!lines.length)return {category:period,line:"今日もSAKU+MERUを案内するよ。"};const seed=`${localYmd()}|${period}|${pc.id}|${chosenCategory}`;return {category:chosenCategory,line:applyGuideTemplate(lines[stableIndex(seed,lines.length)],values)}}
 function guideImage(pc,category){const config=pc.guideVariants&&typeof pc.guideVariants==="object"?pc.guideVariants:{},variantId=String(config[category]||config.default||"");if(variantId&&variantId!=="__main__"){const hit=(Array.isArray(pc.variants)?pc.variants:[]).find(v=>String(v?.id||"")===variantId&&v.url);if(hit)return hit.url}return String(pc.image||"").trim()}
+function readJson(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||"");return v??fallback}catch{return fallback}}
+function writeJson(key,value){localStorage.setItem(key,JSON.stringify(value))}
+function tutorialState(){const v=readJson(HOME_TUTORIAL_KEY,{});return v&&typeof v==="object"?v:{}}
+function guideArtHtml(pc,name){const image=pc?guideImage(pc,"default"):"";return image?`<div class="home-guide-art"><img src="${esc(image)}" alt="${esc(name)}の立ち絵"></div>`:'<div class="home-guide-art home-guide-art-placeholder">🌺</div>'}
+function bindTutorialButtons(){const host=document.getElementById("homeGuide");host?.querySelector("[data-tutorial-next]:not([data-back])")?.addEventListener("click",()=>{const state=tutorialState(),next=Math.min(HOME_TUTORIAL_STEPS.length-1,Number(state.step||0)+1);writeJson(HOME_TUTORIAL_KEY,{...state,step:next,completed:!!state.completed,updatedAt:new Date().toISOString()});renderHomeGuide()});host?.querySelector("[data-tutorial-finish]")?.addEventListener("click",()=>{writeJson(HOME_TUTORIAL_KEY,{completed:true,step:HOME_TUTORIAL_STEPS.length-1,updatedAt:new Date().toISOString()});homeTutorialOpen=false;renderHomeGuide()});host?.querySelector("[data-tutorial-close]")?.addEventListener("click",()=>{homeTutorialOpen=false;renderHomeGuide()});host?.querySelector("[data-guide-help]")?.addEventListener("click",()=>{const state=tutorialState();writeJson(HOME_TUTORIAL_KEY,{...state,step:0,completed:true,updatedAt:new Date().toISOString()});homeTutorialOpen=true;renderHomeGuide()})}
+function renderTutorial(host,whitePc,state){const step=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(state.step||0))),last=step===HOME_TUTORIAL_STEPS.length-1;host.innerHTML=`${guideArtHtml(whitePc,"白十字 土布岐")}<div><div class="home-guide-head"><div><h2 class="home-guide-name">白十字 土布岐</h2><div class="small muted">SAKU+MERU 案内人　${step+1}/${HOME_TUTORIAL_STEPS.length}</div></div>${state.completed?'<button type="button" class="home-guide-help" data-tutorial-close>閉じる</button>':""}</div><div class="home-guide-line">${esc(HOME_TUTORIAL_STEPS[step])}</div><div class="home-tutorial-actions">${step>0?'<button type="button" data-tutorial-next data-back>前へ</button>':""}${last?'<button type="button" data-tutorial-finish>案内を終える</button>':'<button type="button" data-tutorial-next>次へ</button>'}</div></div>`;const back=host.querySelector("[data-back]");if(back)back.onclick=()=>{writeJson(HOME_TUTORIAL_KEY,{...state,step:Math.max(0,step-1),completed:!!state.completed,updatedAt:new Date().toISOString()});renderHomeGuide()};bindTutorialButtons();host.hidden=false}
+function timerState(){const raw=readJson(POMODORO_KEY,{}),mode=POMODORO_MODES[raw?.mode]?raw.mode:"focus";return {mode,durationSec:Number(raw?.durationSec)||POMODORO_MODES[mode].durationSec,status:["running","paused"].includes(raw?.status)?raw.status:"idle",startedAt:String(raw?.startedAt||""),lastResumedAt:String(raw?.lastResumedAt||""),elapsedSec:Math.max(0,Number(raw?.elapsedSec)||0),title:String(raw?.title||""),pcId:String(raw?.pcId||""),scenarioId:String(raw?.scenarioId||""),runId:String(raw?.runId||""),albumId:String(raw?.albumId||""),taskId:String(raw?.taskId||""),pendingLogId:String(raw?.pendingLogId||""),message:String(raw?.message||"")}}
+function saveTimerState(state){writeJson(POMODORO_KEY,state);return state}
+function timerElapsed(state,now=Date.now()){const resumed=Date.parse(state.lastResumedAt||"");return Math.min(state.durationSec,Math.max(0,Math.floor(state.elapsedSec+(state.status==="running"&&Number.isFinite(resumed)?(now-resumed)/1000:0))))}
+function timerRemaining(state,now=Date.now()){return Math.max(0,state.durationSec-timerElapsed(state,now))}
+function timerSpeech(){const s=timerState();if(s.message)return s.message;if(s.status==="running")return s.mode==="focus"?POMODORO_LINES.focusStart:POMODORO_LINES.breakStart;if(s.status==="paused")return s.mode==="focus"?POMODORO_LINES.focusPaused:"休憩を一時停止しています。";return ""}
+function workLogs(){const rows=readJson(WORK_LOG_KEY,[]);return Array.isArray(rows)?rows:[]}
+function saveWorkLogs(rows){writeJson(WORK_LOG_KEY,Array.isArray(rows)?rows:[])}
+function uuid(){return crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`}
+function finishTimer(state,automatic=false){const now=new Date(),durationSec=timerElapsed(state,now.getTime());let pendingLogId="";if(state.mode==="focus"&&durationSec>0){pendingLogId=uuid();const logs=workLogs();logs.unshift({id:pendingLogId,startedAt:state.startedAt||now.toISOString(),endedAt:now.toISOString(),durationSec,title:state.title,progress:"",pcId:state.pcId,scenarioId:state.scenarioId,runId:state.runId,albumId:state.albumId,taskId:state.taskId});saveWorkLogs(logs)}const message=state.mode==="focus"?POMODORO_LINES.focusDone:POMODORO_LINES.breakDone;saveTimerState({...state,status:"idle",elapsedSec:0,lastResumedAt:"",startedAt:"",pendingLogId,message});renderHomePanels();return automatic}
+function syncExpiredTimer(){const state=timerState();if(state.status==="running"&&timerRemaining(state)<=0){finishTimer(state,true);return true}return false}
+function formatDuration(sec){sec=Math.max(0,Math.floor(Number(sec)||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);return h?`${h}時間${String(m).padStart(2,"0")}分`:`${m}分`}
+function formatClock(sec){sec=Math.max(0,Math.ceil(Number(sec)||0));return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`}
+function prepTaskRows(){const all=readJson(KEY,{}),scenarios=loadScenarios(),names=new Map(scenarios.map(s=>[String(s.id),s.title||"シナリオ"])),rows=[];Object.entries(all||{}).forEach(([scenarioId,scopes])=>Object.entries(scopes||{}).forEach(([scope,labels])=>Object.entries(labels||{}).forEach(([label,items])=>(Array.isArray(items)?items:[]).forEach((item,index)=>rows.push({id:String(item.id||""),title:String(item.title||""),done:!!item.done,index,scenarioId,scope,label,scenarioTitle:names.get(String(scenarioId))||"シナリオ未指定"})))));return rows.filter(x=>x.id)}
+function optionHtml(rows,value,label){return `<option value="">${esc(label)}</option>`+rows.map(x=>`<option value="${esc(x.id)}" ${String(value)===String(x.id)?"selected":""}>${esc(x.name||x.title)}</option>`).join("")}
 function renderHomeGuide(){
  const host=document.getElementById("homeGuide");if(!host)return;
- const guideId=String(homeGuideSettings().homeGuidePcId||"");if(!guideId){host.hidden=true;host.innerHTML="";return}
- const pc=(window.TRPG39?.loadPCs?.()||[]).find(v=>String(v.id)===guideId);if(!pc){host.hidden=true;host.innerHTML="";return}
+ const pcs=window.TRPG39?.loadPCs?.()||[],whitePc=pcs.find(v=>String(v.name||"").normalize("NFKC").replace(/\s/g,"")==="白十字土布岐")||null,tutorial=tutorialState();
+ if(!tutorial.completed||homeTutorialOpen){renderTutorial(host,whitePc,tutorial);return}
+ const guideId=String(homeGuideSettings().homeGuidePcId||""),pc=pcs.find(v=>String(v.id)===guideId)||whitePc;
+ if(!pc){host.innerHTML=`<div class="home-guide-art home-guide-art-placeholder">🌺</div><div><div class="home-guide-head"><h2 class="home-guide-name">白十字 土布岐</h2><button type="button" class="home-guide-help" data-guide-help>？ 使い方</button></div><div class="home-guide-line">HOMEには、お好きなPCを案内人として表示できます。</div><a class="home-guide-link" href="pcs/index.html">PCを選ぶ →</a></div>`;host.hidden=false;bindTutorialButtons();return}
  const now=new Date(),todayKey=localYmd(now),period=guidePeriod(now),scenarios=loadScenarios(),scenarioMap=new Map(scenarios.map(s=>[String(s.id),s]));
  const allToday=(window.TRPG39?.loadEvents?.()||[]).filter(e=>dateKey(e.date||e.start)===todayKey&&!/中止|cancel/i.test(String(e.status||""))).sort((a,b)=>String(a.start||a.startTime||"").localeCompare(String(b.start||b.startTime||"")));
  const activeToday=allToday.filter(e=>{const end=eventDate(e,"end");return !end||end>now}),soon=activeToday.find(e=>{const start=eventDate(e,"start");if(!start)return false;const mins=(start-now)/60000;return mins>=0&&mins<=60});
@@ -122,10 +137,29 @@ function renderHomeGuide(){
  const anniversary=anniversaries[0]||null,primary=soon||activeToday[0]||anniversary||null,primaryDate=dateKey(primary?.date||primary?.start),years=primaryDate?now.getFullYear()-Number(primaryDate.slice(0,4)):0;
  const values={time:primary?clockText(primary):"",scenario:primary?eventScenarioTitle(primary,scenarioMap):"",runName:String(primary?.runLabel||primary?.runName||"").trim(),count:activeToday.length||anniversaries.length,years};
  let category=soon?"sessionSoon":activeToday.length?"sessionToday":anniversary?"anniversary":period;
- const speech=guideLineFor(pc,category,period,values,allToday),image=guideImage(pc,speech.category);
- host.innerHTML=`${image?`<div class="home-guide-art"><img src="${esc(image)}" alt="${esc(pc.name||"案内人")}の立ち絵"></div>`:'<div class="home-guide-art home-guide-art-placeholder">🌺</div>'}<div class="home-guide-body"><h2 class="home-guide-name">${esc(pc.name||"案内人")}</h2><div class="small muted">${esc(now.toLocaleString("ja-JP",{month:"long",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit"}))}</div><div class="home-guide-line">${esc(speech.line)}</div>${allToday.length?`<div class="home-guide-schedule"><strong>今日の予定</strong>${allToday.map(e=>`<div class="home-guide-event"><span class="home-guide-time">${esc(clockText(e))}</span><span><strong>${esc(eventScenarioTitle(e,scenarioMap))}</strong>${e.runLabel?`<br><span class="small muted">${esc(e.runLabel)}</span>`:""}</span>${e.status?`<span class="home-guide-status">${esc(e.status)}</span>`:""}</div>`).join("")}</div>`:'<div class="small muted">今日の予定はありません。</div>'}${anniversary?`<div class="home-guide-anniversary">今日は何の日：${years}年前「${esc(eventScenarioTitle(anniversary,scenarioMap))}」</div>`:""}<a class="home-guide-link" href="pcs/index.html?focus=${encodeURIComponent(pc.id)}">PC詳細を見る →</a></div>`;
+ const speech=guideLineFor(pc,category,period,values,allToday),image=guideImage(pc,speech.category),runtimeLine=timerSpeech();
+ host.innerHTML=`${image?`<div class="home-guide-art"><img src="${esc(image)}" alt="${esc(pc.name||"案内人")}の立ち絵"></div>`:'<div class="home-guide-art home-guide-art-placeholder">🌺</div>'}<div class="home-guide-body"><div class="home-guide-head"><div><h2 class="home-guide-name">${esc(pc.name||"案内人")}</h2><div class="small muted">${esc(now.toLocaleString("ja-JP",{month:"long",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit"}))}</div></div><button type="button" class="home-guide-help" data-guide-help>？ 使い方</button></div><div class="home-guide-line">${esc(runtimeLine||speech.line)}</div>${allToday.length?`<div class="home-guide-schedule"><strong>今日の予定</strong>${allToday.map(e=>`<div class="home-guide-event"><span class="home-guide-time">${esc(clockText(e))}</span><span><strong>${esc(eventScenarioTitle(e,scenarioMap))}</strong>${e.runLabel?`<br><span class="small muted">${esc(e.runLabel)}</span>`:""}</span>${e.status?`<span class="home-guide-status">${esc(e.status)}</span>`:""}</div>`).join("")}</div>`:'<div class="small muted">今日の予定はありません。</div>'}${anniversary?`<div class="home-guide-anniversary">今日は何の日：${years}年前「${esc(eventScenarioTitle(anniversary,scenarioMap))}」</div>`:""}<a class="home-guide-link" href="pcs/index.html?focus=${encodeURIComponent(pc.id)}">PC詳細を見る →</a></div>`;
  host.hidden=false;
+ bindTutorialButtons();
 }
+function renderPomodoro(){
+ const host=document.getElementById("pomodoroPanel");if(!host)return;const s=timerState(),active=s.status!=="idle",pcs=window.TRPG39?.loadPCs?.()||[],scenarios=loadScenarios(),tasks=prepTaskRows(),remaining=timerRemaining(s);
+ host.innerHTML=`<h2>白十字ポモドーロ</h2><div id="pomoClock" class="pomo-clock">${formatClock(remaining)}</div><div class="small muted">${esc(POMODORO_MODES[s.mode].label)}${s.status==="paused"?" ／ 一時停止中":s.status==="running"?" ／ 稼働中":""}</div><div class="pomo-mode-row">${Object.entries(POMODORO_MODES).map(([key,v])=>`<button type="button" data-pomo-mode="${key}" aria-pressed="${s.mode===key}" ${active?"disabled":""}>${esc(v.label)}</button>`).join("")}</div><div class="pomo-fields"><label>何をしますか？（任意）<input id="pomoTitle" value="${esc(s.title)}" placeholder="例：犀川 慶 立ち絵" ${active?"disabled":""}></label><details><summary>関連データを選ぶ（任意）</summary><div class="pomo-ref-grid"><label>PC<select id="pomoPc" ${active?"disabled":""}>${optionHtml(pcs,s.pcId,"関連PCなし")}</select></label><label>シナリオ<select id="pomoScenario" ${active?"disabled":""}>${optionHtml(scenarios,s.scenarioId,"関連シナリオなし")}</select></label><label>既存タスク<select id="pomoTask" ${active?"disabled":""}>${optionHtml(tasks,s.taskId,"関連タスクなし")}</select></label><label>runId<input id="pomoRun" value="${esc(s.runId)}" ${active?"disabled":""}></label><label>albumId<input id="pomoAlbum" value="${esc(s.albumId)}" ${active?"disabled":""}></label></div></details></div><div class="pomo-actions">${s.status==="idle"?'<button type="button" data-pomo-start>開始</button>':s.status==="running"?'<button type="button" data-pomo-pause>一時停止</button>':'<button type="button" data-pomo-resume>再開</button>'}${active?'<button type="button" data-pomo-end>終了</button>':""}<button type="button" data-pomo-reset>リセット</button></div><div class="pomo-status">${esc(s.message)}</div>`;
+ host.querySelectorAll("[data-pomo-mode]").forEach(b=>b.onclick=()=>{const mode=b.dataset.pomoMode;saveTimerState({...timerState(),mode,durationSec:POMODORO_MODES[mode].durationSec,status:"idle",elapsedSec:0,message:""});renderHomePanels()});
+ host.querySelector("[data-pomo-start]")?.addEventListener("click",()=>{const now=new Date().toISOString(),current=timerState();saveTimerState({...current,durationSec:POMODORO_MODES[current.mode].durationSec,status:"running",startedAt:now,lastResumedAt:now,elapsedSec:0,title:document.getElementById("pomoTitle").value.trim(),pcId:document.getElementById("pomoPc").value,scenarioId:document.getElementById("pomoScenario").value,taskId:document.getElementById("pomoTask").value,runId:document.getElementById("pomoRun").value.trim(),albumId:document.getElementById("pomoAlbum").value.trim(),pendingLogId:"",message:current.mode==="focus"?POMODORO_LINES.focusStart:POMODORO_LINES.breakStart});renderHomePanels()});
+ host.querySelector("[data-pomo-pause]")?.addEventListener("click",()=>{const current=timerState(),elapsedSec=timerElapsed(current);saveTimerState({...current,status:"paused",elapsedSec,lastResumedAt:"",message:current.mode==="focus"?POMODORO_LINES.focusPaused:"休憩を一時停止しています。"});renderHomePanels()});
+ host.querySelector("[data-pomo-resume]")?.addEventListener("click",()=>{const current=timerState();saveTimerState({...current,status:"running",lastResumedAt:new Date().toISOString(),message:current.mode==="focus"?POMODORO_LINES.focusStart:POMODORO_LINES.breakStart});renderHomePanels()});
+ host.querySelector("[data-pomo-end]")?.addEventListener("click",()=>finishTimer(timerState(),false));
+ host.querySelector("[data-pomo-reset]")?.addEventListener("click",()=>{const current=timerState();saveTimerState({...current,status:"idle",durationSec:POMODORO_MODES[current.mode].durationSec,startedAt:"",lastResumedAt:"",elapsedSec:0,pendingLogId:"",message:""});renderHomePanels()});
+}
+function aggregateWorkLogs(logs){const result={todaySec:0,totalSec:0,byTitle:new Map(),byPc:new Map(),byScenario:new Map(),byRun:new Map()},today=localYmd();for(const log of logs){const sec=Math.max(0,Number(log.durationSec)||0);result.totalSec+=sec;if(dateKey(log.endedAt||log.startedAt)===today)result.todaySec+=sec;[[result.byTitle,log.title],[result.byPc,log.pcId],[result.byScenario,log.scenarioId],[result.byRun,log.runId]].forEach(([map,key])=>{key=String(key||"");if(key)map.set(key,(map.get(key)||0)+sec)})}return result}
+function renderWorkLog(){
+ const host=document.getElementById("workLogPanel");if(!host)return;const logs=workLogs(),summary=aggregateWorkLogs(logs),timer=timerState(),tasks=prepTaskRows(),task=tasks.find(x=>x.id===timer.taskId)||null,latest=logs[0]||null,nowTitle=timer.status!=="idle"?(timer.title||task?.title||"名称未設定の作業"):(latest?.title||"現在作業中の項目はありません"),currentTotal=(summary.byTitle.get(nowTitle)||0)+(timer.status!=="idle"?timerElapsed(timer):0);const days=new Map();logs.forEach(log=>{const key=dateKey(log.endedAt||log.startedAt)||"日付不明";if(!days.has(key))days.set(key,[]);days.get(key).push(log)});
+ host.innerHTML=`<h2>WORK LOG</h2><div class="work-summary"><div class="work-stat"><span>今日の作業</span><strong>${formatDuration(summary.todaySec)}</strong></div><div class="work-stat"><span>全体の累計</span><strong>${formatDuration(summary.totalSec)}</strong></div></div><div class="work-now"><div class="small muted">今ここ！</div><div class="work-now-title">${timer.status!=="idle"?"▶ ":""}${esc(nowTitle)}</div>${task?`<div class="small muted">既存タスク：${task.done?"完了":"未完了"} ／ ${esc(task.scenarioTitle)}</div>`:""}${nowTitle!=="現在作業中の項目はありません"?`<div class="small muted">今日 ${formatDuration(summary.todaySec)} ／ この作業累計 ${formatDuration(currentTotal)}</div>`:""}</div><div class="work-latest"><strong>最新の進捗</strong><div>${latest?.progress?`「${esc(latest.progress)}」`:'<span class="small muted">進捗メモはまだありません。</span>'}</div></div>${timer.pendingLogId?`<div class="work-progress-form"><strong>お疲れさまでした。どこまで進みました？</strong><textarea id="workProgress" placeholder="短い進捗メモ（任意）"></textarea><div class="work-progress-actions"><button type="button" data-save-progress>進捗を保存</button><button type="button" data-skip-progress>今回は残さない</button></div></div>`:""}<details style="margin-top:12px"><summary>過去の作業ログ</summary><div class="work-log-days">${days.size?[...days].map(([day,rows])=>`<details class="work-log-day"><summary>${esc(day)}　${formatDuration(rows.reduce((n,x)=>n+(Number(x.durationSec)||0),0))}</summary>${rows.map(log=>{const d=new Date(log.startedAt);const time=Number.isNaN(d.getTime())?"--:--":d.toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});return `<div class="work-log-row"><strong>${esc(time)}　${esc(log.title||"名称未設定")}</strong>　${formatDuration(log.durationSec)}${log.progress?`<div class="work-log-progress">「${esc(log.progress)}」</div>`:""}</div>`}).join("")}</details>`).join(""):'<div class="small muted">作業ログはまだありません。</div>'}</div></details>`;
+ host.querySelector("[data-save-progress]")?.addEventListener("click",()=>{const state=timerState(),progress=document.getElementById("workProgress").value.trim(),rows=workLogs(),i=rows.findIndex(x=>String(x.id)===state.pendingLogId);if(i>=0)rows[i]={...rows[i],progress};saveWorkLogs(rows);saveTimerState({...state,pendingLogId:"",message:""});renderHomePanels()});
+ host.querySelector("[data-skip-progress]")?.addEventListener("click",()=>{const state=timerState();saveTimerState({...state,pendingLogId:"",message:""});renderHomePanels()});
+}
+function startHomeTimerTick(){clearInterval(homeTimerTick);homeTimerTick=setInterval(()=>{if(syncExpiredTimer())return;const state=timerState(),clock=document.getElementById("pomoClock");if(clock)clock.textContent=formatClock(timerRemaining(state));if(state.status!=="idle"){const current=document.querySelector(".work-now .small.muted:last-child");if(current&&/^この作業/.test(current.textContent))current.textContent=`この作業 ${formatDuration(timerElapsed(state))}`}},1000)}
 function renderLastKpBinder(){
  const panel=document.getElementById("lastKpBinder"),body=document.getElementById("lastKpBinderBody");
  if(!panel||!body)return;
@@ -189,7 +223,7 @@ function renderPrepTasks(){
    return `<a class="home-task${cls}" href="${href}"><div class="home-task-main"><div class="home-task-title">${esc(t.item.title)}</div><div class="home-task-meta">${esc(t.title)}${esc(label)} ／ 締切 ${esc(t.deadline.replaceAll("-","/"))}</div></div><div class="home-task-due">${esc(dueText(t.deadline))}</div></a>`;
  }).join("");
 }
-function renderHomePanels(){renderHomeGuide();renderPrepTasks();renderLastKpBinder()}
+function renderHomePanels(){if(syncExpiredTimer())return;renderHomeGuide();renderPomodoro();renderWorkLog();renderPrepTasks();renderLastKpBinder();startHomeTimerTick()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",renderHomePanels);else renderHomePanels();
 })();
 </script>
