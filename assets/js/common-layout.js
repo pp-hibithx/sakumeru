@@ -14,9 +14,9 @@
     ["home","HOME","index.html"],["scenario","SCENARIO","scenario/index.html?v=0292"],
     ["calendar","CALENDAR","calendar/index.html?v=0292"],["library","LIBRARY","library/index.html?v=0292"],
     ["pc","PC","pcs/index.html?v=0292"],["players","PLAYERS","players/index.html?v=0292"],
-    ["profile","PROFILE","profile/index.html"],["tools","TOOLS","tools/index.html"],
-    ["backup","BACKUP","backup/index.html"],["help","HELP","help/index.html"],
-    ["about","ABOUT","about/index.html"],["settings","SETTINGS","settings/index.html"]
+    ["share","SHARE","share/manage.html"],["about","ABOUT","about/index.html"],
+    ["help","HELP","help/index.html"],["tools","TOOLS","tools/index.html"],
+    ["profile","PROFILE","profile/index.html"],["backup","BACKUP","backup/index.html"],["settings","SETTINGS","settings/index.html"]
   ];
   function escAttr(value){return String(value).replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
   function headerHtml(active){
