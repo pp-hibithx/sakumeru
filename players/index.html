@@ -823,7 +823,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .danger,[data-player-delete]{border-color:color-mix(in srgb,#dc5664 72%,var(--line))!important;color:color-mix(in srgb,#ff8e98 85%,currentColor)!important}
 @media(max-width:620px){.library-page{gap:14px}.lib-panel{padding:12px}.lib-toolbar.player-toolbar{padding:10px}.library-dir-card{transform:none!important}.player-dir-actions button{flex:1}.player-detail-header{padding:13px;border-width:2px;border-left-width:5px}.player-detail-tabs{padding-inline:3px}.player-tab-panel{padding:12px}.player-pc-card-actions{display:grid}.player-pc-card-actions button,.player-pc-card-actions .link{width:100%}}
 </style>
-<link rel="stylesheet" href="../assets/css/readability.css?v=0908-1">
+<link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head>
 <body>
 <div data-site-header data-active="players"></div>
@@ -3493,9 +3493,9 @@ function playerRelRunGroups(){
 }
 function playerRelRunPeople(run){
  const people=new Map();
- const add=(id,name,role,ho="")=>{
+ const add=(id,name,role,ho="",pcName="",pcId="")=>{
    if(!id||!name)return;
-   if(!people.has(id))people.set(id,{id,name,roles:new Set(),roleLabels:new Set()});
+   if(!people.has(id))people.set(id,{id,name,roles:new Set(),roleLabels:new Set(),pcNames:new Set(),pcIds:new Set()});
    const p=people.get(id);
    const rawRole=String(role||"").trim();
    if(rawRole)p.roles.add(rawRole);
@@ -3510,6 +3510,8 @@ function playerRelRunPeople(run){
    }else if(roleName && rawRole!=="参加"){
      p.roleLabels.add(roleName);
    }
+   if(String(pcName||"").trim())p.pcNames.add(String(pcName).trim());
+   if(String(pcId||"").trim())p.pcIds.add(String(pcId).trim());
  };
  (run.items||[]).forEach(x=>{
    const selfRole=displayRoleForRecord(x)||x.role||"";
@@ -3517,8 +3519,9 @@ function playerRelRunPeople(run){
 
    if(String(selfRole)==="PL"){
      const selfHos=[...new Set(selfRows.map(r=>String(r.ho||"").trim()).filter(Boolean))];
-     if(selfHos.length)selfHos.forEach(ho=>add(PLAYER_REL_SELF_ID,playerRelSelfName(),selfRole,ho));
-     else add(PLAYER_REL_SELF_ID,playerRelSelfName(),selfRole,x.selfHo||"");
+     if(selfRows.length)selfRows.forEach(row=>add(PLAYER_REL_SELF_ID,playerRelSelfName(),selfRole,row.ho||x.selfHo||"",row.pcName||x.pcName||"",row.pcId||x.pcId||""));
+     else if(selfHos.length)selfHos.forEach(ho=>add(PLAYER_REL_SELF_ID,playerRelSelfName(),selfRole,ho,x.pcName||"",x.pcId||""));
+     else add(PLAYER_REL_SELF_ID,playerRelSelfName(),selfRole,x.selfHo||"",x.pcName||"",x.pcId||"");
    }else{
      // KP / DL / GM / SKP / 見学 etc. do not append KPC/HO markers.
      add(PLAYER_REL_SELF_ID,playerRelSelfName(),selfRole||"参加","");
@@ -3527,7 +3530,7 @@ function playerRelRunPeople(run){
    rowsFromRecord(x).forEach(r=>{
      const hit=playerRelPlayerForRow(r);
      if(!hit)return;
-     add(String(hit.id),String(hit.name||hit.publicName||"").trim(),r.role||"PL",r.ho||"");
+     add(String(hit.id),String(hit.name||hit.publicName||"").trim(),r.role||"PL",r.ho||"",r.pcName||"",r.pcId||"");
    });
  });
 
@@ -3571,7 +3574,9 @@ function buildPlayerRelationshipGraph(focusId){
        scenarioId:first.scenarioId||"",
        date:(run.items||[]).map(x=>x.date).filter(Boolean).sort()[0]||"",
        roles:[...p.roles],
-       roleLabels:[...p.roleLabels]
+       roleLabels:[...p.roleLabels],
+       pcNames:[...p.pcNames],
+       pcIds:[...p.pcIds]
      });
    });
    for(let i=0;i<people.length;i++){
@@ -3604,33 +3609,36 @@ function buildPlayerRelationshipGraph(focusId){
 }
 function showPlayerRelationNodeDetail(graph,id){
  const n=graph.nodes.find(x=>x.id===id);if(!n)return;
- const selfNode=graph.nodes.find(x=>x.id===PLAYER_REL_SELF_ID)||null;
+ const centerNode=graph.nodes.find(x=>x.id===graph.focusId)||null;
  const connections=graph.edges.filter(e=>e.a===id||e.b===id);
  const focusEdge=graph.edges.find(e=>(e.a===graph.focusId&&e.b===id)||(e.b===graph.focusId&&e.a===id));
-
- // The role shown beside each table is ALWAYS the browser owner's (SELF) role.
- // The clicked person's role is relationship data, not "how I joined this table".
- const baseRuns=(focusEdge?[...focusEdge.runs.values()]:[...n.runs.values()]);
- const runs=baseRuns.map(r=>{
-   const selfRun=selfNode?.runs?.get(r.id);
-   return {
-     ...r,
-     roles:selfRun?.roles||[],
-     roleLabels:selfRun?.roleLabels||[]
-   };
- }).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+ const isCenter=id===graph.focusId;
+ // 詳細は必ず centerPlayerId ↔ selectedPlayerId の完全一致edgeに属するrunだけを使う。
+ // 自分のparticipant rowを代用せず、同じrunIdに保存した両者それぞれの参加情報を参照する。
+ const baseRuns=isCenter?[...n.runs.values()]:(focusEdge?[...focusEdge.runs.values()]:[]);
+ const runs=baseRuns.map(r=>({
+   ...r,
+   center:centerNode?.runs?.get(r.id)||null,
+   selected:n.runs?.get(r.id)||null
+ })).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+ const participationHtml=(person,entry)=>{
+   if(!person||!entry)return "";
+   const labels=[...new Set((entry.roleLabels||[]).filter(Boolean))];
+   const roles=labels.length?labels:[...new Set((entry.roles||[]).filter(x=>x&&x!=="参加").map(playerRoleLabel))];
+   const pcs=[...new Set((entry.pcNames||[]).filter(Boolean))];
+   return `<div class="player-rel-participant"><strong>${esc(person.name)}</strong>${roles.length?` <span class="small muted">［${esc(roles.join("・"))}］</span>`:""}${pcs.length?`<div class="small">PC：${esc(pcs.join("、"))}</div>`:""}</div>`;
+ };
 
  q("playerRelationDetail").innerHTML=`<div class="player-rel-detail-card">
-   <strong>${esc(n.name)}</strong>${n.self?` <span class="small muted">［自分］</span>`:""}
-   <div class="library-dir-meta">${id===graph.focusId?`同卓ネットワーク：${connections.length}人`:`中心人物との同卓：${focusEdge?.count||0}卓`}</div>
+   <strong>${esc(n.name)}</strong>${n.self?` <span class="small muted">［自分］</span>`:""}${isCenter?` <span class="small muted">［中心人物］</span>`:""}
+   ${!isCenter&&centerNode?`<div class="library-dir-meta">${esc(n.name)} と ${esc(centerNode.name)}</div>`:""}
+   <div class="library-dir-meta">${isCenter?`同卓ネットワーク：${connections.length}人`:`中心人物との同卓：${focusEdge?.count||0}卓`}</div>
 
-   ${id!==graph.focusId?`<button type="button" class="player-rel-center" data-player-rel-center="${esc(id)}">この人を中心に見る</button>`:""}
-   <div style="margin-top:10px"><strong>${id===graph.focusId?"参加した卓":"中心人物との同卓"}</strong>
+   ${!isCenter?`<button type="button" class="player-rel-center" data-player-rel-center="${esc(id)}">この人を中心に見る</button>`:""}
+   <div style="margin-top:10px"><strong>${isCenter?"参加した卓":"中心人物との同卓"}</strong>
      ${runs.length?runs.map(r=>{
-       const labels=[...new Set((r.roleLabels||[]).filter(Boolean))];
-       const roles=labels.length?labels:[...new Set((r.roles||[]).filter(x=>x&&x!=="参加").map(playerRoleLabel))];
-       const roleText=roles.length?` <span class="small muted">［${esc(roles.join("・"))}］</span>`:"";
-       return `<div class="player-rel-run">${r.date?`${esc(r.date)} ／ `:""}${esc(r.title)}${roleText}</div>`;
+       const ownEntry=isCenter?r.selected:null;
+       return `<div class="player-rel-run"><div>${r.date?`${esc(r.date)} ／ `:""}${esc(r.title)}</div>${isCenter?participationHtml(n,ownEntry):`${participationHtml(centerNode,r.center)}${participationHtml(n,r.selected)}`}</div>`;
      }).join(""):'<div class="small muted">該当する記録はありません。</div>'}
    </div>
  </div>`;
