@@ -5,7 +5,7 @@
   if(!TEXT)return;
   const topics=[
     {key:"scenario",path:"scenario/index.html"},{key:"calendar",path:"calendar/index.html"},{key:"library",path:"library/index.html"},
-    {key:"pc",path:"pcs/index.html"},{key:"players",path:"players/index.html"},{key:"share",path:"share/index.html"},{key:"tools",path:"tools/index.html"}
+    {key:"pc",path:"pcs/index.html"},{key:"players",path:"players/index.html"},{key:"share",path:""},{key:"tools",path:"tools/index.html"}
   ];
   let state={};try{state=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch{}
   if((state.completed&&!state.review)||state.mode!=="tutorial")return;
@@ -20,7 +20,7 @@
   host.innerHTML=`<div class="sakumeru-tour-inner"><figure class="sakumeru-tour-figure"><img src="${new URL('assets/img/home-guide-shirato-mini.png',root).href}" alt="案内役・白十字"><figcaption>白十字</figcaption></figure><div class="sakumeru-tour-box"><div class="sakumeru-tour-head"><span class="sakumeru-tour-name">SAKU+MERU 案内人　${step+1}/${topics.length}</span><button type="button" data-tour-close>閉じる</button></div><div class="sakumeru-tour-bubble">${TEXT.tutorial[topics[step].key]}</div><div class="sakumeru-tour-actions">${step?'<button type="button" data-tour-prev>前へ</button>':''}${step===topics.length-1?'<button type="button" data-tour-finish>案内を終える</button>':'<button type="button" data-tour-next>次へ</button>'}</div></div></div>`;
   document.body.appendChild(host);
   host.querySelector(".sakumeru-tour-figure img").onerror=()=>{host.classList.add("no-art");host.querySelector(".sakumeru-tour-figure").hidden=true};
-  const go=index=>{const next=Math.max(0,Math.min(topics.length-1,index));save({completed:!!state.completed,review:!!state.review,mode:"tutorial",step:next,targetPage:topics[next].key});location.href=new URL(topics[next].path,root).href};
+  const go=index=>{const next=Math.max(0,Math.min(topics.length-1,index)),topic=topics[next];save({completed:!!state.completed,review:!!state.review,mode:"tutorial",step:next,targetPage:topic.key});if(topic.path)location.href=new URL(topic.path,root).href;else location.reload()};
   host.querySelector("[data-tour-close]").onclick=()=>{save({mode:"paused",step,targetPage:topics[step].key});host.remove()};
   host.querySelector("[data-tour-prev]")?.addEventListener("click",()=>go(step-1));
   host.querySelector("[data-tour-next]")?.addEventListener("click",()=>go(step+1));
