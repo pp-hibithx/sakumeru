@@ -75,23 +75,29 @@ const HOME_TUTORIAL_KEY="trpg39_home_tutorial_v1",POMODORO_KEY="trpg39_home_pomo
 // 初期ナビゲーターはユーザーPCとは別のアプリ固定アセット。ファイル配置後はこの1か所だけで参照する。
 const INITIAL_GUIDE_ASSET="./assets/img/home-guide-shirato-mini.png";
 const POMODORO_MODES={focus:{label:"25分集中",durationSec:1500},short:{label:"5分休憩",durationSec:300},long:{label:"15分休憩",durationSec:900}};
-const POMODORO_LINES={focusStart:"では、25分だけ集中しましょう。",focusPaused:"一時停止しました。作業時間には含めません。",focusDone:"お疲れさまでした。どこまで進みました？",breakStart:"少し休みましょう。",breakDone:"そろそろ戻りますか？"};
-const HOME_TUTORIAL_WELCOME="初めまして。SAKU+MERUへようこそ。当サイトの案内役を務めます、白十字と申します。まずは、このサイトの使い方をご案内いたしますね。";
-const HOME_TUTORIAL_STEPS=[
- "SCENARIOは、遊びたい・通過したシナリオを整理する棚です。",
- "CALENDARでは今後の予定と、いつ遊んだかを日付から確認できます。",
- "LIBRARYは卓記録を探し、読み、残すための場所です。",
- "PCは、自分の探索者を管理する正本です。お気に入りPCをHOMEの案内人に設定することもできます。",
- "PLAYERSでは、一緒に遊んだ方やそのPC、関係を確認できます。",
- "SHAREは、公開を選んだ情報だけを共有する場所です。",
- "TOOLSには、ログ整形やダイス解析など卓を支える小道具があります。"
-];
-const HOME_TUTORIAL_TOPICS=["SCENARIO","CALENDAR","LIBRARY","PC","PLAYERS","SHARE","TOOLS"];
 const HOME_GUIDE_PERIODS={lateNight:[0,5],morning:[5,11],afternoon:[11,16],evening:[16,19],night:[19,24]};
-const HOME_GUIDE_DEFAULT_LINES={
- morning:["おはよう。今日の予定を確認しよう。"],afternoon:["今日も記録を整えていこう。"],evening:["夕方だ。今夜の予定を確認しておこう。"],night:["こんばんは。今日の卓を振り返る？"],lateNight:["深夜だ。無理は禁物だよ。"],
- sessionToday:["今日は{time}から{scenario}。{runName}の予定だ。"],sessionSoon:["{scenario}まであと1時間以内だ。準備はできている？"],noSchedule:["今日は予定なし。過去の記録を眺めるのもいいね。"],anniversary:["{years}年前の今日は「{scenario}」の記録があるよ。"]
+const HOME_GUIDE_TEXT={
+ welcome:"初めまして。SAKU+MERUへようこそ。当サイトの案内役を務めます、白十字と申します。まずは、このサイトの使い方をご案内いたしますね。",
+ tutorial:{
+  scenario:"まずはSCENARIOです。遊びたいシナリオや、これまで遊んだシナリオを登録して整理できます。登録したシナリオから卓の予定や記録へ繋げられるので、シナリオを追加したい時や探したい時は、まずこちらを開いてみてください。",
+  calendar:"CALENDARでは、これから遊ぶ卓の予定を登録したり、過去にいつ遊んだのかを日付から確認できます。日程が決まったら予定を登録しておくと、今日の予定としてHOMEからも確認できますよ。",
+  library:"遊び終わった卓の記録はLIBRARYに残せます。セッションの感想や出来事、画像などをまとめて、あとから読み返すための場所です。シナリオや参加したPCとも繋がるので、過去の卓を振り返りたい時はこちらをご覧ください。",
+  pc:"PCでは、ご自身の探索者をまとめて管理できます。プロフィールや能力値、技能、参加したシナリオなどを確認できます。お気に入りの探索者はHOMEに表示することもできますよ。",
+  players:"PLAYERSでは、一緒に遊んだ方と、その方が使っていたPCを確認できます。誰とどの卓で遊んだのか、どんなPC同士で一緒になったのかを振り返りたい時にお使いください。",
+  share:"SHAREでは、SAKU+MERUに残した情報のうち、ご自身で公開すると決めたものを共有できます。卓の記録などを誰かに見てもらいたい時はこちらをお使いください。公開しない情報まで自動で共有されることはありません。",
+  tools:"TOOLSには、卓の準備や記録を少し便利にする道具をまとめています。ログの整形やダイスの解析など、必要なものだけ自由にお使いください。TOOLSはSAKU+MERU本体を使っていない方にもご利用いただけます。"
+ },
+ tutorialComplete:"以上がSAKU+MERUの基本的なご案内です。すべての機能を最初から使う必要はありません。まずは必要なところから、少しずつお使いください。分からないことがありましたら、いつでも『案内人を呼ぶ』からお声がけくださいね。",
+ normal:"どうしました？",
+ help:{greeting:"もちろんです。どちらからご案内しましょうか？",noSchedule:"今日の予定はありません。",unavailable:"案内先を表示できませんでした。"},
+ pomodoro:{focusStart:"では、25分だけ集中しましょう。",focusPaused:"一時停止しました。作業時間には含めません。",focusDone:"お疲れさまでした。どこまで進みました？",breakStart:"少し休みましょう。",breakPaused:"休憩を一時停止しています。",breakDone:"そろそろ戻りますか？"},
+ favoritePcDefaults:{
+  morning:["おはよう。今日の予定を確認しよう。"],afternoon:["今日も記録を整えていこう。"],evening:["夕方だ。今夜の予定を確認しておこう。"],night:["こんばんは。今日の卓を振り返る？"],lateNight:["深夜だ。無理は禁物だよ。"],
+  sessionToday:["今日は{time}から{scenario}。{runName}の予定だ。"],sessionSoon:["{scenario}まであと1時間以内だ。準備はできている？"],noSchedule:["今日は予定なし。過去の記録を眺めるのもいいね。"],anniversary:["{years}年前の今日は「{scenario}」の記録があるよ。"],fallback:"今日もSAKU+MERUを案内するよ。"
+ }
 };
+const HOME_TUTORIAL_TOPICS=[{key:"scenario",label:"SCENARIO"},{key:"calendar",label:"CALENDAR"},{key:"library",label:"LIBRARY"},{key:"pc",label:"PC"},{key:"players",label:"PLAYERS"},{key:"share",label:"SHARE"},{key:"tools",label:"TOOLS"}];
+const HOME_TUTORIAL_STEPS=HOME_TUTORIAL_TOPICS.map(topic=>HOME_GUIDE_TEXT.tutorial[topic.key]);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let homeScenariosCache=null,homeTimerTick=0,homeConciergeOpen=false,homeConciergeMode="",homeTutorialStep=0,homeTutorialReview=false,homeTutorialDismissed=false;
 function localYmd(d=new Date()){const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
@@ -112,7 +118,7 @@ function eventDate(event,kind="start"){const direct=String(event?.[kind]||"");if
 function eventScenarioTitle(event,scenarioMap){return String(scenarioMap.get(String(event?.scenarioId||""))?.title||event?.scenarioTitle||event?.title||"予定").trim()}
 function stableIndex(seed,length){let h=2166136261;for(const ch of String(seed)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return length?Math.abs(h>>>0)%length:0}
 function applyGuideTemplate(line,values){return String(line||"").replace(/\{(time|scenario|runName|count|years)\}/g,(_,key)=>String(values[key]??""))}
-function guideLineFor(pc,category,period,values,today){const own=pc.guideLines&&typeof pc.guideLines==="object"?pc.guideLines:{},categories=[category,period,!today.length?"noSchedule":""].filter(Boolean);let chosenCategory="",lines=[];for(const key of categories){lines=Array.isArray(own[key])?own[key].filter(Boolean):[];if(!lines.length)lines=HOME_GUIDE_DEFAULT_LINES[key]||[];if(lines.length){chosenCategory=key;break}}if(!lines.length)return {category:period,line:"今日もSAKU+MERUを案内するよ。"};const seed=`${localYmd()}|${period}|${pc.id}|${chosenCategory}`;return {category:chosenCategory,line:applyGuideTemplate(lines[stableIndex(seed,lines.length)],values)}}
+function guideLineFor(pc,category,period,values,today){const own=pc.guideLines&&typeof pc.guideLines==="object"?pc.guideLines:{},defaults=HOME_GUIDE_TEXT.favoritePcDefaults,categories=[category,period,!today.length?"noSchedule":""].filter(Boolean);let chosenCategory="",lines=[];for(const key of categories){lines=Array.isArray(own[key])?own[key].filter(Boolean):[];if(!lines.length)lines=defaults[key]||[];if(lines.length){chosenCategory=key;break}}if(!lines.length)return {category:period,line:defaults.fallback};const seed=`${localYmd()}|${period}|${pc.id}|${chosenCategory}`;return {category:chosenCategory,line:applyGuideTemplate(lines[stableIndex(seed,lines.length)],values)}}
 function guideImage(pc,category){const config=pc.guideVariants&&typeof pc.guideVariants==="object"?pc.guideVariants:{},variantId=String(config[category]||config.default||"");if(variantId&&variantId!=="__main__"){const hit=(Array.isArray(pc.variants)?pc.variants:[]).find(v=>String(v?.id||"")===variantId&&v.url);if(hit)return hit.url}return String(pc.image||"").trim()}
 function readJson(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||"");return v??fallback}catch{return fallback}}
 function writeJson(key,value){localStorage.setItem(key,JSON.stringify(value))}
@@ -122,11 +128,11 @@ function timerState(){const raw=readJson(POMODORO_KEY,{}),mode=POMODORO_MODES[ra
 function saveTimerState(state){writeJson(POMODORO_KEY,state);return state}
 function timerElapsed(state,now=Date.now()){const resumed=Date.parse(state.lastResumedAt||"");return Math.min(state.durationSec,Math.max(0,Math.floor(state.elapsedSec+(state.status==="running"&&Number.isFinite(resumed)?(now-resumed)/1000:0))))}
 function timerRemaining(state,now=Date.now()){return Math.max(0,state.durationSec-timerElapsed(state,now))}
-function timerSpeech(){const s=timerState();if(s.message)return s.message;if(s.status==="running")return s.mode==="focus"?POMODORO_LINES.focusStart:POMODORO_LINES.breakStart;if(s.status==="paused")return s.mode==="focus"?POMODORO_LINES.focusPaused:"休憩を一時停止しています。";return ""}
+function timerSpeech(){const s=timerState(),text=HOME_GUIDE_TEXT.pomodoro;if(s.message)return s.message;if(s.status==="running")return s.mode==="focus"?text.focusStart:text.breakStart;if(s.status==="paused")return s.mode==="focus"?text.focusPaused:text.breakPaused;return ""}
 function workLogs(){const rows=readJson(WORK_LOG_KEY,[]);return Array.isArray(rows)?rows:[]}
 function saveWorkLogs(rows){writeJson(WORK_LOG_KEY,Array.isArray(rows)?rows:[])}
 function uuid(){return crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`}
-function finishTimer(state,automatic=false){const now=new Date(),durationSec=timerElapsed(state,now.getTime());let pendingLogId="";if(state.mode==="focus"&&durationSec>0){pendingLogId=uuid();const logs=workLogs();logs.unshift({id:pendingLogId,startedAt:state.startedAt||now.toISOString(),endedAt:now.toISOString(),durationSec,title:state.title,progress:"",pcId:state.pcId,scenarioId:state.scenarioId,runId:state.runId,albumId:state.albumId,taskId:state.taskId});saveWorkLogs(logs)}const message=state.mode==="focus"?POMODORO_LINES.focusDone:POMODORO_LINES.breakDone;saveTimerState({...state,status:"idle",elapsedSec:0,lastResumedAt:"",startedAt:"",pendingLogId,message});renderHomePanels();return automatic}
+function finishTimer(state,automatic=false){const now=new Date(),durationSec=timerElapsed(state,now.getTime());let pendingLogId="";if(state.mode==="focus"&&durationSec>0){pendingLogId=uuid();const logs=workLogs();logs.unshift({id:pendingLogId,startedAt:state.startedAt||now.toISOString(),endedAt:now.toISOString(),durationSec,title:state.title,progress:"",pcId:state.pcId,scenarioId:state.scenarioId,runId:state.runId,albumId:state.albumId,taskId:state.taskId});saveWorkLogs(logs)}const text=HOME_GUIDE_TEXT.pomodoro,message=state.mode==="focus"?text.focusDone:text.breakDone;saveTimerState({...state,status:"idle",elapsedSec:0,lastResumedAt:"",startedAt:"",pendingLogId,message});renderHomePanels();return automatic}
 function syncExpiredTimer(){const state=timerState();if(state.status==="running"&&timerRemaining(state)<=0){finishTimer(state,true);return true}return false}
 function formatDuration(sec){sec=Math.max(0,Math.floor(Number(sec)||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);return h?`${h}時間${String(m).padStart(2,"0")}分`:`${m}分`}
 function formatClock(sec){sec=Math.max(0,Math.ceil(Number(sec)||0));return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`}
@@ -141,17 +147,20 @@ function renderHomeConcierge(){
  if(!homeConciergeOpen){host.hidden=true;host.innerHTML="";call.setAttribute("aria-expanded","false");return}
  let label="",message="",actions="";
  if(homeConciergeMode==="welcome"){
-   message=HOME_TUTORIAL_WELCOME;
+   message=HOME_GUIDE_TEXT.welcome;
    actions='<button type="button" data-concierge-action="tutorial-start">案内を始める</button><button type="button" data-concierge-action="later">あとで</button>';
  }else if(homeConciergeMode==="help"){
-   message="もちろんです。どちらからご案内しましょうか？";
-   actions=`<button type="button" data-concierge-action="tutorial-all">最初から案内して</button>${HOME_TUTORIAL_TOPICS.map((topic,index)=>`<button type="button" data-tutorial-topic="${index}">${topic}</button>`).join("")}`;
+   message=HOME_GUIDE_TEXT.help.greeting;
+   actions=`<button type="button" data-concierge-action="tutorial-all">最初から案内して</button>${HOME_TUTORIAL_TOPICS.map((topic,index)=>`<button type="button" data-tutorial-topic="${index}">${topic.label}</button>`).join("")}`;
+ }else if(homeConciergeMode==="tutorial-complete"){
+   message=HOME_GUIDE_TEXT.tutorialComplete;
+   actions='<button type="button" data-concierge-action="tutorial-close">閉じる</button>';
  }else if(homeConciergeMode==="tutorial"){
    homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,homeTutorialStep));const last=homeTutorialStep===HOME_TUTORIAL_STEPS.length-1;
    label=`SAKU+MERU 案内人　${homeTutorialStep+1}/${HOME_TUTORIAL_STEPS.length}`;message=HOME_TUTORIAL_STEPS[homeTutorialStep];
    actions=`${homeTutorialStep>0?'<button type="button" data-concierge-action="tutorial-prev">前へ</button>':""}${last?'<button type="button" data-concierge-action="tutorial-finish">案内を終える</button>':'<button type="button" data-concierge-action="tutorial-next">次へ</button>'}${homeTutorialReview?'<button type="button" data-concierge-action="help-menu">案内メニューへ</button>':""}`;
  }else{
-   homeConciergeMode="menu";message="どうしました？";
+   homeConciergeMode="menu";message=HOME_GUIDE_TEXT.normal;
    actions='<button type="button" data-concierge-action="help">使い方</button><button type="button" data-concierge-action="timer">タイマー</button><button type="button" data-concierge-action="today">今日の予定</button><button type="button" data-concierge-action="now">今ここ！</button><button type="button" data-concierge-action="logs">作業ログ</button>';
  }
  host.innerHTML=`${initialGuideArtHtml()}<div><div class="home-guide-head"><span class="small muted">${esc(label)}</span><button type="button" class="home-concierge-close" data-concierge-close aria-label="案内人を閉じる">閉じる</button></div><div class="home-guide-line" data-concierge-message>${esc(message)}</div><div class="home-concierge-choices">${actions}</div></div>`;
@@ -161,17 +170,18 @@ function renderHomeConcierge(){
  host.querySelectorAll("[data-concierge-action]").forEach(button=>button.onclick=()=>{
    const action=button.dataset.conciergeAction,message=host.querySelector("[data-concierge-message]");
    if(action==="later"){homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();return}
+   if(action==="tutorial-close"){homeConciergeOpen=false;homeConciergeMode="";homeTutorialReview=false;renderHomeConcierge();return}
    if(action==="help"){homeConciergeMode="help";renderHomeConcierge();return}
    if(action==="help-menu"){homeConciergeMode="help";renderHomeConcierge();return}
    if(action==="tutorial-start"||action==="tutorial-all"){homeTutorialReview=action==="tutorial-all";homeTutorialStep=0;homeConciergeMode="tutorial";if(!tutorialState().completed)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:0,completed:false,updatedAt:new Date().toISOString()});renderHomeConcierge();return}
    if(action==="tutorial-prev"||action==="tutorial-next"){homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,homeTutorialStep+(action==="tutorial-next"?1:-1)));if(!tutorialState().completed)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:homeTutorialStep,completed:false,updatedAt:new Date().toISOString()});renderHomeConcierge();return}
-   if(action==="tutorial-finish"){if(!homeTutorialReview)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:HOME_TUTORIAL_STEPS.length-1,completed:true,updatedAt:new Date().toISOString()});homeConciergeOpen=false;homeConciergeMode="";homeTutorialReview=false;renderHomeConcierge();renderHomeGuide();return}
+   if(action==="tutorial-finish"){if(!homeTutorialReview)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:HOME_TUTORIAL_STEPS.length-1,completed:true,updatedAt:new Date().toISOString()});homeConciergeMode="tutorial-complete";renderHomeConcierge();renderHomeGuide();return}
    let target=null;
    if(action==="timer")target=document.getElementById("pomodoroPanel");
    if(action==="today")target=document.querySelector(".home-guide-schedule");
    if(action==="now")target=document.querySelector("#workLogPanel .work-now");
    if(action==="logs")target=document.querySelector("#workLogPanel [data-work-log-details]");
-   if(target){homeConciergeOpen=false;renderHomeConcierge();focusHomeTarget(target)}else if(message){message.textContent=action==="today"?"今日の予定はありません。":"案内先を表示できませんでした。"}
+   if(target){homeConciergeOpen=false;renderHomeConcierge();focusHomeTarget(target)}else if(message){message.textContent=action==="today"?HOME_GUIDE_TEXT.help.noSchedule:HOME_GUIDE_TEXT.help.unavailable}
  });
 }
 function renderHomeGuide(){
@@ -195,9 +205,9 @@ function renderPomodoro(){
  const host=document.getElementById("pomodoroPanel");if(!host)return;const s=timerState(),active=s.status!=="idle",pcs=window.TRPG39?.loadPCs?.()||[],scenarios=loadScenarios(),tasks=prepTaskRows(),remaining=timerRemaining(s);
  host.innerHTML=`<h2>集中タイマー</h2><div id="pomoClock" class="pomo-clock">${formatClock(remaining)}</div><div class="small muted">${esc(POMODORO_MODES[s.mode].label)}${s.status==="paused"?" ／ 一時停止中":s.status==="running"?" ／ 稼働中":""}</div><div class="pomo-mode-row">${Object.entries(POMODORO_MODES).map(([key,v])=>`<button type="button" data-pomo-mode="${key}" aria-pressed="${s.mode===key}" ${active?"disabled":""}>${esc(v.label)}</button>`).join("")}</div><div class="pomo-fields"><label>何をしますか？（任意）<input id="pomoTitle" value="${esc(s.title)}" placeholder="例：卓準備" ${active?"disabled":""}></label><details><summary>関連データを選ぶ（任意）</summary><div class="pomo-ref-grid"><label>PC<select id="pomoPc" ${active?"disabled":""}>${optionHtml(pcs,s.pcId,"関連PCなし")}</select></label><label>シナリオ<select id="pomoScenario" ${active?"disabled":""}>${optionHtml(scenarios,s.scenarioId,"関連シナリオなし")}</select></label><label>既存タスク<select id="pomoTask" ${active?"disabled":""}>${optionHtml(tasks,s.taskId,"関連タスクなし")}</select></label><label>runId<input id="pomoRun" value="${esc(s.runId)}" ${active?"disabled":""}></label><label>albumId<input id="pomoAlbum" value="${esc(s.albumId)}" ${active?"disabled":""}></label></div></details></div><div class="pomo-actions">${s.status==="idle"?'<button type="button" data-pomo-start>開始</button>':s.status==="running"?'<button type="button" data-pomo-pause>一時停止</button>':'<button type="button" data-pomo-resume>再開</button>'}${active?'<button type="button" data-pomo-end>終了</button>':""}<button type="button" data-pomo-reset>リセット</button></div><div class="pomo-status">${esc(s.message)}</div>`;
  host.querySelectorAll("[data-pomo-mode]").forEach(b=>b.onclick=()=>{const mode=b.dataset.pomoMode;saveTimerState({...timerState(),mode,durationSec:POMODORO_MODES[mode].durationSec,status:"idle",elapsedSec:0,message:""});renderHomePanels()});
- host.querySelector("[data-pomo-start]")?.addEventListener("click",()=>{const now=new Date().toISOString(),current=timerState();saveTimerState({...current,durationSec:POMODORO_MODES[current.mode].durationSec,status:"running",startedAt:now,lastResumedAt:now,elapsedSec:0,title:document.getElementById("pomoTitle").value.trim(),pcId:document.getElementById("pomoPc").value,scenarioId:document.getElementById("pomoScenario").value,taskId:document.getElementById("pomoTask").value,runId:document.getElementById("pomoRun").value.trim(),albumId:document.getElementById("pomoAlbum").value.trim(),pendingLogId:"",message:current.mode==="focus"?POMODORO_LINES.focusStart:POMODORO_LINES.breakStart});renderHomePanels()});
- host.querySelector("[data-pomo-pause]")?.addEventListener("click",()=>{const current=timerState(),elapsedSec=timerElapsed(current);saveTimerState({...current,status:"paused",elapsedSec,lastResumedAt:"",message:current.mode==="focus"?POMODORO_LINES.focusPaused:"休憩を一時停止しています。"});renderHomePanels()});
- host.querySelector("[data-pomo-resume]")?.addEventListener("click",()=>{const current=timerState();saveTimerState({...current,status:"running",lastResumedAt:new Date().toISOString(),message:current.mode==="focus"?POMODORO_LINES.focusStart:POMODORO_LINES.breakStart});renderHomePanels()});
+ host.querySelector("[data-pomo-start]")?.addEventListener("click",()=>{const now=new Date().toISOString(),current=timerState(),text=HOME_GUIDE_TEXT.pomodoro;saveTimerState({...current,durationSec:POMODORO_MODES[current.mode].durationSec,status:"running",startedAt:now,lastResumedAt:now,elapsedSec:0,title:document.getElementById("pomoTitle").value.trim(),pcId:document.getElementById("pomoPc").value,scenarioId:document.getElementById("pomoScenario").value,taskId:document.getElementById("pomoTask").value,runId:document.getElementById("pomoRun").value.trim(),albumId:document.getElementById("pomoAlbum").value.trim(),pendingLogId:"",message:current.mode==="focus"?text.focusStart:text.breakStart});renderHomePanels()});
+ host.querySelector("[data-pomo-pause]")?.addEventListener("click",()=>{const current=timerState(),elapsedSec=timerElapsed(current),text=HOME_GUIDE_TEXT.pomodoro;saveTimerState({...current,status:"paused",elapsedSec,lastResumedAt:"",message:current.mode==="focus"?text.focusPaused:text.breakPaused});renderHomePanels()});
+ host.querySelector("[data-pomo-resume]")?.addEventListener("click",()=>{const current=timerState(),text=HOME_GUIDE_TEXT.pomodoro;saveTimerState({...current,status:"running",lastResumedAt:new Date().toISOString(),message:current.mode==="focus"?text.focusStart:text.breakStart});renderHomePanels()});
  host.querySelector("[data-pomo-end]")?.addEventListener("click",()=>finishTimer(timerState(),false));
  host.querySelector("[data-pomo-reset]")?.addEventListener("click",()=>{const current=timerState();saveTimerState({...current,status:"idle",durationSec:POMODORO_MODES[current.mode].durationSec,startedAt:"",lastResumedAt:"",elapsedSec:0,pendingLogId:"",message:""});renderHomePanels()});
 }
