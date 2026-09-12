@@ -29,6 +29,48 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .card,.panel,.lib-panel,.dir-panel,.home-task-panel,.home-work-panel,.section{border-color:var(--line);background:color-mix(in srgb,var(--panel) 84%,#090b0e 16%)}
 .card:hover{border-color:var(--accent)}
 
+/* SHARE manager: the private index keeps the full binder/loose-leaf treatment. */
+.share-manage-page{background:var(--bg);color:var(--text)}
+.share-manage-page .share-manage-sheet{background:var(--binder-sheet);color:var(--binder-ink)}
+
+/* SHARE viewer: same visual language, but a quieter reading sheet without binder holes. */
+body:not(.share-manage-page) .share-page{
+  width:min(1040px,calc(100% - 32px));margin-inline:auto;padding:clamp(22px,4vw,46px);
+  background:var(--binder-sheet);color:var(--binder-ink);border:1px solid #5d5036;border-top:3px solid var(--accent);
+  border-radius:10px;box-shadow:0 14px 38px rgba(0,0,0,.28);
+}
+body:not(.share-manage-page) .share-page>.hero{padding-top:0}
+body:not(.share-manage-page) .share-page>.hero h2{color:var(--text);letter-spacing:.07em}
+body:not(.share-manage-page) .share-card{padding:0;background:transparent;border:0;border-radius:0;color:var(--text)}
+body:not(.share-manage-page) .share-card h1,body:not(.share-manage-page) .share-card h2,body:not(.share-manage-page) .share-card h3{color:var(--text)}
+body:not(.share-manage-page) .share-article-head,body:not(.share-manage-page) .share-scenario-public>header{border-bottom-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+body:not(.share-manage-page) .share-article-text,body:not(.share-manage-page) .kp-live-body{font-size:1rem;line-height:1.9;color:var(--text)}
+body:not(.share-manage-page) .share-breadcrumb{font-size:.9375rem}
+body:not(.share-manage-page) .share-run,body:not(.share-manage-page) .share-report-block,body:not(.share-manage-page) .shared-conversation,body:not(.share-manage-page) .share-scenario-card{border-color:var(--line)}
+body:not(.share-manage-page) .share-article-warning{border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--panel))}
+
+/* UI v2 light palette: warm paper, dark ink, and restrained gold. */
+html[data-theme="light"] body{background:#e9e5dc!important;color:#24221e!important}
+html[data-theme="light"] main>.wrap:last-child:not(.share-page),html[data-theme="light"] .share-manage-page .share-manage-sheet{
+  --binder-sheet:#fbfaf6;--binder-ink:#24221e;--binder-rule:#d8d1c3;
+  background:#fbfaf6!important;color:#24221e!important;border-color:#ad9160!important;box-shadow:0 12px 30px rgba(55,45,28,.12)
+}
+html[data-theme="light"] main>.wrap:last-child:not(.share-page)::before{background:radial-gradient(circle at center,#e9e5dc 0 5px,#a78954 5.5px 6.5px,transparent 7px) center top/15px 52px repeat-y}
+html[data-theme="light"] .share-manage-page .share-manage-group{background:#f6f3ec!important;color:#24221e!important;border-color:#c9c2b5!important}
+html[data-theme="light"] .share-manage-page .share-manage-group[open]>summary{background:#f1eadc!important;border-bottom-color:#b89a62!important}
+html[data-theme="light"] .share-manage-page .share-manage-row{background:transparent!important;color:#24221e!important;border-color:#d3cdc1!important}
+html[data-theme="light"] .share-manage-page .share-manage-meta,html[data-theme="light"] .share-manage-page .share-manage-count,html[data-theme="light"] .share-manage-page .share-manage-empty{color:#656158!important}
+html[data-theme="light"] .share-manage-page .share-manage-state{color:#78581e!important}
+html[data-theme="light"] body:not(.share-manage-page) .share-page{
+  --binder-sheet:#fbfaf6;--binder-ink:#24221e;background:#fbfaf6!important;color:#24221e!important;
+  border-color:#ad9160!important;border-top-color:#a9791f!important;box-shadow:0 12px 30px rgba(55,45,28,.12)
+}
+html[data-theme="light"] body:not(.share-manage-page) .share-card{background:transparent!important;color:#24221e!important}
+html[data-theme="light"] body:not(.share-manage-page) .share-card h1,html[data-theme="light"] body:not(.share-manage-page) .share-card h2,html[data-theme="light"] body:not(.share-manage-page) .share-card h3,html[data-theme="light"] body:not(.share-manage-page) .share-article-text,html[data-theme="light"] body:not(.share-manage-page) .kp-live-body{color:#24221e!important}
+html[data-theme="light"] body:not(.share-manage-page) .share-run,html[data-theme="light"] body:not(.share-manage-page) .share-report-block,html[data-theme="light"] body:not(.share-manage-page) .shared-conversation,html[data-theme="light"] body:not(.share-manage-page) .share-scenario-card,html[data-theme="light"] body:not(.share-manage-page) .shared-article-toggle>summary{background:#fffdf8!important;color:#24221e!important;border-color:#cfc7b8!important}
+html[data-theme="light"] body:not(.share-manage-page) .share-article-warning{background:#f5eddd!important;color:#24221e!important;border-color:#b58b3d!important}
+html[data-theme="light"] body:not(.share-manage-page) .shared-conversation-text,html[data-theme="light"] body:not(.share-manage-page) .shared-conversation-speaker,html[data-theme="light"] body:not(.share-manage-page) .shared-conversation-dice{background:#f7f3ea!important;color:#24221e!important}
+
 /* HOME reads vertically like one sheet: cast, speech, schedule, anniversary, history. */
 body.home-page main>.wrap{display:flex;flex-direction:column;gap:0}
 body.home-page .home-call-guide{order:1}body.home-page #homeGuide{order:2}body.home-page .home-work{order:3}body.home-page #prepTasks{order:4}body.home-page #lastKpBinder{order:5}
@@ -62,5 +104,6 @@ body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
   main>.wrap:last-child:not(.share-page)::after,main .wrap.directory-page::after,main .wrap.library-page::after{left:23px}
   body.home-page .home-guide-cast{min-height:170px}body.home-page .home-guide-member .home-guide-art{height:190px}body.home-page .home-guide-line,body.home-page .home-guide-actions{width:min(720px,94%)}
   .sakumeru-tour{left:10px;right:10px;bottom:56px;width:auto}.sakumeru-tour-inner{grid-template-columns:1fr}.sakumeru-tour-figure{justify-self:center}.sakumeru-tour-figure img{width:70px;height:88px}
+  body:not(.share-manage-page) .share-page{width:min(100% - 16px,1040px);padding:20px 14px}
 }
 @media(max-width:390px){body.home-page .home-guide-cast{display:flex;max-width:100%}body.home-page .home-guide-member .home-guide-art{height:155px}}
