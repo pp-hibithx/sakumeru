@@ -8,7 +8,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<script defer src="../assets/js/common-layout.js?v=0912-mobile-content"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .profile-wrap{max-width:1120px;margin:auto;padding:28px 24px 56px}
@@ -248,7 +248,29 @@
 /* v0.3.62 — PROFILE attached pages */
 .profile-page-list{display:grid;gap:10px;margin-top:12px}.profile-page-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel)}.profile-page-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.profile-page-actions{display:flex;gap:6px;flex-wrap:wrap}.profile-page-actions button{width:auto}.profile-page-editor{display:grid;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.profile-page-blocks{display:grid;gap:8px}.profile-page-block{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:7px}.profile-page-block-tools{display:flex;gap:6px;justify-content:flex-end}.profile-page-block-tools button{width:auto;padding:4px 8px}.profile-page-adds{display:flex;gap:7px;flex-wrap:wrap}.profile-page-adds button{width:auto}.profile-page-status{font-size:.76rem;color:var(--muted)}
 \n/* v0.3.63 — attached page 3-level toggles */
-.profile-page-toggle{padding:0!important;overflow:hidden}.pp-toggle-editor>summary{cursor:pointer;padding:10px 12px;background:color-mix(in srgb,var(--panel) 92%,var(--line));list-style:none}.pp-toggle-editor>summary::-webkit-details-marker{display:none}.pp-toggle-editor>summary:before{content:"›";display:inline-block;margin-right:7px;transition:transform .15s}.pp-toggle-editor[open]>summary:before{transform:rotate(90deg)}.pp-toggle-body{display:grid;gap:9px;padding:10px}.pp-toggle-children{margin-left:14px;padding-left:12px;border-left:2px solid var(--line)}.profile-page-toggle[data-level="1"]>.pp-toggle-editor>summary{padding-left:16px}.profile-page-toggle[data-level="2"]>.pp-toggle-editor>summary{padding-left:20px}.profile-page-toggle>.profile-page-block-tools{padding:7px 9px;border-bottom:1px solid var(--line)}\n</style>
+.profile-page-toggle{padding:0!important;overflow:hidden}.pp-toggle-editor>summary{cursor:pointer;padding:10px 12px;background:color-mix(in srgb,var(--panel) 92%,var(--line));list-style:none}.pp-toggle-editor>summary::-webkit-details-marker{display:none}.pp-toggle-editor>summary:before{content:"›";display:inline-block;margin-right:7px;transition:transform .15s}.pp-toggle-editor[open]>summary:before{transform:rotate(90deg)}.pp-toggle-body{display:grid;gap:9px;padding:10px}.pp-toggle-children{margin-left:14px;padding-left:12px;border-left:2px solid var(--line)}.profile-page-toggle[data-level="1"]>.pp-toggle-editor>summary{padding-left:16px}.profile-page-toggle[data-level="2"]>.pp-toggle-editor>summary{padding-left:20px}.profile-page-toggle>.profile-page-block-tools{padding:7px 9px;border-bottom:1px solid var(--line)}
+
+/* PROFILE view-first mode and final mobile constraints. */
+#profileEditor[hidden],#previewPanel[hidden]{display:none!important}
+.profile-main-actions{justify-content:flex-end}.profile-main-actions #editProfile{width:auto}
+.profile-public-main,.profile-public-side,.profile-preview,.profile-card,.profile-page-card{max-width:100%;box-sizing:border-box}
+.profile-public-main a,.profile-public-side a,.profile-help,.profile-page-status{overflow-wrap:anywhere;word-break:break-word}
+@media(max-width:860px){
+  .profile-editor-layout{grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important}
+  .profile-editor-side,.profile-editor-main{width:100%!important;max-width:100%!important;min-width:0!important}
+}
+@media(max-width:430px){
+  .profile-wrap{width:100%!important;max-width:100%!important;padding:16px 10px 40px!important;box-sizing:border-box!important;overflow:visible!important}
+  .profile-stack,.profile-preview,.profile-public-layout,.profile-editor-layout,.profile-editor-side,.profile-editor-main,.profile-card{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+  .profile-public-layout,.profile-form-grid,.profile-checks,.session-style-options,.profile-link-row,.shared-link-row,.profile-tag-grid,.profile-chips,.profile-chip-list,.tag-list,.chip-list{grid-template-columns:minmax(0,1fr)!important}
+  .profile-card,.profile-preview{padding:14px!important}
+  .profile-icon-editor,.profile-editor-side .profile-icon-editor{display:flex!important;flex-direction:column!important;width:100%!important}
+  .profile-icon-editor>*,.profile-upload-row,.profile-page-head,.profile-page-actions,.profile-block-tools,.profile-page-adds{max-width:100%!important;min-width:0!important;flex-wrap:wrap!important}
+  .profile-field input,.profile-field select,.profile-field textarea,.profile-block-row input,.profile-block-row textarea,.shared-link-row input,.profile-page-editor input,.profile-page-editor textarea{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+  .profile-block-children,.pp-toggle-children,.profile-nested-children{margin-left:6px!important;padding-left:7px!important}
+  .profile-main-actions,.profile-actions,.profile-save-bar,.profile-side-actions{width:100%!important;max-width:100%!important;flex-wrap:wrap!important}
+}
+</style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0309"></script>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
@@ -259,16 +281,16 @@
 <div class="hero"><h2>PROFILE</h2><p>卓の自己紹介をまとめて、必要な内容だけ共有できます。</p></div>
 <div class="profile-stack">
   <div class="profile-main-actions">
-    <button id="togglePreview" type="button" class="text-action">プレビューを表示</button>
+    <button id="editProfile" type="button">編集</button>
     <span id="savedNote" class="small muted"></span>
   </div>
 
-  <section id="previewPanel" class="profile-preview" hidden>
-    <div class="profile-card-head"><div><div class="profile-preview-label">プレビュー</div></div><button id="closePreview" type="button" class="text-action">編集に戻る</button></div>
+  <section id="previewPanel" class="profile-preview" aria-label="保存済みプロフィール">
+    <div class="profile-card-head"><div><div class="profile-preview-label">保存済みプロフィール</div></div></div>
     <div id="previewContent"></div>
   </section>
 
-  <div class="profile-editor-layout">
+  <div id="profileEditor" class="profile-editor-layout" hidden>
     <div class="profile-editor-side">
   <section class="profile-card">
         <details class="profile-side-toggle">
@@ -346,6 +368,7 @@
       </section>
       <div class="profile-side-actions">
         <button id="saveProfile" type="button">保存</button>
+        <button id="cancelProfile" type="button" class="text-action">キャンセル</button>
         <button id="shareProfile" type="button">共有URLを作成・更新</button>
       </div>
 
@@ -458,7 +481,8 @@ async function imageFileToDataUrl(file){
   return canvas.toDataURL("image/webp",.86);
  }finally{URL.revokeObjectURL(src)}
 }
-function save(show=true){const x=collect();localStorage.setItem(KEY,JSON.stringify(x));if(show)$("savedNote").textContent="✓ 保存しました";renderPreview(x);return x}
+function setEditMode(editing){$("profileEditor").hidden=!editing;$("previewPanel").hidden=editing;$("editProfile").hidden=editing;if(!editing)$("previewPanel").scrollIntoView({block:"nearest"})}
+function save(show=true){const x=collect();localStorage.setItem(KEY,JSON.stringify(x));if(show)$("savedNote").textContent="✓ 保存しました";renderPreview(x);if(show)setEditMode(false);return x}
 function load(){let x={};try{x=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{};["displayName","socialName","availability"].forEach(k=>$(k).value=x[k]||"");const icon=String(x.iconUrl||"");if(icon.startsWith("data:")){setIconPreview(icon,true);$("iconUrl").value=""}else{$("iconUrl").value=icon;setIconPreview(icon,false)}$("systems").value=(x.systems||[]).join(", ");$("roles").value=(x.roles||[]).join(", ");$("sessionStyles").value=(x.sessionStyles||[]).join(", ");$("links").innerHTML="";(x.links||[]).forEach(l=>addLink(l.label,l.url));if(!(x.links||[]).length)addLink();$("profileBlocks").innerHTML="";(()=>{let root=null,child=null;(x.blocks||[]).forEach(b=>{let level=Math.max(0,Math.min(2,Number(b.level||0)));if(level===0||!root){root=addProfileBlock(b.title,b.body,b.toggle!==false,0);child=null;return}if(level===1){child=addProfileBlock(b.title,b.body,b.toggle!==false,1,root.querySelector(".profile-block-children"));return}if(!child){child=addProfileBlock("","",false,1,root.querySelector(".profile-block-children"))}addProfileBlock(b.title,b.body,b.toggle!==false,2,child.querySelector(".profile-block-children"))})})();if(!(x.blocks||[]).length){if(x.intro)addProfileBlock("自己紹介",x.intro,false,0);if(x.likes)addProfileBlock("好きな傾向",x.likes,true,0);if(x.dislikes)addProfileBlock("苦手・避けたい傾向",x.dislikes,true,0);if(x.note)addProfileBlock("ひとこと",x.note,true,0);}$("sharedLinks").innerHTML="";(x.sharedLinks||[]).forEach(l=>addSharedLink(l.label,l.url,l.memo||""));if(!(x.sharedLinks||[]).length)addSharedLink();const fields=new Set(x.shareFields||["socialName","iconUrl","systems","roles","sessionStyles","availability","links"]);document.querySelectorAll("#shareFields input").forEach(c=>c.checked=fields.has(c.value));renderPreview(x)}
 function profileBlocksHtml(blocks){
  const rows=(Array.isArray(blocks)?blocks:[]).filter(b=>b&&(b.title||b.body));
@@ -487,14 +511,12 @@ function renderPreview(x=collect()){
 function publicProfile(x){const fields=new Set(x.shareFields||[]),p={displayName:x.displayName||""};["socialName","iconUrl","systems","roles","sessionStyles","availability","links"].forEach(k=>{if(fields.has(k))p[k]=x[k]});p.blocks=x.blocks||[];p.sharedLinks=x.sharedLinks||[];return p}
 async function shareProfile(){const x=save(false),payload={kind:"profile",version:2,updatedAt:new Date().toISOString(),profile:publicProfile(x)};try{if(!(window.TRPG39Cloud&&TRPG39Cloud.configured()))throw new Error("Supabase設定がありません");let id=localStorage.getItem(SHARE_KEY)||"";if(id&&TRPG39Cloud.updateSharedPage)await TRPG39Cloud.updateSharedPage(id,payload);else{id=await TRPG39Cloud.createSharedPage(payload);localStorage.setItem(SHARE_KEY,id)}const url=new URL("https://sakumeru-share.sakumeru.workers.dev/");url.searchParams.set("id",id);url.searchParams.set("type","profile");url.searchParams.set("v",Date.now().toString(36));if(navigator.clipboard&&window.isSecureContext)try{await navigator.clipboard.writeText(url.href)}catch{}prompt("PROFILE共有URLです。更新しても同じURLを使えます。",url.href)}catch(e){console.error(e);alert("共有URLを作成できませんでした: "+(e.message||e))}}
 $("addProfilePage").onclick=addProfilePage;renderProfilePages();
-$("addLink").onclick=()=>addLink();$("addSharedLink").onclick=(e)=>{e.preventDefault();const row=addSharedLink();row.querySelector(".shared-label")?.focus();renderPreview()};$("addProfileBlock").onclick=()=>addProfileBlock();$("saveProfile").onclick=()=>save(true);$("shareProfile").onclick=shareProfile;$("chooseIcon").onclick=()=>$("iconFile").click();
-$("togglePreview").onclick=()=>{renderPreview();$("previewPanel").hidden=false;$("togglePreview").textContent="プレビューを更新";$("previewPanel").scrollIntoView({behavior:"smooth",block:"start"})};
-$("closePreview").onclick=()=>{$("previewPanel").hidden=true;$("togglePreview").textContent="プレビューを表示"};
+$("addLink").onclick=()=>addLink();$("addSharedLink").onclick=(e)=>{e.preventDefault();const row=addSharedLink();row.querySelector(".shared-label")?.focus();renderPreview()};$("addProfileBlock").onclick=()=>addProfileBlock();$("saveProfile").onclick=()=>save(true);$("cancelProfile").onclick=()=>{load();$("savedNote").textContent="編集をキャンセルしました";setEditMode(false)};$("editProfile").onclick=()=>{load();$("savedNote").textContent="";setEditMode(true);$("profileEditor").scrollIntoView({block:"nearest"})};$("shareProfile").onclick=shareProfile;$("chooseIcon").onclick=() => $("iconFile").click();
 $("iconFile").addEventListener("change",async()=>{const f=$("iconFile").files?.[0];if(!f)return;try{const data=await imageFileToDataUrl(f);setIconPreview(data,true);$("iconUrl").value="";$("iconFileName").textContent=f.name;renderPreview()}catch(e){console.error(e);alert("画像を読み込めませんでした。")}});
 $("clearIcon").onclick=()=>{$("iconFile").value="";$("iconFileName").textContent="未選択";$("iconUrl").value="";setIconPreview("",false);renderPreview()};
 $("iconUrl").addEventListener("input",()=>{if($("iconUrl").value.trim())setIconPreview($("iconUrl").value.trim(),false);else if(!$("iconEditorPreview").dataset.dataUrl)setIconPreview("",false);renderPreview()});
 document.querySelectorAll("input:not(.link-label):not(.link-url),textarea").forEach(el=>{el.addEventListener(el.type==="checkbox"?"change":"input",renderPreview)});
-load();
+load();setEditMode(false);
 })();
 </script>
 </body>
