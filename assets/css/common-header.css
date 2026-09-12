@@ -7,6 +7,9 @@
 .site-header>.wrap{
   display:block!important;
 }
+.site-header-top{display:block!important}
+.mobile-primary-actions{display:none!important}
+.site-header-menu{display:block!important}
 .site-header .brand-logo-row{
   display:block!important;
   min-height:0!important;
@@ -51,7 +54,35 @@
 }
 @media(max-width:700px){
   .site-header{padding:9px 0 7px!important}
-  .site-header .site-brand-logo>img{width:min(390px,92vw)!important}
-  .site-header .nav{gap:7px 13px!important;margin-top:8px!important;padding-bottom:8px!important}
-  .site-header .theme-switcher{justify-content:flex-start!important}
+  .site-header>.wrap{width:min(100% - 20px,1120px)!important;margin-inline:auto!important}
+  .site-header-top{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important}
+  .site-header .brand-logo-row{flex:0 1 190px!important;min-width:0!important}
+  .site-header .site-brand-logo>img{width:min(190px,44vw)!important}
+  .mobile-primary-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:5px!important;flex:0 0 auto!important}
+  .mobile-primary-actions button,.mobile-primary-actions .button{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:38px!important;margin:0!important;padding:6px 8px!important;border:1px solid var(--line)!important;border-radius:7px!important;font-size:13px!important;line-height:1.2!important;white-space:nowrap!important;text-decoration:none!important}
+  .mobile-primary-actions [data-mobile-guide]{border-color:var(--accent)!important}
+  .site-header-menu{display:none!important;margin-top:8px!important;padding:8px 10px 10px!important;border:1px solid var(--line)!important;border-radius:9px!important;background:var(--panel)!important;box-shadow:0 10px 24px rgba(0,0,0,.24)!important}
+  .site-header-menu.is-open{display:block!important}
+  .site-header .nav{display:grid!important;grid-template-columns:1fr!important;gap:0!important;margin:0!important;padding:0 0 8px!important;border-bottom:1px solid var(--line)!important}
+  .site-header .nav a{display:block!important;width:100%!important;padding:8px 6px!important;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)!important;font-size:15px!important}
+  .site-header .nav a:last-child{border-bottom:0!important}
+  .site-header .theme-switcher{justify-content:flex-start!important;gap:7px!important;margin-top:8px!important}
+  .site-header .theme-switcher button{min-height:36px!important;padding:5px 9px!important}
+  .sakumeru-guide-launcher{display:none!important}
+  .cloud-sync-badge{display:none!important}
+  html,body{max-width:100%;overflow-x:hidden}
+}
+@media(max-width:390px){
+  .site-header>.wrap{width:min(100% - 12px,1120px)!important}
+  .site-header .brand-logo-row{flex-basis:132px!important}
+  .site-header .site-brand-logo>img{width:min(132px,34vw)!important}
+  .mobile-primary-actions{gap:3px!important}
+  .mobile-primary-actions button,.mobile-primary-actions .button{min-height:36px!important;padding:5px 6px!important;font-size:12px!important}
+}
+@media(max-width:430px){
+  .site-header-top{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}
+  .site-header .brand-logo-row{grid-column:1!important;grid-row:1!important;flex-basis:auto!important}
+  .site-header .site-brand-logo>img{width:min(158px,48vw)!important}
+  .mobile-primary-actions{grid-column:1 / -1!important;grid-row:2!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto!important;width:100%!important;margin-top:6px!important;gap:5px!important}
+  .mobile-primary-actions button,.mobile-primary-actions .button{font-size:13px!important;padding-inline:8px!important}
 }
