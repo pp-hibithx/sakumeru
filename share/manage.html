@@ -7,16 +7,16 @@
   <script>try{document.documentElement.dataset.theme=localStorage.getItem("39x2_theme")||"dark"}catch(_){}</script>
   <link rel="stylesheet" href="../assets/css/style-v0303.css">
   <style>
-    .share-manage-page{min-height:100vh}.share-manage-intro{margin-bottom:24px}.share-manage-intro h1{margin-bottom:6px}.share-manage-note{max-width:760px;color:var(--muted);line-height:1.7}
-    .share-manage-list{display:grid;gap:10px;max-width:980px}.share-manage-group{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
-    .share-manage-group>summary{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;font-size:16px;font-weight:700;list-style:none}.share-manage-group>summary::-webkit-details-marker{display:none}.share-manage-group>summary::before{content:"▶";font-size:13px;color:var(--accent)}.share-manage-group[open]>summary::before{content:"▼"}.share-manage-count{margin-left:auto;font-size:13px;font-weight:600;color:var(--muted)}.share-manage-group>summary:hover{background:rgba(255,255,255,.035)}
-    .share-manage-rows{border-top:1px solid var(--line);padding:0 16px}.share-manage-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.share-manage-row:last-child{border-bottom:0}.share-manage-title{font-weight:700;overflow-wrap:anywhere}.share-manage-meta{margin-top:4px;color:var(--muted);font-size:13px;line-height:1.55}.share-manage-state{color:var(--accent);font-size:13px}.share-manage-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.share-manage-actions a,.share-manage-actions button{width:auto;white-space:nowrap}.share-manage-empty{padding:15px 0;color:var(--muted)}.share-copy-status{min-height:1.5em;margin-top:14px;color:var(--accent);font-size:14px}
+    .share-manage-page{min-height:100vh}.share-manage-intro{margin:0 0 24px;padding:4px 0 18px;border-bottom:1px solid color-mix(in srgb,var(--accent) 52%,var(--line))}.share-manage-intro h1{margin:0 0 6px;font-size:clamp(1.6rem,3vw,2rem);letter-spacing:.06em}.share-manage-intro>p:not(.share-manage-note){margin:0 0 8px;font-size:1rem;font-weight:700}.share-manage-note{max-width:760px;margin:0;color:var(--muted);font-size:14px;line-height:1.75}
+    .share-manage-list{display:grid;gap:11px;max-width:980px}.share-manage-group{border:1px solid color-mix(in srgb,var(--line) 88%,white 12%);border-radius:10px;background:color-mix(in srgb,var(--panel) 84%,#090b0e 16%);overflow:hidden}
+    .share-manage-group>summary{display:flex;align-items:center;gap:12px;min-height:50px;padding:14px 16px;cursor:pointer;font-size:17px;font-weight:750;line-height:1.45;list-style:none}.share-manage-group>summary::-webkit-details-marker{display:none}.share-manage-group>summary::before{content:"▶";font-size:15px;color:var(--accent)}.share-manage-group[open]>summary::before{content:"▼"}.share-manage-group[open]>summary{background:color-mix(in srgb,var(--accent) 8%,var(--panel));border-bottom:1px solid color-mix(in srgb,var(--accent) 42%,var(--line))}.share-manage-count{margin-left:auto;font-size:14px;font-weight:700;color:var(--muted)}.share-manage-group>summary:hover{background:color-mix(in srgb,var(--accent) 7%,var(--panel))}.share-manage-group>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+    .share-manage-rows{padding:0 16px}.share-manage-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:15px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 92%,white 8%)}.share-manage-row:last-child{border-bottom:0}.share-manage-title{font-size:16px;font-weight:750;line-height:1.55;overflow-wrap:anywhere}.share-manage-meta{margin-top:4px;color:var(--muted);font-size:14px;line-height:1.6}.share-manage-state{margin-top:2px;color:var(--accent2);font-size:14px;font-weight:650}.share-manage-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.share-manage-actions a,.share-manage-actions button{width:auto;min-height:40px;padding:8px 11px;font-size:14px;white-space:nowrap}.share-manage-empty{padding:16px 0;color:var(--muted);font-size:14px}.share-copy-status{min-height:1.5em;margin-top:14px;color:var(--accent2);font-size:14px;font-weight:650}
     @media(max-width:700px){.share-manage-row{grid-template-columns:1fr}.share-manage-actions{justify-content:flex-start}.share-manage-actions a,.share-manage-actions button{flex:1 1 auto}.share-manage-group>summary{padding:13px}}
   </style>
 </head>
 <body class="share-manage-page">
 <div data-site-header data-active="share"></div>
-<main class="wrap">
+<main><div class="wrap share-manage-sheet">
   <section class="share-manage-intro">
     <h1>SHARE</h1>
     <p>外へ共有したもの</p>
@@ -24,9 +24,9 @@
   </section>
   <section id="shareManageList" class="share-manage-list" aria-label="共有したものの一覧"></section>
   <p id="shareCopyStatus" class="share-copy-status" role="status" aria-live="polite"></p>
-</main>
+</div></main>
 <div data-site-footer></div>
-<script src="../assets/js/common-layout.js"></script>
+<script src="../assets/js/common-layout.js?v=0912-binder-v2"></script>
 <script>
 (()=>{
  "use strict";
