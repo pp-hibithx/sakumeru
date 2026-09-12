@@ -10,7 +10,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<script defer src="../assets/js/common-layout.js?v=0912-mobile-nav"></script>
 <script defer src="../assets/js/theme-v0296.js"></script><script src="../assets/js/optional-features.js?v=0292" defer></script>
 
 <style>
@@ -42,7 +42,7 @@
 <div class="backup-warning">このバックアップは、SAKU+MERUに保存したデータを復元するためのものです。<br>端末のデータを消してしまった場合や、別のブラウザへ移すときに使用できます。<br>最終バックアップ：<span id="lastBackupAt">まだありません</span></div>
 </section>
 <section class="panel" style="margin-top:18px">
-<h2>クラウド同期</h2>
+<h2 id="cloud-sync">クラウド同期</h2>
 <p>PCとスマホなど、同じ同期コードを使う端末間で主要データを同期できます。完全バックアップとは別の機能です。</p>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="backup-actions"><button id="cloudSave" type="button">クラウドへ保存</button><button id="cloudLoad" type="button">クラウドから読み込む</button></div></div>
 <label style="display:block;margin-top:14px">同期コード<br><input id="syncId" type="text" autocomplete="off" spellcheck="false" style="width:min(100%,420px)"></label>
