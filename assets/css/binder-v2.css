@@ -3,6 +3,9 @@
   --bg:#090b0e;--panel:#17191e;--panel2:#1e2127;--line:#41464f;
   --text:#f6f4ee;--muted:#b7bbc2;--accent:#d0ae63;--accent2:#ead398;
   --binder-sheet:#17191e;--binder-ink:#f6f4ee;--binder-rule:#343840;
+  --text-primary:var(--text);--text-muted:var(--muted);--surface:var(--panel);--surface-raised:var(--panel2);
+  --speech-bg:#121419;--speech-text:#f6f4ee;--speech-border:var(--accent);
+  --control-bg:#101216;--control-text:var(--text);--control-placeholder:#979ca5;
 }
 html{font-size:16px}body{font-size:16px;line-height:1.7;background:var(--bg);color:var(--text)}
 main>.wrap:last-child:not(.share-page),main .wrap.directory-page,main .wrap.library-page{
@@ -23,8 +26,8 @@ main>.wrap:last-child:not(.share-page)::after,main .wrap.directory-page::after,m
 main section{margin-top:26px}.section-title,main section>h2,main .panel>h2{font-size:clamp(1.35rem,2.4vw,1.65rem);line-height:1.4;color:var(--text)}
 .small{font-size:.8125rem}.muted,.small.muted{color:var(--muted)}.badge{font-size:.8125rem}
 input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),select,textarea,button{font-size:.9375rem;min-height:42px;border-color:var(--line)}
-input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),select,textarea{background:#101216;color:var(--text)}
-input::placeholder,textarea::placeholder{color:#979ca5;opacity:1}
+input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),select,textarea{background:var(--control-bg);color:var(--control-text)}
+input::placeholder,textarea::placeholder{color:var(--control-placeholder);opacity:1}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .card,.panel,.lib-panel,.dir-panel,.home-task-panel,.home-work-panel,.section{border-color:var(--line);background:color-mix(in srgb,var(--panel) 84%,#090b0e 16%)}
 .card:hover{border-color:var(--accent)}
@@ -51,6 +54,11 @@ body:not(.share-manage-page) .share-article-warning{border-left-color:var(--acce
 
 /* UI v2 light palette: warm paper, dark ink, and restrained gold. */
 html[data-theme="light"] body{background:#e9e5dc!important;color:#24221e!important}
+html[data-theme="light"]{
+  --text-primary:#24221e;--text-muted:#656158;--surface:#fbfaf6;--surface-raised:#f3efe6;
+  --speech-bg:#17191e;--speech-text:#f6f4ee;--speech-border:#b88934;
+  --control-bg:#fffdf8;--control-text:#24221e;--control-placeholder:#777168;
+}
 html[data-theme="light"] main>.wrap:last-child:not(.share-page),html[data-theme="light"] .share-manage-page .share-manage-sheet{
   --binder-sheet:#fbfaf6;--binder-ink:#24221e;--binder-rule:#d8d1c3;
   background:#fbfaf6!important;color:#24221e!important;border-color:#ad9160!important;box-shadow:0 12px 30px rgba(55,45,28,.12)
@@ -82,18 +90,18 @@ body.home-page .home-guide-cast{width:min(560px,100%);min-height:235px;align-ite
 body.home-page .home-guide-member{max-width:270px}body.home-page .home-guide-member .home-guide-art{height:260px;background:transparent;border-radius:0}
 body.home-page .home-guide-member figcaption{font-size:.8125rem;color:var(--muted)}
 body.home-page .home-guide-body{margin-top:0}
-body.home-page .home-guide-line{position:relative;width:min(720px,80%);max-width:none;margin:14px auto 12px;padding:14px 18px;font-size:1rem;line-height:1.7;border:1px solid var(--accent);background:#121419}
-body.home-page .home-guide-line::before{content:"";position:absolute;left:calc(var(--home-guide-tail-x) - 8px);top:-9px;width:16px;height:16px;border:1px solid var(--accent);border-right:0;border-bottom:0;background:#121419;transform:rotate(45deg)}
+body.home-page .home-guide-line{position:relative;width:min(720px,80%);max-width:none;margin:14px auto 12px;padding:14px 18px;font-size:1rem;line-height:1.7;border:1px solid var(--speech-border);background:var(--speech-bg);color:var(--speech-text)}
+body.home-page .home-guide-line::before{content:"";position:absolute;left:calc(var(--home-guide-tail-x) - 8px);top:-9px;width:16px;height:16px;border:1px solid var(--speech-border);border-right:0;border-bottom:0;background:var(--speech-bg);transform:rotate(45deg)}
 body.home-page .home-guide-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;width:min(720px,80%);margin:0 auto 20px}
 body.home-page .home-guide-actions button,body.home-page .home-guide-actions a{width:auto;min-height:40px}
 body.home-page .home-guide-schedule,body.home-page .home-guide-anniversary-block{padding:14px 0;border-top:1px solid var(--binder-rule)}
 body.home-page .home-guide-section-title{display:block;margin-bottom:8px;padding-left:10px;border-left:3px solid var(--accent);font-size:1.1rem}
 body.home-page .home-guide-anniversary{margin:0;font-size:.9375rem;color:var(--text)}
 body.home-page .home-work{display:block;margin:0}body.home-page .home-work-panel{border:0;border-top:1px solid var(--binder-rule);border-radius:0;background:transparent;padding:18px 0}
-body.home-page #pomodoroPanel[hidden]{display:none}body.home-page #pomodoroPanel{max-width:860px;margin-inline:auto;border:1px solid var(--line);border-radius:10px;padding:14px;background:#121419}
+body.home-page #pomodoroPanel[hidden]{display:none}body.home-page #pomodoroPanel{max-width:860px;margin-inline:auto;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface-raised);color:var(--text-primary)}
 body.home-page #workLogPanel>h2{padding-left:10px;border-left:3px solid var(--accent)}
 
-.sakumeru-guide-launcher{position:fixed;right:18px;bottom:18px;z-index:1190;width:auto;min-height:38px;padding:7px 12px;border-color:var(--accent);background:#17191e;box-shadow:0 7px 22px rgba(0,0,0,.35)}
+.sakumeru-guide-launcher{position:fixed;right:18px;bottom:18px;z-index:1190;width:auto;min-height:38px;padding:7px 12px;border-color:var(--accent);background:var(--surface-raised);color:var(--text-primary);box-shadow:0 7px 22px rgba(0,0,0,.35)}
 .sakumeru-guide-menu{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.sakumeru-guide-menu button,.sakumeru-guide-menu a{width:auto;min-height:36px;padding:6px 10px}
 .sakumeru-tour{position:fixed;right:clamp(12px,3vw,32px);bottom:clamp(58px,7vw,76px);z-index:1200;width:min(680px,calc(100vw - 24px));filter:drop-shadow(0 10px 24px rgba(0,0,0,.38));animation:sakumeruTourIn .24s ease-out both}
 .sakumeru-tour[hidden]{display:none}.sakumeru-tour-inner{display:grid;grid-template-columns:86px minmax(0,1fr);gap:11px;align-items:end}.sakumeru-tour.no-art .sakumeru-tour-inner{grid-template-columns:minmax(0,1fr)}.sakumeru-tour-figure{margin:0;text-align:center}.sakumeru-tour-figure img{display:block;width:86px;height:112px;object-fit:contain}.sakumeru-tour-figure figcaption{font-size:13px;color:var(--muted)}.sakumeru-tour-box{min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:inherit}.sakumeru-tour-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.sakumeru-tour-head button{width:auto;padding:3px 8px;min-height:34px}.sakumeru-tour-bubble{margin-top:7px;padding:11px 13px;border:1px solid var(--accent);border-radius:11px;line-height:1.7}.sakumeru-tour-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.sakumeru-tour-actions button,.sakumeru-tour-actions a{width:auto;min-width:max-content;min-height:38px;padding:6px 10px}.sakumeru-tour-name{font-size:13px;color:var(--muted)}@keyframes sakumeruTourIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -107,3 +115,26 @@ body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
   body:not(.share-manage-page) .share-page{width:min(100% - 16px,1040px);padding:20px 14px}
 }
 @media(max-width:390px){body.home-page .home-guide-cast{display:flex;max-width:100%}body.home-page .home-guide-member .home-guide-art{height:155px}}
+
+/* Component-level theme pairs: never change foreground without its surface. */
+.sakumeru-tour-box{background:var(--surface);color:var(--text-primary)}
+.sakumeru-tour-bubble{background:var(--speech-bg);color:var(--speech-text);border-color:var(--speech-border)}
+.sakumeru-tour-name,.sakumeru-tour-figure figcaption{color:var(--text-muted)}
+
+/* Light-mode contrast guardrails for HOME and SHARE UI v2. */
+html[data-theme="light"] body.home-page .home-guide-event,
+html[data-theme="light"] body.home-page .home-guide-anniversary,
+html[data-theme="light"] body.home-page .work-log-row,
+html[data-theme="light"] body.home-page .work-now,
+html[data-theme="light"] body.home-page .work-latest{color:var(--text-primary)}
+html[data-theme="light"] body.home-page .home-guide-event .muted,
+html[data-theme="light"] body.home-page .work-log-row .muted,
+html[data-theme="light"] body.home-page .work-log-detail{color:var(--text-muted)}
+html[data-theme="light"] body.home-page button,
+html[data-theme="light"] body.home-page .button,
+html[data-theme="light"] .sakumeru-tour button,
+html[data-theme="light"] .sakumeru-tour a{border-color:#a88d5a;color:var(--text-primary);background:var(--surface-raised)}
+html[data-theme="light"] body.home-page button[aria-pressed="true"],
+html[data-theme="light"] body.home-page button.is-selected{border-color:var(--accent);background:#eee2c9;color:#3a2b10}
+html[data-theme="light"] .share-manage-page a,
+html[data-theme="light"] body:not(.share-manage-page) .share-page a{color:#765411}
