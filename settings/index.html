@@ -16,7 +16,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<script defer src="../assets/js/common-layout.js?v=0913-sheet-themes"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/optional-features.js?v=0292" defer></script>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
@@ -50,6 +50,19 @@
       <p class="small muted">X卓報告だけで「自分」の代わりに使います。空欄なら「自分」のままです。</p>
       <button id="saveSelfSocialName" type="button">保存</button>
       <p id="settingsStatus" class="small" aria-live="polite"></p>
+
+      <hr style="margin:18px 0;border:0;border-top:1px solid var(--line)">
+      <div class="sheet-theme-field">
+        <label for="globalSheetTheme"><strong>ルーズリーフカラー</strong></label>
+        <select id="globalSheetTheme">
+          <option value="standard">標準</option><option value="black">ブラック</option><option value="white">ホワイト</option>
+          <option value="ivory">アイボリー</option><option value="gray">グレー</option><option value="pink">ピンク</option>
+          <option value="red">レッド</option><option value="orange">オレンジ</option><option value="yellow">イエロー</option>
+          <option value="green">グリーン</option><option value="blue">ブルー</option><option value="purple">パープル</option>
+        </select>
+        <p class="small muted sheet-theme-note">特定の探索者テーマがないページで使う紙面色です。ダーク／ライト設定とは別に保存されます。</p>
+        <button id="saveGlobalSheetTheme" type="button">ルーズリーフカラーを保存</button>
+      </div>
     </section>
   </div>
 </main>
@@ -63,6 +76,9 @@ document.addEventListener("DOMContentLoaded",()=>{
   const toggle=document.getElementById("playersFeatureToggle");
   const status=document.getElementById("settingsStatus");
   const social=document.getElementById("selfSocialName"),saveSocial=document.getElementById("saveSelfSocialName"),SOCIAL_KEY="39x2_self_sns_name_v1";
+  const sheetTheme=document.getElementById("globalSheetTheme"),saveSheetTheme=document.getElementById("saveGlobalSheetTheme");
+  if(sheetTheme)sheetTheme.value=window.TRPG39SheetTheme?.globalTheme?.()||localStorage.getItem("trpg39_sheet_theme_v1")||"standard";
+  if(saveSheetTheme)saveSheetTheme.addEventListener("click",()=>{const selected=sheetTheme.value||"standard";localStorage.setItem("trpg39_sheet_theme_v1",selected);const value=window.TRPG39SheetTheme?.setGlobalTheme?.(selected)||selected;if(!window.TRPG39SheetTheme){document.documentElement.dataset.sheetThemeCurrent=value;document.querySelectorAll("main>.wrap:last-child").forEach(root=>root.dataset.sheetTheme=value)}status.textContent=`ルーズリーフカラー「${sheetTheme.options[sheetTheme.selectedIndex]?.text||value}」を保存しました。`;});
   if(social)social.value=localStorage.getItem(SOCIAL_KEY)||"";
   if(saveSocial)saveSocial.addEventListener("click",()=>{localStorage.setItem(SOCIAL_KEY,social.value.trim());status.textContent="SNS表示名を保存しました。";});
   if(!toggle)return;
@@ -90,3 +106,4 @@ document.addEventListener("DOMContentLoaded",()=>{
 </script>
 </body>
 </html>
+
