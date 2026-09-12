@@ -5,18 +5,18 @@
   --binder-sheet:#17191e;--binder-ink:#f6f4ee;--binder-rule:#343840;
 }
 html{font-size:16px}body{font-size:16px;line-height:1.7;background:var(--bg);color:var(--text)}
-main>.wrap:last-child,main .wrap.directory-page,main .wrap.library-page{
+main>.wrap:last-child:not(.share-page),main .wrap.directory-page,main .wrap.library-page{
   position:relative;width:min(1120px,calc(100% - 32px));margin-inline:auto;
   padding:clamp(22px,3vw,38px) clamp(18px,3vw,38px) clamp(36px,5vw,58px) clamp(42px,5vw,62px);
   background:var(--binder-sheet);border:1px solid #655638;border-radius:12px;
   box-shadow:0 14px 38px rgba(0,0,0,.3);overflow:visible;
 }
-main>.wrap:last-child::before,main .wrap.directory-page::before,main .wrap.library-page::before{
+main>.wrap:last-child:not(.share-page)::before,main .wrap.directory-page::before,main .wrap.library-page::before{
   content:"";position:absolute;left:21px;top:22px;bottom:22px;width:15px;
   background:radial-gradient(circle at center,#090b0e 0 5px,#76643f 5.5px 6.5px,transparent 7px) center top/15px 52px repeat-y;
   pointer-events:none;opacity:.9;
 }
-main>.wrap:last-child::after,main .wrap.directory-page::after,main .wrap.library-page::after{
+main>.wrap:last-child:not(.share-page)::after,main .wrap.directory-page::after,main .wrap.library-page::after{
   content:"";position:absolute;left:40px;top:22px;bottom:22px;width:1px;background:linear-gradient(transparent,#655638 4%,var(--binder-rule) 50%,#655638 96%,transparent);pointer-events:none;
 }
 .hero{padding:8px 0 18px;border-bottom:1px solid #655638;margin-bottom:18px}.hero h2{font-size:clamp(1.5rem,3vw,1.9rem);line-height:1.35}.hero p{font-size:1rem;color:var(--muted)}
@@ -57,9 +57,9 @@ body.home-page #workLogPanel>h2{padding-left:10px;border-left:3px solid var(--ac
 .sakumeru-tour[hidden]{display:none}.sakumeru-tour-inner{display:grid;grid-template-columns:86px minmax(0,1fr);gap:11px;align-items:end}.sakumeru-tour.no-art .sakumeru-tour-inner{grid-template-columns:minmax(0,1fr)}.sakumeru-tour-figure{margin:0;text-align:center}.sakumeru-tour-figure img{display:block;width:86px;height:112px;object-fit:contain}.sakumeru-tour-figure figcaption{font-size:13px;color:var(--muted)}.sakumeru-tour-box{min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:inherit}.sakumeru-tour-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.sakumeru-tour-head button{width:auto;padding:3px 8px;min-height:34px}.sakumeru-tour-bubble{margin-top:7px;padding:11px 13px;border:1px solid var(--accent);border-radius:11px;line-height:1.7}.sakumeru-tour-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.sakumeru-tour-actions button,.sakumeru-tour-actions a{width:auto;min-width:max-content;min-height:38px;padding:6px 10px}.sakumeru-tour-name{font-size:13px;color:var(--muted)}@keyframes sakumeruTourIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
 @media(max-width:700px){
-  main>.wrap:last-child,main .wrap.directory-page,main .wrap.library-page{width:min(100% - 16px,1120px);padding:18px 12px 34px 28px}
-  main>.wrap:last-child::before,main .wrap.directory-page::before,main .wrap.library-page::before{left:7px;width:12px;background-size:12px 48px}
-  main>.wrap:last-child::after,main .wrap.directory-page::after,main .wrap.library-page::after{left:23px}
+  main>.wrap:last-child:not(.share-page),main .wrap.directory-page,main .wrap.library-page{width:min(100% - 16px,1120px);padding:18px 12px 34px 28px}
+  main>.wrap:last-child:not(.share-page)::before,main .wrap.directory-page::before,main .wrap.library-page::before{left:7px;width:12px;background-size:12px 48px}
+  main>.wrap:last-child:not(.share-page)::after,main .wrap.directory-page::after,main .wrap.library-page::after{left:23px}
   body.home-page .home-guide-cast{min-height:170px}body.home-page .home-guide-member .home-guide-art{height:190px}body.home-page .home-guide-line,body.home-page .home-guide-actions{width:min(720px,94%)}
   .sakumeru-tour{left:10px;right:10px;bottom:56px;width:auto}.sakumeru-tour-inner{grid-template-columns:1fr}.sakumeru-tour-figure{justify-self:center}.sakumeru-tour-figure img{width:70px;height:88px}
 }
