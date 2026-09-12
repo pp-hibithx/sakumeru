@@ -6246,6 +6246,19 @@ function scheduleLibraryGridBatch(fn){
  if("requestIdleCallback" in window)requestIdleCallback(fn,{timeout:120});
  else setTimeout(fn,16);
 }
+function applyLibrarySheetTheme(run=null){
+ const root=document.querySelector("main .wrap.library-page");if(!root)return;
+ const global=window.TRPG39SheetTheme?.globalTheme?.()||localStorage.getItem("trpg39_sheet_theme_v1")||"standard";
+ if(!run){root.dataset.sheetTheme=global;return}
+ const ownIds=new Set();
+ (run.items||[]).forEach(rec=>{
+   storedSelfPcRows(rec).forEach(row=>{const id=String(row?.pcId||"").trim();if(id)ownIds.add(id)});
+   const legacy=String(rec?.pcId||"").trim();if(legacy)ownIds.add(legacy);
+ });
+ const own=[...ownIds].map(id=>pcs.find(pc=>String(pc.id)===id&&!String(pc.ownerPlayerId||"").trim())).filter(Boolean);
+ if(ownIds.size!==1||own.length!==1){root.dataset.sheetTheme=global;return}
+ root.dataset.sheetTheme=String(own[0].sheetTheme||"standard")==="standard"?global:own[0].sheetTheme;
+}
 function render(){
  sessionKindEventIndex=null;
  const gridGeneration=++libraryGridRenderGeneration;
@@ -6316,7 +6329,9 @@ function render(){
    bindRunMergeRepair();
    bindCoverAdjustButtons();
    bindArticlePageButtons();hydrateGuestPcAvatars(document);hydrateLocalArticleAudio(q("list"));hydrateConversationLogSections(q("list"));
+   applyLibrarySheetTheme(focusedRunId?(focused.runs||[]).find(run=>run.id===focusedRunId):null);
  }else{
+   applyLibrarySheetTheme(null);
    q("list").classList.remove("library-grid");
    const visibleGroupsAll=groups.filter(groupMatchesPlayFilter);
    const years=availableLibraryYears(visibleGroupsAll);
@@ -6490,5 +6505,6 @@ reset();hideEditor();render();openLibraryFromCalendarEvent();{
 })();
 </script>
 
-<script src="../assets/js/common-layout.js?v=20260827-header"></script>
+<script src="../assets/js/common-layout.js?v=0913-sheet-themes"></script>
 </body></html>
+
