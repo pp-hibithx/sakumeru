@@ -10,9 +10,12 @@
     link.rel="stylesheet";link.href=headerCss;link.dataset.sakumeruCommonHeader="1";
     document.head.appendChild(link);
   }
-  const binderCss=new URL("assets/css/binder-v2.css?v=0912-role-contrast",siteRoot).href;
+  const binderCss=new URL("assets/css/binder-v2.css?v=0913-sheet-themes",siteRoot).href;
   if(!document.querySelector('link[data-sakumeru-binder-v2]')){
     const link=document.createElement("link");link.rel="stylesheet";link.href=binderCss;link.dataset.sakumeruBinderV2="1";document.head.appendChild(link);
+  }
+  if(!window.TRPG39SheetTheme&&!document.querySelector('script[data-sakumeru-sheet-theme]')){
+    const themeScript=document.createElement("script");themeScript.src=url("assets/js/sheet-theme.js?v=0913-1");themeScript.async=false;themeScript.dataset.sakumeruSheetTheme="1";document.head.appendChild(themeScript);
   }
   const NAV=[
     ["home","HOME","index.html"],["scenario","SCENARIO","scenario/index.html?v=0292"],
