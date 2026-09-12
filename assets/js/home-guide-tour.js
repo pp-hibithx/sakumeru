@@ -5,15 +5,22 @@
   if(!TEXT)return;
   const topics=[
     {key:"scenario",path:"scenario/index.html"},{key:"calendar",path:"calendar/index.html"},{key:"library",path:"library/index.html"},
-    {key:"pc",path:"pcs/index.html"},{key:"players",path:"players/index.html"},{key:"share",path:""},{key:"tools",path:"tools/index.html"}
+    {key:"pc",path:"pcs/index.html"},{key:"players",path:"players/index.html"},{key:"share",path:"share/manage.html"},{key:"tools",path:"tools/index.html"}
   ];
   let state={};try{state=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch{}
   if((state.completed&&!state.review)||state.mode!=="tutorial")return;
-  const step=Math.max(0,Math.min(topics.length-1,Number(state.step)||0)),script=document.currentScript;
+  const currentPath=location.pathname.replace(/\\/g,"/").toLowerCase();
+  const at=(segment,file="index.html")=>currentPath.endsWith(`/${segment}/${file}`)||currentPath.endsWith(`/${segment}/`);
+  const currentPage=at("scenario")?"scenario":at("calendar")?"calendar":at("library")?"library":at("pcs")?"pc":at("players")?"players":at("share","manage.html")?"share":at("tools")?"tools":"";
+  const actualStep=topics.findIndex(topic=>topic.key===currentPage);
+  if(actualStep<0)return;
+  const savedStep=Math.max(0,Math.min(topics.length-1,Number(state.step)||0));
+  const step=actualStep,script=document.currentScript;
   const root=script?new URL("../../",script.src):new URL("./",location.href);
   const save=patch=>{state={...state,...patch,updatedAt:new Date().toISOString()};localStorage.setItem(KEY,JSON.stringify(state))};
+  if(savedStep!==step||state.targetPage!==currentPage)save({step,targetPage:currentPage});
   const style=document.createElement("style");style.textContent=`
-    .sakumeru-tour{position:fixed;right:clamp(12px,3vw,32px);bottom:clamp(12px,3vw,28px);z-index:1200;width:min(650px,calc(100vw - 24px));filter:drop-shadow(0 10px 24px rgba(0,0,0,.38));animation:sakumeruTourIn .24s ease-out both)}
+    .sakumeru-tour{position:fixed;right:clamp(12px,3vw,32px);bottom:clamp(12px,3vw,28px);z-index:1200;width:min(650px,calc(100vw - 24px));filter:drop-shadow(0 10px 24px rgba(0,0,0,.38));animation:sakumeruTourIn .24s ease-out both}
     .sakumeru-tour-inner{display:grid;grid-template-columns:86px minmax(0,1fr);gap:11px;align-items:end}.sakumeru-tour.no-art .sakumeru-tour-inner{grid-template-columns:minmax(0,1fr)}.sakumeru-tour-figure{margin:0;text-align:center}.sakumeru-tour-figure img{display:block;width:86px;height:112px;object-fit:contain}.sakumeru-tour-figure figcaption{font-size:12px;opacity:.72}.sakumeru-tour-box{min-width:0;padding:11px 13px 12px;border:1px solid var(--line,#48505c);border-radius:14px;background:var(--panel,#171b21);color:inherit}.sakumeru-tour-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.sakumeru-tour-head button{width:auto;padding:3px 8px}.sakumeru-tour-bubble{margin-top:7px;padding:10px 12px;border:1px solid var(--line,#48505c);border-radius:11px;line-height:1.7}.sakumeru-tour-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.sakumeru-tour-actions button{width:auto;min-width:max-content}.sakumeru-tour-name{font-size:12px;opacity:.72}@keyframes sakumeruTourIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media(max-width:620px){.sakumeru-tour{left:10px;right:10px;bottom:10px;width:auto}.sakumeru-tour-inner{grid-template-columns:1fr}.sakumeru-tour-figure{justify-self:center}.sakumeru-tour-figure img{width:70px;height:88px}}`;
   document.head.appendChild(style);
   const host=document.createElement("aside");host.className="sakumeru-tour";host.setAttribute("aria-label","SAKU+MERU案内人");
