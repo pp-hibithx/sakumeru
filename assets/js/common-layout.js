@@ -10,7 +10,7 @@
     link.rel="stylesheet";link.href=headerCss;link.dataset.sakumeruCommonHeader="1";
     document.head.appendChild(link);
   }
-  const binderCss=new URL("assets/css/binder-v2.css?v=0912-share-themes",siteRoot).href;
+  const binderCss=new URL("assets/css/binder-v2.css?v=0912-role-contrast",siteRoot).href;
   if(!document.querySelector('link[data-sakumeru-binder-v2]')){
     const link=document.createElement("link");link.rel="stylesheet";link.href=binderCss;link.dataset.sakumeruBinderV2="1";document.head.appendChild(link);
   }
@@ -34,5 +34,5 @@
   function footerHtml(){return `<footer class="footer"><div class="wrap">© ${new Date().getFullYear()} SAKU+MERU</div></footer>`;}
   document.querySelectorAll("[data-site-header]").forEach(slot=>{const active=(slot.dataset.active||"").trim().toLowerCase();slot.outerHTML=headerHtml(active);});
   document.querySelectorAll("[data-site-footer]").forEach(slot=>{slot.outerHTML=footerHtml();});
-  const guideText=document.createElement("script");guideText.src=url("assets/js/home-guide-text.js");guideText.onload=()=>{const guide=document.createElement("script");guide.src=url("assets/js/home-guide-tour.js");guide.onload=()=>{const concierge=document.createElement("script");concierge.src=url("assets/js/guide-concierge-v2.js?v=0912-1");document.body.appendChild(concierge)};document.body.appendChild(guide);};document.body.appendChild(guideText);
+  const guideText=document.createElement("script");guideText.src=url("assets/js/home-guide-text.js?v=0912-page-sync");guideText.onload=()=>{const guide=document.createElement("script");guide.src=url("assets/js/home-guide-tour.js?v=0912-page-sync");guide.onload=()=>{const concierge=document.createElement("script");concierge.src=url("assets/js/guide-concierge-v2.js?v=0912-1");document.body.appendChild(concierge)};document.body.appendChild(guide);};document.body.appendChild(guideText);
 })();
