@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>SHARE｜SAKU+MERU</title>
-  <script>try{document.documentElement.dataset.theme=localStorage.getItem("39x2_theme")||"dark"}catch(_){}</script>
+  <script>(()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m}catch(_){}})();</script>
   <link rel="stylesheet" href="../assets/css/style-v0303.css">
   <style>
     .share-manage-page{min-height:100vh}.share-manage-intro{margin:0 0 24px;padding:4px 0 18px;border-bottom:1px solid color-mix(in srgb,var(--accent) 52%,var(--line))}.share-manage-intro h1{margin:0 0 6px;font-size:clamp(1.6rem,3vw,2rem);letter-spacing:.06em}.share-manage-intro>p:not(.share-manage-note){margin:0 0 8px;font-size:1rem;font-weight:700}.share-manage-note{max-width:760px;margin:0;color:var(--muted);font-size:14px;line-height:1.75}
@@ -26,7 +26,8 @@
   <p id="shareCopyStatus" class="share-copy-status" role="status" aria-live="polite"></p>
 </div></main>
 <div data-site-footer></div>
-<script src="../assets/js/common-layout.js?v=0912-binder-v2"></script>
+<script src="../assets/js/common-layout.js?v=0912-share-themes"></script>
+<script defer src="../assets/js/theme-v0296.js"></script>
 <script>
 (()=>{
  "use strict";
