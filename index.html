@@ -22,7 +22,7 @@
 </script>
 <link rel="stylesheet" href="./assets/css/style-v0303.css">
 <script src="assets/js/home-guide-text.js?v=0911"></script>
-<script defer src="assets/js/common-layout.js?v=0912-binder-v2"></script>
+<script defer src="assets/js/common-layout.js?v=0912-page-sync"></script>
 <script defer src="./assets/js/theme-v0296.js"></script><script src="assets/js/optional-features.js?v=0292" defer></script>
 
 <style>
@@ -165,6 +165,11 @@ function focusHomeTarget(target){if(!target)return false;if(target.tagName==="DE
 function renderHomeConcierge(){
  const host=document.getElementById("homeConcierge"),call=document.getElementById("callHomeGuide");if(!host||!call)return;
  const tutorial=tutorialState();
+ if(tutorial.mode==="tutorial"&&(!tutorial.completed||tutorial.review)){
+  const step=Math.max(0,Math.min(HOME_TUTORIAL_TOPICS.length-1,Number(tutorial.step)||0)),topic=HOME_TUTORIAL_TOPICS.find(item=>item.key===tutorial.targetPage)||HOME_TUTORIAL_TOPICS[step];
+  const path=topic.key==="pc"?"pcs/index.html":topic.key==="share"?"share/manage.html":`${topic.key}/index.html`;
+  location.replace(path);return;
+ }
  if((!tutorial.completed||tutorial.review)&&!homeTutorialDismissed&&!homeConciergeOpen){homeConciergeOpen=true;if(tutorial.mode==="tutorial"){homeConciergeMode="tutorial";homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(tutorial.step)||0));homeTutorialReview=!!tutorial.review}else homeConciergeMode="welcome"}
  call.onclick=()=>{homeConciergeOpen=true;homeConciergeMode=tutorialState().completed?"menu":"welcome";renderHomeConcierge();focusHomeTarget(host)};
  if(!homeConciergeOpen){host.hidden=true;host.innerHTML="";call.setAttribute("aria-expanded","false");return}
@@ -223,7 +228,8 @@ function renderHomeGuide(){
  const speech=guideLineFor(pc,category,period,values,allToday),runtimeLine=timerSpeech(),cast=isFixedGuide?`<figure class="home-guide-member home-initial-guide-figure"><div class="home-guide-art"><img src="${esc(INITIAL_GUIDE_ASSET)}" alt="案内役・白十字" onerror="this.closest('figure').hidden=true"></div><figcaption>白十字</figcaption></figure>`:members.map(({ref,pc:member})=>{const image=guideImage(member,speech.category),href=homeFavoriteHref(ref);return `<figure class="home-guide-member"><a href="${esc(href)}">${image?`<div class="home-guide-art"><img src="${esc(image)}" alt="${esc(member.name||"PC")}の立ち絵"></div>`:'<div class="home-guide-art home-guide-art-placeholder">🌺</div>'}<figcaption>${esc(member.name||"名前未登録")}</figcaption></a></figure>`}).join("");
  const schedule=allToday.length?allToday.map(e=>`<div class="home-guide-event"><span class="home-guide-time">${esc(clockText(e))}</span><span><strong>${esc(eventScenarioTitle(e,scenarioMap))}</strong>${e.runLabel?`<br><span class="small muted">${esc(e.runLabel)}</span>`:""}</span>${e.status?`<span class="home-guide-status">${esc(e.status)}</span>`:""}</div>`).join(""):'<div class="small muted">今日の予定はありません。</div>';
  const anniversaryText=anniversary?`${years}年前の今日は「${esc(eventScenarioTitle(anniversary,scenarioMap))}」で遊びました。`:'同じ月日の過去の卓記録はありません。';
- host.innerHTML=`<div class="home-guide-character"><div class="home-guide-cast">${cast}</div><div class="home-guide-line">${esc(runtimeLine||speech.line)}</div><div class="home-guide-actions"><button type="button" data-guide-timer>集中する</button>${primaryEntry?`<a class="button home-guide-link" href="${esc(homeFavoriteHref(primaryEntry.ref))}">PC詳細を見る</a>`:""}<button type="button" class="home-guide-help" data-guide-help>使い方を聞く</button></div></div><div class="home-guide-body"><div class="home-guide-schedule"><strong class="home-guide-section-title">今日の予定</strong>${schedule}</div><div class="home-guide-anniversary-block"><strong class="home-guide-section-title">今日は何の日</strong><div class="home-guide-anniversary">${anniversaryText}</div></div></div>`;
+ const guideHelpAction=isFixedGuide?'<button type="button" class="home-guide-help" data-guide-help>使い方を聞く</button>':"";
+ host.innerHTML=`<div class="home-guide-character"><div class="home-guide-cast">${cast}</div><div class="home-guide-line">${esc(runtimeLine||speech.line)}</div><div class="home-guide-actions"><button type="button" data-guide-timer>集中する</button>${primaryEntry?`<a class="button home-guide-link" href="${esc(homeFavoriteHref(primaryEntry.ref))}">PC詳細を見る</a>`:""}${guideHelpAction}</div></div><div class="home-guide-body"><div class="home-guide-schedule"><strong class="home-guide-section-title">今日の予定</strong>${schedule}</div><div class="home-guide-anniversary-block"><strong class="home-guide-section-title">今日は何の日</strong><div class="home-guide-anniversary">${anniversaryText}</div></div></div>`;
  host.hidden=false;
  host.querySelectorAll("[data-guide-help]").forEach(button=>button.addEventListener("click",()=>{homeConciergeOpen=true;homeConciergeMode="help";homeTutorialReview=true;renderHomeConcierge();focusHomeTarget(document.getElementById("homeConcierge"))}));
  host.querySelector("[data-guide-timer]")?.addEventListener("click",()=>{homeTimerPanelOpen=true;renderPomodoro();focusHomeTarget(document.getElementById("pomodoroPanel"))});
