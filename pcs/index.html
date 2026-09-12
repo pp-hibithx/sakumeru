@@ -14,7 +14,7 @@
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
 <link rel="stylesheet" href="../assets/css/image-lightbox.css?v=0905-1">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<script defer src="../assets/js/common-layout.js?v=0911-share-nav2"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script defer src="../assets/js/image-lightbox.js?v=0905-1"></script>
 <style>
@@ -294,7 +294,19 @@ const GUIDE_CATEGORIES=[
 ];
 const uuid=()=>TRPG39.uuid?TRPG39.uuid():crypto.randomUUID();
 function homeGuideSettings(){try{const v=JSON.parse(localStorage.getItem(HOME_GUIDE_SETTINGS_KEY)||"{}");return v&&typeof v==="object"?v:{}}catch{return {}}}
-function setHomeGuidePcId(id){const next={...homeGuideSettings(),homeGuidePcId:String(id||"")};localStorage.setItem(HOME_GUIDE_SETTINGS_KEY,JSON.stringify(next));return next.homeGuidePcId}
+function homeFavoriteMembers(){
+ const settings=homeGuideSettings(),raw=Array.isArray(settings.homeFavorites?.members)?settings.homeFavorites.members:[],members=[];
+ raw.forEach(ref=>{const pc=allPcs.find(x=>String(x.id)===String(ref?.pcId||""));if(!pc||members.some(x=>x.pcId===String(pc.id))||members.length>=2)return;const playerId=String(pc.ownerPlayerId||"").trim();members.push(playerId?{source:"player",playerId,pcId:String(pc.id)}:{source:"own",pcId:String(pc.id)})});
+ const legacyId=String(settings.homeGuidePcId||"");if(!members.length&&legacyId){const pc=allPcs.find(x=>String(x.id)===legacyId);if(pc){const playerId=String(pc.ownerPlayerId||"").trim();members.push(playerId?{source:"player",playerId,pcId:legacyId}:{source:"own",pcId:legacyId})}}
+ return members;
+}
+function isHomeFavoritePc(id){return homeFavoriteMembers().some(ref=>ref.pcId===String(id))}
+function toggleHomeFavoritePc(pc){
+ const settings=homeGuideSettings(),id=String(pc.id),members=homeFavoriteMembers();let added=false,index=members.findIndex(ref=>ref.pcId===id);
+ if(index>=0)members.splice(index,1);else{if(members.length>=2){alert("HOMEのお気に入りPCは2人までです。HOMEの［お気に入りPC設定］から入れ替えてください。");return null}members.push({source:"own",pcId:id});added=true}
+ let primaryPcId=String(settings.homeFavorites?.primaryPcId||settings.homeGuidePcId||"");if(!members.some(ref=>ref.pcId===primaryPcId))primaryPcId=members[0]?.pcId||"";
+ localStorage.setItem(HOME_GUIDE_SETTINGS_KEY,JSON.stringify({...settings,homeGuidePcId:primaryPcId,homeFavorites:{members,primaryPcId}}));return added;
+}
 function guideLineArray(value){return Array.isArray(value)?value.map(v=>String(v||"").trim()).filter(Boolean):String(value||"").split(/\r?\n/).map(v=>v.trim()).filter(Boolean)}
 function renderPcGuideEditor(pc={}){
  const lines=pc.guideLines&&typeof pc.guideLines==="object"?pc.guideLines:{},variants=pc.guideVariants&&typeof pc.guideVariants==="object"?pc.guideVariants:{};
@@ -689,7 +701,7 @@ function wirePcDetail(pc){
  root.querySelectorAll("[data-detail-edit]").forEach(button=>button.onclick=()=>{returnToDetailId=pc.id;relockPrivateMemo();q("pcDetailDialog").hidden=true;q("pcIacharaFile").value="";q("pcIacharaFileStatus").textContent="ファイルは保存・アップロードされません。";edit(pc.id,false);q("pcProfileSkinColor").value=pc.profile?.skinColor||"";q("pcImageLabel").value=pc.imageLabel||""});
  root.querySelector("[data-detail-rel]").onclick=()=>{relockPrivateMemo();openRelationGraph(pc.id)};
  root.querySelector("[data-detail-share]").onclick=()=>share(pc.id);
- const guideButton=root.querySelector("[data-home-guide]");if(guideButton)guideButton.onclick=()=>{const current=String(homeGuideSettings().homeGuidePcId||""),next=current===String(pc.id)?"":String(pc.id);setHomeGuidePcId(next);guideButton.textContent=next?"HOMEの案内人に設定済み":"HOMEの案内人に設定";guideButton.setAttribute("aria-pressed",String(!!next))};
+ const guideButton=root.querySelector("[data-home-guide]");if(guideButton)guideButton.onclick=()=>{const added=toggleHomeFavoritePc(pc);if(added===null)return;guideButton.textContent=added?"HOMEお気に入りに追加済み":"HOMEお気に入りに追加";guideButton.setAttribute("aria-pressed",String(added))};
  const back=root.querySelector("[data-detail-back]");if(back)back.onclick=()=>{const id=detailTrail.pop();if(id)openPcDetail(id,{updateUrl:true,fromTrail:true})};
  root.querySelectorAll("[data-open-related-self]").forEach(b=>b.onclick=()=>{detailTrail.push(pc.id);openPcDetail(b.dataset.openRelatedSelf,{updateUrl:true,fromTrail:true})});
  root.querySelectorAll("[data-art-url]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const button=e.target.closest("[data-art-url]"),main=root.querySelector("[data-art-main]"),img=main?.querySelector("img"),url=String(button?.dataset.artUrl||"");if(!button||!main||!img||!url)return;img.setAttribute("src",url);img.setAttribute("alt",button.dataset.artLabel||"");main.setAttribute("data-sm-image-expand",url);main.setAttribute("aria-label",`${button.dataset.artLabel||"立ち絵"}を拡大`);root.querySelectorAll("[data-art-url]").forEach(x=>x.setAttribute("aria-selected",String(x===button)))});
@@ -732,7 +744,7 @@ function pcProfileHtml(pc){
  const p=pc?.profile||{},labels={occupation:"職業",age:"年齢",birthday:"誕生日",gender:"性別",height:"身長",weight:"体重",birthplace:"出身",hairColor:"髪",eyeColor:"瞳",skinColor:"肌"};
  return `<section class="pc-profile-summary" aria-label="PROFILE"><strong>PROFILE</strong><dl>${Object.entries(labels).map(([key,label])=>`<div><dt>${esc(label)}</dt><dd>${esc(String(p[key]||"").trim()||"―")}</dd></div>`).join("")}</dl></section>`;
 }
-function compactPcDetailHeader(pc,st,sets){const root=q("pcDetailContent"),head=root.querySelector(".pc-detail-head"),close=head?.querySelector(".pc-detail-close");if(head&&close)close.insertAdjacentHTML("beforebegin",`<div class="pc-detail-head-meta"><div>${systemSelectorHtml(pc)}</div><strong>${st.count}シナリオ</strong><span>初卓 ${esc(st.first||"―")}</span><span>最終 ${esc(st.last||"―")}</span></div>`);const management=root.querySelector(".pc-management-strip"),overview=root.querySelector(".pc-detail-overview"),isGuide=String(homeGuideSettings().homeGuidePcId||"")===String(pc.id);if(management&&overview){overview.insertAdjacentHTML("afterend",`<div class="pc-detail-quick-actions">${pc.sheet?`<a class="link" href="${esc(pc.sheet)}" target="_blank" rel="noopener">キャラクターシートを開く</a>`:""}<button type="button" data-detail-edit="${esc(pc.id)}">編集</button><button type="button" data-home-guide="${esc(pc.id)}" aria-pressed="${isGuide}">${isGuide?"HOMEの案内人に設定済み":"HOMEの案内人に設定"}</button></div>`);management.remove()}const active=Object.values(sets)[0]||{skills:{}},count=normalizedSkills(active.skills).length,skillCount=root.querySelector("[data-lazy-skills] summary span:last-child");if(skillCount)skillCount.textContent=`${count}件`}
+function compactPcDetailHeader(pc,st,sets){const root=q("pcDetailContent"),head=root.querySelector(".pc-detail-head"),close=head?.querySelector(".pc-detail-close");if(head&&close)close.insertAdjacentHTML("beforebegin",`<div class="pc-detail-head-meta"><div>${systemSelectorHtml(pc)}</div><strong>${st.count}シナリオ</strong><span>初卓 ${esc(st.first||"―")}</span><span>最終 ${esc(st.last||"―")}</span></div>`);const management=root.querySelector(".pc-management-strip"),overview=root.querySelector(".pc-detail-overview"),isGuide=isHomeFavoritePc(pc.id);if(management&&overview){overview.insertAdjacentHTML("afterend",`<div class="pc-detail-quick-actions">${pc.sheet?`<a class="link" href="${esc(pc.sheet)}" target="_blank" rel="noopener">キャラクターシートを開く</a>`:""}<button type="button" data-detail-edit="${esc(pc.id)}">編集</button><button type="button" data-home-guide="${esc(pc.id)}" aria-pressed="${isGuide}">${isGuide?"HOMEお気に入りに追加済み":"HOMEお気に入りに追加"}</button></div>`);management.remove()}const active=Object.values(sets)[0]||{skills:{}},count=normalizedSkills(active.skills).length,skillCount=root.querySelector("[data-lazy-skills] summary span:last-child");if(skillCount)skillCount.textContent=`${count}件`}
 function openPcDetailLegacy(id,{updateUrl=true}={}){
  const x=pcs.find(v=>String(v.id)===String(id));if(!x)return false;
  const st=stats(x),coPcs=coPlayEntries(x);activeDetailPcId=x.id;
