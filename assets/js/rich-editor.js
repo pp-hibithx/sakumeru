@@ -36,9 +36,11 @@ function plainTextForX(html){
  // X用本文は、折りたたみを開けた時だけ読める内容を一切使用しない。
  // details自体を先に除くため、入れ子の深さに関係なく内部本文も除外される。
  d.querySelectorAll("details").forEach(x=>x.remove());
- d.querySelectorAll('[data-x-hidden="true"]').forEach(x=>x.remove());
+ const hidden=[...d.querySelectorAll('[data-x-hidden="true"]')].filter(x=>!x.parentElement?.closest('[data-x-hidden="true"]'));
+ hidden.forEach(x=>x.replaceWith(document.createTextNode("――")));
  return htmlWithLineBreaks(d)
    .replace(/\u200B/g,"")
+   .replace(/――(?:[ \t]*――)+/g,"――")
    .replace(/\r/g,"")
    .replace(/[ \t]+\n/g,"\n")
    .replace(/\n{3,}/g,"\n\n")
