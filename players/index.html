@@ -141,6 +141,11 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-cover-editor{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:1000;display:grid;place-items:center;padding:20px}
 .lib-cover-editor[hidden]{display:none}
 .lib-cover-panel{width:min(720px,96vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+#pcLibraryEditor{overflow:hidden}
+#pcLibraryEditor .lib-cover-panel{width:min(860px,96vw);max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:0 16px 0}
+.pc-library-edit-header{position:sticky;top:0;z-index:5;margin-inline:-16px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.pc-library-edit-actions{position:sticky;bottom:0;z-index:5;margin-inline:-16px!important;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--panel);justify-content:flex-end}
+@media(max-width:620px){.lib-cover-editor{padding:8px}#pcLibraryEditor .lib-cover-panel{width:100%;max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);padding-inline:12px}.pc-library-edit-header,.pc-library-edit-actions{margin-inline:-12px!important;padding-inline:12px}.pc-library-edit-actions button{flex:1;min-width:120px}}
 .lib-cover-preview{height:min(430px,55vh);overflow:hidden;border-radius:10px;border:1px solid var(--line);cursor:ns-resize;touch-action:none;background:#111}
 .lib-cover-preview img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;pointer-events:none}
 .lib-cover-help{font-size:12px;color:var(--muted);margin:8px 0}.lib-cover-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.lib-cover-actions button{width:auto}
@@ -1036,8 +1041,8 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
 
 <div id="pcLibraryEditor" class="lib-cover-editor" hidden>
-  <div class="lib-cover-panel" style="width:min(860px,96vw)">
-    <div class="row">
+  <div class="lib-cover-panel">
+    <div class="row pc-library-edit-header">
       <div><strong>PC情報を編集</strong><div class="small muted">PLAYERSに記録しているPC情報を編集します。</div></div>
       <button type="button" id="pcLibraryEditorClose">閉じる</button>
     </div>
@@ -3074,7 +3079,10 @@ function pcPlayerPairsFromText(text){const out={};String(text||"").split(/\r?\n/
 function pcPlayerVariantsText(values=[]){return (Array.isArray(values)?values:[]).filter(v=>v?.url).map(v=>`${v.label||"差分"}｜${v.url}`).join("\n")}
 function pcPlayerVariantsFromText(text){return String(text||"").split(/\r?\n/).map(line=>{const i=line.indexOf("｜"),label=(i>=0?line.slice(0,i):"差分").trim()||"差分",url=(i>=0?line.slice(i+1):line).trim();return url?{id:TRPG39.uuid(),label,url}:null}).filter(Boolean)}
 function pcPlayerStatsSet(pc={}){const raw=String(pc.system||"").toLowerCase(),key=/7/.test(raw)?"coc7":/6|coc|クトゥルフ/.test(raw)?"coc6":/エモ|emo/.test(raw)?"emoklore":"default",sets=pc.gameStats&&typeof pc.gameStats==="object"?pc.gameStats:{};if(sets[key]&&typeof sets[key]==="object")return {key,value:sets[key]};const first=Object.entries(sets).find(([,v])=>v&&typeof v==="object");if(first)return {key:first[0],value:first[1]};return {key,value:{label:pc.system||key,abilities:{...(pc.abilityScores||{})},derived:{},skills:{...(pc.skills||{})}}}}
-function updatePcLibraryImagePreview(){const image=q("pcLibraryImagePreview"),url=String(q("pcLibraryImage")?.value||"").trim();if(!image)return;image.hidden=!url;if(url)image.src=url;else image.removeAttribute("src")}
+let pcLibraryPreviewObjectUrl="";
+function clearPcLibraryPreviewObjectUrl(){if(pcLibraryPreviewObjectUrl){URL.revokeObjectURL(pcLibraryPreviewObjectUrl);pcLibraryPreviewObjectUrl=""}}
+function updatePcLibraryImagePreview(){const image=q("pcLibraryImagePreview"),url=String(q("pcLibraryImage")?.value||"").trim();if(!image)return;clearPcLibraryPreviewObjectUrl();image.hidden=!url;if(url)image.src=url;else image.removeAttribute("src")}
+function previewPcLibraryImageFile(){const image=q("pcLibraryImagePreview"),file=q("pcLibraryImageFile")?.files?.[0];clearPcLibraryPreviewObjectUrl();if(!image)return;if(!file)return updatePcLibraryImagePreview();pcLibraryPreviewObjectUrl=URL.createObjectURL(file);image.src=pcLibraryPreviewObjectUrl;image.hidden=false}
 async function uploadPcLibraryImage(){const file=q("pcLibraryImageFile")?.files?.[0];if(!file)throw new Error("画像ファイルを選択してください。");const cfg=window.SUPABASE_CONFIG||{},base=String(cfg.projectUrl||"").trim(),key=String(cfg.publishableKey||"").trim(),syncId=window.TRPG39Sync?.getSyncId?.()||localStorage.getItem("39x2_cloud_sync_id_v1")||"";if(!base||!key)throw new Error("画像アップロード設定がありません。");if(!syncId)throw new Error("先にBACKUPでクラウド同期を設定してください。");const fd=new FormData();fd.append("file",file);fd.append("sync_id",syncId);const response=await fetch(base.replace(/\/$/,"")+"/functions/v1/image-upload",{method:"POST",headers:{apikey:key},body:fd}),body=await response.json().catch(()=>({}));if(!response.ok||!body.publicUrl)throw new Error(body.error||"画像をアップロードできませんでした。");q("pcLibraryImage").value=body.publicUrl;q("pcLibraryImageFile").value="";updatePcLibraryImagePreview();return body.publicUrl}
 function openPcLibraryEditor(id,options={}){
  const pc=pcs.find(x=>x.id===id);if(!pc)return;
@@ -3086,7 +3094,7 @@ function openPcLibraryEditor(id,options={}){
  q("pcLibraryImage").value=pc.image||"";
  q("pcLibraryImageFile").value="";q("pcLibraryVariants").value=pcPlayerVariantsText(pc.variants||[]);updatePcLibraryImagePreview();
  const profile=pc.profile||{};q("pcLibraryProfileOccupation").value=profile.occupation||"";q("pcLibraryProfileAge").value=profile.age||"";q("pcLibraryProfileBirthday").value=profile.birthday||"";q("pcLibraryProfileGender").value=profile.gender||"";q("pcLibraryProfileHeight").value=profile.height||"";q("pcLibraryProfileWeight").value=profile.weight||"";q("pcLibraryProfileBirthplace").value=profile.birthplace||"";q("pcLibraryProfileHairColor").value=profile.hairColor||"";q("pcLibraryProfileEyeColor").value=profile.eyeColor||"";q("pcLibraryProfileSkinColor").value=profile.skinColor||"";
- const stats=pcPlayerStatsSet(pc);q("pcLibraryAbilities").value=pcPlayerPairsText(stats.value.abilities);q("pcLibraryDerived").value=pcPlayerPairsText(stats.value.derived);q("pcLibrarySkills").value=pcPlayerPairsText(stats.value.skills);q("pcLibraryEditor").dataset.returnPcId=options.returnToDetail?pc.id:"";
+ const stats=pcPlayerStatsSet(pc);q("pcLibraryAbilities").value=pcPlayerPairsText(stats.value.abilities);q("pcLibraryDerived").value=pcPlayerPairsText(stats.value.derived);q("pcLibrarySkills").value=pcPlayerPairsText(stats.value.skills);q("pcLibraryEditor").dataset.returnPcId=pc.id;
  q("pcLibrarySheet").value=pc.sheet||"";
  q("pcLibraryArtService").value=pc.artService||"";
  q("pcLibraryArtMaker").value=pc.artMaker||"";
@@ -3096,8 +3104,10 @@ function openPcLibraryEditor(id,options={}){
  q("pcLibraryEditor").hidden=false;
  if(options.focusArt)requestAnimationFrame(()=>q("pcLibraryArtSection")?.scrollIntoView({block:"start"}));
 }
-function closePcLibraryEditor(){q("pcLibraryEditor").hidden=true;q("pcLibraryImageFile").value="";q("pcLibraryEditor").dataset.returnPcId=""}
-function savePcLibraryEditor(){
+function closePcLibraryEditor(){q("pcLibraryEditor").hidden=true;q("pcLibraryImageFile").value="";q("pcLibraryEditor").dataset.returnPcId="";clearPcLibraryPreviewObjectUrl()}
+async function savePcLibraryEditor(){
+ const saveButton=q("pcLibraryEditorSave"),pendingFile=q("pcLibraryImageFile")?.files?.[0];
+ if(pendingFile){try{saveButton.disabled=true;saveButton.textContent="画像を保存中…";await uploadPcLibraryImage()}catch(e){console.error(e);alert(e.message||e);return}finally{saveButton.disabled=false;saveButton.textContent="保存"}}
  const id=q("pcLibraryEditId").value,idx=pcs.findIndex(x=>x.id===id);
  if(idx<0)return;
  const name=q("pcLibraryName").value.trim();
@@ -3485,7 +3495,7 @@ function playerPcDetailViewHtml(player,pcItem){
  const variants=Array.isArray(pc.variants)?pc.variants.filter(v=>v&&v.url):[];
  return `<div class="player-pc-detail-view" id="player-pc-detail-${esc(pc.id)}">
    <div class="player-pc-detail-toolbar"><div class="player-pc-readonly">PLAYER：${esc(player.name||"")} ／ 閲覧用PC詳細</div><div class="row"><button type="button" data-player-pc-edit="${esc(pc.id)}">PC情報を編集</button><button type="button" class="player-pc-detail-close" data-player-pc-detail-close>← PC一覧へ</button></div></div>
-   <div class="player-pc-detail-head"><div class="player-pc-detail-art">${pc.image?`<img src="${esc(pc.image)}" alt="${esc(pc.name||"")}" loading="lazy">`:`<div class="player-pc-detail-placeholder">立ち絵未登録<br><button type="button" data-player-pc-edit="${esc(pc.id)}" data-focus-art>立ち絵を登録</button></div>`}${variants.length?`<div class="pc-variant-detail-grid">${variants.map(v=>`<div class="pc-variant-detail-card"><img src="${esc(v.url)}" alt=""><div class="pc-variant-detail-label">${esc(v.label||"差分")}</div></div>`).join("")}</div>`:""}</div>
+   <div class="player-pc-detail-head"><div class="player-pc-detail-art">${pc.image?`<img src="${esc(pc.image)}" alt="${esc(pc.name||"")}" loading="lazy"><button type="button" data-player-pc-edit="${esc(pc.id)}" data-focus-art>立ち絵を変更</button>`:`<div class="player-pc-detail-placeholder">立ち絵未登録<br><button type="button" data-player-pc-edit="${esc(pc.id)}" data-focus-art>立ち絵を登録</button></div>`}${variants.length?`<div class="pc-variant-detail-grid">${variants.map(v=>`<div class="pc-variant-detail-card"><img src="${esc(v.url)}" alt=""><div class="pc-variant-detail-label">${esc(v.label||"差分")}</div></div>`).join("")}</div>`:""}</div>
    <div class="player-pc-detail-sections"><section class="player-pc-detail-section"><h4>PROFILE</h4>${profileFields.length?`<dl class="player-pc-profile-list">${profileFields.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>`:'<div class="pc-detail-empty">登録情報はありません。</div>'}${pc.bio?`<div class="player-pc-detail-note">${esc(pc.bio)}</div>`:""}${pc.sheet?`<p><a class="link" href="${esc(pc.sheet)}" target="_blank" rel="noopener">キャラクターシートを開く</a></p>`:""}</section><section class="player-pc-detail-section"><h4>能力値</h4><div class="player-pc-stat-list">${Ring(abilities,"player-pc-stat-row")||'<div class="pc-detail-empty">登録情報はありません。</div>'}</div></section><section class="player-pc-detail-section"><h4>技能</h4><div class="player-pc-skill-list">${Ring(skills,"player-pc-skill-row")||'<div class="pc-detail-empty">登録情報はありません。</div>'}</div></section><section class="player-pc-detail-section"><h4>通過シナリオ・卓記録</h4><div>通過シナリオ ${pcItem.count}件</div>${playerPcHistoryHtml(player,pcItem)}</section></div></div>
  </div>`;
 }
@@ -4278,6 +4288,7 @@ q("pcLibraryEditorClose").onclick=closePcLibraryEditor;
 q("pcLibraryEditorCancel").onclick=closePcLibraryEditor;
 q("pcLibraryEditorSave").onclick=savePcLibraryEditor;
 q("pcLibraryImage").oninput=updatePcLibraryImagePreview;
+q("pcLibraryImageFile").onchange=previewPcLibraryImageFile;
 q("pcLibraryImageUpload").onclick=async()=>{const button=q("pcLibraryImageUpload");try{button.disabled=true;button.textContent="アップロード中…";await uploadPcLibraryImage()}catch(e){console.error(e);alert(e.message||e)}finally{button.disabled=false;button.textContent="立ち絵を追加"}};
 q("pcLibraryEditor").addEventListener("click",e=>{if(e.target===q("pcLibraryEditor"))closePcLibraryEditor()});
 document.addEventListener("click",e=>{const button=e.target.closest?.("[data-player-pc-edit]");if(!button)return;const fromDetail=!!button.closest(".player-pc-detail-view");openPcLibraryEditor(button.dataset.playerPcEdit,{returnToDetail:fromDetail,focusArt:button.hasAttribute("data-focus-art")})});
