@@ -10,8 +10,8 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<script defer src="../assets/js/common-layout.js?v=0912-mobile-nav"></script>
-<script defer src="../assets/js/theme-v0296.js"></script><script src="../assets/js/optional-features.js?v=0292" defer></script>
+<script defer src="../assets/js/common-layout.js?v=0914-header-actions"></script>
+<script defer src="../assets/js/theme-v0296.js"></script><script src="../assets/js/optional-features.js?v=0914-global-nav" defer></script>
 
 <style>
 .backup-note{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
@@ -24,7 +24,9 @@
 .backup-targets{margin:0 0 14px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:rgba(255,255,255,.012)}
 .backup-targets summary{cursor:pointer;padding:11px 0;font-weight:700}
 .backup-targets ul{margin:0 0 12px;padding-left:22px;columns:2;column-gap:28px}.backup-targets li{margin:4px 0;break-inside:avoid}
-@media(max-width:640px){.backup-targets ul{columns:1}}
+.sync-scope{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}.sync-scope summary{cursor:pointer;font-weight:750}.sync-scope-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 14px;margin-top:9px}.sync-device-only{color:var(--muted)}
+.sync-conflict-dialog{width:min(720px,calc(100% - 20px));max-height:calc(100vh - 20px);overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:inherit;padding:18px}.sync-conflict-dialog::backdrop{background:rgba(0,0,0,.55)}.sync-conflict-list{display:grid;gap:12px;margin:14px 0}.sync-conflict-item{padding:11px;border:1px solid var(--line);border-radius:9px}.sync-conflict-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.sync-choice{display:grid;gap:5px;padding:9px;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere}.sync-choice input{width:auto}.sync-conflict-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;position:sticky;bottom:-18px;padding:10px 0;background:var(--panel)}
+@media(max-width:640px){.backup-targets ul{columns:1}.sync-scope-grid,.sync-conflict-choices{grid-template-columns:1fr}.sync-conflict-dialog{padding:14px}.sync-conflict-actions button{flex:1 1 auto}}
 </style>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0309"></script>
@@ -48,29 +50,37 @@
 <label style="display:block;margin-top:14px">同期コード<br><input id="syncId" type="text" autocomplete="off" spellcheck="false" style="width:min(100%,420px)"></label>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button id="copySync" type="button">同期コードをコピー</button></div>
 <label style="display:flex;gap:8px;align-items:center;margin-top:14px"><input id="autoSync" type="checkbox"> この端末で自動同期を使う</label>
-<p class="small">ONにすると、起動時にクラウドの新しいデータを読み込み、編集後は自動保存します。画面右下に同期状態が表示されます。</p>
+<p class="small">ONにすると、対応ページの起動時にクラウドの新しいデータを確認し、編集後は自動保存します。詳しい同期状態はこの画面で確認できます。</p>
 <p id="cloudStatus" class="small" style="margin-top:12px"></p>
+<details class="sync-scope"><summary>同期されるデータを確認</summary><div class="sync-scope-grid"><span>✓ SCENARIO</span><span>✓ CALENDAR</span><span>✓ LIBRARY</span><span>✓ PC</span><span>✓ PLAYERS</span><span>✓ HOME設定</span><span>✓ WORK LOG</span><span class="sync-device-only">端末ごと：稼働中タイマー／今ここ！</span></div><p class="small">クラウド同期は複数端末で使う主要データ、完全バックアップは復旧用の包括的保存です。</p></details>
 <p class="small">同期コードを知っている端末だけがデータを読み込めます。公開しないでください。</p>
 </section>
+<dialog id="syncConflictDialog" class="sync-conflict-dialog"><form method="dialog"><h2>⚠ 同期競合あり</h2><p>この端末とクラウドで内容が異なります。残す内容を選んでください。選ぶまでどちらも上書きしません。</p><div id="syncConflictList" class="sync-conflict-list"></div><div class="sync-conflict-actions"><button type="button" id="resolveSyncConflict">選択内容で同期</button><button type="submit" class="secondary">あとで確認</button></div><p id="syncConflictStatus" class="small"></p></form></dialog>
 </div></main><div data-site-footer></div>
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
 <script src="../assets/js/shared-data.js?v=0292"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
-<script src="../assets/js/supabase-sync.js?v=0292"></script>
+<script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script src="../assets/js/full-backup.js?v=03301"></script>
 <script>
 (()=>{const q=id=>document.getElementById(id);
 const sync=q("syncId"), status=q("cloudStatus"), auto=q("autoSync");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function homeSummary(home){const pcs=new Map((TRPG39.loadPCs?.()||[]).map(pc=>[String(pc.id),pc.name||pc.id])),members=home?.homeFavorites?.members||[];return members.length?members.map(x=>pcs.get(String(x.pcId))||`PC ID: ${x.pcId}`).join(" ＋ "):"お気に入り0人"}
+function logSummary(log){if(!log)return"データなし";return `${log.title||"名称未設定"} ／ ${Math.round((Number(log.durationSec)||0)/60)}分 ／ ${log.startedAt||"日時なし"}`}
+function showSyncConflict(){const conflict=TRPG39Sync.getPendingConflict?.();if(!conflict)return;const list=q("syncConflictList"),rows=[];if(conflict.home)rows.push(`<section class="sync-conflict-item"><strong>HOME設定</strong><div class="sync-conflict-choices"><label class="sync-choice"><span>この端末</span><span>${esc(homeSummary(conflict.home.local))}</span><small>${esc(conflict.home.local?.homeFavorites?.updatedAt||"更新日時なし")}</small><input type="radio" name="sync-home" value="local" checked> この端末を使う</label><label class="sync-choice"><span>クラウド</span><span>${esc(homeSummary(conflict.home.cloud))}</span><small>${esc(conflict.home.cloud?.homeFavorites?.updatedAt||"更新日時なし")}</small><input type="radio" name="sync-home" value="cloud"> クラウドを使う</label></div></section>`);for(const item of conflict.work||[])rows.push(`<section class="sync-conflict-item" data-log-conflict="${esc(item.id)}"><strong>WORK LOG：${esc(item.id)}</strong><div class="sync-conflict-choices"><label class="sync-choice"><span>この端末</span><span>${esc(logSummary(item.local))}</span><input type="radio" name="sync-log-${esc(item.id)}" value="local" checked> この端末を採用</label><label class="sync-choice"><span>クラウド</span><span>${esc(logSummary(item.cloud))}</span><input type="radio" name="sync-log-${esc(item.id)}" value="cloud"> クラウドを採用</label></div></section>`);list.innerHTML=rows.join("");const dialog=q("syncConflictDialog");if(!dialog.open)dialog.showModal()}
 sync.value=TRPG39Sync.getSyncId();
 auto.checked=TRPG39Sync.getAutoSync();
 auto.onchange=()=>{if(auto.checked&&!sync.value.trim()){auto.checked=false;return alert("先にクラウドへ保存するか、同期コードを入力して読み込んでください。");}TRPG39Sync.setSyncId(sync.value.trim());TRPG39Sync.setAutoSync(auto.checked);status.textContent=auto.checked?"自動同期をONにしました。":"自動同期をOFFにしました。";};
 TRPG39Sync.initAutoSync();
-q("cloudSave").onclick=async()=>{try{status.textContent="保存中…";const id=await TRPG39Sync.saveCloud();sync.value=id;status.textContent="クラウドへ保存しました。"}catch(e){if(e.code==="SYNC_CONFLICT"&&confirm("他の端末に新しい変更があります。\nこの端末の内容でクラウドを上書きしますか？\n\n通常は『キャンセル』して先にクラウドから読み込むのがおすすめです。")){try{const id=await TRPG39Sync.saveCloud({force:true});sync.value=id;status.textContent="この端末の内容でクラウドを上書きしました。";return}catch(e2){status.textContent="保存できませんでした："+e2.message;return}}status.textContent="保存できませんでした："+e.message}};
-q("cloudLoad").onclick=async()=>{try{const id=sync.value.trim();if(!id)return alert("同期コードを入力してください。");if(!confirm("この端末のSCENARIO・CALENDAR・LIBRARY等の主要データをクラウドの内容で置き換えますか？"))return;status.textContent="読み込み中…";await TRPG39Sync.loadCloud(id);status.textContent="クラウドから読み込みました。";alert("読み込みました。") }catch(e){status.textContent="読み込めませんでした："+e.message}};
+q("cloudSave").onclick=async()=>{try{status.textContent="同期中…";const id=await TRPG39Sync.saveCloud();sync.value=id;status.textContent="クラウド同期済み"}catch(e){if(e.code==="SYNC_DATA_CONFLICT"){status.textContent="⚠ 同期競合あり";showSyncConflict();return}if(e.code==="SYNC_CONFLICT"&&confirm("他の端末に新しい変更があります。\nこの端末の内容でクラウドを上書きしますか？\n\n通常は『キャンセル』して先にクラウドから読み込むのがおすすめです。")){try{const id=await TRPG39Sync.saveCloud({force:true});sync.value=id;status.textContent="クラウド同期済み";return}catch(e2){if(e2.code==="SYNC_DATA_CONFLICT"){status.textContent="⚠ 同期競合あり";showSyncConflict();return}status.textContent="保存できませんでした："+e2.message;return}}status.textContent="保存できませんでした："+e.message}};
+q("cloudLoad").onclick=async()=>{try{const id=sync.value.trim();if(!id)return alert("同期コードを入力してください。");if(!confirm("この端末のSCENARIO・CALENDAR・LIBRARY等の主要データをクラウドの内容で置き換えますか？\nHOME設定とWORK LOGは安全に比較・統合します。"))return;status.textContent="同期中…";await TRPG39Sync.loadCloud(id);status.textContent="クラウド同期済み";alert("読み込みました。") }catch(e){if(e.code==="SYNC_DATA_CONFLICT"){status.textContent="⚠ 同期競合あり";showSyncConflict();return}status.textContent="読み込めませんでした："+e.message}};
+q("resolveSyncConflict").onclick=async()=>{const pending=TRPG39Sync.getPendingConflict?.(),out={home:q("syncConflictList").querySelector('[name="sync-home"]:checked')?.value||"local",work:{}};(pending?.work||[]).forEach(item=>{out.work[item.id]=q("syncConflictList").querySelector(`[name="sync-log-${CSS.escape(item.id)}"]:checked`)?.value||"local"});try{q("syncConflictStatus").textContent="同期中…";await TRPG39Sync.resolvePendingConflict(out);q("syncConflictDialog").close();status.textContent="クラウド同期済み"}catch(e){q("syncConflictStatus").textContent="解決内容を保存できませんでした："+e.message;status.textContent="同期エラー"}};
 q("copySync").onclick=async()=>{const id=sync.value.trim();if(!id)return alert("先にクラウドへ保存してください。");try{await navigator.clipboard.writeText(id);status.textContent="同期コードをコピーしました。"}catch{sync.select();document.execCommand("copy");status.textContent="同期コードをコピーしました。"}};
-window.addEventListener("39x2-sync-status",e=>{if(e.detail&&e.detail.message)status.textContent=e.detail.message;});
+window.addEventListener("39x2-sync-status",e=>{if(e.detail&&e.detail.message)status.textContent=e.detail.message;if(e.detail?.state==="conflict"&&TRPG39Sync.getPendingConflict?.())showSyncConflict();});
 sync.onchange=()=>TRPG39Sync.setSyncId(sync.value);
 })();
 </script>
 </body></html>
+
