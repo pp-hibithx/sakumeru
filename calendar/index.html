@@ -16,7 +16,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<script defer src="../assets/js/common-layout.js?v=0913-guide-modes"></script>
+<script defer src="../assets/js/common-layout.js?v=0914-header-actions"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .calendar-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
@@ -102,7 +102,7 @@ body.calendar-editor-open::before{display:none!important}
 }
 @media(max-width:640px){.event-detail{inset:8px;width:auto;max-height:calc(100dvh - 16px)}.event-detail-meta{grid-template-columns:1fr}.event-detail-person{grid-template-columns:64px 1fr}.event-detail-person span:nth-child(n+3){grid-column:2}}
 </style>
-<script src="../assets/js/optional-features.js?v=0292" defer></script>
+<script src="../assets/js/optional-features.js?v=0914-global-nav" defer></script>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0309"></script>
 
@@ -1156,7 +1156,7 @@ body.calendar-editor-open{overflow:hidden}
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
 <script src="../assets/js/shared-data.js?v=0292"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
-<script src="../assets/js/supabase-sync.js?v=0292"></script>
+<script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script>
 (() => {
