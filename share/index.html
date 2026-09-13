@@ -205,6 +205,9 @@
 .shared-article-image{max-width:520px;margin:0 auto;text-align:center}
 .share-article-text{--share-kind:#d8b85a;padding:10px 12px;border-left:4px solid var(--share-kind);background:color-mix(in srgb,var(--share-kind) 4%,transparent)}.shared-conversation{--share-kind:#5d9bd5;padding:12px;border:1px solid color-mix(in srgb,var(--share-kind) 48%,var(--line));border-left:5px solid var(--share-kind);border-radius:9px;background:color-mix(in srgb,var(--share-kind) 6%,var(--panel))}.shared-conversation::before{content:"💬 会話ログ"!important;border-left-color:var(--share-kind)!important;background:color-mix(in srgb,var(--share-kind) 18%,var(--panel))!important}.shared-conversation-dice{border-left:4px solid #8f72c7!important;background:color-mix(in srgb,#8f72c7 9%,var(--panel))!important}.shared-conversation-dice::before{content:"🎲 ダイス　";font-weight:800}.shared-article-image,.shared-article-media-group{--share-kind:#6ba66b;padding:10px;border:1px solid color-mix(in srgb,var(--share-kind) 48%,var(--line));border-left:5px solid var(--share-kind);border-radius:9px;background:color-mix(in srgb,var(--share-kind) 5%,var(--panel))}.shared-article-media-group::before{content:"🖼 メディア"!important;border-left-color:var(--share-kind)!important;background:color-mix(in srgb,var(--share-kind) 18%,var(--panel))!important}.shared-article-bgm,.shared-article-youtube{--share-kind:#d77aa8;border-color:color-mix(in srgb,var(--share-kind) 48%,var(--line));border-left:5px solid var(--share-kind);background:color-mix(in srgb,var(--share-kind) 5%,var(--panel))}.shared-article-bgm::before{content:"🎵 BGM"!important;border-left-color:var(--share-kind)!important;background:color-mix(in srgb,var(--share-kind) 18%,var(--panel))!important}.shared-article-toggle>summary{border-left-color:#d58a45;background:color-mix(in srgb,#d58a45 8%,var(--panel))}
 .share-article-text::before,.shared-article-image::before,.shared-article-youtube::before{display:inline-flex;margin-bottom:8px;padding:3px 8px;border-radius:4px;background:color-mix(in srgb,var(--share-kind) 17%,var(--panel));color:var(--text);font-size:12px;font-weight:800}.share-article-text::before{content:"✎ 本文"}.shared-article-image::before{content:"🖼 画像"}.shared-article-youtube::before{content:"▶ 動画"}
+/* 種別名の帯ではなく、色ペンで一まとまりを括る。 */
+.share-article-text,.shared-conversation,.shared-article-image,.shared-article-media-group,.shared-article-bgm,.shared-article-youtube{position:relative;margin-block:10px;padding:12px 14px 14px;border:0!important;border-left:4px solid var(--share-kind)!important;border-bottom:3px solid var(--share-kind)!important;border-radius:0 0 0 9px!important;background:color-mix(in srgb,var(--share-kind) 3%,transparent)!important}
+.share-article-text::before,.shared-conversation::before,.shared-article-image::before,.shared-article-media-group::before,.shared-article-bgm::before,.shared-article-youtube::before{content:""!important;display:block!important;position:absolute;left:-4px;top:0;width:34px;height:0;margin:0;padding:0;border:0!important;border-top:3px solid var(--share-kind)!important;border-radius:0;background:transparent!important;pointer-events:none}
 .shared-article-image img{display:block;width:auto;max-width:100%;max-height:360px;height:auto;object-fit:contain;margin:auto;border:1px solid var(--line);border-radius:10px;cursor:zoom-in}
 .shared-article-image figcaption{margin-top:6px}
 .shared-youtube-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}
@@ -356,6 +359,7 @@
  };
  const renderArticle=p=>{
    const blocks=Array.isArray(p.blocks)?p.blocks:[];
+    const sharedTextHasContent=b=>!!String(b?.html||b?.text||"").replace(/<br\s*\/?\s*>/gi,"").replace(/&nbsp;|&#160;/gi," ").replace(/<[^>]*>/g,"").trim();
     const renderArticleBlocks=(items,level=0)=>(Array.isArray(items)?items:[]).map(b=>{
        const type=String(b?.type||"").toLowerCase();
 
@@ -367,6 +371,7 @@
       }
 
       if(type==="text"){
+        if(!sharedTextHasContent(b))return "";
         if(String(b.html||"").trim()&&window.SAKUMERichEditor){
           return `<div class="share-article-text sm-rich-render">${SAKUMERichEditor.sanitizeHtml(b.html)}</div>`;
         }
