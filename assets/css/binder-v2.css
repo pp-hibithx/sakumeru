@@ -179,3 +179,11 @@ html body [data-sheet-theme]:not([data-sheet-theme="standard"]){
   --control-bg:var(--sheet-control)!important;--control-text:var(--sheet-text)!important;--control-placeholder:var(--sheet-placeholder)!important;
   color:var(--sheet-text)!important;background:var(--sheet-bg)!important;border-color:color-mix(in srgb,var(--accent) 45%,var(--sheet-border))!important;
 }
+
+/* HOME favorite-PC balance: a slightly wider character page with room for future stationery layers. */
+@media(min-width:861px){
+  body.home-page .home-dashboard .home-guide-cast{width:100%;max-width:460px;min-height:250px;gap:18px}
+  body.home-page .home-dashboard .home-guide-member .home-guide-art{height:clamp(270px,22vw,290px)}
+  body.home-page .home-dashboard .home-guide-member figcaption{margin-top:6px}
+  body.home-page .home-dashboard .home-guide-line{width:min(420px,82%);margin-top:26px}
+}
