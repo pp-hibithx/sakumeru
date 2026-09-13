@@ -32,5 +32,5 @@
   host.querySelector("[data-tour-close]").onclick=()=>{save({mode:"paused",step,targetPage:topics[step].key});host.remove()};
   host.querySelector("[data-tour-prev]")?.addEventListener("click",()=>go(step-1));
   host.querySelector("[data-tour-next]")?.addEventListener("click",()=>go(step+1));
-  host.querySelector("[data-tour-finish]")?.addEventListener("click",()=>{save({completed:true,review:false,mode:"complete",step,targetPage:topics[step].key});host.querySelector(".sakumeru-tour-bubble").textContent=TEXT.tutorialComplete;host.querySelector(".sakumeru-tour-actions").innerHTML='<button type="button" data-tour-done>閉じる</button>';host.querySelector("[data-tour-done]").onclick=()=>host.remove()});
+  host.querySelector("[data-tour-finish]")?.addEventListener("click",()=>{save({completed:true,review:false,mode:"complete",step,targetPage:topics[step].key});host.querySelector(".sakumeru-tour-bubble").textContent=TEXT.tutorialComplete;host.querySelector(".sakumeru-tour-actions").innerHTML='<button type="button" data-tour-home>案内を終えてHOMEへ戻る</button>';host.querySelector("[data-tour-home]").onclick=()=>{location.href=new URL("index.html",root).href}});
 })();
