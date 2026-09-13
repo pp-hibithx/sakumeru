@@ -2829,6 +2829,67 @@ function showLibraryRecordById(recordId){
  });
  return true;
 }
+function showLibrarySourceArticleNotice(){
+ requestAnimationFrame(()=>{
+   const root=document.querySelector("main .wrap.library-page");
+   if(!root)return;
+   let notice=document.getElementById("librarySourceArticleNotice");
+   if(!notice){
+     notice=document.createElement("div");
+     notice.id="librarySourceArticleNotice";
+     notice.className="notice";
+     root.prepend(notice);
+   }
+   notice.textContent="元の記事を特定できませんでした。LIBRARYの一覧を表示しています。";
+   notice.scrollIntoView({behavior:"smooth",block:"start"});
+ });
+}
+function showLibraryArticleById(runId,articleId,recordId="",scenarioId=""){
+ const wantedArticleId=String(articleId||"");
+ if(!wantedArticleId)return false;
+ const articleStore=loadRunArticlePages();
+ let wantedRunId=String(runId||"");
+ let page=(articleStore[wantedRunId]||[]).find(x=>String(x?.id||"")===wantedArticleId)||null;
+ if(!page){
+   for(const [storedRunId,pages] of Object.entries(articleStore)){
+     const match=(Array.isArray(pages)?pages:[]).find(x=>String(x?.id||"")===wantedArticleId);
+     if(match){wantedRunId=storedRunId;page=match;break}
+   }
+ }
+ if(!page){
+   if(recordId)showLibraryRecordById(recordId);
+   showLibrarySourceArticleNotice();
+   return false;
+ }
+ const item=data.find(x=>String(x.runId||"")===wantedRunId)
+   ||data.find(x=>String(x.id||"")===String(recordId||""))
+   ||data.find(x=>scenarioId&&String(x.scenarioId||"")===String(scenarioId));
+ if(!item){
+   if(recordId)showLibraryRecordById(recordId);
+   showLibrarySourceArticleNotice();
+   return false;
+ }
+ libraryView="scenario";
+ focusedScenarioKey=groupKey(item);
+ focusedRunId=wantedRunId;
+ render();
+ const openArticle=()=>{
+   const target=[...document.querySelectorAll(".lib-article-page[data-article-page-id]")]
+     .find(x=>String(x.dataset.articlePageId||"")===wantedArticleId);
+   if(!target)return false;
+   const runSection=target.closest(".lib-session-group");
+   if(runSection)runSection.open=true;
+   target.open=true;
+   target.classList.add("lib-record-just-saved");
+   target.scrollIntoView({behavior:"smooth",block:"center"});
+   const summary=target.querySelector("summary");
+   if(summary)summary.focus({preventScroll:true});
+   setTimeout(()=>target.classList.remove("lib-record-just-saved"),2200);
+   return true;
+ };
+ requestAnimationFrame(()=>{if(!openArticle())setTimeout(openArticle,0)});
+ return true;
+}
 function nextRunLabelForScenario(scenarioId,title=""){
  const same=data.filter(x=>{
    if(scenarioId)return x.scenarioId===scenarioId;
@@ -3331,7 +3392,7 @@ function articlePagesHtml(r){
  const pages=articlePagesForRun(r.id).slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
  return `<section class="lib-article-pages">
    <div class="lib-article-pages-head"><div><strong>卓記事</strong><div class="small muted">1ページの中に文章・画像・YouTube・BGM・トグルを好きな順で追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div></div>
-   <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page">
+   <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page" data-article-page-id="${esc(p.id)}">
      <summary><div><div class="lib-article-page-title">${esc(p.title||`ページ ${i+1}`)} <span class="lib-article-share-badge">${esc(articleShareLabel(p))}</span></div><div class="lib-article-page-meta">${esc(p.updatedAt||p.createdAt||"")}</div></div><span>▼</span></summary>
      ${articleBlocksHtml(p)}
      <div class="lib-article-page-actions">${p.shareEnabled?`<button type="button" data-article-share="${esc(p.id)}" data-run-id="${esc(r.id)}">共有URL</button><button type="button" data-article-x="${esc(p.id)}" data-run-id="${esc(r.id)}">Xに投稿</button>`:""}<button type="button" data-article-edit="${esc(p.id)}" data-run-id="${esc(r.id)}">編集</button><button type="button" class="danger" data-article-delete="${esc(p.id)}" data-run-id="${esc(r.id)}">削除</button></div>
@@ -6528,9 +6589,10 @@ q("pcLibraryEditorSave").onclick=savePcLibraryEditor;
 q("pcLibraryEditor").addEventListener("click",e=>{if(e.target===q("pcLibraryEditor"))closePcLibraryEditor()});
 
 reset();hideEditor();render();openLibraryFromCalendarEvent();{
- const p=new URLSearchParams(location.search),sid=p.get("scenario")||"",editId=p.get("edit")||"",albumId=p.get("albumId")||"",runId=p.get("run")||"",runLabel=p.get("runLabel")||"";
+ const p=new URLSearchParams(location.search),sid=p.get("scenario")||"",editId=p.get("edit")||"",albumId=p.get("albumId")||"",runId=p.get("run")||"",runLabel=p.get("runLabel")||"",articleId=p.get("articleId")||"";
  if(editId){edit(editId)}
  else if(p.get("new")==="1"){if(runId)addForRun(sid,runId,runLabel);else addForScenario(sid)}
+ else if(articleId)showLibraryArticleById(runId,articleId,albumId,sid)
  else if(albumId)showLibraryRecordById(albumId)
 }
 })();
