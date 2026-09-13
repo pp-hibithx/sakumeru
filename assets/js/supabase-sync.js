@@ -29,7 +29,7 @@ function getSyncId(){ return localStorage.getItem(SYNC_KEY) || ""; }
 function setSyncId(id){ localStorage.setItem(SYNC_KEY, (id||"").trim()); }
 function ensureSyncId(){ let id=getSyncId(); if(!id){ id=randomId(); setSyncId(id); } return id; }
 function getAutoSync(){ return localStorage.getItem(AUTO_KEY) === "1"; }
-function setAutoSync(on){ localStorage.setItem(AUTO_KEY, on ? "1" : "0"); updateBadgeVisibility(); }
+function setAutoSync(on){ localStorage.setItem(AUTO_KEY, on ? "1" : "0"); }
 function getLastSyncAt(){ return localStorage.getItem(LAST_SYNC_KEY) || ""; }
 function setLastSyncAt(v){ if(v) localStorage.setItem(LAST_SYNC_KEY, v); }
 function snapshot(){
@@ -40,7 +40,6 @@ function snapshot(){
 function emitStatus(state, message){
   currentStatus={state,message:message||""};
   window.dispatchEvent(new CustomEvent(STATUS_EVENT,{detail:currentStatus}));
-  renderBadge();
 }
 function getStatus(){ return {...currentStatus}; }
 
@@ -208,44 +207,8 @@ async function autoPullIfNewer(){
   return true;
 }
 
-function ensureBadge(){
-  if(document.getElementById("cloudSyncBadge")) return;
-  const badge=document.createElement("button");
-  badge.id="cloudSyncBadge";
-  badge.type="button";
-  badge.className="cloud-sync-badge";
-  badge.title="クラウド同期状態。クリックでBACKUPを開きます。";
-  badge.addEventListener("click",()=>{
-    const backupUrl=new URL("./backup/", location.href);
-    if(location.pathname.includes("/scenario/") || location.pathname.includes("/calendar/") || location.pathname.includes("/library/") || location.pathname.includes("/tools/") || location.pathname.includes("/about/") || location.pathname.includes("/share/") || location.pathname.includes("/bridge/") || location.pathname.includes("/backup/")){
-      backupUrl.href=new URL("../backup/", location.href).href;
-    }
-    location.href=backupUrl.href;
-  });
-  document.body.appendChild(badge);
-  updateBadgeVisibility();
-  renderBadge();
-}
-function updateBadgeVisibility(){
-  const badge=document.getElementById("cloudSyncBadge");
-  if(badge) badge.hidden=!getAutoSync();
-}
-function renderBadge(){
-  const badge=document.getElementById("cloudSyncBadge"); if(!badge) return;
-  const map={
-    idle:["☁","同期待機"],checking:["☁","確認中…"],pending:["☁","保存待ち…"],
-    syncing:["☁","同期中…"],synced:["✓","同期済み"],conflict:["⚠","他端末に新しい変更あり"],error:["⚠","同期エラー"]
-  };
-  const pair=map[currentStatus.state]||map.idle;
-  badge.dataset.state=currentStatus.state;
-  badge.textContent=pair[0]+" "+(currentStatus.message||pair[1]);
-}
-function initBadge(){
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",ensureBadge,{once:true});
-  else ensureBadge();
-}
 async function initAutoSync(){
-  patchSaves(); initBadge();
+  patchSaves();
   if(!getAutoSync()){ emitStatus("idle","同期OFF"); return; }
   if(!configured()){ emitStatus("error","同期設定エラー"); return; }
   try {
