@@ -4,13 +4,13 @@
   if(!script) return;
   const siteRoot=new URL("../../",script.src);
   const url=(path)=>new URL(path,siteRoot).href;
-  const headerCss=new URL("assets/css/common-header.css?v=0912-mobile-nav",siteRoot).href;
+  const headerCss=new URL("assets/css/common-header.css?v=0914-header-actions",siteRoot).href;
   if(!document.querySelector('link[data-sakumeru-common-header]')){
     const link=document.createElement("link");
     link.rel="stylesheet";link.href=headerCss;link.dataset.sakumeruCommonHeader="1";
     document.head.appendChild(link);
   }
-  const binderCss=new URL("assets/css/binder-v2.css?v=0913-home-favorite-art",siteRoot).href;
+  const binderCss=new URL("assets/css/binder-v2.css?v=0914-no-fixed-launcher",siteRoot).href;
   if(!document.querySelector('link[data-sakumeru-binder-v2]')){
     const link=document.createElement("link");link.rel="stylesheet";link.href=binderCss;link.dataset.sakumeruBinderV2="1";document.head.appendChild(link);
   }
@@ -30,8 +30,9 @@
     const nav=NAV.map(([key,label,path])=>`<a href="${escAttr(url(path))}"${active===key?' aria-current="page"':''}>${label}</a>`).join("");
     return `<header class="site-header"><div class="wrap">
 <div class="site-header-top"><div class="brand-logo-row"><a class="site-brand-logo" href="${escAttr(url("index.html"))}" aria-label="SAKU+MERU HOME"><img src="${escAttr(url("assets/img/sakumeru-logo-horizontal-dark-smooth.png"))}" alt="SAKU+MERU — 遊べば、記せば、本になる。"></a></div>
-<div class="mobile-primary-actions"><button type="button" data-mobile-guide>案内人を呼ぶ</button><a class="button" href="${escAttr(url("backup/index.html#cloud-sync"))}">同期する</a><button type="button" data-mobile-menu aria-expanded="false" aria-controls="mobileGlobalMenu">メニュー</button></div></div>
+<div class="desktop-primary-actions"><button type="button" data-header-guide>案内人を呼ぶ</button><a class="button" href="${escAttr(url("backup/index.html#cloud-sync"))}">同期する</a></div><div class="mobile-primary-actions"><button type="button" data-mobile-menu aria-expanded="false" aria-controls="mobileGlobalMenu">メニュー</button></div></div>
 <div class="site-header-menu" id="mobileGlobalMenu"><nav class="nav" aria-label="グローバルナビゲーション">${nav}</nav>
+<div class="mobile-menu-actions"><button type="button" data-header-guide>案内人を呼ぶ</button><a class="button" href="${escAttr(url("backup/index.html#cloud-sync"))}">同期する</a></div>
 <div class="theme-switcher" aria-label="テーマ"><button type="button" data-theme-choice="system">端末</button><span>·</span><button type="button" data-theme-choice="dark">ダーク</button><span>·</span><button type="button" data-theme-choice="light">ライト</button></div></div>
 </div></header>`;
   }
@@ -39,7 +40,7 @@
   document.querySelectorAll("[data-site-header]").forEach(slot=>{const active=(slot.dataset.active||"").trim().toLowerCase();slot.outerHTML=headerHtml(active);});
   document.querySelectorAll("[data-site-footer]").forEach(slot=>{slot.outerHTML=footerHtml();});
   document.querySelectorAll("[data-mobile-menu]").forEach(button=>button.addEventListener("click",()=>{const menu=document.getElementById(button.getAttribute("aria-controls"));const open=button.getAttribute("aria-expanded")!=="true";button.setAttribute("aria-expanded",String(open));menu?.classList.toggle("is-open",open)}));
-  document.addEventListener("click",event=>{const guideButton=event.target.closest?.("[data-mobile-guide]");if(!guideButton)return;let attempts=0;const open=()=>{const launcher=document.querySelector(".sakumeru-guide-launcher")||document.getElementById("callHomeGuide");if(launcher){launcher.click();return}if(++attempts<10)setTimeout(open,100)};open()});
+  document.addEventListener("click",event=>{const guideButton=event.target.closest?.("[data-header-guide]");if(!guideButton)return;let attempts=0;const open=()=>{const homeButton=document.getElementById("callHomeGuide");if(homeButton){homeButton.click();return}if(window.SAKUMERUGuide?.open){window.SAKUMERUGuide.open(guideButton);return}if(++attempts<10)setTimeout(open,100)};open()});
   document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;document.querySelectorAll("[data-mobile-menu][aria-expanded=true]").forEach(button=>{button.setAttribute("aria-expanded","false");document.getElementById(button.getAttribute("aria-controls"))?.classList.remove("is-open")})});
-  const guideText=document.createElement("script");guideText.src=url("assets/js/home-guide-text.js?v=0913-guide-modes");guideText.onload=()=>{const guide=document.createElement("script");guide.src=url("assets/js/home-guide-tour.js?v=0913-guide-modes");guide.onload=()=>{const concierge=document.createElement("script");concierge.src=url("assets/js/guide-concierge-v2.js?v=0913-guide-modes");document.body.appendChild(concierge)};document.body.appendChild(guide);};document.body.appendChild(guideText);
+  const guideText=document.createElement("script");guideText.src=url("assets/js/home-guide-text.js?v=0913-guide-modes");guideText.onload=()=>{const guide=document.createElement("script");guide.src=url("assets/js/home-guide-tour.js?v=0914-finish-home");guide.onload=()=>{const concierge=document.createElement("script");concierge.src=url("assets/js/guide-concierge-v2.js?v=0914-header-actions");document.body.appendChild(concierge)};document.body.appendChild(guide);};document.body.appendChild(guideText);
 })();
