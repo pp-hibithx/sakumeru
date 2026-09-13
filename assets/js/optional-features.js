@@ -21,11 +21,8 @@
       setVisible(el, enabled);
     });
 
-    document.querySelectorAll(".nav a").forEach(a=>{
-      if((a.textContent||"").trim()==="PLAYERS"){
-        setVisible(a, enabled);
-      }
-    });
+    // PLAYERS is a standard global navigation destination. The optional flag
+    // only controls the legacy HOME card; it must not remove navigation access.
   };
 
   if(document.readyState==="loading"){
