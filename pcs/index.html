@@ -14,7 +14,7 @@
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
 <link rel="stylesheet" href="../assets/css/image-lightbox.css?v=0905-1">
-<script defer src="../assets/js/common-layout.js?v=0913-sheet-themes"></script>
+<script defer src="../assets/js/common-layout.js?v=0914-header-actions"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script defer src="../assets/js/image-lightbox.js?v=0905-1"></script>
 <style>
@@ -141,7 +141,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
  .dir-actions .link,.dir-actions button{width:100%}.pc-rel-panel{width:calc(100vw - 16px);padding:11px;border-width:2px}.pc-rel-toolbar button{min-height:42px}#pcEditor.is-modal-edit{inset:8px;width:calc(100vw - 16px);max-height:calc(100vh - 16px)}
 }
 </style>
-<script src="../assets/js/optional-features.js?v=0292" defer></script>
+<script src="../assets/js/optional-features.js?v=0914-global-nav" defer></script>
 <script src="../assets/js/beta-gate.js?v=02316"></script>
 <script src="../assets/js/beta-gate-ui.js?v=0309"></script>
 
@@ -183,6 +183,9 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 @media(max-width:820px){.pc-detail-head{grid-template-columns:minmax(0,1fr) auto}.pc-detail-head-meta{grid-column:1/-1;justify-items:start}.pc-detail-head-systems{justify-content:flex-start}.pc-overview-art .pc-art-viewer-main{height:420px}.pc-overview-profile .pc-profile-summary dl{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-overview-stats .pc-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.pc-detail-dialog{width:calc(100% - 16px);max-height:calc(100vh - 16px);border-width:2px}.pc-detail-body{padding:12px}.pc-detail-primary,.pc-detail-overview{grid-template-columns:1fr}.pc-detail-image{max-height:52vh}.pc-detail-actions{display:grid}.pc-detail-actions a,.pc-detail-actions button{width:100%;box-sizing:border-box;text-align:center}.pc-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-skill-grid{grid-template-columns:1fr}.pc-overview-profile .pc-profile-summary dl{grid-template-columns:1fr}.pc-overview-skills-body{max-height:55vh}.pc-history-grid,.pc-guide-grid,.pc-guide-variant-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.pc-coplay-list{grid-template-columns:1fr}.pc-coplay-head{grid-template-columns:1fr}.pc-coplay-head>a,.pc-coplay-head>button{justify-self:start}.pc-art-viewer-main{min-height:220px;max-height:65vh}.pc-art-viewer-main img{max-height:62vh}.pc-overview-art .pc-art-viewer-main{height:420px;min-height:0;max-height:none}.pc-overview-art .pc-art-viewer-main img{width:100%;height:100%;max-width:none;max-height:none}}
+/* PC detail has its own fixed portrait frame; HOME decoration transforms are intentionally excluded. */
+.pc-overview-art .pc-art-viewer-main{display:flex;align-items:flex-end;justify-content:center;min-width:0;min-height:0;box-sizing:border-box;overflow:hidden}
+.pc-overview-art .pc-art-viewer-main img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;min-width:0;min-height:0;object-fit:contain;object-position:center bottom;transform:none}
 </style>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head><body><div data-site-header data-active="pc"></div>
