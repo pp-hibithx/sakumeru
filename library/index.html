@@ -1226,7 +1226,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .article-spoiler-setting{min-width:min(100%,250px)}.article-preview-warning{display:grid;gap:5px;margin:0 0 16px;padding:13px 15px;border:1px solid color-mix(in srgb,#d9b85b 60%,var(--line));border-left:5px solid #d9b85b;border-radius:9px;background:color-mix(in srgb,#d9b85b 10%,var(--panel));overflow-wrap:anywhere}.article-preview-warning strong{font-size:1rem}.article-preview-warning span{font-size:.9rem}
 .article-block-head-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto}.article-block-head-tools .article-block-visibility{margin:0}.article-block-head-tools .article-block-visibility label{display:none}.article-block-head-tools .articleBlockVisibility{width:auto;min-width:104px;margin:0;padding:5px 24px 5px 7px;font-size:.82rem}
 .lib-article-structured-toggle>summary{display:flex;align-items:center;gap:8px}.lib-article-structured-toggle>summary::before{content:"▶";color:#d58a45}.lib-article-structured-toggle[open]>summary::before{content:"▼"}
-.lib-article-text,.article-conversation,.lib-article-media,.lib-article-media-group,.article-bgm-card,.lib-article-youtube{--content-kind:#d8b85a;position:relative;margin-block:10px;padding:12px 14px 14px;border:0;border-left:4px solid var(--content-kind);border-bottom:3px solid var(--content-kind);border-radius:0 0 0 9px;background:color-mix(in srgb,var(--content-kind) 3%,transparent)}.lib-article-text::before,.article-conversation::before,.lib-article-media::before,.lib-article-media-group::before,.article-bgm-card::before,.lib-article-youtube::before{content:""!important;position:absolute;left:-4px;top:0;width:34px;border-top:3px solid var(--content-kind);pointer-events:none}.lib-article-text{--content-kind:#d8b85a}.article-conversation{--content-kind:#5d9bd5;display:grid;gap:10px}.article-conversation-dice{border-left:4px solid #8f72c7!important;background:color-mix(in srgb,#8f72c7 9%,var(--panel))!important}.article-conversation-dice::before{content:"🎲 ダイス　";font-weight:800}.lib-article-media,.lib-article-media-group{--content-kind:#6ba66b}.article-bgm-card,.lib-article-youtube{--content-kind:#d77aa8}.lib-article-structured-toggle{--content-kind:#d58a45;border-left:5px solid var(--content-kind)}
+.article-conversation-speaker{border-left:3px solid #5d9bd5}.article-conversation-dice{border-left-color:#8f72c7!important}.lib-article-structured-toggle{--content-kind:#d58a45;border-left:5px solid var(--content-kind)}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks{gap:3px;padding:4px 0}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block{border:1px solid color-mix(in srgb,var(--block-color,var(--accent)) 34%,var(--line))!important;border-left:4px solid var(--block-color,var(--accent))!important;border-radius:8px!important;background:color-mix(in srgb,var(--block-color,var(--accent)) 5%,var(--panel))!important;box-shadow:none!important;padding:9px!important;margin:8px 0!important}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block-head{min-height:28px;margin:0;padding:0 2px;border:0;align-items:center}
@@ -1317,13 +1317,6 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
  margin:3px 0 3px 5px!important
 }
 .lib-article-editor:not(.article-reorder-mode) .article-tree-dropzone{display:none}
-/* 編集面でも、種別名の帯ではなく色付きの括り線でブロック範囲を示す。 */
-.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type]:not([data-block-type="toggle"]){
- position:relative;margin-block:9px!important;padding:10px 12px 13px!important;border:0!important;border-left:4px solid var(--block-color,var(--accent))!important;border-bottom:3px solid var(--block-color,var(--accent))!important;border-radius:0 0 0 8px!important;background:color-mix(in srgb,var(--block-color,var(--accent)) 3%,transparent)!important
-}
-.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type]:not([data-block-type="toggle"])::before{
- content:"";position:absolute;left:-4px;top:0;width:32px;border-top:3px solid var(--block-color,var(--accent));pointer-events:none
-}
 @media(max-width:620px){
  .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block{padding-left:9px!important;padding-right:9px!important}
  .lib-article-editor:not(.article-reorder-mode) .article-toggle-block{margin-left:9px!important;margin-right:9px!important}
