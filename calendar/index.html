@@ -16,7 +16,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<script defer src="../assets/js/common-layout.js?v=0913-guide-modes"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .calendar-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
@@ -1772,7 +1772,8 @@ $("jumpMonthBtn").onclick=()=>{
 $("monthJump").addEventListener("change",()=>{$("jumpMonthBtn").click()});
 $("yearJump").addEventListener("keydown",e=>{if(e.key==="Enter")$("jumpMonthBtn").click()});
 $("todayBtn").onclick=()=>{current=new Date();current.setDate(1);renderCalendar()};$("newEventBtn").onclick=()=>{resetForm();showEditor();/* keep current scroll position while editing */};$("resetEvent").onclick=()=>{resetForm();hideEditor()};
-initCalendarParticipantPicker();TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();renderCalendar();
+function openRequestedCalendarEvent(){const id=new URLSearchParams(location.search).get("eventId");if(!id)return;const hit=events().find(x=>String(x.id)===String(id));if(!hit)return;const day=String(hit.start||hit.date||"").slice(0,10),m=day.match(/^(\d{4})-(\d{2})/);if(m){current=new Date(Number(m[1]),Number(m[2])-1,1);renderCalendar()}showEventDetail(hit.id);requestAnimationFrame(()=>$("eventDetailPanel")?.scrollIntoView({behavior:"smooth",block:"center"}))}
+initCalendarParticipantPicker();TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();renderCalendar();openRequestedCalendarEvent();
 })();
 </script>
 
@@ -2837,3 +2838,4 @@ initCalendarParticipantPicker();TRPG39.syncAllEventsToAlbum();fillScenarioSelect
 <!-- calendar-v8 library-style-participant-rows -->
 
 <!-- calendar-v9 run-id-library-link / free-run-label / full-participant-rows / clear-actions -->
+
