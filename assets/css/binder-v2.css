@@ -117,6 +117,7 @@ body.home-page .home-guide-member figcaption{font-size:.8125rem;color:var(--mute
 body.home-page .home-guide-body{margin-top:0}
 body.home-page .home-guide-line{position:relative;width:min(720px,80%);max-width:none;margin:14px auto 12px;padding:14px 18px;font-size:1rem;line-height:1.7;border:1px solid var(--speech-border);background:var(--speech-bg);color:var(--speech-text)}
 body.home-page .home-guide-line::before{content:"";position:absolute;left:calc(var(--home-guide-tail-x) - 8px);top:-9px;width:16px;height:16px;border:1px solid var(--speech-border);border-right:0;border-bottom:0;background:var(--speech-bg);transform:rotate(45deg)}
+body.home-page .home-concierge .home-guide-line::before{display:none}
 body.home-page .home-guide-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;width:min(720px,80%);margin:0 auto 20px}
 body.home-page .home-guide-actions button,body.home-page .home-guide-actions a{width:auto;min-height:40px}
 body.home-page .home-guide-schedule,body.home-page .home-guide-anniversary-block{padding:14px 0;border-top:1px solid var(--binder-rule)}
