@@ -21,7 +21,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="./assets/css/style-v0303.css">
-<script src="assets/js/home-guide-text.js?v=0911"></script>
+<script src="assets/js/home-guide-text.js?v=0913-guide-modes"></script>
 <script defer src="assets/js/common-layout.js?v=0913-home-favorite-art"></script>
 <script defer src="./assets/js/theme-v0296.js"></script><script src="assets/js/optional-features.js?v=0292" defer></script>
 
@@ -80,7 +80,7 @@ const HOME_GUIDE_TEXT=window.SAKUMERU_HOME_GUIDE_TEXT;
 const HOME_TUTORIAL_TOPICS=[{key:"scenario",label:"SCENARIO"},{key:"calendar",label:"CALENDAR"},{key:"library",label:"LIBRARY"},{key:"pc",label:"PC"},{key:"players",label:"PLAYERS"},{key:"share",label:"SHARE"},{key:"tools",label:"TOOLS"}];
 const HOME_TUTORIAL_STEPS=HOME_TUTORIAL_TOPICS.map(topic=>HOME_GUIDE_TEXT.tutorial[topic.key]);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let homeScenariosCache=null,homeTimerTick=0,homeConciergeOpen=false,homeConciergeMode="",homeTutorialStep=0,homeTutorialReview=false,homeTutorialDismissed=false,homeTimerPanelOpen=false,workQuickOpen=false,workEditingId="";
+let homeScenariosCache=null,homeTimerTick=0,homeConciergeOpen=false,homeConciergeMode="",homeTutorialStep=0,homeHelpTopicIndex=0,homeTutorialReview=false,homeTutorialDismissed=false,homeTimerPanelOpen=false,workQuickOpen=false,workEditingId="";
 function localYmd(d=new Date()){const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
 function dayDiff(ymd){const [y,m,d]=String(ymd).split("-").map(Number),t=new Date(y,m-1,d),now=new Date();now.setHours(0,0,0,0);return Math.round((t-now)/86400000)}
 function dueText(ymd){const n=dayDiff(ymd);if(n<0)return `期限切れ ${Math.abs(n)}日`;if(n===0)return "今日";if(n===1)return "明日";return `あと${n}日`}
@@ -188,12 +188,12 @@ function focusHomeTarget(target){if(!target)return false;if(target.tagName==="DE
 function renderHomeConcierge(){
  const host=document.getElementById("homeConcierge"),call=document.getElementById("callHomeGuide");if(!host||!call)return;
  const tutorial=tutorialState();
- if(tutorial.mode==="tutorial"&&(!tutorial.completed||tutorial.review)){
+ if(tutorial.mode==="tutorial"&&!tutorial.completed){
   const step=Math.max(0,Math.min(HOME_TUTORIAL_TOPICS.length-1,Number(tutorial.step)||0)),topic=HOME_TUTORIAL_TOPICS.find(item=>item.key===tutorial.targetPage)||HOME_TUTORIAL_TOPICS[step];
   const path=topic.key==="pc"?"pcs/index.html":topic.key==="share"?"share/manage.html":`${topic.key}/index.html`;
   location.replace(path);return;
  }
- if((!tutorial.completed||tutorial.review)&&!homeTutorialDismissed&&!homeConciergeOpen){homeConciergeOpen=true;if(tutorial.mode==="tutorial"){homeConciergeMode="tutorial";homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(tutorial.step)||0));homeTutorialReview=!!tutorial.review}else homeConciergeMode="welcome"}
+ if(!tutorial.completed&&!homeTutorialDismissed&&!homeConciergeOpen){homeConciergeOpen=true;if(tutorial.mode==="tutorial"){homeConciergeMode="tutorial";homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(tutorial.step)||0));homeTutorialReview=false}else homeConciergeMode="welcome"}
  call.onclick=()=>{homeConciergeOpen=true;homeConciergeMode=tutorialState().completed?"menu":"welcome";renderHomeConcierge();focusHomeTarget(host)};
  if(!homeConciergeOpen){host.hidden=true;host.innerHTML="";call.setAttribute("aria-expanded","false");return}
  let label="",message="",actions="";
@@ -202,7 +202,9 @@ function renderHomeConcierge(){
    actions=`<button type="button" data-concierge-action="${tutorial.mode==="paused"?"tutorial-resume":"tutorial-start"}">${tutorial.mode==="paused"?"案内を続ける":"案内を始める"}</button><button type="button" data-concierge-action="later">あとで</button>`;
  }else if(homeConciergeMode==="help"){
    message=HOME_GUIDE_TEXT.help.greeting;
-   actions=`<button type="button" data-concierge-action="tutorial-all">最初から案内して</button>${HOME_TUTORIAL_TOPICS.map((topic,index)=>`<button type="button" data-tutorial-topic="${index}">${topic.label}</button>`).join("")}`;
+   actions=`${HOME_TUTORIAL_TOPICS.map((topic,index)=>`<button type="button" data-tutorial-topic="${index}">${topic.label}</button>`).join("")}<button type="button" data-concierge-action="help-main">戻る</button>`;
+ }else if(homeConciergeMode==="help-topic"){
+   const topic=HOME_TUTORIAL_TOPICS[Math.max(0,Math.min(HOME_TUTORIAL_TOPICS.length-1,homeHelpTopicIndex))];label=`${topic.label}のご案内`;message=HOME_GUIDE_TEXT.tutorial[topic.key];actions='<button type="button" data-concierge-action="help-menu">前の質問へ戻る</button><a class="button" href="help/index.html">詳しいHELPを見る</a>';
  }else if(homeConciergeMode==="tutorial-complete"){
    message=HOME_GUIDE_TEXT.tutorialComplete;
    actions='<button type="button" data-concierge-action="tutorial-close">閉じる</button>';
@@ -216,17 +218,18 @@ function renderHomeConcierge(){
  }
  host.innerHTML=`${initialGuideArtHtml()}<div><div class="home-guide-head"><span class="small muted">${esc(label)}</span><button type="button" class="home-concierge-close" data-concierge-close aria-label="案内人を閉じる">閉じる</button></div><div class="home-guide-line" data-concierge-message>${esc(message)}</div><div class="home-concierge-choices">${actions}</div></div>`;
  host.hidden=false;call.setAttribute("aria-expanded","true");
- host.querySelector("[data-concierge-close]").onclick=()=>{const current=tutorialState();if(homeConciergeMode==="tutorial")writeJson(HOME_TUTORIAL_KEY,{...current,mode:"paused",step:homeTutorialStep,targetPage:HOME_TUTORIAL_TOPICS[homeTutorialStep].key,updatedAt:new Date().toISOString()});if(!current.completed)homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();call.focus()};
- host.querySelectorAll("[data-tutorial-topic]").forEach(button=>button.onclick=()=>{homeTutorialReview=true;homeTutorialStep=Number(button.dataset.tutorialTopic)||0;homeConciergeMode="tutorial";renderHomeConcierge()});
+ host.querySelector("[data-concierge-close]").onclick=()=>{const current=tutorialState();if(homeConciergeMode==="tutorial"&&!current.completed)writeJson(HOME_TUTORIAL_KEY,{...current,mode:"paused",step:homeTutorialStep,targetPage:HOME_TUTORIAL_TOPICS[homeTutorialStep].key,updatedAt:new Date().toISOString()});if(!current.completed)homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();call.focus()};
+ host.querySelectorAll("[data-tutorial-topic]").forEach(button=>button.onclick=()=>{homeHelpTopicIndex=Number(button.dataset.tutorialTopic)||0;homeConciergeMode="help-topic";renderHomeConcierge()});
  host.querySelectorAll("[data-concierge-action]").forEach(button=>button.onclick=()=>{
    const action=button.dataset.conciergeAction,message=host.querySelector("[data-concierge-message]");
    if(action==="later"){const current=tutorialState();writeJson(HOME_TUTORIAL_KEY,{...current,mode:"deferred",updatedAt:new Date().toISOString()});homeTutorialDismissed=true;homeConciergeOpen=false;renderHomeConcierge();return}
    if(action==="tutorial-close"){homeConciergeOpen=false;homeConciergeMode="";homeTutorialReview=false;renderHomeConcierge();return}
    if(action==="help"){homeConciergeMode="help";renderHomeConcierge();return}
+   if(action==="help-main"){homeConciergeMode="menu";renderHomeConcierge();return}
    if(action==="help-menu"){homeConciergeMode="help";renderHomeConcierge();return}
-   if(action==="tutorial-start"||action==="tutorial-resume"||action==="tutorial-all"){const current=tutorialState(),review=action==="tutorial-all",step=action==="tutorial-resume"?Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(current.step)||0)):0;writeJson(HOME_TUTORIAL_KEY,{...current,completed:review?true:false,mode:"tutorial",review,step,targetPage:HOME_TUTORIAL_TOPICS[step].key,updatedAt:new Date().toISOString()});location.href=`${HOME_TUTORIAL_TOPICS[step].key==="pc"?"pcs":HOME_TUTORIAL_TOPICS[step].key}/index.html`;return}
-   if(action==="tutorial-prev"||action==="tutorial-next"){homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,homeTutorialStep+(action==="tutorial-next"?1:-1)));const current=tutorialState(),topic=HOME_TUTORIAL_TOPICS[homeTutorialStep];writeJson(HOME_TUTORIAL_KEY,{...current,mode:"tutorial",review:homeTutorialReview,step:homeTutorialStep,targetPage:topic.key,updatedAt:new Date().toISOString()});location.href=topic.key==="pc"?"pcs/index.html":topic.key==="share"?"share/manage.html":`${topic.key}/index.html`;return}
-   if(action==="tutorial-finish"){if(!homeTutorialReview)writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),step:HOME_TUTORIAL_STEPS.length-1,completed:true,updatedAt:new Date().toISOString()});homeConciergeMode="tutorial-complete";renderHomeConcierge();renderHomeGuide();return}
+   if(action==="tutorial-start"||action==="tutorial-resume"){const current=tutorialState();if(current.completed){homeConciergeMode="help";renderHomeConcierge();return}const step=action==="tutorial-resume"?Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,Number(current.step)||0)):0,topic=HOME_TUTORIAL_TOPICS[step];writeJson(HOME_TUTORIAL_KEY,{...current,completed:false,mode:"tutorial",review:false,step,targetPage:topic.key,updatedAt:new Date().toISOString()});location.href=topic.key==="pc"?"pcs/index.html":topic.key==="share"?"share/manage.html":`${topic.key}/index.html`;return}
+   if(action==="tutorial-prev"||action==="tutorial-next"){const current=tutorialState();if(current.completed){homeConciergeMode="help";renderHomeConcierge();return}homeTutorialStep=Math.max(0,Math.min(HOME_TUTORIAL_STEPS.length-1,homeTutorialStep+(action==="tutorial-next"?1:-1)));const topic=HOME_TUTORIAL_TOPICS[homeTutorialStep];writeJson(HOME_TUTORIAL_KEY,{...current,completed:false,mode:"tutorial",review:false,step:homeTutorialStep,targetPage:topic.key,updatedAt:new Date().toISOString()});location.href=topic.key==="pc"?"pcs/index.html":topic.key==="share"?"share/manage.html":`${topic.key}/index.html`;return}
+   if(action==="tutorial-finish"){writeJson(HOME_TUTORIAL_KEY,{...tutorialState(),mode:"complete",review:false,step:HOME_TUTORIAL_STEPS.length-1,targetPage:HOME_TUTORIAL_TOPICS.at(-1).key,completed:true,updatedAt:new Date().toISOString()});homeConciergeMode="tutorial-complete";renderHomeConcierge();renderHomeGuide();return}
    let target=null;
    if(action==="timer"){homeTimerPanelOpen=true;renderPomodoro();target=document.getElementById("pomodoroPanel")}
    if(action==="today")target=document.querySelector(".home-guide-schedule");
@@ -254,7 +257,7 @@ function renderHomeGuide(){
  const guideHelpAction=isFixedGuide?'<button type="button" class="home-guide-help" data-guide-help>使い方を聞く</button>':"";
  host.innerHTML=`<div class="home-guide-character"><div class="home-guide-cast">${cast}</div><div class="home-guide-line">${esc(runtimeLine||speech.line)}</div><div class="home-guide-actions"><button type="button" data-guide-timer>集中する</button>${primaryEntry?`<a class="button home-guide-link" href="${esc(homeFavoriteHref(primaryEntry.ref))}">PC詳細を見る</a>`:""}${guideHelpAction}</div></div><div class="home-guide-body"><div class="home-guide-schedule"><strong class="home-guide-section-title">今日の予定</strong>${schedule}</div><div class="home-guide-anniversary-block"><strong class="home-guide-section-title">今日は何の日</strong><div class="home-guide-anniversary">${anniversaryText}</div></div></div>`;
  host.hidden=false;
- host.querySelectorAll("[data-guide-help]").forEach(button=>button.addEventListener("click",()=>{homeConciergeOpen=true;homeConciergeMode="help";homeTutorialReview=true;renderHomeConcierge();focusHomeTarget(document.getElementById("homeConcierge"))}));
+ host.querySelectorAll("[data-guide-help]").forEach(button=>button.addEventListener("click",()=>{homeConciergeOpen=true;homeConciergeMode="help";renderHomeConcierge();focusHomeTarget(document.getElementById("homeConcierge"))}));
  host.querySelector("[data-guide-timer]")?.addEventListener("click",()=>{homeTimerPanelOpen=true;renderPomodoro();focusHomeTarget(document.getElementById("pomodoroPanel"))});
 }
 function renderPomodoro(){
