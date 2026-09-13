@@ -26,7 +26,7 @@
   <p id="shareCopyStatus" class="share-copy-status" role="status" aria-live="polite"></p>
 </div></main>
 <div data-site-footer></div>
-<script src="../assets/js/common-layout.js?v=0912-share-themes"></script>
+<script src="../assets/js/common-layout.js?v=0913-sheet-themes"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script>
 (()=>{
@@ -42,10 +42,11 @@
  const profile=json("39x2_profile_v1",{}),profileName=String(profile.socialName||profile.displayName||"").trim();
 
  const albums=arr(json("39x2_album_v2",[]));
- const sessions=unique(albums.filter(x=>x&&x.shareId).map(x=>({shareId:x.shareId,title:x.title||x.runLabel||"卓記録",meta:[x.runLabel,x.date].filter(Boolean).join(" ／ "),shareUrl:workerUrl(x.shareId),fallbackUrl:viewerUrl(x.shareId),sourceUrl:local("../library/index.html")})));
+ const libraryArticleSourceUrl=(runId,articleId)=>{const u=new URL("../library/index.html",location.href),album=albums.find(x=>String(x?.runId||"")===String(runId||""));if(runId)u.searchParams.set("run",runId);if(articleId)u.searchParams.set("articleId",articleId);if(album?.id)u.searchParams.set("albumId",album.id);if(album?.scenarioId)u.searchParams.set("scenario",album.scenarioId);return u.href};
+ const sessions=unique(albums.filter(x=>x&&x.shareId).map(x=>({shareId:x.shareId,title:x.title||x.runLabel||"卓記録",meta:[x.runLabel,x.date].filter(Boolean).join(" ／ "),shareUrl:workerUrl(x.shareId),fallbackUrl:viewerUrl(x.shareId),sourceUrl:local(`../library/index.html?albumId=${encodeURIComponent(x.id||"")}`),sourceLabel:"元の記録を開く"})));
 
  const articleStore=json("saku_meru_library_run_article_pages_v1",{}),articles=[];
- Object.entries(articleStore&&typeof articleStore==="object"?articleStore:{}).forEach(([runId,pages])=>arr(pages).forEach(p=>{if(p?.shareId)articles.push({shareId:p.shareId,title:p.title||"卓記事",meta:runId?`卓ID：${runId}`:"",shareUrl:workerUrl(p.shareId,"article"),fallbackUrl:viewerUrl(p.shareId,"article"),sourceUrl:local("../library/index.html")})}));
+ Object.entries(articleStore&&typeof articleStore==="object"?articleStore:{}).forEach(([runId,pages])=>arr(pages).forEach(p=>{if(p?.shareId)articles.push({shareId:p.shareId,title:p.title||"卓記事",meta:runId?`卓ID：${runId}`:"",shareUrl:workerUrl(p.shareId,"article"),fallbackUrl:viewerUrl(p.shareId,"article"),sourceUrl:libraryArticleSourceUrl(runId,p.id),sourceLabel:"元の記事を開く"})}));
 
  const scenarioShareId=text("39x2_fixed_scenario_share_id_v1");
  const scenarios=scenarioShareId?[{shareId:scenarioShareId,title:"シナリオ一覧",meta:"固定共有URL",state:"固定共有URLあり",shareUrl:workerUrl(scenarioShareId,"scenario-list"),fallbackUrl:viewerUrl(scenarioShareId,"scenario-list"),sourceUrl:local("../scenario/index.html")}]:[];
@@ -76,7 +77,7 @@
   {label:"CALENDAR 日程調整",rows:schedules},{label:"PROFILE",rows:profiles},
   {label:"PROFILE 付属ページ",rows:profilePages},{label:"KPライブ共有",rows:unique(kpRows)}
  ];
- const rowHtml=row=>`<article class="share-manage-row"><div><div class="share-manage-title">${esc(row.title)}</div>${row.meta?`<div class="share-manage-meta">${esc(row.meta)}</div>`:""}<div class="share-manage-state">${esc(row.state||"共有URLあり")}</div></div><div class="share-manage-actions"><a class="button" href="${esc(row.shareUrl||row.fallbackUrl)}" target="_blank" rel="noopener">共有ページを開く</a><a class="button secondary" href="${esc(row.sourceUrl)}">元の記録を開く</a><button type="button" class="secondary" data-copy-url="${esc(row.shareUrl||row.fallbackUrl)}">URLをコピー</button></div></article>`;
+ const rowHtml=row=>`<article class="share-manage-row"><div><div class="share-manage-title">${esc(row.title)}</div>${row.meta?`<div class="share-manage-meta">${esc(row.meta)}</div>`:""}<div class="share-manage-state">${esc(row.state||"共有URLあり")}</div></div><div class="share-manage-actions"><a class="button" href="${esc(row.shareUrl||row.fallbackUrl)}" target="_blank" rel="noopener">共有ページを開く</a><a class="button secondary" href="${esc(row.sourceUrl)}">${esc(row.sourceLabel||"元の記録を開く")}</a><button type="button" class="secondary" data-copy-url="${esc(row.shareUrl||row.fallbackUrl)}">URLをコピー</button></div></article>`;
  const host=$("#shareManageList");
  host.innerHTML=groups.map((g,i)=>`<details class="share-manage-group" data-group-index="${i}"><summary><span>${esc(g.label)}</span><span class="share-manage-count">${g.rows.length}件</span></summary><div class="share-manage-rows" data-group-body></div></details>`).join("");
  host.addEventListener("toggle",event=>{const detail=event.target;if(!(detail instanceof HTMLDetailsElement)||!detail.open||detail.dataset.rendered)return;const group=groups[Number(detail.dataset.groupIndex)],body=detail.querySelector("[data-group-body]");body.innerHTML=group.rows.length?group.rows.map(rowHtml).join(""):'<p class="share-manage-empty">保存済みの共有URLはありません。</p>';detail.dataset.rendered="1"},true);
@@ -85,3 +86,4 @@
 </script>
 </body>
 </html>
+
