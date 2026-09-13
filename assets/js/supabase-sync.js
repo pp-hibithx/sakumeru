@@ -9,9 +9,64 @@ const SYNC_KEY = "39x2_cloud_sync_id_v1";
 const AUTO_KEY = "39x2_cloud_auto_sync_v1";
 const LAST_SYNC_KEY = "39x2_cloud_last_sync_at_v1";
 const STATUS_EVENT = "39x2-sync-status";
+const HOME_KEY = "trpg39_home_guide_v1";
+const WORK_LOG_KEY = "trpg39_work_logs_v1";
+const CORE_KEYS = ["scenarios","events","album","pcs","players"];
+const V2_KEYS = [...CORE_KEYS,"homeSettings","workLogs"];
+const CATEGORY_LABELS={scenarios:"SCENARIO",events:"CALENDAR",album:"LIBRARY",pcs:"PC",players:"PLAYERS",homeSettings:"HOME設定",workLogs:"WORK LOG"};
 let suppressAutoPush = false;
 let pushTimer = null;
 let currentStatus = {state:"idle", message:""};
+let pendingConflict = null;
+
+function readJson(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch{return fallback}}
+function own(obj,key){return Object.prototype.hasOwnProperty.call(obj||{},key)}
+function safeDecoration(value){
+  const src=value&&typeof value==="object"?value:{},out={};
+  ["displayStyle","doodle","frame","x","y","scale","rotation"].forEach(key=>{if(own(src,key))out[key]=src[key]});
+  return out;
+}
+function safeHomeMember(value){
+  const src=value&&typeof value==="object"?value:{},out={source:String(src.source||"own"),pcId:String(src.pcId||"")};
+  if(src.playerId)out.playerId=String(src.playerId);if(src.homeImageId)out.homeImageId=String(src.homeImageId);
+  if(src.decoration&&typeof src.decoration==="object")out.decoration=safeDecoration(src.decoration);
+  return out;
+}
+function localHomeSettings(){
+  if(localStorage.getItem(HOME_KEY)===null)return undefined;
+  const raw=readJson(HOME_KEY,{}),favorites=raw?.homeFavorites&&typeof raw.homeFavorites==="object"?raw.homeFavorites:{};
+  return {version:1,homeFavorites:{members:(Array.isArray(favorites.members)?favorites.members:[]).map(safeHomeMember).filter(x=>x.pcId).slice(0,2),primaryPcId:String(favorites.primaryPcId||raw.homeGuidePcId||""),updatedAt:String(favorites.updatedAt||"")},homeGuidePcId:String(raw.homeGuidePcId||favorites.primaryPcId||"")};
+}
+function applyHomeSettings(value){
+  if(value===undefined)return;
+  const current=readJson(HOME_KEY,{}),home=value?.homeFavorites&&typeof value.homeFavorites==="object"?value.homeFavorites:{members:[],primaryPcId:"",updatedAt:""};
+  localStorage.setItem(HOME_KEY,JSON.stringify({...current,homeGuidePcId:String(value.homeGuidePcId||home.primaryPcId||""),homeFavorites:{members:(Array.isArray(home.members)?home.members:[]).map(safeHomeMember).filter(x=>x.pcId).slice(0,2),primaryPcId:String(home.primaryPcId||""),updatedAt:String(home.updatedAt||"")}}));
+}
+function localWorkLogs(){const rows=readJson(WORK_LOG_KEY,[]);return Array.isArray(rows)?rows:[]}
+function applyWorkLogs(rows){if(rows!==undefined)localStorage.setItem(WORK_LOG_KEY,JSON.stringify(Array.isArray(rows)?rows:[]))}
+function canonical(value){
+  if(Array.isArray(value))return value.map(canonical);
+  if(value&&typeof value==="object")return Object.fromEntries(Object.keys(value).filter(k=>k!=="updatedAt").sort().map(k=>[k,canonical(value[k])]));
+  return value;
+}
+function sameContent(a,b){return JSON.stringify(canonical(a))===JSON.stringify(canonical(b))}
+function homeConflict(local,cloud){return local!==undefined&&cloud!==undefined&&!sameContent(local,cloud)}
+function mergeWorkLogs(local,cloud){
+  if(local===undefined)return {rows:cloud,conflicts:[]};if(cloud===undefined)return {rows:local,conflicts:[]};
+  const rows=[],byId=new Map(),conflicts=[];
+  for(const log of [...local,...cloud]){
+    const id=String(log?.id||"");
+    if(!id){rows.push(log);continue}
+    if(!byId.has(id)){byId.set(id,log);rows.push(log);continue}
+    const prior=byId.get(id);if(!sameContent(prior,log))conflicts.push({id,local:local.find(x=>String(x?.id||"")===id),cloud:cloud.find(x=>String(x?.id||"")===id)});
+  }
+  return {rows,conflicts:conflicts.filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i)};
+}
+function dataConflictError(operation,remote,local,workMerge){
+  pendingConflict={operation,remote,local,home:homeConflict(local.homeSettings,remote.homeSettings)?{local:local.homeSettings,cloud:remote.homeSettings}:null,work:workMerge.conflicts,mergedWork:workMerge.rows};
+  const e=new Error("HOME設定またはWORK LOGに同期競合があります。");e.code="SYNC_DATA_CONFLICT";e.conflicts=getPendingConflict();return e;
+}
+function getPendingConflict(){return pendingConflict?JSON.parse(JSON.stringify({operation:pendingConflict.operation,home:pendingConflict.home,work:pendingConflict.work})):null}
 
 function configured() {
   const url = String(cfg.projectUrl || "").trim();
@@ -33,9 +88,10 @@ function setAutoSync(on){ localStorage.setItem(AUTO_KEY, on ? "1" : "0"); }
 function getLastSyncAt(){ return localStorage.getItem(LAST_SYNC_KEY) || ""; }
 function setLastSyncAt(v){ if(v) localStorage.setItem(LAST_SYNC_KEY, v); }
 function snapshot(){
-  return {app:"39*2",schemaVersion:1,savedAt:new Date().toISOString(),
+  return {app:"39*2",schemaVersion:2,savedAt:new Date().toISOString(),
     scenarios:TRPG39.loadScenarios(),events:TRPG39.loadEvents(),album:TRPG39.loadAlbum(),
-    pcs:TRPG39.loadPCs?TRPG39.loadPCs():[],players:TRPG39.loadPlayers?TRPG39.loadPlayers():[]};
+    pcs:TRPG39.loadPCs?TRPG39.loadPCs():[],players:TRPG39.loadPlayers?TRPG39.loadPlayers():[],
+    homeSettings:localHomeSettings(),workLogs:localWorkLogs()};
 }
 function emitStatus(state, message){
   currentStatus={state,message:message||""};
@@ -88,16 +144,16 @@ async function saveTextParts(id,key,value){
   return parts.length;
 }
 async function saveChunkedCloud(id,data){
-  const keys=["scenarios","events","album","pcs","players"];
+  const keys=V2_KEYS.filter(key=>data[key]!==undefined);
   const manifest={app:data.app,schemaVersion:data.schemaVersion,savedAt:data.savedAt,cloudFormat:"chunked-text-v2",chunks:{}};
-  for(const key of keys){ manifest.chunks[key]=await saveTextParts(id,key,data[key]); }
+  for(const key of keys){try{manifest.chunks[key]=await saveTextParts(id,key,data[key])}catch(err){err.syncCategory=CATEGORY_LABELS[key]||key;throw err}}
   await rpc("save_39x2_backup",{p_id:id,p_data:manifest});
 }
 async function expandCloudSnapshot(id,data){
   if(!data) return data;
   if(data.cloudFormat==="chunked-v1"){
     const full={app:data.app||"39*2",schemaVersion:data.schemaVersion||1,savedAt:data.savedAt||""};
-    for(const key of ["scenarios","events","album","pcs","players"]){
+    for(const key of CORE_KEYS){
       full[key]=[];
       const count=Number(data.chunks?.[key]||0);
       for(let i=0;i<count;i++){
@@ -110,7 +166,8 @@ async function expandCloudSnapshot(id,data){
   }
   if(data.cloudFormat!=="chunked-text-v2") return data;
   const full={app:data.app||"39*2",schemaVersion:data.schemaVersion||1,savedAt:data.savedAt||""};
-  for(const key of ["scenarios","events","album","pcs","players"]){
+  const keys=V2_KEYS.filter(key=>own(data.chunks,key));
+  for(const key of keys){
     let json="";
     const count=Number(data.chunks?.[key]||0);
     for(let i=0;i<count;i++){
@@ -118,7 +175,7 @@ async function expandCloudSnapshot(id,data){
       if(!part || part.encoding!=="json-text-v2" || typeof part.text!=="string") throw new Error(`クラウド同期データの一部が見つかりません（${key} ${i+1}/${count}）。`);
       json+=part.text;
     }
-    try { full[key]=json ? JSON.parse(json) : []; }
+    try { full[key]=json ? JSON.parse(json) : (key==="homeSettings"?{}:[]); }
     catch { throw new Error(`クラウド同期データを復元できませんでした（${key}）。`); }
   }
   return full;
@@ -128,24 +185,47 @@ function conflictError(){
   e.code="SYNC_CONFLICT";
   return e;
 }
+function applyCore(data){
+  TRPG39.saveScenarios(data.scenarios);TRPG39.saveEvents(data.events);TRPG39.saveAlbum(data.album);
+  if(TRPG39.savePCs)TRPG39.savePCs(Array.isArray(data.pcs)?data.pcs:[]);
+  if(TRPG39.savePlayers)TRPG39.savePlayers(Array.isArray(data.players)?data.players:[]);
+}
+function combinedSnapshot(base,homeSettings,workLogs){return {...base,app:"39*2",schemaVersion:2,savedAt:new Date().toISOString(),homeSettings,workLogs}}
+async function resolvePendingConflict(resolutions={}){
+  if(!pendingConflict)throw new Error("解決待ちの同期競合はありません。");
+  const pending=pendingConflict,home=pending.home?(resolutions.home==="cloud"?pending.home.cloud:pending.home.local):(pending.local.homeSettings!==undefined?pending.local.homeSettings:pending.remote.homeSettings);
+  let work=[...(pending.mergedWork||[])];
+  for(const conflict of pending.work||[]){const selected=resolutions.work?.[conflict.id]==="cloud"?conflict.cloud:conflict.local,idx=work.findIndex(x=>String(x?.id||"")===conflict.id);if(idx>=0)work[idx]=selected;else work.push(selected)}
+  const base=pending.operation==="load"?pending.remote:pending.local,data=combinedSnapshot(base,home,work),id=ensureSyncId();
+  await saveChunkedCloud(id,data);
+  suppressAutoPush=true;
+  try{if(pending.operation==="load")applyCore(pending.remote);applyHomeSettings(home);applyWorkLogs(work)}finally{suppressAutoPush=false}
+  pendingConflict=null;setLastSyncAt(data.savedAt);emitStatus("synced","クラウド同期済み");return {id,data};
+}
 async function saveCloud(options={}){
   const id=ensureSyncId();
   emitStatus("syncing","同期中…");
   try {
+    let remote=await getCloud(id);
     if(!options.force){
-      const remote=await getCloud(id);
       const remoteAt=remote && String(remote.savedAt||"");
       const localAt=getLastSyncAt();
       if(remoteAt && localAt && remoteAt > localAt) throw conflictError();
     }
-    const data=snapshot();
+    if(remote&&isValidSnapshot(remote))remote=await expandCloudSnapshot(id,remote);
+    const local=snapshot(),workMerge=mergeWorkLogs(local.workLogs,remote?.workLogs);
+    if(remote&&(homeConflict(local.homeSettings,remote.homeSettings)||workMerge.conflicts.length))throw dataConflictError("save",remote,local,workMerge);
+    const home=local.homeSettings!==undefined?local.homeSettings:remote?.homeSettings;
+    const data=combinedSnapshot(local,home,workMerge.rows);
     await saveChunkedCloud(id,data);
+    suppressAutoPush=true;
+    try{if(local.homeSettings===undefined&&home!==undefined)applyHomeSettings(home);applyWorkLogs(workMerge.rows)}finally{suppressAutoPush=false}
     setLastSyncAt(data.savedAt);
-    emitStatus("synced","同期済み");
+    emitStatus("synced","クラウド同期済み");
     return id;
   } catch(err){
-    if(err && err.code==="SYNC_CONFLICT") emitStatus("conflict","他端末に新しい変更あり");
-    else emitStatus("error","同期エラー");
+    if(err && (err.code==="SYNC_CONFLICT"||err.code==="SYNC_DATA_CONFLICT")) emitStatus("conflict","⚠ 同期競合あり");
+    else emitStatus("error",err?.syncCategory?`同期エラー（${err.syncCategory}）`:"同期エラー");
     throw err;
   }
 }
@@ -156,17 +236,19 @@ async function loadCloud(id=getSyncId()){
     let data=await getCloud(id);
     if(!isValidSnapshot(data)) throw new Error("この同期コードのデータが見つかりません。");
     data=await expandCloudSnapshot(id,data);
+    const local=snapshot(),workMerge=mergeWorkLogs(local.workLogs,data.workLogs);
+    if(homeConflict(local.homeSettings,data.homeSettings)||workMerge.conflicts.length)throw dataConflictError("load",data,local,workMerge);
     suppressAutoPush=true;
     try {
-      TRPG39.saveScenarios(data.scenarios); TRPG39.saveEvents(data.events); TRPG39.saveAlbum(data.album);
-      if(TRPG39.savePCs) TRPG39.savePCs(Array.isArray(data.pcs)?data.pcs:[]);
-      if(TRPG39.savePlayers) TRPG39.savePlayers(Array.isArray(data.players)?data.players:[]);
+      applyCore(data);
+      if(data.homeSettings!==undefined)applyHomeSettings(data.homeSettings);
+      if(data.workLogs!==undefined)applyWorkLogs(workMerge.rows);
     } finally { suppressAutoPush=false; }
     setSyncId(id); setLastSyncAt(data.savedAt || new Date().toISOString());
-    emitStatus("synced","同期済み");
+    emitStatus("synced","クラウド同期済み");
     return data;
   } catch(err){
-    emitStatus("error","読み込みエラー");
+    if(err&&err.code==="SYNC_DATA_CONFLICT")emitStatus("conflict","⚠ 同期競合あり");else emitStatus("error",err?.syncCategory?`同期エラー（${err.syncCategory}）`:"読み込みエラー");
     throw err;
   }
 }
@@ -195,15 +277,7 @@ async function autoPullIfNewer(){
   const cloudAt=String(data.savedAt||"");
   const localAt=getLastSyncAt();
   if(cloudAt && localAt && cloudAt <= localAt){ emitStatus("synced","同期済み"); return false; }
-  data=await expandCloudSnapshot(getSyncId(),data);
-  suppressAutoPush=true;
-  try {
-    TRPG39.saveScenarios(data.scenarios); TRPG39.saveEvents(data.events); TRPG39.saveAlbum(data.album);
-      if(TRPG39.savePCs) TRPG39.savePCs(Array.isArray(data.pcs)?data.pcs:[]);
-      if(TRPG39.savePlayers) TRPG39.savePlayers(Array.isArray(data.players)?data.players:[]);
-  } finally { suppressAutoPush=false; }
-  setLastSyncAt(cloudAt || new Date().toISOString());
-  emitStatus("synced","同期済み");
+  await loadCloud(getSyncId());
   return true;
 }
 
@@ -218,15 +292,15 @@ async function initAutoSync(){
       location.reload();
     } else {
       sessionStorage.removeItem("39x2_cloud_reloaded");
-      emitStatus("synced","同期済み");
+      emitStatus("synced","クラウド同期済み");
     }
   } catch(err) {
-    emitStatus("error","同期エラー");
+    if(err&&err.code==="SYNC_DATA_CONFLICT")emitStatus("conflict","⚠ 同期競合あり");else emitStatus("error",err?.syncCategory?`同期エラー（${err.syncCategory}）`:"同期エラー");
     console.warn("39*2 auto sync pull failed:",err);
   }
 }
 
-window.TRPG39Sync={configured,getSyncId,setSyncId,ensureSyncId,getAutoSync,setAutoSync,getLastSyncAt,getStatus,saveCloud,loadCloud,scheduleAutoPush,autoPullIfNewer,initAutoSync};
+window.TRPG39Sync={configured,getSyncId,setSyncId,ensureSyncId,getAutoSync,setAutoSync,getLastSyncAt,getStatus,saveCloud,loadCloud,scheduleAutoPush,autoPullIfNewer,initAutoSync,getPendingConflict,resolvePendingConflict,mergeWorkLogs,sameContent,homeConflict,localHomeSettings,localWorkLogs};
 })();
 
 // v0.2.26 optional feature preference bridge
