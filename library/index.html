@@ -1652,7 +1652,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0292"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=02309"></script>
-<script src="../assets/js/rich-editor.js?v=0913-stationery1"></script>
+<script src="../assets/js/rich-editor.js?v=0913-xmask1"></script>
 <script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";
@@ -4194,7 +4194,10 @@ function articleHtmlTextForX(html){
  // Structure is filtered before flattening. Removing a details element removes every
  // nested toggle at once while leaving ordinary text after the toggle intact.
  root.querySelectorAll("details").forEach(node=>node.remove());
- root.querySelectorAll('[data-x-hidden="true"]').forEach(node=>node.remove());
+ // 公開可能な本文中の「Xで伏せる」は存在ごと消さず、同じ位置へ伏せ記号を残す。
+ // private / toggle はこの処理より前に除外されるため、その存在は伏せ記号でも漏らさない。
+ const hidden=[...root.querySelectorAll('[data-x-hidden="true"]')].filter(node=>!node.parentElement?.closest('[data-x-hidden="true"]'));
+ hidden.forEach(node=>node.replaceWith(document.createTextNode("――")));
  const blockTags=new Set(["P","DIV","H1","H2","H3","H4","H5","H6","BLOCKQUOTE","LI","UL","OL","SECTION","FIGURE","FIGCAPTION"]);
  let out="";
  const line=()=>{if(!out.endsWith("\n"))out+="\n"};
@@ -4209,7 +4212,7 @@ function articleHtmlTextForX(html){
    if(block)line();
  };
  [...root.childNodes].forEach(walk);
- return out.replace(/\u200B/g,"").replace(/\r/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+ return out.replace(/\u200B/g,"").replace(/――(?:[ \t]*――)+/g,"――").replace(/\r/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 function articleTextForX(page){
  const blocks=normalizedArticleBlocks(page);
