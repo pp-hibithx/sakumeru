@@ -1219,6 +1219,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .article-block-toolbar{padding:10px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--panel) 87%,currentColor 4%)}
 .article-editor-modebar{display:flex;justify-content:flex-end;background:transparent;border:0;padding:4px 0}
 .article-view-switch{display:inline-flex;gap:3px;margin-right:auto;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.article-view-switch button{border-color:transparent;background:transparent}.article-view-switch button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,var(--panel));font-weight:800}.article-editor-preview{margin-top:8px;padding:18px;border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--panel)}.article-preview-sheet{display:grid;gap:14px}.article-preview-mode .article-block-help{display:none}
+.article-spoiler-setting{min-width:min(100%,250px)}.article-preview-warning{display:grid;gap:5px;margin:0 0 16px;padding:13px 15px;border:1px solid color-mix(in srgb,#d9b85b 60%,var(--line));border-left:5px solid #d9b85b;border-radius:9px;background:color-mix(in srgb,#d9b85b 10%,var(--panel));overflow-wrap:anywhere}.article-preview-warning strong{font-size:1rem}.article-preview-warning span{font-size:.9rem}
 .article-block-head-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto}.article-block-head-tools .article-block-visibility{margin:0}.article-block-head-tools .article-block-visibility label{display:none}.article-block-head-tools .articleBlockVisibility{width:auto;min-width:104px;margin:0;padding:5px 24px 5px 7px;font-size:.82rem}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks{gap:3px;padding:4px 0}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block{border:1px solid color-mix(in srgb,var(--block-color,var(--accent)) 34%,var(--line))!important;border-left:4px solid var(--block-color,var(--accent))!important;border-radius:8px!important;background:color-mix(in srgb,var(--block-color,var(--accent)) 5%,var(--panel))!important;box-shadow:none!important;padding:9px!important;margin:8px 0!important}
@@ -3335,6 +3336,7 @@ function articlePagesHtml(r){
      <div class="article-editor-preview" hidden aria-live="polite"></div>
      <div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
+       <div class="article-spoiler-setting"><label>⚠ ネタバレ警告</label><select class="articleSpoilerWarning" aria-describedby="articleSpoilerHelp-${esc(r.id)}"><option value="1">ON</option><option value="0">OFF</option></select><div class="small muted" id="articleSpoilerHelp-${esc(r.id)}">共有時に「この先、シナリオのネタバレを含みます」という注意を自動表示します。</div></div>
        <div><label>共有パスワード <span class="small muted">（任意）</span></label><input class="articlePassword" type="password" autocomplete="new-password" placeholder="設定する場合のみ入力"></div><div><label>パスワードのヒント <span class="small muted">（任意）</span></label><input class="articlePasswordHint" value="" placeholder="例：Cから始めて5文字（英字）"></div>
      </div>
      <div class="lib-article-share-note">通常共有では画像の「SNSカードに使う」を1枚選べます。未選択なら金色のタイトルOGP。パスワード付き共有では内容を伏せ、SAKU+MERU公式OGPを自動使用します。</div>
@@ -3381,7 +3383,7 @@ async function articleDraftLatestForRun(runId,excludedIds=new Set()){const db=aw
 async function articleDraftPut(value){const db=await articleDraftDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(ARTICLE_DRAFT_STORE,"readwrite");tx.objectStore(ARTICLE_DRAFT_STORE).put(value);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}return true}
 async function articleDraftDelete(key){const db=await articleDraftDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(ARTICLE_DRAFT_STORE,"readwrite");tx.objectStore(ARTICLE_DRAFT_STORE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}return true}
 function articleDraftKey(ed){return `${ed.dataset.runId||""}:${ed.dataset.articleDraftId||""}`}
-function articleEditorSnapshot(ed){return {key:articleDraftKey(ed),runId:ed.dataset.runId||"",articleId:ed.dataset.articleDraftId||"",title:ed.querySelector('.articleTitle')?.value||"",blocks:editorBlocks(ed),shareEnabled:ed.querySelector('.articleShareEnabled')?.value==="1",passwordHint:ed.querySelector('.articlePasswordHint')?.value||"",updatedAt:new Date().toISOString()}}
+function articleEditorSnapshot(ed){return {key:articleDraftKey(ed),runId:ed.dataset.runId||"",articleId:ed.dataset.articleDraftId||"",title:ed.querySelector('.articleTitle')?.value||"",blocks:editorBlocks(ed),shareEnabled:ed.querySelector('.articleShareEnabled')?.value==="1",spoilerWarning:ed.querySelector('.articleSpoilerWarning')?.value!=="0",passwordHint:ed.querySelector('.articlePasswordHint')?.value||"",updatedAt:new Date().toISOString()}}
 function setArticleSaveStatus(ed,message,type=""){
  const box=ed?.querySelector('.article-save-status');if(!box)return;box.textContent=message||"";box.className=`article-save-status${type?` ${type}`:""}`;box.hidden=!message;
 }
@@ -3424,7 +3426,7 @@ function setArticleReorderMode(ed,active){
 function setArticleViewMode(ed,mode){
  const preview=mode==="preview",wrap=ed.querySelector('.article-blocks'),out=ed.querySelector('.article-editor-preview');
  if(!wrap||!out)return;
- if(preview){setArticleReorderMode(ed,false);out.innerHTML=`<div class="article-preview-sheet">${articleBlockListHtml(editorBlocks(ed))||'<p class="muted">表示する本文はまだありません。</p>'}</div>`}
+ if(preview){const {group}=articleContextForRun(ed.dataset.runId||"");setArticleReorderMode(ed,false);const warning=ed.querySelector('.articleSpoilerWarning')?.value!=="0"?`<aside class="article-preview-warning" role="note"><strong>⚠ この先、${group?.title?`【${esc(group.title)}】の`:""}ネタバレを含みます。</strong><span>未通過の方は閲覧にご注意ください。</span></aside>`:"";out.innerHTML=`${warning}<div class="article-preview-sheet">${articleBlockListHtml(editorBlocks(ed))||'<p class="muted">表示する本文はまだありません。</p>'}</div>`}
  wrap.hidden=preview;out.hidden=!preview;ed.classList.toggle('article-preview-mode',preview);
  ed.querySelectorAll('[data-article-view]').forEach(button=>{const active=button.dataset.articleView===mode;button.setAttribute('aria-pressed',active?'true':'false');button.classList.toggle('active',active)});
  const reorder=ed.querySelector('[data-article-reorder-toggle]');if(reorder)reorder.hidden=preview;
@@ -3703,8 +3705,16 @@ function conversationEnrichLineReference(row,line){
 function conversationResolvedPc(line){
  const names=[line?.pcName,line?.speaker].map(v=>String(v||"").trim()).filter(Boolean);
 
- // 1. 同名の「登録済み自PC」を最優先。
- // 古い会話ログにguest側pcRefIdが残っていても、自PC画像を失わない。
+ // 1. 新形式は保存済みPC IDを最優先する。同名PCでも所有者を取り違えない。
+ if(line?.pcRefId){
+   const pc=anyPcById(line.pcRefId);
+   if(pc){
+     if(pc.ownerType==="guest"&&!pc.image)pc.image=guestPcImage(pc.playerId,pc.plName,pc.name);
+     return pc;
+   }
+ }
+
+ // 2. IDのない旧ログだけ、登録済みPC名から互換解決する。
  const own=(TRPG39.loadPCs?TRPG39.loadPCs():pcs);
  for(const name of names){
    const direct=own.find(p=>String(p.name||"").trim()===name);
@@ -3723,16 +3733,7 @@ function conversationResolvedPc(line){
    }
  }
 
- // 2. 保存済みPC IDを使う。
- if(line?.pcRefId){
-   const pc=anyPcById(line.pcRefId);
-   if(pc){
-     if(pc.ownerType==="guest"&&!pc.image)pc.image=guestPcImage(pc.playerId,pc.plName,pc.name);
-     return pc;
-   }
- }
-
- // 3. 名前から同卓PCを再検索。
+ // 3. 最後に名前から同卓PCを再検索（旧データ互換）。
  for(const name of names){
    const matches=allLibraryPcs().filter(p=>String(p.name||"").trim()===name);
    if(matches.length){
@@ -3922,6 +3923,7 @@ function bindArticleEditorBlockControls(ed){
 function restoreArticleDraft(ed,draft){
  ed.querySelector('.articleTitle').value=draft.title||"";
  ed.querySelector('.articleShareEnabled').value=draft.shareEnabled?"1":"0";
+ ed.querySelector('.articleSpoilerWarning').value=draft.spoilerWarning===false?"0":"1";
  const hint=ed.querySelector('.articlePasswordHint');if(hint)hint.value=draft.passwordHint||"";
  renderArticleEditorBlocks(ed,Array.isArray(draft.blocks)?draft.blocks:[]);
  ed.querySelector('.article-draft-notice').hidden=true;
@@ -3939,6 +3941,7 @@ async function openArticleEditor(runId,pageId=""){
  ed.querySelector('.articleEditId').value=page?.id||"";
  ed.querySelector('.articleTitle').value=page?.title||"";
  ed.querySelector('.articleShareEnabled').value=page?.shareEnabled?"1":"0";
+ ed.querySelector('.articleSpoilerWarning').value=page?.spoilerWarning===false?"0":"1";
  ed.querySelector('.articlePassword').value="";
  ed.querySelector('.articlePassword').placeholder=page?.passwordProtected?"設定済み（変更する場合のみ入力）":"設定する場合のみ入力";
  const hintInput=ed.querySelector('.articlePasswordHint');if(hintInput)hintInput.value=page?.passwordHint||"";
@@ -3965,10 +3968,10 @@ async function saveArticlePage(runId){
  const saveButton=ed.querySelector('[data-article-save]');if(saveButton)saveButton.disabled=true;setArticleSaveStatus(ed,"保存しています…","saving");
  try{
    const pages=articlePagesForRun(runId).slice(),id=ed.querySelector('.articleEditId').value||ed.dataset.articleDraftId||TRPG39.uuid(),now=new Date().toISOString().slice(0,16).replace('T',' ');
-   const i=pages.findIndex(p=>p.id===id),old=i>=0?pages[i]:{},shareEnabled=ed.querySelector('.articleShareEnabled').value==="1",password=ed.querySelector('.articlePassword').value,passwordHint=ed.querySelector('.articlePasswordHint')?.value.trim()||"";
+   const i=pages.findIndex(p=>p.id===id),old=i>=0?pages[i]:{},shareEnabled=ed.querySelector('.articleShareEnabled').value==="1",spoilerWarning=ed.querySelector('.articleSpoilerWarning').value!=="0",password=ed.querySelector('.articlePassword').value,passwordHint=ed.querySelector('.articlePasswordHint')?.value.trim()||"";
    let passwordHash=old.passwordHash||"",passwordProtected=!!old.passwordProtected;if(password){passwordHash=await sha256Text(password);passwordProtected=true}if(!shareEnabled){passwordHash="";passwordProtected=false}
    const legacyBody=blocks.filter(b=>b.type==="text").map(b=>b.text).join("\n\n");
-   const page={...old,id,title:title||"無題",body:legacyBody,blocks,shareEnabled,passwordProtected,passwordHash,passwordHint,createdAt:i>=0?(old.createdAt||now):now,updatedAt:now};
+   const page={...old,id,title:title||"無題",body:legacyBody,blocks,shareEnabled,spoilerWarning,passwordProtected,passwordHash,passwordHint,createdAt:i>=0?(old.createdAt||now):now,updatedAt:now};
    if(i>=0)pages[i]=page;else pages.push(page);
    const verifiedPages=saveArticlePagesForRun(runId,pages),verified=verifiedPages.find(p=>String(p.id)===String(id));
    const expectedFlat=flattenArticleBlocks(blocks),actualFlat=flattenArticleBlocks(verified?.blocks||[]),expectedText=expectedFlat.filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
@@ -4164,7 +4167,7 @@ async function shareArticlePage(runId,pageId,options={}){
    }
      const sharedBlocks=await prepareConversationBlocksForShare(baseBlocks);
      const sharedBody=baseBlocks.filter(b=>b.type==="text"&&(b.visibility==="public"||b.visibility==="link")).map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
-    let payload={kind:"library-article",version:13,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioId:group?.scenarioId||"",runId:runId||"",articleId:page.id||"",scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:true,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
+    let payload={kind:"library-article",version:14,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioId:group?.scenarioId||"",runId:runId||"",articleId:page.id||"",scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:page.spoilerWarning!==false,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
    let shareId=page.shareId||"";
    if(!shareId)shareId=await TRPG39Cloud.createSharedPage(payload);
    const albumId=String(run?.items?.[0]?.id||"");
