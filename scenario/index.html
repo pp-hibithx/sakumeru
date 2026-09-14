@@ -289,19 +289,15 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 </div><div class="sc-tools"><button id="shareScenarioList" type="button">共有</button><button id="openForm" type="button">＋ 追加</button></div></div><div id="summary" class="small" style="margin-top:8px"></div>
 <div id="systemTabs" class="sc-system-tabs" aria-label="システムで絞り込み"></div>
 
-<details class="sc-panel friend-panel" id="draftPanel">
- <summary class="friend-panel-summary">
-   <div>
-     <b>登録待ち</b> <span id="draftCount" class="small muted"></span>
-     <div class="small">URLだけでも保存できます。あとで「入力を続ける」から登録を再開できます。</div>
-   </div>
- </summary>
- <div class="friend-panel-body">
-   <div id="draftList" class="draft-list"></div>
+<div class="sc-categories" aria-label="シナリオの分類">
+<details class="sc-category" id="draftPanel">
+ <summary class="sc-category-summary"><span>登録待ち</span><span id="draftCount" class="sc-category-count">0件</span></summary>
+ <div class="sc-category-body">
+  <div class="small muted">URLだけでも保存できます。あとで「入力を続ける」から登録を再開できます。</div>
+  <div id="draftList" class="draft-list"></div>
  </div>
 </details>
 
-<div class="sc-categories" aria-label="シナリオの分類">
 <details class="sc-category" id="ownScenarioSection">
  <summary class="sc-category-summary"><span>自分のシナリオ</span><span id="ownMatchCount" class="sc-category-count">0件</span></summary>
  <div class="sc-category-body">
@@ -443,7 +439,7 @@ let data=TRPG39.loadScenarios();
 const SCENARIO_CATEGORY_STATE_KEY="trpg39_scenario_category_state_v1";
 const scenarioMobileQuery=matchMedia("(max-width: 860px)");
 const scenarioCategoryLayout=scenarioMobileQuery.matches?"mobile":"desktop";
-let scenarioCategoryState={layout:scenarioCategoryLayout,ownOpen:!scenarioMobileQuery.matches,friendOpen:false,lastCard:""};
+let scenarioCategoryState={layout:scenarioCategoryLayout,draftOpen:false,ownOpen:!scenarioMobileQuery.matches,friendOpen:false,lastCard:""};
 try{const saved=JSON.parse(sessionStorage.getItem(SCENARIO_CATEGORY_STATE_KEY)||"{}");if(saved.layout===scenarioCategoryLayout)scenarioCategoryState={...scenarioCategoryState,...saved}}catch{}
 function saveScenarioCategoryState(){try{sessionStorage.setItem(SCENARIO_CATEGORY_STATE_KEY,JSON.stringify(scenarioCategoryState))}catch{}}
 function quotaExceeded(error){
@@ -1759,18 +1755,20 @@ bindDisplayImageChoice();
 q("shareScenarioList").onclick=shareScenarioList;q("openForm").onclick=openForm;q("fetchThumb").onclick=fetchThumbnail;q("tags").addEventListener("input",renderTagSuggestions);
 q("applyUrlSummary").onclick=()=>{const candidate=q("urlSummaryCandidate").value.trim();if(!candidate)return;const current=q("summaryText").value.trim();if(current&&current!==candidate&&!confirm("入力済みの概要を取得候補で置き換えますか？"))return;q("summaryText").value=candidate;q("summaryText").dispatchEvent(new Event("input",{bubbles:true}));q("summaryText").focus();q("thumbStatus").textContent="✓ 取得した概要を概要欄へ反映しました。保存するまではシナリオデータを変更しません。";};
 q("useSummaryBackup").onclick=()=>{q("summaryText").value=q("summaryBackup").value;updateLegacySummaryNotice();q("summaryText").focus()};q("summaryText").addEventListener("input",updateLegacySummaryNotice);
-const ownScenarioSection=q("ownScenarioSection"),friendScenarioSection=q("friendScenarioSection");
+const draftScenarioSection=q("draftPanel"),ownScenarioSection=q("ownScenarioSection"),friendScenarioSection=q("friendScenarioSection");
+draftScenarioSection.open=!!scenarioCategoryState.draftOpen;
 ownScenarioSection.open=!!scenarioCategoryState.ownOpen;
 friendScenarioSection.open=!!scenarioCategoryState.friendOpen;
-function onScenarioCategoryToggle(section,key,other){
+function onScenarioCategoryToggle(section,key,others){
  scenarioCategoryState[key]=section.open;
  const showingCombinedSearch=!!q("search").value.trim()&&(q("searchScope").value||"all")==="all";
- if(section.open&&scenarioMobileQuery.matches&&other.open&&!showingCombinedSearch)other.open=false;
+ if(section.open&&scenarioMobileQuery.matches&&!showingCombinedSearch)(Array.isArray(others)?others:[others]).filter(Boolean).forEach(other=>{if(other.open)other.open=false});
  saveScenarioCategoryState();
- if(section.open)render();
+ if(section.open&&section!==draftScenarioSection)render();
 }
-ownScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(ownScenarioSection,"ownOpen",friendScenarioSection));
-friendScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(friendScenarioSection,"friendOpen",ownScenarioSection));
+draftScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(draftScenarioSection,"draftOpen",[ownScenarioSection,friendScenarioSection]));
+ownScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(ownScenarioSection,"ownOpen",[draftScenarioSection,friendScenarioSection]));
+friendScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(friendScenarioSection,"friendOpen",[draftScenarioSection,ownScenarioSection]));
 q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=render;q("searchScope").onchange=render;q("filter").onchange=render;q("playersFilter").oninput=render;q("hoursFilter").oninput=render;q("tagFilter").onchange=render;q("archiveFilter").onchange=render;q("sort").onchange=render;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
