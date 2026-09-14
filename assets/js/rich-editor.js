@@ -31,13 +31,14 @@ function htmlWithLineBreaks(root){
  [...root.childNodes].forEach(walk);
  return out;
 }
+function xMaskText(text){return [...String(text||"").replace(/\r\n?/g,"\n")].map(ch=>ch==="\n"?"\n":"×").join("")}
 function plainTextForX(html){
  const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);
  // X用本文は、折りたたみを開けた時だけ読める内容を一切使用しない。
  // details自体を先に除くため、入れ子の深さに関係なく内部本文も除外される。
  d.querySelectorAll("details").forEach(x=>x.remove());
  const hidden=[...d.querySelectorAll('[data-x-hidden="true"]')].filter(x=>!x.parentElement?.closest('[data-x-hidden="true"]'));
- hidden.forEach(x=>x.replaceWith(document.createTextNode("――")));
+ hidden.forEach(x=>x.replaceWith(document.createTextNode(xMaskText(htmlWithLineBreaks(x)))));
  return htmlWithLineBreaks(d)
    .replace(/\u200B/g,"")
    .replace(/――(?:[ \t]*――)+/g,"――")
@@ -47,6 +48,17 @@ function plainTextForX(html){
    .trim();
 }
 function hasXHidden(html){const d=document.createElement("div");d.innerHTML=sanitizeHtml(html);return !!d.querySelector('[data-x-hidden="true"]')}
+function shareHiddenHtml(html){
+ const tpl=document.createElement("template");tpl.innerHTML=sanitizeHtml(html);
+ const hidden=[...tpl.content.querySelectorAll('[data-x-hidden="true"]')].filter(node=>!node.parentElement?.closest('[data-x-hidden="true"]'));
+ hidden.forEach(node=>{
+  const button=document.createElement("button");button.type="button";button.className="share-inline-hidden";button.setAttribute("aria-expanded","false");button.setAttribute("aria-label","隠された文章を表示");
+  const label=document.createElement("span");label.className="share-inline-hidden-label";label.textContent="🙈 この部分は隠されています";
+  const content=document.createElement("span");content.className="share-inline-hidden-content";while(node.firstChild)content.appendChild(node.firstChild);
+  button.append(label,content);node.replaceWith(button);
+ });
+ return tpl.innerHTML;
+}
 function safeUrl(value,{image=false}={}){
  const v=String(value||"").trim();
  if(!v)return "";
@@ -113,7 +125,7 @@ function toolbarHtml(options={}){const specialKinds=Array.isArray(options.specia
  <div class="sm-rich-group"><button type="button" data-rich-cmd="justifyLeft">左</button><button type="button" data-rich-cmd="justifyCenter">中</button><button type="button" data-rich-cmd="justifyRight">右</button><button type="button" data-rich-cmd="insertUnorderedList">• 箇条書き</button><button type="button" data-rich-cmd="insertOrderedList">1. 番号</button><button type="button" data-rich-link>🔗</button><button type="button" data-rich-hr>―</button></div>
  <div class="sm-rich-group sm-rich-stationery" aria-label="マーカーとクレヨン"><span class="sm-rich-tool-label">マーカー</span><button type="button" data-rich-marker="#fff0a8" title="黄色マーカー">黄</button><button type="button" data-rich-marker="#ffd1df" title="桃色マーカー">桃</button><button type="button" data-rich-marker="#cfe7ff" title="青色マーカー">青</button><button type="button" data-rich-marker="#d8f2cf" title="緑色マーカー">緑</button><button type="button" data-rich-crayon title="クレヨン風の強調">クレヨン</button><button type="button" data-rich-clear-format title="選択範囲の装飾を外す">消す</button></div>
  ${specialButtons?`<div class="sm-rich-group">${specialButtons}</div>`:""}
- ${options.enableXHide?'<div class="sm-rich-group"><button type="button" data-rich-x-hide title="選択部分をXの投稿文・OGP説明文から除外します">🙈 Xでは伏せる</button></div>':""}
+ ${options.enableXHide?'<div class="sm-rich-group"><button type="button" data-rich-x-hide title="選択部分を共有画面では伏せ、X投稿では同じ文字数の×に置き換えます">🙈 この部分を隠す</button></div>':""}
  ${insertButtons?`<div class="sm-rich-group sm-rich-insert-group">${insertButtons}</div>`:""}
  </div>`}
 function toggleXHidden(editor,range){
@@ -204,7 +216,7 @@ function create(options={}){
  toolbar.querySelector("[data-rich-clear-format]").onclick=()=>exec("removeFormat");
  toolbar.querySelectorAll("[data-rich-special]").forEach(b=>b.onclick=()=>{restoreRange();document.execCommand("insertHTML",false,specialHtml(b.dataset.richSpecial));notify();decorateSortableBlocks()});
  toolbar.querySelectorAll("[data-rich-insert]").forEach(b=>b.onclick=()=>{saveRange();options.onInsertBlock?.(b.dataset.richInsert,{html:value(),text:plainText(value())})});
- const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("Xで伏せたい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
+ const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("隠したい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
  toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  editor.addEventListener("click",e=>{const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
@@ -216,5 +228,5 @@ function create(options={}){
  return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
-window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
+window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
 })();
