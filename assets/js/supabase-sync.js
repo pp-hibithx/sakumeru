@@ -32,15 +32,22 @@ function safeHomeMember(value){
   if(src.decoration&&typeof src.decoration==="object")out.decoration=safeDecoration(src.decoration);
   return out;
 }
+function safeStageDecoration(value){
+  const src=value&&typeof value==="object"?value:{},out={id:String(src.id||""),type:String(src.type||""),variant:String(src.variant||""),layer:src.layer==="background"?"background":"foreground"};
+  ["x","y","scale","rotation","zIndex"].forEach(key=>{if(own(src,key)&&Number.isFinite(Number(src[key])))out[key]=Number(src[key])});
+  return out;
+}
 function localHomeSettings(){
   if(localStorage.getItem(HOME_KEY)===null)return undefined;
   const raw=readJson(HOME_KEY,{}),favorites=raw?.homeFavorites&&typeof raw.homeFavorites==="object"?raw.homeFavorites:{};
-  return {version:1,homeFavorites:{members:(Array.isArray(favorites.members)?favorites.members:[]).map(safeHomeMember).filter(x=>x.pcId).slice(0,2),primaryPcId:String(favorites.primaryPcId||raw.homeGuidePcId||""),updatedAt:String(favorites.updatedAt||"")},homeGuidePcId:String(raw.homeGuidePcId||favorites.primaryPcId||"")};
+  const decorations=raw?.homeDecorations&&typeof raw.homeDecorations==="object"?raw.homeDecorations:{};
+  return {version:2,homeFavorites:{members:(Array.isArray(favorites.members)?favorites.members:[]).map(safeHomeMember).filter(x=>x.pcId).slice(0,2),primaryPcId:String(favorites.primaryPcId||raw.homeGuidePcId||""),updatedAt:String(favorites.updatedAt||"")},homeDecorations:{items:(Array.isArray(decorations.items)?decorations.items:[]).map(safeStageDecoration).filter(x=>x.id&&x.variant).slice(0,40),updatedAt:String(decorations.updatedAt||"")},homeGuidePcId:String(raw.homeGuidePcId||favorites.primaryPcId||"")};
 }
 function applyHomeSettings(value){
   if(value===undefined)return;
   const current=readJson(HOME_KEY,{}),home=value?.homeFavorites&&typeof value.homeFavorites==="object"?value.homeFavorites:{members:[],primaryPcId:"",updatedAt:""};
-  localStorage.setItem(HOME_KEY,JSON.stringify({...current,homeGuidePcId:String(value.homeGuidePcId||home.primaryPcId||""),homeFavorites:{members:(Array.isArray(home.members)?home.members:[]).map(safeHomeMember).filter(x=>x.pcId).slice(0,2),primaryPcId:String(home.primaryPcId||""),updatedAt:String(home.updatedAt||"")}}));
+  const decorations=own(value,"homeDecorations")&&value?.homeDecorations&&typeof value.homeDecorations==="object"?value.homeDecorations:(current?.homeDecorations&&typeof current.homeDecorations==="object"?current.homeDecorations:{items:[],updatedAt:""});
+  localStorage.setItem(HOME_KEY,JSON.stringify({...current,homeGuidePcId:String(value.homeGuidePcId||home.primaryPcId||""),homeFavorites:{members:(Array.isArray(home.members)?home.members:[]).map(safeHomeMember).filter(x=>x.pcId).slice(0,2),primaryPcId:String(home.primaryPcId||""),updatedAt:String(home.updatedAt||"")},homeDecorations:{items:(Array.isArray(decorations.items)?decorations.items:[]).map(safeStageDecoration).filter(x=>x.id&&x.variant).slice(0,40),updatedAt:String(decorations.updatedAt||"")}}));
 }
 function localWorkLogs(){const rows=readJson(WORK_LOG_KEY,[]);return Array.isArray(rows)?rows:[]}
 function applyWorkLogs(rows){if(rows!==undefined)localStorage.setItem(WORK_LOG_KEY,JSON.stringify(Array.isArray(rows)?rows:[]))}
