@@ -52,12 +52,19 @@ function shareHiddenHtml(html){
  const tpl=document.createElement("template");tpl.innerHTML=sanitizeHtml(html);
  const hidden=[...tpl.content.querySelectorAll('[data-x-hidden="true"]')].filter(node=>!node.parentElement?.closest('[data-x-hidden="true"]'));
  hidden.forEach(node=>{
-  const button=document.createElement("button");button.type="button";button.className="share-inline-hidden";button.setAttribute("aria-expanded","false");button.setAttribute("aria-label","隠された文章を表示");
+  const button=document.createElement("span");button.className="share-inline-hidden";button.setAttribute("role","button");button.setAttribute("tabindex","0");button.setAttribute("aria-expanded","false");button.setAttribute("aria-label","隠された文章を表示");
   const label=document.createElement("span");label.className="share-inline-hidden-label";label.textContent="🙈 この部分は隠されています";
   const content=document.createElement("span");content.className="share-inline-hidden-content";while(node.firstChild)content.appendChild(node.firstChild);
   button.append(label,content);node.replaceWith(button);
  });
  return tpl.innerHTML;
+}
+function bindShareHidden(root=document){
+ root.querySelectorAll(".share-inline-hidden").forEach(node=>{
+  const reveal=()=>{if(node.classList.contains("is-revealed"))return;node.classList.add("is-revealed");node.setAttribute("aria-expanded","true");node.removeAttribute("aria-label");node.removeAttribute("role");node.removeAttribute("tabindex")};
+  node.addEventListener("click",reveal,{once:true});
+  node.addEventListener("keydown",event=>{if(event.key!=="Enter"&&event.key!==" ")return;event.preventDefault();reveal()});
+ });
 }
 function safeUrl(value,{image=false}={}){
  const v=String(value||"").trim();
@@ -135,12 +142,13 @@ function toggleXHidden(editor,range){
  const existing=start?.closest?.('[data-x-hidden="true"]');
  if(existing&&existing===end?.closest?.('[data-x-hidden="true"]')){existing.replaceWith(...existing.childNodes);return true}
  const walker=document.createTreeWalker(editor,NodeFilter.SHOW_TEXT),nodes=[];let node;
- while((node=walker.nextNode())){try{if(node.textContent&&range.intersectsNode(node)&&!node.parentElement?.closest('[data-x-hidden="true"]'))nodes.push(node)}catch{}}
+ while((node=walker.nextNode())){try{if(!node.textContent||node.parentElement?.closest('[data-x-hidden="true"]'))continue;const nodeRange=document.createRange();nodeRange.selectNodeContents(node);const endsBefore=range.compareBoundaryPoints(Range.START_TO_END,nodeRange)<=0;const startsAfter=range.compareBoundaryPoints(Range.END_TO_START,nodeRange)>=0;if(!endsBefore&&!startsAfter)nodes.push(node)}catch{}}
+ let applied=0;
  nodes.reverse().forEach(textNode=>{
   const startOffset=textNode===range.startContainer?range.startOffset:0,endOffset=textNode===range.endContainer?range.endOffset:textNode.length;if(endOffset<=startOffset)return;
-  const part=document.createRange();part.setStart(textNode,startOffset);part.setEnd(textNode,endOffset);const span=document.createElement("span");span.className="sm-rich-x-hidden";span.dataset.xHidden="true";part.surroundContents(span);
+  let selected=textNode;if(endOffset<textNode.length)textNode.splitText(endOffset);if(startOffset>0)selected=textNode.splitText(startOffset);const span=document.createElement("span");span.className="sm-rich-x-hidden";span.dataset.xHidden="true";selected.replaceWith(span);span.appendChild(selected);applied++;
  });
- return !!nodes.length;
+ return applied>0;
 }
 function decorateSpecialBlocks(editor){
  editor.querySelectorAll(".sm-special").forEach(block=>{
@@ -228,5 +236,5 @@ function create(options={}){
  return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
-window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
+window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,bindShareHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
 })();
