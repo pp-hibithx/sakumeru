@@ -4084,16 +4084,7 @@ function articleOgpWrapLines(ctx,text,maxWidth,maxLines=2){
  return lines;
 }
 
-function loadArticleOgpLogo(){
- return new Promise(resolve=>{
-   const img=new Image();
-   img.onload=()=>resolve(img);
-   img.onerror=()=>resolve(null);
-   img.src="../assets/img/sakumeru-logo-horizontal-dark-smooth.png";
- });
-}
-
-async function createArticleOgpPng(scenarioTitle,articleTitle,_safeExcerpt=""){
+async function createArticleOgpPng(scenarioTitle,articleTitle,_safeExcerpt="",spoilerWarning=true){
  const canvas=document.createElement("canvas");
  canvas.width=1200;canvas.height=630;
  const ctx=canvas.getContext("2d");
@@ -4117,61 +4108,41 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,_safeExcerpt=""){
  // brand label
  ctx.fillStyle="rgba(255,255,255,.62)";
  ctx.font='600 26px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- ctx.fillText("SAKU+MERU  🌺  卓記事",110,108);
+ ctx.fillText("SAKU+MERU  卓記事",110,108);
 
  // scenario
  ctx.fillStyle="#f2e6bd";
  ctx.font='700 38px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- // The title uses almost the full card width. The logo no longer owns
- // a right-hand column; it is rendered later as a small signature plate.
- const textWidth=980;
+ // 右下にブランド画像や予約領域を設けず、タイトルがカード右端近くまで使える。
+ const textWidth=1020;
  const scenarioLines=articleOgpWrapLines(ctx,`『${scenarioTitle||"シナリオ"}』`,textWidth,2);
  scenarioLines.forEach((line,i)=>ctx.fillText(line,110,176+i*48));
 
- // spoiler warning pill
+ // spoiler warning pill（記事の既存設定に従う）
  const warningY=scenarioLines.length>1?280:236;
- ctx.font='700 28px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- const warning="⚠ ネタバレ注意";
- const ww=ctx.measureText(warning).width;
- ctx.fillStyle="rgba(217,184,91,.14)";
- ctx.beginPath();
- if(ctx.roundRect)ctx.roundRect(110,warningY-35,ww+42,54,27);
- else ctx.rect(110,warningY-35,ww+42,54);
- ctx.fill();
- ctx.strokeStyle="rgba(217,184,91,.58)";
- ctx.lineWidth=2;ctx.stroke();
- ctx.fillStyle="#f0cf78";
- ctx.fillText(warning,131,warningY+2);
+ if(spoilerWarning!==false){
+   ctx.font='700 28px system-ui, "Yu Gothic", "Meiryo", sans-serif';
+   const warning="⚠ ネタバレ注意";
+   const ww=ctx.measureText(warning).width;
+   ctx.fillStyle="rgba(217,184,91,.14)";
+   ctx.beginPath();
+   if(ctx.roundRect)ctx.roundRect(110,warningY-35,ww+42,54,27);
+   else ctx.rect(110,warningY-35,ww+42,54);
+   ctx.fill();
+   ctx.strokeStyle="rgba(217,184,91,.58)";
+   ctx.lineWidth=2;ctx.stroke();
+   ctx.fillStyle="#f0cf78";
+   ctx.fillText(warning,131,warningY+2);
+ }
 
  // article title
- const titleY=warningY+92;
+ const titleY=spoilerWarning!==false?warningY+92:(scenarioLines.length>1?294:248);
  ctx.fillStyle="#ffffff";
  ctx.font='800 58px system-ui, "Yu Gothic", "Meiryo", sans-serif';
  // 本文抜粋はX投稿本文とmeta descriptionへ任せ、画像では卓記録タイトルを主役にする。
- // シナリオ見出しが1行なら、空いた領域を使ってタイトルを最大3行まで表示する。
- const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",textWidth,scenarioLines.length>1?2:3);
+ // 右下ロゴを廃止したため、シナリオ見出しが2行でもタイトルを3行まで使用できる。
+ const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",textWidth,3);
  titleLines.forEach((line,i)=>ctx.fillText(line,110,titleY+i*66));
-
- // Existing approved SAKU+MERU logo, used without image processing. It sits in a
- // restrained gold-framed plate at the lower right, as a signature rather than content.
- const logo=await loadArticleOgpLogo();
- if(logo){
-   const maxW=340,maxH=118,scale=Math.min(maxW/logo.naturalWidth,maxH/logo.naturalHeight,1);
-   const w=logo.naturalWidth*scale,h=logo.naturalHeight*scale;
-   const padX=12,padY=9,plateW=w+padX*2,plateH=h+padY*2;
-   // SNS cards may cover the bottom edge with their own link-title strip.
-   // Keep a 100px lower safe area while preserving the lower-right signature position.
-   const plateX=1128-plateW,plateY=530-plateH;
-   ctx.fillStyle="#080d12";
-   ctx.beginPath();
-   if(ctx.roundRect)ctx.roundRect(plateX,plateY,plateW,plateH,7);
-   else ctx.rect(plateX,plateY,plateW,plateH);
-   ctx.fill();
-   ctx.strokeStyle="rgba(217,184,91,.82)";
-   ctx.lineWidth=2;
-   ctx.stroke();
-   ctx.drawImage(logo,plateX+padX,plateY+padY,w,h);
- }
 
  // footer
  ctx.fillStyle="rgba(255,255,255,.42)";
@@ -4232,7 +4203,7 @@ async function shareArticlePage(runId,pageId,options={}){
       const picked=shareableBlocks.find(b=>b.type==="image"&&b.ogp&&b.url);
      if(picked){articleOgpImage=picked.url;ogpSource="image"}
      else{
-       const ogpBlob=await createArticleOgpPng(group?.title||"シナリオ",page.title||"卓記事",articleTextForX(page));
+       const ogpBlob=await createArticleOgpPng(group?.title||"シナリオ",page.title||"卓記事",articleTextForX(page),page.spoilerWarning!==false);
        articleOgpImage=await uploadArticleOgpImage(ogpBlob,page.id);ogpSource="title";
      }
    }
@@ -4247,7 +4218,7 @@ async function shareArticlePage(runId,pageId,options={}){
    saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));
    const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
    previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");
-   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。タイトルと安全な本文、SAKU+MERUロゴのOGPを使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
+   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。卓記事タイトルのOGPを使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
    return previewUrl.href;
  }catch(e){console.error(e);alert(e.message||e);return ""}
 }
