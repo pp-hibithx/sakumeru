@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0901-preview1">
 <link rel="stylesheet" href="../assets/css/rich-editor.css?v=0901-common1">
 <script src="../assets/js/rich-editor-outline.js?v=0901-preview1"></script>
-<script src="../assets/js/rich-editor.js?v=0901-common1"></script>
+<script src="../assets/js/rich-editor.js?v=0914-share-hide"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/beta-gate.js?v=02315"></script><script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 <style>
@@ -816,7 +816,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 
 .kp-live-order-scene{margin-bottom:8px}.kp-live-order-scene>.kp-live-order-row{grid-template-columns:auto auto minmax(0,1fr) auto}.kp-live-order-children{margin:4px 0 8px 10px;border-left:2px solid #343b46;padding-left:7px}.kp-live-order-child{background:rgba(255,255,255,.025);margin-top:4px}.kp-live-order-child .kp-live-order-handle{cursor:default;opacity:.7}.kp-live-order-grandchildren{margin:4px 0 6px 12px;border-left:1px dashed #48515f;padding-left:7px}.kp-live-order-grandchild{background:rgba(255,255,255,.015);margin-top:3px;padding-top:7px;padding-bottom:7px}.kp-live-order-grandchild .kp-live-order-title{font-size:13px}.kp-live-order-grandchild .kp-live-order-handle{cursor:default;opacity:.55}
 .kp-live-order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.kp-live-order-fold-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kp-live-order-fold-actions button{font-size:12px;padding:5px 8px}.kp-live-order-fold{width:28px;min-width:28px;height:28px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}.kp-live-order-row>div:nth-of-type(1){min-width:0;flex:1}.kp-live-order-scene.is-collapsed>.kp-live-order-children{display:none}.kp-live-order-group.is-collapsed>.kp-live-order-grandchildren{display:none}
-</style></head><body>
+</style><link rel="stylesheet" href="../assets/css/readability.css?v=0908-1"></head><body>
 <div data-site-header data-active="scenario"></div>
 <main class="kptest">
  <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。</small></div>
@@ -893,7 +893,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   </div>
 </details></main>
 <div data-site-footer></div>
-<script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=20260828-kp2"></script>
+<script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=0914-header-actions"></script>
 <script>
 const q=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const params=new URLSearchParams(location.search);
@@ -3756,3 +3756,4 @@ renderScenes();renderEditor();saveNow();
 window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
 </script><!-- kp-binder-safe-load-save-v1 -->
 <div id="kpSafetyModal" hidden style="position:fixed;inset:0;z-index:99999;background:#0009;padding:4vh 4vw;overflow:auto"><div style="max-width:760px;margin:auto;background:var(--panel,#fff);color:var(--text,#222);border-radius:14px;padding:18px;box-shadow:0 20px 60px #0008"><h2 style="margin-top:0">保存前プレビュー</h2><div id="kpSafetyReason" class="muted-note"></div><div id="kpSafetySummary" style="margin:12px 0"></div><details><summary>シーン一覧</summary><div id="kpSafetyScenes" style="margin-top:8px"></div></details><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button type="button" id="kpSafetyCancel" class="secondary">保存しない</button><button type="button" id="kpSafetyConfirm">確認して保存</button></div></div></div></body></html>
+
