@@ -41,7 +41,8 @@ main>.wrap:last-child:not(.share-page),main .wrap.directory-page,main .wrap.libr
 }
 main>.wrap:last-child:not(.share-page)::before,main .wrap.directory-page::before,main .wrap.library-page::before{
   content:"";position:absolute;left:21px;top:22px;bottom:22px;width:15px;
-  background:radial-gradient(circle at center,#090b0e 0 5px,#76643f 5.5px 6.5px,transparent 7px) center top/15px 52px repeat-y;
+  background-image:radial-gradient(circle at center,#090b0e 0 5px,#76643f 5.5px 6.5px,transparent 7px);
+  background-position:center top;background-size:15px 52px;background-repeat:no-repeat round;
   pointer-events:none;opacity:.9;
 }
 main>.wrap:last-child:not(.share-page)::after,main .wrap.directory-page::after,main .wrap.library-page::after{
@@ -88,7 +89,7 @@ html[data-theme="light"] main>.wrap:last-child:not(.share-page),html[data-theme=
   --binder-sheet:#fbfaf6;--binder-ink:#24221e;--binder-rule:#d8d1c3;
   background:#fbfaf6!important;color:#24221e!important;border-color:#ad9160!important;box-shadow:0 12px 30px rgba(55,45,28,.12)
 }
-html[data-theme="light"] main>.wrap:last-child:not(.share-page)::before{background:radial-gradient(circle at center,#e9e5dc 0 5px,#a78954 5.5px 6.5px,transparent 7px) center top/15px 52px repeat-y}
+html[data-theme="light"] main>.wrap:last-child:not(.share-page)::before{background-image:radial-gradient(circle at center,#e9e5dc 0 5px,#a78954 5.5px 6.5px,transparent 7px)}
 html[data-theme="light"] .share-manage-page .share-manage-group{background:#f6f3ec!important;color:#24221e!important;border-color:#c9c2b5!important}
 html[data-theme="light"] .share-manage-page .share-manage-group[open]>summary{background:#f1eadc!important;border-bottom-color:#b89a62!important}
 html[data-theme="light"] .share-manage-page .share-manage-row{background:transparent!important;color:#24221e!important;border-color:#d3cdc1!important}
@@ -133,7 +134,7 @@ body.home-page #workLogPanel>h2{padding-left:10px;border-left:3px solid var(--ac
 body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
 @media(max-width:700px){
   main>.wrap:last-child:not(.share-page),main .wrap.directory-page,main .wrap.library-page{width:min(100% - 16px,1120px);padding:18px 12px 34px 28px}
-  main>.wrap:last-child:not(.share-page)::before,main .wrap.directory-page::before,main .wrap.library-page::before{left:7px;width:12px;background-size:12px 48px}
+  main>.wrap:last-child:not(.share-page)::before,main .wrap.directory-page::before,main .wrap.library-page::before{left:6px;width:15px;background-size:15px 48px}
   main>.wrap:last-child:not(.share-page)::after,main .wrap.directory-page::after,main .wrap.library-page::after{left:23px}
   body.home-page .home-guide-cast{min-height:170px}body.home-page .home-guide-member .home-guide-art{height:190px}body.home-page .home-guide-line,body.home-page .home-guide-actions{width:min(720px,94%)}
   .sakumeru-tour{left:10px;right:10px;bottom:56px;width:auto}.sakumeru-tour-inner{grid-template-columns:1fr}.sakumeru-tour-figure{justify-self:center}.sakumeru-tour-figure img{width:70px;height:88px}
@@ -182,8 +183,18 @@ html body [data-sheet-theme]:not([data-sheet-theme="standard"]){
 
 /* HOME favorite-PC balance: a slightly wider character page with room for future stationery layers. */
 @media(min-width:861px){
-  body.home-page .home-dashboard .home-guide-cast{width:100%;max-width:480px;min-height:300px;gap:18px}
-  body.home-page .home-dashboard .home-guide-member .home-guide-art{height:clamp(310px,26vw,340px)}
+  body.home-page .home-dashboard .home-guide-cast{width:100%;max-width:640px;min-height:370px;gap:22px}
+  body.home-page .home-dashboard .home-guide-member{max-width:320px}
+  body.home-page .home-dashboard .home-guide-member .home-guide-art{height:clamp(370px,31vw,400px)}
   body.home-page .home-dashboard .home-guide-member figcaption{margin-top:6px}
-  body.home-page .home-dashboard .home-guide-line{width:min(430px,86%);margin-top:16px}
+  body.home-page .home-dashboard .home-guide-line{width:min(480px,86%);margin-top:12px}
+  body.home-page .home-dashboard #homeGuide .home-guide-character{min-height:100%}
+  body.home-page .home-dashboard #homeGuide .home-guide-actions{margin-top:auto;margin-bottom:0}
+  body.home-page .home-dashboard-right>.home-call-guide{justify-content:flex-end;flex-wrap:wrap}
+}
+
+@media(min-width:861px) and (max-width:1050px){
+  body.home-page .home-dashboard-right .home-today-row,
+  body.home-page .home-dashboard-right .work-summary{grid-template-columns:minmax(0,1fr)}
+  body.home-page .home-dashboard-right .home-today-action{justify-self:start}
 }
