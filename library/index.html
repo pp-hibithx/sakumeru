@@ -3068,8 +3068,17 @@ function xReportHtml(x){
  return `<details class="lib-x-report"${text?"":" open"}><summary>卓報告${link?` ／ ${link}`:""}</summary>${text?`<div class="lib-child-note">${esc(text).replace(/\n/g,"<br>")}</div>`:""}</details>`;
 }
 
+function participantDisplayPriority(row){
+ const role=String(row?.role||"PL").trim().toUpperCase();
+ if(["KP","GM","DL"].includes(role))return 0;
+ if(["SKP","SUBKP","SUBGM","サブ進行役"].includes(role))return 1;
+ return 2;
+}
+function sortParticipantRowsForDisplay(rows){
+ return (Array.isArray(rows)?rows:[]).map((row,index)=>({row,index})).sort((a,b)=>participantDisplayPriority(a.row)-participantDisplayPriority(b.row)||a.index-b.index).map(v=>v.row);
+}
 function participantHtml(x){
- const allRows=rowsFromRecord(x);
+ const allRows=sortParticipantRowsForDisplay(rowsFromRecord(x));
  const cfg=facilitatorConfig(x);
 
  // 名前を残さない/削除済みの参加者も「参加枠」として数える。
@@ -3214,10 +3223,10 @@ function runRosterDisplayHtml(g,r,context){
    const cached=getRunRoster(r.id);if(cached){participants=cached.participants||[];selfPcs=cached.selfPcs||[];selfRole=cached.role||"PL";source=cached}
  }
  const selfName=localStorage.getItem("39x2_self_sns_name_v1")||"自分";
- const rows=dedupeRunRosterRows([
+ const rows=sortParticipantRowsForDisplay(dedupeRunRosterRows([
    ...selfPcs.map(pc=>({...pc,role:selfRole,plName:selfName,playerId:"",__self:true})),
    ...participants.map(row=>({...row,__self:false}))
- ]);
+ ]));
  if(!rows.length)return "";
  const personKeys=new Set(rows.map(row=>row.__self?"self":String(row.playerId||"")||`guest:${String(row.plName||"").trim()}`).filter(Boolean));
  const rowHtml=row=>{
