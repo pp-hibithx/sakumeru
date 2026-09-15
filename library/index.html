@@ -665,13 +665,12 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .participant-person>.participant-field-wrap{grid-column:2;grid-row:1}
 .participant-person>.participant-remove{grid-column:4;grid-row:1}
 .participant-pcs{display:grid;grid-column:3;grid-row:1 / span 2;gap:5px;margin:0;min-width:0}
-.participant-pc-row{display:grid;grid-template-columns:minmax(96px,.65fr) minmax(150px,1.35fr) 32px;gap:6px;align-items:start;min-width:0}
+.participant-pc-row{display:grid;grid-template-columns:minmax(96px,.65fr) minmax(150px,1.35fr);gap:6px;align-items:start;min-width:0}
 .participant-pc-add{grid-column:3;grid-row:2;margin:0;width:max-content;padding:5px 9px}
-.participant-remove,.participant-pc-remove{
+.participant-remove{
  width:32px!important;height:32px;padding:0!important;margin:0!important;
- display:grid;place-items:center;font-size:0;align-self:start!important;
+ display:grid;place-items:center;font-size:18px!important;line-height:1;align-self:start!important;
 }
-.participant-remove::after,.participant-pc-remove::after{content:"×";font-size:18px;line-height:1}
 @media(max-width:900px){
  .participant-row{grid-template-columns:82px minmax(150px,.85fr) minmax(220px,1.15fr) 34px}
 }
@@ -689,7 +688,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
  .participant-person>.participant-field-wrap{grid-column:1;grid-row:2}
  .participant-person>.participant-remove{grid-column:2;grid-row:1}
  .participant-pcs{grid-column:1 / -1;grid-row:3}
- .participant-pc-row{grid-template-columns:minmax(86px,.65fr) minmax(0,1.35fr) 32px}
+ .participant-pc-row{grid-template-columns:minmax(86px,.65fr) minmax(0,1.35fr)}
  .participant-pc-add{grid-column:1 / -1;grid-row:4}
 }
 </style>
@@ -2201,7 +2200,7 @@ function addParticipantRow(v={},opts={}){
  row.innerHTML=`<div class="participant-person">
    <div><label>役割</label><select class="partRole">${roleOptions(role,cfg.label)}</select></div>
    <div class="participant-field-wrap"><label>参加者</label><input class="partPl" value="${esc(pl)}" placeholder="参加者名を検索・選択（よく同卓する人を優先）" autocomplete="off"><div class="participant-picker-results partPlResults"></div></div>
-   <button type="button" class="danger participant-remove" aria-label="参加者を削除" title="参加者を削除">参加者を削除</button>
+   <button type="button" class="danger participant-remove" aria-label="参加者を削除" title="参加者を削除">×</button>
  </div><div class="participant-pcs"></div><button type="button" class="participant-pc-add">＋ PC追加</button>`;
  const plInput=row.querySelector(".partPl"),plResults=row.querySelector(".partPlResults"),pcBox=row.querySelector(".participant-pcs");
  function participantPlayCount(player){
@@ -2248,13 +2247,11 @@ function addParticipantRow(v={},opts={}){
  function addPc(pc={}){
    const pr=document.createElement("div");pr.className="participant-pc-row";pr.dataset.pcId=String(pc.pcId||"");
    pr.innerHTML=`<div><label>HO / 役割</label><input class="partPcHo" value="${esc(pc.ho||"")}" placeholder="HO1 / KPC など"></div>
-   <div class="participant-field-wrap"><label>PC</label><input class="partPcName" value="${esc(pc.pcName||"")}" placeholder="PC名を検索・入力" autocomplete="off"><div class="participant-picker-results partPcResults"></div></div>
-   <button type="button" class="danger participant-pc-remove" aria-label="このPCを削除" title="このPCを削除">削除</button>`;
+   <div class="participant-field-wrap"><label>PC</label><input class="partPcName" value="${esc(pc.pcName||"")}" placeholder="PC名を検索・入力" autocomplete="off"><div class="participant-picker-results partPcResults"></div></div>`;
    pcBox.appendChild(pr);
    const inp=pr.querySelector(".partPcName"),res=pr.querySelector(".partPcResults");
    const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),items=playerPcCandidates().filter(pc=>!term||pc.name.normalize("NFKC").toLowerCase().includes(term));if(items.length){res.innerHTML=items.map(pc=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(pc.name)}" data-pc-id="${esc(pc.id)}">${esc(pc.name)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;pr.dataset.pcId=b.dataset.pcId||"";res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;pr.dataset.pcId="";res.classList.remove("open")})};
    inp.addEventListener("focus",render);inp.addEventListener("input",()=>{pr.dataset.pcId="";render()});
-   pr.querySelector(".participant-pc-remove").onclick=()=>pr.remove();
  }
  const pcs0=Array.isArray(v.pcs)?v.pcs:((v.pcName||v.ho||v.pcId)?[{pcName:v.pcName||"",ho:v.ho||"",pcId:v.pcId||""}]:[]);
  pcs0.forEach(addPc);
