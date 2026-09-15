@@ -800,6 +800,9 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-toolbar.player-toolbar input::placeholder,.player-section input::placeholder,.player-section textarea::placeholder{color:color-mix(in srgb,currentColor 62%,transparent);opacity:1}
 .lib-toolbar.player-toolbar input:focus,.lib-toolbar.player-toolbar select:focus,.player-section input:focus,.player-section select:focus,.player-section textarea:focus{border-color:var(--accent);outline:3px solid color-mix(in srgb,var(--accent) 34%,transparent);outline-offset:1px}
 .library-directory-grid{gap:12px}
+.player-directory-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.player-detail-management{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:4px;padding-top:14px;border-top:1px solid var(--line)}
+.player-detail-management button{width:auto}
 .library-dir-card{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 3px 10px rgba(0,0,0,.1);transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}
 .library-dir-card:hover{border-color:color-mix(in srgb,var(--accent) 68%,currentColor);box-shadow:0 6px 16px rgba(0,0,0,.18);transform:translateY(-1px)}
 .player-dir-card-main{padding:2px;border-radius:8px;outline:none}
@@ -830,6 +833,9 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .player-rel-node.focus circle{fill:color-mix(in srgb,var(--accent) 13%,var(--panel));stroke-width:4}.player-rel-detail-card{border:2px solid color-mix(in srgb,currentColor 27%,var(--line));background:color-mix(in srgb,var(--panel) 92%,currentColor 3%)}
 .danger,[data-player-delete]{border-color:color-mix(in srgb,#dc5664 72%,var(--line))!important;color:color-mix(in srgb,#ff8e98 85%,currentColor)!important}
 @media(max-width:620px){.library-page{gap:14px}.lib-panel{padding:12px}.lib-toolbar.player-toolbar{padding:10px}.library-dir-card{transform:none!important}.player-dir-actions button{flex:1}.player-detail-header{padding:13px;border-width:2px;border-left-width:5px}.player-detail-tabs{padding-inline:3px}.player-tab-panel{padding:12px}.player-pc-card-actions{display:grid}.player-pc-card-actions button,.player-pc-card-actions .link{width:100%}}
+@media(max-width:900px){.player-directory-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.player-directory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.player-directory-grid{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head>
@@ -3936,6 +3942,10 @@ function renderPlayerDetail(player){
    </section>`:""}
 
    ${playerDetailTab==="relations"?`<section class="player-tab-panel player-section player-relation-inline"><div id="playerRelationInlineHost"></div></section>`:""}
+   <div class="player-detail-management" aria-label="PLAYER管理">
+     <button type="button" data-player-archive="${esc(player.id)}" data-archived="${player.archived?"1":"0"}">${player.archived?"アーカイブから戻す":"アーカイブ"}</button>
+     <button type="button" class="danger" data-player-delete="${esc(player.id)}">削除</button>
+   </div>
    </div>`;
 
  q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");u.searchParams.delete("tab");window.history.pushState(null,"",u);render()};
@@ -3968,6 +3978,8 @@ function renderPlayerDetail(player){
    renderPlayerDetail(player);
  };
  document.querySelectorAll("[data-remove-external]").forEach(b=>b.onclick=()=>{removeExternalPlayed(player.id,b.dataset.removeExternal);renderPlayerDetail(player)});
+ document.querySelector("[data-player-archive]")?.addEventListener("click",b=>setPlayerArchived(b.currentTarget.dataset.playerArchive,b.currentTarget.dataset.archived!=="1"));
+ document.querySelector("[data-player-delete]")?.addEventListener("click",b=>deletePlayerFromDirectory(b.currentTarget.dataset.playerDelete));
 }
 
 function playerRecordSystem(v){
@@ -4003,7 +4015,7 @@ function renderPlayerView(){
 
  q("summary").textContent=`同卓者 ${rows.length}人`;
  q("list").classList.remove("library-grid");
- q("list").innerHTML=`<div style="margin-bottom:10px"><button type="button" id="openPlayerRelationSelf" class="player-rel-open">自分を中心に同卓者関係図を見る</button></div><div class="library-directory-grid">${rows.length?rows.map(({x,st,systems})=>`<article class="library-dir-card">
+ q("list").innerHTML=`<div style="margin-bottom:10px"><button type="button" id="openPlayerRelationSelf" class="player-rel-open">自分を中心に同卓者関係図を見る</button></div><div class="library-directory-grid player-directory-grid">${rows.length?rows.map(({x,st,systems})=>`<article class="library-dir-card">
    <div class="player-dir-card-main" data-player-focus="${esc(x.id)}" tabindex="0">
      <div class="library-dir-title">${esc(x.name)}</div>
      <div class="library-dir-meta">公開名：${esc(x.publicName||x.name)}</div>${x.xAccount?`<div class="library-dir-meta">X：${esc(x.xAccount)}</div>`:""}
@@ -4011,18 +4023,12 @@ function renderPlayerView(){
      <div class="library-dir-meta">同卓 ${st.count}シナリオ${st.first?` ／ 初同卓 ${esc(st.first)}`:""}${st.last?` ／ 最終 ${esc(st.last)}`:""}</div>
      ${x.archived?`<div class="player-archived-mark">アーカイブ済み</div>`:""}
    </div>
-   <div class="player-dir-actions">
-     <button type="button" data-player-archive="${esc(x.id)}" data-archived="${x.archived?"1":"0"}">${x.archived?"アーカイブから戻す":"アーカイブ"}</button>
-     <button type="button" class="danger" data-player-delete="${esc(x.id)}">削除</button>
-   </div>
  </article>`).join(""):'<div class="empty">該当する同卓者がいません。</div>'}</div>`;
  q("openPlayerRelationSelf").onclick=()=>openPlayerRelationshipGraph(PLAYER_REL_SELF_ID);
  document.querySelectorAll("[data-player-focus]").forEach(card=>{
    const open=()=>{focusedPlayerId=card.dataset.playerFocus;playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.set("focus",focusedPlayerId);u.searchParams.set("tab",playerDetailTab);window.history.pushState(null,"",u);render()};
    card.onclick=open;card.onkeydown=e=>{if(e.key==="Enter")open()};
  });
- document.querySelectorAll("[data-player-archive]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();setPlayerArchived(b.dataset.playerArchive,b.dataset.archived!=="1")});
- document.querySelectorAll("[data-player-delete]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();deletePlayerFromDirectory(b.dataset.playerDelete)});
 }
 function syncLibraryView(){
  document.querySelectorAll("[data-library-view]").forEach(b=>b.classList.toggle("active",b.dataset.libraryView===libraryView));
