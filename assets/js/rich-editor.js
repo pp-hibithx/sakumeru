@@ -123,6 +123,18 @@ function execCommand(editor,command,showUI=false,value=null){
 function explicitHighlightNodes(editor){
  return [...editor.querySelectorAll("mark,[style]")].filter(node=>node.tagName==="MARK"||!!node.style.backgroundColor);
 }
+function snapshotExplicitHighlights(editor){
+ const nodes=explicitHighlightNodes(editor);if(!nodes.length)return [];
+ const targets=new Set(nodes),starts=new Map();let offset=0;
+ const walk=node=>{
+  if(node.nodeType===Node.TEXT_NODE){offset+=node.nodeValue?.length||0;return}
+  if(node.nodeType!==Node.ELEMENT_NODE)return;
+  if(targets.has(node))starts.set(node,offset);
+  node.childNodes.forEach(walk);
+ };
+ editor.childNodes.forEach(walk);
+ return nodes.map(node=>({node,source:node.cloneNode(false),text:String(node.textContent||""),start:starts.get(node)||0}));
+}
 function longestSharedBounds(before,after){
  const a=[...String(before||"")],b=[...String(after||"")];
  if(!a.length||!b.length)return null;
@@ -167,10 +179,11 @@ function clearExplicitHighlight(node){
 function restoreHighlightsAfterDelete(editor,snapshots){
  const originalNodes=new Set(snapshots.map(item=>item.node));
  explicitHighlightNodes(editor).filter(node=>!originalNodes.has(node)).forEach(clearExplicitHighlight);
+ let fullText=null;
  snapshots.forEach(item=>{
   const node=item.node;
   if(!node.isConnected||!editor.contains(node)){
-   const full=String(editor.textContent||"");let found=-1,at=full.indexOf(item.text);
+   const full=fullText??=String(editor.textContent||"");let found=-1,at=full.indexOf(item.text);
    while(at>=0){if(found<0||Math.abs(at-item.start)<Math.abs(found-item.start))found=at;at=full.indexOf(item.text,at+1)}
    if(found>=0)applyHighlightRange(editor,found,found+item.text.length,item.source);
    return;
@@ -294,7 +307,7 @@ function create(options={}){
  let deleteHighlightSnapshot=null;
  editor.addEventListener("beforeinput",event=>{
   deleteHighlightSnapshot=String(event.inputType||"").startsWith("delete")
-   ?explicitHighlightNodes(editor).map(node=>{const prefix=document.createRange();prefix.selectNodeContents(editor);prefix.setEndBefore(node);return {node,source:node.cloneNode(false),text:String(node.textContent||""),start:prefix.toString().length}})
+   ?snapshotExplicitHighlights(editor)
    :null;
  });
  editor.addEventListener("keyup",saveRange);editor.addEventListener("mouseup",saveRange);editor.addEventListener("blur",saveRange);
