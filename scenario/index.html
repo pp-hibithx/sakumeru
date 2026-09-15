@@ -27,6 +27,7 @@
 .sc-tools{display:flex;gap:6px;flex-wrap:wrap}.sc-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap}.sc-toolbar-main{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.sc-toolbar-main>div{min-width:0}.sc-search{width:220px}.sc-filter{width:150px}.sc-scope{width:180px}.sc-number-filter{width:92px}.sc-sort{width:170px}.sc-tag-filter{width:140px}.sc-toolbar button{width:auto}
 .scenario-save-error{display:block;flex-basis:100%;color:#ffb6b6;font-weight:700;line-height:1.6}
 .sc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
+.sc-list-more{grid-column:1/-1;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.sc-list-more button{width:auto}
 .sc-card{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel);min-width:0;transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease;cursor:pointer}
 .sc-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.16)}
 .sc-card:has(.sc-menu.open){overflow:visible;z-index:4}
@@ -451,6 +452,8 @@ function persistScenariosVerified(next,item){
 }
 const persist=()=>TRPG39.saveScenarios(data);
 let systemTabFilter="all";
+const OWN_SCENARIO_PAGE_SIZE=20;
+let ownScenarioDisplayLimit=OWN_SCENARIO_PAGE_SIZE;
 
 function systemTabKey(value){
  const raw=String(value||"").trim();
@@ -499,6 +502,7 @@ function renderSystemTabs(){
 
  box.querySelectorAll("[data-system-tab]").forEach(b=>b.onclick=()=>{
    systemTabFilter=b.dataset.systemTab||"all";
+   ownScenarioDisplayLimit=OWN_SCENARIO_PAGE_SIZE;
    render();
  });
 }
@@ -1630,8 +1634,10 @@ function render(){
  saveScenarioCategoryState();
  if(!ownSection.open){renderFriendResults();return;}
  ownSection.dataset.rendered="true";
- const cards=xs.map(x=>`<article class="sc-card" data-open="${x.id}" tabindex="0"><div class="sc-thumb-wrap">${scenarioRepresentativeHtml(x,"card")}</div><div class="sc-menu-wrap"><button class="sc-menu-btn" data-menu="${x.id}" type="button" aria-label="メニュー">⋯</button><div class="sc-menu" data-menu-panel="${x.id}">${x.url?`<a target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布ページ</a>`:""}<button data-record="${x.id}" type="button">LIBRARYに記録</button><button data-library="${x.id}" type="button">過去の開催記録</button><button data-prep="${x.id}" type="button">準備チェック</button><button data-schedule="${x.id}" type="button">卓予定を作る</button><button data-edit="${x.id}" type="button">編集</button><button data-archive="${x.id}" type="button">${x.archived?"アーカイブから戻す":"アーカイブ"}</button><button class="danger" data-del="${x.id}" type="button">削除</button></div></div><div class="sc-body"><div class="sc-head"><h3>${esc(x.title)}</h3></div>${x.system?`<div class="small sc-system">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted sc-author sc-author-top">${esc(x.author)}</div>`:""}<div class="sc-meta">${pubBadge(x)}${rangeText(x.playersMin,x.playersMax,"人")?`<span class="badge">${rangeText(x.playersMin,x.playersMax,"人")}</span>`:""}${rangeText(x.hoursMin,x.hoursMax,"h")?`<span class="badge">${rangeText(x.hoursMin,x.hoursMax,"h")}</span>`:""}${Object.entries(flags).filter(([k])=>x.flags&&x.flags[k]).map(([,v])=>`<span class="badge">${v}</span>`).join("")}${(x.tags||[]).slice(0,3).map(t=>`<span class="badge">#${esc(t)}</span>`).join("")}</div>${(()=>{const owners=friendOwnersForScenario(x);return owners.length?`<div class="small muted" style="margin-top:5px">友人も所持：${owners.map(esc).join("、")}</div>`:""})()}</div></article>`).join("");
- q("list").innerHTML=cards+`<button id="addCard" class="sc-add-card" type="button"><span class="sc-add-plus">＋</span><span>追加</span></button>`;
+ const visibleXs=xs.slice(0,ownScenarioDisplayLimit);
+ const cards=visibleXs.map(x=>`<article class="sc-card" data-open="${x.id}" tabindex="0"><div class="sc-thumb-wrap">${scenarioRepresentativeHtml(x,"card")}</div><div class="sc-menu-wrap"><button class="sc-menu-btn" data-menu="${x.id}" type="button" aria-label="メニュー">⋯</button><div class="sc-menu" data-menu-panel="${x.id}">${x.url?`<a target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布ページ</a>`:""}<button data-record="${x.id}" type="button">LIBRARYに記録</button><button data-library="${x.id}" type="button">過去の開催記録</button><button data-prep="${x.id}" type="button">準備チェック</button><button data-schedule="${x.id}" type="button">卓予定を作る</button><button data-edit="${x.id}" type="button">編集</button><button data-archive="${x.id}" type="button">${x.archived?"アーカイブから戻す":"アーカイブ"}</button><button class="danger" data-del="${x.id}" type="button">削除</button></div></div><div class="sc-body"><div class="sc-head"><h3>${esc(x.title)}</h3></div>${x.system?`<div class="small sc-system">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted sc-author sc-author-top">${esc(x.author)}</div>`:""}<div class="sc-meta">${pubBadge(x)}${rangeText(x.playersMin,x.playersMax,"人")?`<span class="badge">${rangeText(x.playersMin,x.playersMax,"人")}</span>`:""}${rangeText(x.hoursMin,x.hoursMax,"h")?`<span class="badge">${rangeText(x.hoursMin,x.hoursMax,"h")}</span>`:""}${Object.entries(flags).filter(([k])=>x.flags&&x.flags[k]).map(([,v])=>`<span class="badge">${v}</span>`).join("")}${(x.tags||[]).slice(0,3).map(t=>`<span class="badge">#${esc(t)}</span>`).join("")}</div>${(()=>{const owners=friendOwnersForScenario(x);return owners.length?`<div class="small muted" style="margin-top:5px">友人も所持：${owners.map(esc).join("、")}</div>`:""})()}</div></article>`).join("");
+ const more=visibleXs.length<xs.length?`<div class="sc-list-more"><button id="showMoreScenarios" type="button">さらに20件表示</button><button id="showAllScenarios" type="button">すべて表示</button></div>`:"";
+ q("list").innerHTML=cards+`<button id="addCard" class="sc-add-card" type="button"><span class="sc-add-plus">＋</span><span>追加</span></button>`+more;
  q("list").querySelectorAll("[data-open]").forEach(c=>{c.onclick=e=>{if(e.target.closest("button,a,.sc-menu"))return;scenarioCategoryState.lastCard=c.dataset.open;saveScenarioCategoryState();detail(c.dataset.open)};c.onkeydown=e=>{if(e.key==="Enter"){scenarioCategoryState.lastCard=c.dataset.open;saveScenarioCategoryState();detail(c.dataset.open)}}});
  q("list").querySelectorAll("[data-menu]").forEach(b=>b.onclick=e=>{e.stopPropagation();const panel=q("list").querySelector(`[data-menu-panel="${b.dataset.menu}"]`);q("list").querySelectorAll(".sc-menu.open").forEach(m=>{if(m!==panel)m.classList.remove("open")});panel.classList.toggle("open")});
  q("list").querySelectorAll("[data-record]").forEach(b=>b.onclick=e=>{e.stopPropagation();recordLibrary(b.dataset.record)});q("list").querySelectorAll("[data-library]").forEach(b=>b.onclick=e=>{e.stopPropagation();library(b.dataset.library)});q("list").querySelectorAll("[data-prep]").forEach(b=>b.onclick=e=>{e.stopPropagation();prep(b.dataset.prep)});q("list").querySelectorAll("[data-schedule]").forEach(b=>b.onclick=e=>{e.stopPropagation();schedule(b.dataset.schedule)});
@@ -1639,6 +1645,8 @@ function render(){
  q("list").querySelectorAll("[data-archive]").forEach(b=>b.onclick=e=>{e.stopPropagation();toggleArchive(b.dataset.archive)});
  q("list").querySelectorAll("[data-del]").forEach(b=>b.onclick=e=>{e.stopPropagation();del(b.dataset.del)});
  q("addCard").onclick=openForm;
+ q("showMoreScenarios")?.addEventListener("click",()=>{ownScenarioDisplayLimit+=OWN_SCENARIO_PAGE_SIZE;render()});
+ q("showAllScenarios")?.addEventListener("click",()=>{ownScenarioDisplayLimit=xs.length;render()});
  renderFriendResults();
 }
 q("system").addEventListener("input",updateFacilitatorUI);q("facilitatorPresence").onchange=updateFacilitatorUI;q("facilitatorTermMode").onchange=updateFacilitatorUI;q("facilitatorTermCustom").addEventListener("input",updateFacilitatorUI);
@@ -1670,7 +1678,8 @@ function onScenarioCategoryToggle(section,key,others){
 draftScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(draftScenarioSection,"draftOpen",[ownScenarioSection,friendScenarioSection]));
 ownScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(ownScenarioSection,"ownOpen",[draftScenarioSection,friendScenarioSection]));
 friendScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(friendScenarioSection,"friendOpen",[draftScenarioSection,ownScenarioSection]));
-q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=render;q("searchScope").onchange=render;q("filter").onchange=render;q("playersFilter").oninput=render;q("hoursFilter").oninput=render;q("tagFilter").onchange=render;q("archiveFilter").onchange=render;q("sort").onchange=render;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
+const resetOwnScenarioLimitAndRender=()=>{ownScenarioDisplayLimit=OWN_SCENARIO_PAGE_SIZE;render()};
+q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioLimitAndRender;q("searchScope").onchange=resetOwnScenarioLimitAndRender;q("filter").onchange=resetOwnScenarioLimitAndRender;q("playersFilter").oninput=resetOwnScenarioLimitAndRender;q("hoursFilter").oninput=resetOwnScenarioLimitAndRender;q("tagFilter").onchange=resetOwnScenarioLimitAndRender;q("archiveFilter").onchange=resetOwnScenarioLimitAndRender;q("sort").onchange=resetOwnScenarioLimitAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
 </body></html>
