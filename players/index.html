@@ -3935,10 +3935,10 @@ function renderPlayerDetail(player){
            ${pc.reading?`<div class="player-pc-card-reading">${esc(pc.reading)}</div>`:""}
            ${details?`<div class="player-pc-card-meta">${esc(details)}</div>`:""}
            <div class="player-pc-card-meta">使用した卓 ${item.count}卓${item.last?` ／ 最終使用 ${esc(item.last)}`:""}</div>
-           <div class="player-pc-card-actions"><button type="button" data-player-pc-detail="${esc(pc.id)}">PC詳細を見る</button><button type="button" data-player-pc-edit="${esc(pc.id)}">PC情報を編集</button><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
+           <div class="player-pc-card-actions"><a class="link" href="../pcs/index.html?focus=${encodeURIComponent(pc.id)}&returnPlayerId=${encodeURIComponent(player.id)}">PC詳細を見る</a><button type="button" data-player-pc-edit="${esc(pc.id)}">PC情報を編集</button><a class="link" href="../library/index.html?pcId=${encodeURIComponent(pc.id)}">このPCの卓記録を見る</a></div>
          </div>
        </article>`;
-     }).join(""):`<div class="player-pc-empty"><div>このPLAYERが所有するPCは登録されていません。</div><a class="link" href="../pcs/index.html">PCページを見る</a></div>`}</div><div id="playerPcLazyDetail" class="player-pc-lazy-host" aria-live="polite"></div>
+     }).join(""):`<div class="player-pc-empty"><div>このPLAYERが所有するPCは登録されていません。</div><a class="link" href="../pcs/index.html">PCページを見る</a></div>`}</div>
    </section>`:""}
 
    ${playerDetailTab==="relations"?`<section class="player-tab-panel player-section player-relation-inline"><div id="playerRelationInlineHost"></div></section>`:""}
@@ -3951,15 +3951,9 @@ function renderPlayerDetail(player){
  q("backToPlayers").onclick=()=>{focusedPlayerId="";playerDetailTab="overview";playerDetailRoleFilter="all";playerDetailSystemFilter="all";playerDetailPcFilter="all";const u=new URL(location.href);u.searchParams.delete("focus");u.searchParams.delete("tab");window.history.pushState(null,"",u);render()};
  document.querySelectorAll("[data-player-tab]").forEach(button=>button.onclick=()=>{const next=button.dataset.playerTab;if(!PLAYER_DETAIL_TABS.has(next)||next===playerDetailTab)return;playerDetailTab=next;const u=new URL(location.href);u.searchParams.set("focus",player.id);u.searchParams.set("tab",next);window.history.pushState(null,"",u);renderPlayerDetail(player)});
  if(playerDetailTab==="relations")mountInlinePlayerRelationshipGraph(player.id);
- document.querySelectorAll("[data-player-pc-detail]").forEach(button=>button.onclick=()=>{
-   const host=q("playerPcLazyDetail"),item=pcsForPlayer.find(v=>String(v.pc?.id||"")===String(button.dataset.playerPcDetail||""));if(!host||!item)return;
-   const returnY=window.scrollY;host.innerHTML=playerPcDetailViewHtml(player,item);host.scrollIntoView({behavior:"smooth",block:"start"});
-   host.querySelector('[data-player-pc-detail-close]').onclick=()=>{host.innerHTML="";const u=new URL(location.href);u.searchParams.delete("pcId");history.replaceState(null,"",u);window.scrollTo({top:returnY,behavior:"smooth"})};
-   const u=new URL(location.href);u.searchParams.set("focus",player.id);u.searchParams.set("tab","pcs");u.searchParams.set("pcId",button.dataset.playerPcDetail);history.replaceState(null,"",u);
- });
  if(playerDetailTab==="pcs"){
-   const requestedPcId=new URLSearchParams(location.search).get("pcId")||"",button=document.querySelector(`[data-player-pc-detail="${CSS.escape(requestedPcId)}"]`);
-   if(button)requestAnimationFrame(()=>button.click());
+   const requestedPcId=new URLSearchParams(location.search).get("pcId")||"",item=pcsForPlayer.find(v=>String(v.pc?.id||"")===String(requestedPcId));
+   if(item)location.replace(`../pcs/index.html?focus=${encodeURIComponent(item.pc.id)}&returnPlayerId=${encodeURIComponent(player.id)}`);
  }
  if(q("addRecordForPlayer"))q("addRecordForPlayer").onclick=()=>{
    const params=new URLSearchParams({new:"1",participantId:String(player.id||"")});
