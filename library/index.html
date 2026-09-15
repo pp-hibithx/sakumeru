@@ -119,6 +119,13 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-run-card-body{padding:12px}
 .lib-run-card-title{font-weight:700;font-size:1rem}
 .lib-run-card-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.lib-run-roster{margin-top:9px;border-top:1px solid color-mix(in srgb,var(--line) 76%,transparent)}
+.lib-run-roster>summary{display:flex;align-items:center;gap:7px;min-height:38px;padding:7px 1px;cursor:pointer;list-style:none;font-size:13px;font-weight:750}
+.lib-run-roster>summary::-webkit-details-marker{display:none}.lib-run-roster>summary::before{content:"▶";font-size:10px;color:var(--accent)}.lib-run-roster[open]>summary::before{content:"▼"}
+.lib-run-roster-count{margin-left:auto;color:var(--muted);font-weight:600}.lib-run-roster-body{display:grid;gap:0;padding:2px 0 5px}
+.lib-run-roster-row{display:grid;grid-template-columns:minmax(42px,max-content) minmax(0,1fr);gap:2px 8px;padding:6px 1px;border-top:1px solid color-mix(in srgb,var(--line) 48%,transparent);font-size:13px;line-height:1.5}
+.lib-run-roster-role{color:var(--accent);font-weight:800}.lib-run-roster-person,.lib-run-roster-detail{min-width:0;overflow-wrap:anywhere}.lib-run-roster-detail{grid-column:2;color:var(--muted)}.lib-run-roster-detail span+span::before{content:" ／ ";color:var(--line)}
+.lib-run-roster a{text-decoration:underline;text-underline-offset:2px}
 .lib-run-card-images{font-size:11px;color:var(--muted);margin-top:6px}
 .lib-run-card-thumb-wrap{position:relative}
 .lib-cover-adjust{position:absolute;right:8px;top:8px;width:auto;padding:5px 8px;font-size:11px;background:rgba(20,20,20,.72);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:7px;opacity:0;z-index:2}
@@ -3174,7 +3181,46 @@ function playFilterTabsHtml(){
 function bindPlayFilterTabs(){
  document.querySelectorAll("[data-play-filter]").forEach(b=>b.onclick=()=>{libraryPlayFilter=b.dataset.playFilter||"all";focusedRunId="";render()});
 }
-function runCardHtml(g,r){
+function createRunRosterDisplayContext(g){
+ const runIds=new Set((g.runs||[]).map(r=>String(r.id||"")).filter(id=>id&&id!=="legacy"));
+ const events=(TRPG39.loadEvents?.()||[]).filter(e=>runIds.has(String(e.runId||""))&&(!g.scenarioId||!e.scenarioId||String(e.scenarioId)===String(g.scenarioId)));
+ return {events,playerById:new Map((players||[]).map(p=>[String(p.id||""),p])),pcById:new Map((pcs||[]).map(pc=>[String(pc.id||""),pc]))};
+}
+function runRosterDisplayHtml(g,r,context){
+ const hasRoster=record=>rowsFromRecord(record).length||storedSelfPcRows(record).length||record?.pcId||record?.pcName||record?.selfHo;
+ const ranked=(r.items||[]).filter(hasRoster).slice().sort((a,b)=>{
+   const aScore=(sessionKindForRecord(a)==="main"?100:0)+rowsFromRecord(a).length+storedSelfPcRows(a).length;
+   const bScore=(sessionKindForRecord(b)==="main"?100:0)+rowsFromRecord(b).length+storedSelfPcRows(b).length;
+   return bScore-aScore||bySessionStart(a,b);
+ });
+ let source=ranked[0]||null,participants=source?rowsFromRecord(source):[],selfPcs=source?storedSelfPcRows(source):[],selfRole=source?.role||"PL";
+ if(!source){
+   const calendar=context.events.filter(e=>String(e.runId||"")===String(r.id||"")).sort((a,b)=>rowsFromRecord(b).length-rowsFromRecord(a).length);
+   source=calendar[0]||null;participants=source?rowsFromRecord(source):[];selfRole=source?.role||"PL";
+   selfPcs=source&&(source.pcId||source.pcName||source.selfHo)?[{pcId:source.pcId||"",pcName:source.pcName||"",ho:source.selfHo||""}]:[];
+ }
+ if(!source&&r.id&&r.id!=="legacy"){
+   const cached=getRunRoster(r.id);if(cached){participants=cached.participants||[];selfPcs=cached.selfPcs||[];selfRole=cached.role||"PL";source=cached}
+ }
+ const selfName=localStorage.getItem("39x2_self_sns_name_v1")||"自分";
+ const rows=dedupeRunRosterRows([
+   ...selfPcs.map(pc=>({...pc,role:selfRole,plName:selfName,playerId:"",__self:true})),
+   ...participants.map(row=>({...row,__self:false}))
+ ]);
+ if(!rows.length)return "";
+ const personKeys=new Set(rows.map(row=>row.__self?"self":String(row.playerId||"")||`guest:${String(row.plName||"").trim()}`).filter(Boolean));
+ const rowHtml=row=>{
+   const playerId=String(row.playerId||""),pcId=String(row.pcId||""),player=context.playerById.get(playerId),pc=context.pcById.get(pcId);
+   const personLabel=String(row.plName||player?.name||(row.__self?selfName:"参加者"));
+   const person=row.__self||!playerId?esc(personLabel):`<a href="../players/index.html?focus=${encodeURIComponent(playerId)}">${esc(personLabel)}</a>`;
+   const pcLabel=String(row.pcName||pc?.name||"");let pcHtml="";
+   if(pcLabel&&pcId){const ownerId=row.__self?"":String(pc?.ownerPlayerId||playerId||"");const href=ownerId?`../players/index.html?focus=${encodeURIComponent(ownerId)}&tab=pcs&pcId=${encodeURIComponent(pcId)}`:`../pcs/index.html?focus=${encodeURIComponent(pcId)}`;pcHtml=`<span>PC：<a href="${href}">${esc(pcLabel)}</a></span>`}
+   else if(pcLabel)pcHtml=`<span>PC：${esc(pcLabel)}</span>`;
+   return `<div class="lib-run-roster-row"><div class="lib-run-roster-role">${esc(String(row.role||"PL").toUpperCase())}</div><div class="lib-run-roster-person">${person}</div><div class="lib-run-roster-detail">${row.ho?`<span>HO／役割：${esc(row.ho)}</span>`:""}${pcHtml}</div></div>`;
+ };
+ return `<details class="lib-run-roster"><summary>参加者<span class="lib-run-roster-count">${personKeys.size}名</span></summary><div class="lib-run-roster-body">${rows.map(rowHtml).join("")}</div></details>`;
+}
+function runCardHtml(g,r,rosterContext){
  const images=[...new Set(r.items.flatMap(x=>x.imageUrls||[]).filter(Boolean))];
  const dates=r.items.map(x=>x.date).filter(Boolean).sort();
  const range=dates.length?(dates[0]+(dates.length>1&&dates.at(-1)!==dates[0]?`〜${dates.at(-1)}`:"")):"";
@@ -3185,6 +3231,7 @@ function runCardHtml(g,r){
    <div class="lib-run-card-body">
      <div class="lib-run-card-title-row"><div class="lib-run-card-title">${esc(r.label||"開催記録")}</div><button type="button" class="lib-run-label-edit" data-run-label-edit="${esc(r.id)}" data-run-label-current="${esc(r.label||"")}">名前を編集</button></div>
      <div class="lib-run-card-meta">${r.items.length}日${range?` ／ ${esc(range)}`:""}</div>
+     ${runRosterDisplayHtml(g,r,rosterContext)}
      ${xReportsForRun(r).length?`<div class="lib-run-card-images">卓報告 ${xReportsForRun(r).length}件</div>`:""}
      ${images.length?`<div class="lib-run-card-images">スクショ ${images.length}枚${images.length>1?` ／ ほか${images.length-1}枚`:""}</div><div class="lib-run-card-actions"><button type="button" data-thumb-run="${esc(r.id)}" data-thumb-scenario="${esc(g.scenarioId||"")}" data-thumb-title="${esc(g.title)}">${selected?"自動選択に戻す":"この陣をサムネにする"}</button></div>`:""}
    </div>
@@ -4490,6 +4537,7 @@ function runDetailHtml(g,r){
 }
 function focusedGroupHtml(g){
  const focusedRun=focusedRunId?(g.runs||[]).find(r=>r.id===focusedRunId):null;
+ const rosterContext=createRunRosterDisplayContext(g);
  return `<div class="lib-focused-header">
    <button id="libraryBackToGrid" type="button" class="lib-focused-back">← 一覧へ</button>
    <div class="lib-focused-title">${esc(g.title)}</div>
@@ -4503,7 +4551,7 @@ function focusedGroupHtml(g){
          <button type="button" id="mergeSelectedRuns">選んだ陣を同じ陣にまとめる</button>
        </div>
        <div class="lib-run-repair-note">同じ卓なのに日付ごとに別の陣になっている記録を2件以上選んで統合します。実際に別陣のものは選ばないでください。</div>
-     </div>`:""}<div class="lib-run-grid">${filteredRunsForGroup(g).map(r=>runCardHtml(g,r)).join("")}</div>`
+     </div>`:""}<div class="lib-run-grid">${filteredRunsForGroup(g).map(r=>runCardHtml(g,r,rosterContext)).join("")}</div>`
  }`;
 }
 function pcStats(name){
@@ -6395,8 +6443,8 @@ function render(){
    if(updateRunLabel(runId,label))render();
  });
  document.querySelectorAll("[data-run-focus]").forEach(card=>{
-     card.onclick=e=>{if(e.target.closest("[data-run-merge]"))return;focusedRunId=card.dataset.runFocus;render()};
-     card.onkeydown=e=>{if(e.key==="Enter"&&!e.target.closest("[data-run-merge]")){focusedRunId=card.dataset.runFocus;render()}};
+     card.onclick=e=>{if(e.target.closest("[data-run-merge],.lib-run-roster"))return;focusedRunId=card.dataset.runFocus;render()};
+     card.onkeydown=e=>{if(e.key==="Enter"&&!e.target.closest("[data-run-merge],.lib-run-roster")){focusedRunId=card.dataset.runFocus;render()}};
    });
    bindRunMergeRepair();
    bindCoverAdjustButtons();
