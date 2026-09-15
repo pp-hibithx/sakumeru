@@ -120,26 +120,6 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 .scenario-overview h3{margin:0 0 8px}.scenario-overview-body{white-space:pre-wrap;line-height:1.75;overflow-wrap:anywhere}
 .scenario-source{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .scenario-source-label{font-size:13px}.scenario-source-actions{display:grid;justify-items:start;gap:7px}.scenario-source a{width:auto}.scenario-source-warning{color:#f0b94f;font-size:13px;font-weight:700;line-height:1.5}
-.scenario-runs{margin-top:14px}
-.scenario-runs>h3{margin:0 0 9px}
-.scenario-run-list{display:grid;gap:7px}
-.scenario-run{border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--panel) 97%,currentColor 3%);overflow:hidden}
-.scenario-run>summary{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 10px;cursor:pointer;list-style:none;font-weight:700}
-.scenario-run>summary::-webkit-details-marker{display:none}
-.scenario-run>summary::before{content:"▶";flex:0 0 auto;font-size:11px;color:var(--accent)}
-.scenario-run[open]>summary::before{content:"▼"}
-.scenario-run-summary-main{min-width:0;overflow-wrap:anywhere}
-.scenario-run-summary-meta{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;font-size:13px;color:var(--muted);font-weight:500}
-.scenario-roster{display:grid;gap:5px;padding:4px 10px 10px 29px;border-top:1px solid var(--line)}
-.scenario-roster-row{display:grid;grid-template-columns:minmax(54px,auto) minmax(110px,.8fr) minmax(0,1fr);gap:7px 12px;align-items:baseline;padding:7px 0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
-.scenario-roster-row:last-child{border-bottom:0}
-.scenario-roster-role{font-weight:800;color:var(--accent)}
-.scenario-roster-person,.scenario-roster-detail{min-width:0;overflow-wrap:anywhere}
-.scenario-roster a{color:inherit;text-decoration:underline;text-underline-offset:3px}
-.scenario-roster-detail{display:flex;gap:7px 12px;flex-wrap:wrap;color:var(--muted);font-size:14px}
-.scenario-roster-empty{padding:9px 0;color:var(--muted)}
-@media(max-width:620px){.scenario-run>summary{align-items:flex-start}.scenario-run-summary-meta{display:grid;justify-items:end}.scenario-roster{padding-left:22px}.scenario-roster-row{grid-template-columns:50px minmax(0,1fr)}.scenario-roster-detail{grid-column:2}}
-
 /* 長文入力欄はタグ欄と同じ横幅で固定 */
 #scenarioForm label:has(#summaryText),
 #scenarioForm label:has(#privateMemo){grid-column:1 / -1;width:100%;max-width:none}
@@ -1567,92 +1547,13 @@ function scenarioOverviewHtml(x={}){
  const sourceHtml=source?`<div class="scenario-source"><span class="scenario-source-label">情報出典：<strong>${esc(source)}</strong></span><div class="scenario-source-actions">${warning}<a class="button" target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布・掲載ページを開く</a></div></div>`:"";
  return `<section class="scenario-overview"><h3>概要</h3>${text?`<div class="scenario-overview-body">${linkifyText(text)}</div>${fetchedLabel}`:`<p class="small muted">保存済みの概要はありません。編集画面から手動で補完できます。</p>`}${sourceHtml}</section>`;
 }
-function scenarioRunHistoryHtml(scenario={}){
- const norm=v=>String(v||"").normalize("NFKC").trim().toLowerCase();
- const scenarioId=String(scenario.id||"").trim(),scenarioTitle=norm(scenario.title);
- const belongs=record=>{
-   const id=String(record?.scenarioId||"").trim();
-   if(id)return id===scenarioId;
-   return !!scenarioTitle&&norm(record?.scenarioTitle||record?.title)===scenarioTitle;
- };
- // Detail is the only caller: the three local collections are loaded once per opened scenario,
- // never once per card or once per run.
- const albums=(TRPG39.loadAlbum?.()||[]).filter(belongs);
- const events=(TRPG39.loadEvents?.()||[]).filter(belongs);
- if(!albums.length&&!events.length)return "";
- const pcs=TRPG39.loadPCs?.()||[],players=TRPG39.loadPlayers?.()||[];
- const pcById=new Map(pcs.map(pc=>[String(pc.id||""),pc]));
- const playerById=new Map(players.map(player=>[String(player.id||""),player]));
- const groups=new Map();
- const keyFor=(record,kind)=>{
-   const runId=String(record.runId||"").trim();if(runId)return `run:${runId}`;
-   if(kind==="album"&&record.eventId)return `event:${record.eventId}`;
-   if(kind==="event"&&record.linkedAlbumId)return `album:${record.linkedAlbumId}`;
-   return `${kind}:${record.id||"legacy"}`;
- };
- const ensure=key=>{if(!groups.has(key))groups.set(key,{albums:[],events:[]});return groups.get(key)};
- albums.forEach(album=>ensure(keyFor(album,"album")).albums.push(album));
- events.forEach(event=>{
-   let key=keyFor(event,"event");
-   if(!event.runId&&event.linkedAlbumId){
-     const linked=albums.find(a=>String(a.id||"")===String(event.linkedAlbumId));
-     if(linked)key=keyFor(linked,"album");
-   }
-   ensure(key).events.push(event);
- });
- const cleanRows=source=>{
-   const rows=[];
-   source.forEach(record=>{
-     const participantRows=Array.isArray(record.participantRows)&&record.participantRows.length
-       ? record.participantRows
-       : (record.participants||[]).map((name,i)=>({role:"PL",plName:name,playerId:(record.participantIds||[])[i]||""}));
-     participantRows.forEach(row=>rows.push({...row,__self:false}));
-     const selfRows=Array.isArray(record.selfPcRows)&&record.selfPcRows.length
-       ? record.selfPcRows
-       : ((record.pcId||record.pcName||record.selfHo)?[{pcId:record.pcId||"",pcName:record.pcName||"",ho:record.selfHo||""}]:[]);
-     selfRows.forEach(row=>rows.push({...row,role:record.role||"PL",plName:"自分",playerId:"",__self:true}));
-   });
-   const seen=new Set();
-   return rows.filter(row=>{
-     const key=[row.__self?"self":"other",row.playerId||norm(row.plName),row.pcId||norm(row.pcName),norm(row.role||"PL"),norm(row.ho)].join("|");
-     if(seen.has(key))return false;seen.add(key);return true;
-   });
- };
- const roleText=role=>String(role||"PL").toUpperCase();
- const statusText=status=>({done:"完了",planned:"予定",adjusting:"調整中",cancelled:"中止",canceled:"中止"}[String(status||"").toLowerCase()]||String(status||""));
- const personLink=row=>{
-   const playerId=String(row.playerId||"").trim(),label=String(row.plName||"").trim()||(row.__self?"自分":"参加者");
-   return playerId?`<a href="../players/index.html?focus=${encodeURIComponent(playerId)}">${esc(label)}</a>`:esc(label);
- };
- const pcLink=row=>{
-   const pcId=String(row.pcId||"").trim(),pc=pcById.get(pcId),label=String(row.pcName||pc?.name||"").trim();if(!label)return "";
-   if(!pcId)return `PC：${esc(label)}`;
-   const ownerId=String(pc?.ownerPlayerId||row.playerId||"").trim();
-   const href=!ownerId?`../pcs/index.html?focus=${encodeURIComponent(pcId)}`:`../players/index.html?focus=${encodeURIComponent(ownerId)}&tab=pcs&pcId=${encodeURIComponent(pcId)}`;
-   return `PC：<a href="${href}">${esc(label)}</a>`;
- };
- const runs=[...groups.values()].map(group=>{
-   // A saved LIBRARY roster is confirmed data. If that record has no roster at all,
-   // fall back to the corresponding CALENDAR roster without mixing duplicate rows.
-   const albumRows=cleanRows(group.albums);
-   const rows=albumRows.length?albumRows:cleanRows(group.events);
-   const all=[...group.albums,...group.events],base=group.albums[0]||group.events[0]||{};
-   const dates=all.map(r=>String(r.date||r.start||"").slice(0,10)).filter(Boolean).sort();
-   const people=new Set(rows.map(r=>r.__self?"self":String(r.playerId||norm(r.plName))).filter(Boolean));
-   const label=String(base.runLabel||"").trim()||String(base.title||base.scenarioTitle||"").trim()||"開催記録";
-   const statuses=all.map(r=>statusText(r.status)).filter(Boolean),status=statuses.includes("完了")?"完了":statuses[0]||"";
-   return {base,rows,label,date:dates[0]||"",count:people.size,status};
- }).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
- const runHtml=r=>`<details class="scenario-run"><summary><span class="scenario-run-summary-main">${esc(r.label)}</span><span class="scenario-run-summary-meta">${r.date?`<span>${esc(r.date)}</span>`:""}<span>${r.count}名</span>${r.status?`<span>${esc(r.status)}</span>`:""}</span></summary><div class="scenario-roster">${r.rows.length?r.rows.map(row=>{const pc=pcById.get(String(row.pcId||"")),player=row.playerId?playerById.get(String(row.playerId)):null;const displayRow={...row,plName:row.plName||player?.name||"",pcName:row.pcName||pc?.name||""};return `<div class="scenario-roster-row"><div class="scenario-roster-role">${esc(roleText(row.role))}</div><div class="scenario-roster-person">${personLink(displayRow)}</div><div class="scenario-roster-detail">${row.ho?`<span>HO／役割：${esc(row.ho)}</span>`:""}${pcLink(displayRow)?`<span>${pcLink(displayRow)}</span>`:""}</div></div>`}).join(""):'<div class="scenario-roster-empty">参加メンバー情報はありません。</div>'}</div></details>`;
- return `<section class="scenario-runs"><h3>陣一覧</h3><div class="scenario-run-list">${runs.map(runHtml).join("")}</div></section>`;
-}
 function detail(id){
  const x=data.find(v=>v.id===id);if(!x)return;
  const labels=Object.entries(flags).filter(([k])=>x.flags&&x.flags[k]).map(([,v])=>`<span class="badge">${v}</span>`).join("");
  const st=scenarioStats(x),tagHtml=(x.tags||[]).map(t=>`<span class="badge">#${esc(t)}</span>`).join("");
  const detailTrailers=[...new Set(((x.trailerUrls&&x.trailerUrls.length)?x.trailerUrls:(x.thumbnailUrl?[x.thumbnailUrl]:[])).map(v=>String(v||"").trim()).filter(Boolean))];
  const detailImageHtml=scenarioDisplayMode(x)==="thumbnail"?scenarioDetailImageViewerHtml(detailTrailers):`${scenarioRepresentativeHtml(x,"detail")}${scenarioDetailImageViewerHtml(detailTrailers)}`;
- q("detailContent").innerHTML=`${detailImageHtml}<div class="sc-detail-body"><div class="sc-detail-top"><div><h2>${esc(x.title)}</h2>${x.shortTitle?`<div class="small muted">略称：${esc(x.shortTitle)}</div>`:""}${x.sortKana?`<div class="small muted">並び順：${esc(x.sortKana)}</div>`:""}<div class="sc-meta">${x.autoCreated?`<span class="badge">仮登録</span>`:""}${x.system?`<span class="badge">${esc(x.system)}</span>`:""}<span class="badge">${esc(facilitatorLabelFor(x)+(x.facilitatorPresence==="less"?"レス":""))}</span>${pubBadge(x)}${labels}</div>${tagHtml?`<div class="sc-tags">${tagHtml}</div>`:""}</div><button class="sc-detail-close" data-close type="button">×</button></div>${x.author?`<p>サークル名：${esc(x.author)}</p>`:""}${(x.playersMin||x.playersMax||x.hoursMin||x.hoursMax)?`<p class="small muted">${rangeText(x.playersMin,x.playersMax,"人")}${(x.playersMin||x.playersMax)&&(x.hoursMin||x.hoursMax)?" ／ ":""}${rangeText(x.hoursMin,x.hoursMax,"時間")}</p>`:""}<div class="sc-stats"><span class="badge">進行 ${st.facilitator}回</span><span class="badge">PL ${st.pl}回</span>${st.last?`<span class="badge">最終プレイ ${esc(st.last)}</span>`:""}</div>${scenarioRunHistoryHtml(x)}${scenarioOverviewHtml(x)}${x.flags&&x.flags.roomReady?`<section><h3>部屋</h3>${x.roomImageUrl?`<img src="${esc(x.roomImageUrl)}" alt="部屋画像" style="width:min(100%,620px);border-radius:9px;border:1px solid var(--line)">`:`<p class="small muted">部屋あり（画像未登録）</p>`}</section>`:""}${x.privateMemo?`<section><h3>自分用メモ</h3><p style="white-space:pre-wrap">${esc(x.privateMemo)}</p></section>`:""}${x.lastChecked?`<p class="small muted">最終確認：${esc(x.lastChecked)}</p>`:""}<div class="sc-detail-actions">${x.archived?"":`<button data-detail-prep="${x.id}">卓準備へ</button><button data-detail-record="${x.id}">LIBRARYに記録</button><button data-detail-schedule="${x.id}">卓予定を作る</button>`}<button data-detail-kp="${x.id}">KP用バインダー</button><button data-detail-library="${x.id}">過去の開催記録</button><button data-detail-edit="${x.id}">編集</button><button data-detail-archive="${x.id}">${x.archived?"アーカイブから戻す":"アーカイブ"}</button></div></div>`;
+ q("detailContent").innerHTML=`${detailImageHtml}<div class="sc-detail-body"><div class="sc-detail-top"><div><h2>${esc(x.title)}</h2>${x.shortTitle?`<div class="small muted">略称：${esc(x.shortTitle)}</div>`:""}${x.sortKana?`<div class="small muted">並び順：${esc(x.sortKana)}</div>`:""}<div class="sc-meta">${x.autoCreated?`<span class="badge">仮登録</span>`:""}${x.system?`<span class="badge">${esc(x.system)}</span>`:""}<span class="badge">${esc(facilitatorLabelFor(x)+(x.facilitatorPresence==="less"?"レス":""))}</span>${pubBadge(x)}${labels}</div>${tagHtml?`<div class="sc-tags">${tagHtml}</div>`:""}</div><button class="sc-detail-close" data-close type="button">×</button></div>${x.author?`<p>サークル名：${esc(x.author)}</p>`:""}${(x.playersMin||x.playersMax||x.hoursMin||x.hoursMax)?`<p class="small muted">${rangeText(x.playersMin,x.playersMax,"人")}${(x.playersMin||x.playersMax)&&(x.hoursMin||x.hoursMax)?" ／ ":""}${rangeText(x.hoursMin,x.hoursMax,"時間")}</p>`:""}<div class="sc-stats"><span class="badge">進行 ${st.facilitator}回</span><span class="badge">PL ${st.pl}回</span>${st.last?`<span class="badge">最終プレイ ${esc(st.last)}</span>`:""}</div>${scenarioOverviewHtml(x)}${x.flags&&x.flags.roomReady?`<section><h3>部屋</h3>${x.roomImageUrl?`<img src="${esc(x.roomImageUrl)}" alt="部屋画像" style="width:min(100%,620px);border-radius:9px;border:1px solid var(--line)">`:`<p class="small muted">部屋あり（画像未登録）</p>`}</section>`:""}${x.privateMemo?`<section><h3>自分用メモ</h3><p style="white-space:pre-wrap">${esc(x.privateMemo)}</p></section>`:""}${x.lastChecked?`<p class="small muted">最終確認：${esc(x.lastChecked)}</p>`:""}<div class="sc-detail-actions">${x.archived?"":`<button data-detail-prep="${x.id}">卓準備へ</button><button data-detail-record="${x.id}">LIBRARYに記録</button><button data-detail-schedule="${x.id}">卓予定を作る</button>`}<button data-detail-kp="${x.id}">KP用バインダー</button><button data-detail-library="${x.id}">過去の開催記録</button><button data-detail-edit="${x.id}">編集</button><button data-detail-archive="${x.id}">${x.archived?"アーカイブから戻す":"アーカイブ"}</button></div></div>`;
  q("detailDialog").showModal();
  bindScenarioDetailImageViewer(q("detailContent"));
  q("detailContent").querySelector("[data-close]").onclick=()=>q("detailDialog").close();
