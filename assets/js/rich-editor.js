@@ -120,6 +120,69 @@ function execCommand(editor,command,showUI=false,value=null){
  editor?.focus?.();
  return document.execCommand(command,showUI,value);
 }
+function explicitHighlightNodes(editor){
+ return [...editor.querySelectorAll("mark,[style]")].filter(node=>node.tagName==="MARK"||!!node.style.backgroundColor);
+}
+function longestSharedBounds(before,after){
+ const a=[...String(before||"")],b=[...String(after||"")];
+ if(!a.length||!b.length)return null;
+ // Marker selections are normally short. Avoid a quadratic table for pasted novels.
+ if(a.length*b.length>250000){const at=String(after).indexOf(String(before));return at<0?null:[at,at+a.length]}
+ const rows=Array.from({length:a.length+1},()=>new Uint32Array(b.length+1));
+ for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)rows[i][j]=a[i-1]===b[j-1]?rows[i-1][j-1]+1:Math.max(rows[i-1][j],rows[i][j-1]);
+ let i=a.length,j=b.length,min=b.length,max=-1;
+ while(i&&j){if(a[i-1]===b[j-1]){min=Math.min(min,j-1);max=Math.max(max,j-1);i--;j--}else if(rows[i-1][j]>=rows[i][j-1])i--;else j--}
+ return max<0?null:[min,max+1];
+}
+function textBoundary(root,offset){
+ const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node,left=Math.max(0,offset),last=null;
+ while((node=walker.nextNode())){last=node;if(left<=node.length)return [node,left];left-=node.length}
+ return last?[last,last.length]:[root,root.childNodes.length];
+}
+function keepHighlightRange(node,start,end){
+ const length=[...String(node.textContent||"")].length;
+ if(start<=0&&end>=length)return;
+ const toCodeUnit=(text,count)=>[...String(text||"")].slice(0,count).join("").length;
+ const text=node.textContent||"",startUnit=toCodeUnit(text,start),endUnit=toCodeUnit(text,end);
+ const [startNode,startOffset]=textBoundary(node,startUnit),[endNode,endOffset]=textBoundary(node,endUnit);
+ const before=document.createRange(),kept=document.createRange(),after=document.createRange();
+ before.selectNodeContents(node);before.setEnd(startNode,startOffset);
+ kept.setStart(startNode,startOffset);kept.setEnd(endNode,endOffset);
+ after.selectNodeContents(node);after.setStart(endNode,endOffset);
+ const beforeFrag=before.cloneContents(),keptFrag=kept.cloneContents(),afterFrag=after.cloneContents(),clone=node.cloneNode(false);
+ clone.append(keptFrag);node.replaceWith(beforeFrag,clone,afterFrag);
+}
+function applyHighlightRange(editor,start,end,source){
+ if(end<=start)return;
+ const [startNode,startOffset]=textBoundary(editor,start),[endNode,endOffset]=textBoundary(editor,end);
+ const range=document.createRange();range.setStart(startNode,startOffset);range.setEnd(endNode,endOffset);
+ const clone=source.cloneNode(false),content=range.extractContents();clone.append(content);range.insertNode(clone);
+}
+function clearExplicitHighlight(node){
+ if(node.tagName==="MARK"){node.replaceWith(...node.childNodes);return}
+ node.style.removeProperty("background-color");node.style.removeProperty("background");
+ if(!node.getAttribute("style"))node.removeAttribute("style");
+ if(node.tagName==="SPAN"&&!node.attributes.length)node.replaceWith(...node.childNodes);
+}
+function restoreHighlightsAfterDelete(editor,snapshots){
+ const originalNodes=new Set(snapshots.map(item=>item.node));
+ explicitHighlightNodes(editor).filter(node=>!originalNodes.has(node)).forEach(clearExplicitHighlight);
+ snapshots.forEach(item=>{
+  const node=item.node;
+  if(!node.isConnected||!editor.contains(node)){
+   const full=String(editor.textContent||"");let found=-1,at=full.indexOf(item.text);
+   while(at>=0){if(found<0||Math.abs(at-item.start)<Math.abs(found-item.start))found=at;at=full.indexOf(item.text,at+1)}
+   if(found>=0)applyHighlightRange(editor,found,found+item.text.length,item.source);
+   return;
+  }
+  const current=String(node.textContent||"");
+  // Shorter content is an ordinary deletion inside the marker. Growth means the
+  // browser absorbed neighbouring plain text while joining paragraphs.
+  if([...current].length<=[...item.text].length)return;
+  const bounds=longestSharedBounds(item.text,current);if(bounds)keepHighlightRange(node,bounds[0],bounds[1]);
+ });
+ editor.normalize();
+}
 function specialHtml(kind){
  const labels={note:"メモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
  if(kind==="toggle")return `<details class="sm-special sm-rich-toggle" open><summary>トグル見出し</summary><div class="sm-rich-toggle-body"><p><br></p></div></details><p><br></p>`;
@@ -228,8 +291,17 @@ function create(options={}){
  toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  editor.addEventListener("click",e=>{const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
+ let deleteHighlightSnapshot=null;
+ editor.addEventListener("beforeinput",event=>{
+  deleteHighlightSnapshot=String(event.inputType||"").startsWith("delete")
+   ?explicitHighlightNodes(editor).map(node=>{const prefix=document.createRange();prefix.selectNodeContents(editor);prefix.setEndBefore(node);return {node,source:node.cloneNode(false),text:String(node.textContent||""),start:prefix.toString().length}})
+   :null;
+ });
  editor.addEventListener("keyup",saveRange);editor.addEventListener("mouseup",saveRange);editor.addEventListener("blur",saveRange);
- editor.addEventListener("input",()=>{saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)});
+ editor.addEventListener("input",event=>{
+  if(String(event.inputType||"").startsWith("delete")&&deleteHighlightSnapshot){restoreHighlightsAfterDelete(editor,deleteHighlightSnapshot);deleteHighlightSnapshot=null}
+  saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)
+ });
  editor.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const k=e.key.toLowerCase();if(k==="z"||k==="y"){e.preventDefault();toolbar.querySelector(k==="y"||e.shiftKey?"[data-rich-redo]":"[data-rich-undo]").click()}});
  if(options.enableBlockReorder){decorateSortableBlocks();sortObserver=new MutationObserver(mutations=>{if(sortDecorating)return;const structural=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&!n.classList?.contains("sm-rich-ui")));if(!structural)return;clearTimeout(sortTimer);sortTimer=setTimeout(()=>decorateSortableBlocks(),120)});sortObserver.observe(editor,{childList:true,subtree:true})}
  updateButtons();
