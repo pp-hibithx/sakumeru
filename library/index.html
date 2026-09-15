@@ -659,6 +659,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
  border:0;border-top:1px solid var(--line);border-radius:0;
  padding:8px 0!important;margin:0;
 }
+.participant-row label{display:block;font-size:11px;color:var(--muted);margin:0 0 3px}
 .participant-person{display:contents}
 .participant-person>div:first-child{grid-column:1;grid-row:1}
 .participant-person>.participant-field-wrap{grid-column:2;grid-row:1}
@@ -2225,14 +2226,24 @@ function addParticipantRow(v={},opts={}){
    });
  }
  function playerPcCandidates(){
-   const key=plInput.value.trim().normalize("NFKC").toLowerCase();if(!key)return [];
-   const names=new Set();
+   const norm=value=>String(value||"").normalize("NFKC").trim().toLowerCase();
+   const playerId=String(row.dataset.playerId||"");
+   const playerKey=norm(plInput.value);
+   const matchedPlayers=playerId?[players.find(p=>String(p.id||"")===playerId)].filter(Boolean):players.filter(p=>[p.name,p.publicName,p.socialName].some(v=>norm(v)===playerKey));
+   const matchedPlayerIds=new Set(matchedPlayers.map(p=>String(p.id||"")).filter(Boolean));
+   const allPcs=TRPG39.loadPCs?TRPG39.loadPCs():pcs;
+   const candidates=new Map();
+   const add=(pcId,name)=>{const label=String(name||"").trim();if(!label)return;const id=String(pcId||"");const key=id?`id:${id}`:`name:${norm(label)}`;if(!candidates.has(key))candidates.set(key,{id,name:label})};
+   allPcs.forEach(pc=>{
+     const ownerId=String(pc.ownerPlayerId||"");
+     if(playerId||matchedPlayerIds.size){if(!matchedPlayerIds.has(ownerId)&&ownerId!==playerId)return}
+     add(pc.id,pc.name);
+   });
    data.forEach(rec=>rowsFromRecord(rec).forEach(r=>{
-     const playerHit=r.playerId&&players.find(p=>p.id===r.playerId);
-     const same=(playerHit&&String(playerHit.name||"").normalize("NFKC").trim().toLowerCase()===key)||String(r.plName||"").normalize("NFKC").trim().toLowerCase()===key;
-     if(same&&String(r.pcName||"").trim())names.add(String(r.pcName).trim());
+     const same=playerId?String(r.playerId||"")===playerId:(matchedPlayerIds.size?matchedPlayerIds.has(String(r.playerId||"")):(!playerKey||norm(r.plName)===playerKey));
+     if(same)add(r.pcId,r.pcName);
    }));
-   return [...names].sort((a,b)=>a.localeCompare(b,"ja"));
+   return [...candidates.values()].sort((a,b)=>a.name.localeCompare(b.name,"ja"));
  }
  function addPc(pc={}){
    const pr=document.createElement("div");pr.className="participant-pc-row";pr.dataset.pcId=String(pc.pcId||"");
@@ -2241,7 +2252,7 @@ function addParticipantRow(v={},opts={}){
    <button type="button" class="danger participant-pc-remove" aria-label="このPCを削除" title="このPCを削除">削除</button>`;
    pcBox.appendChild(pr);
    const inp=pr.querySelector(".partPcName"),res=pr.querySelector(".partPcResults");
-   const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),names=playerPcCandidates().filter(n=>!term||n.normalize("NFKC").toLowerCase().includes(term));if(names.length){res.innerHTML=names.map(n=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(n)}">${esc(n)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;res.classList.remove("open")})};
+   const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),items=playerPcCandidates().filter(pc=>!term||pc.name.normalize("NFKC").toLowerCase().includes(term));if(items.length){res.innerHTML=items.map(pc=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(pc.name)}" data-pc-id="${esc(pc.id)}">${esc(pc.name)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;pr.dataset.pcId=b.dataset.pcId||"";res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;pr.dataset.pcId="";res.classList.remove("open")})};
    inp.addEventListener("focus",render);inp.addEventListener("input",()=>{pr.dataset.pcId="";render()});
    pr.querySelector(".participant-pc-remove").onclick=()=>pr.remove();
  }
