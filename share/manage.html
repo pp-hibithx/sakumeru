@@ -45,7 +45,7 @@
  const sessions=unique(albums.filter(x=>x&&x.shareId).map(x=>({shareId:x.shareId,title:x.title||x.runLabel||"卓記録",meta:[x.runLabel,x.date].filter(Boolean).join(" ／ "),shareUrl:workerUrl(x.shareId),fallbackUrl:viewerUrl(x.shareId),sourceUrl:local(`../library/index.html?albumId=${encodeURIComponent(x.id||"")}`),sourceLabel:"元の記録を開く"})));
 
  const articleStore=json("saku_meru_library_run_article_pages_v1",{}),articles=[];
- Object.entries(articleStore&&typeof articleStore==="object"?articleStore:{}).forEach(([runId,pages])=>arr(pages).forEach(p=>{if(p?.shareId)articles.push({shareId:p.shareId,title:p.title||"卓記事",meta:runId?`卓ID：${runId}`:"",shareUrl:workerUrl(p.shareId,"article"),fallbackUrl:viewerUrl(p.shareId,"article"),sourceUrl:libraryArticleSourceUrl(runId,p.id),sourceLabel:"元の記事を開く"})}));
+ Object.entries(articleStore&&typeof articleStore==="object"?articleStore:{}).forEach(([runId,pages])=>arr(pages).forEach(p=>{if(p?.shareId)articles.push({shareId:p.shareId,title:p.title||"卓記事",meta:"",shareUrl:workerUrl(p.shareId,"article"),fallbackUrl:viewerUrl(p.shareId,"article"),sourceUrl:libraryArticleSourceUrl(runId,p.id),sourceLabel:"元の記事を開く"})}));
 
  const scenarioShareId=text("39x2_fixed_scenario_share_id_v1");
  const scenarios=scenarioShareId?[{shareId:scenarioShareId,title:"シナリオ一覧",meta:"固定共有URL",state:"固定共有URLあり",shareUrl:workerUrl(scenarioShareId,"scenario-list"),fallbackUrl:viewerUrl(scenarioShareId,"scenario-list"),sourceUrl:local("../scenario/index.html")}]:[];
