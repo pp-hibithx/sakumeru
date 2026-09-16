@@ -116,6 +116,28 @@ function normalizeExistingEditor(editor){
  if(!editor.children.length)editor.innerHTML="<p><br></p>";
  return editor;
 }
+function normalizePastedHtml(html){
+ const template=document.createElement("template");template.innerHTML=sanitizeHtml(html);
+ const emptyBlock=node=>{
+  if(node?.nodeType!==Node.ELEMENT_NODE||!node.matches("p,div"))return false;
+  if(node.querySelector("img,hr,details,section,figure,iframe,audio,video"))return false;
+  return !String(node.textContent||"").replace(/\u00a0/g," ").trim();
+ };
+ const compact=parent=>{
+  let previousBlank=false;
+  [...parent.children].forEach(node=>{
+   if(!node.matches("details,section,.sm-special,.kp-special"))compact(node);
+   if(!emptyBlock(node)){previousBlank=false;return}
+   if(previousBlank)node.remove();else previousBlank=true;
+  });
+  while(parent.lastElementChild&&emptyBlock(parent.lastElementChild))parent.lastElementChild.remove();
+ };
+ compact(template.content);
+ return template.innerHTML;
+}
+function normalizePastedText(text){
+ return String(text||"").replace(/\r\n?/g,"\n").replace(/\n(?:[ \t]*\n){2,}/g,"\n\n").replace(/[ \t\n]+$/g,"");
+}
 function execCommand(editor,command,showUI=false,value=null){
  editor?.focus?.();
  return document.execCommand(command,showUI,value);
@@ -311,6 +333,15 @@ function create(options={}){
    :null;
  });
  editor.addEventListener("keyup",saveRange);editor.addEventListener("mouseup",saveRange);editor.addEventListener("blur",saveRange);
+ editor.addEventListener("paste",event=>{
+  const clipboard=event.clipboardData;if(!clipboard)return;
+  const sourceHtml=clipboard.getData("text/html"),sourceText=clipboard.getData("text/plain");
+  if(!sourceHtml&&!sourceText)return;
+  const html=sourceHtml?normalizePastedHtml(sourceHtml):textToHtml(normalizePastedText(sourceText));
+  event.preventDefault();
+  if(html)document.execCommand("insertHTML",false,html);
+  saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250);
+ });
  editor.addEventListener("input",event=>{
   if(String(event.inputType||"").startsWith("delete")&&deleteHighlightSnapshot){restoreHighlightsAfterDelete(editor,deleteHighlightSnapshot);deleteHighlightSnapshot=null}
   saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)
@@ -321,5 +352,5 @@ function create(options={}){
  return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
-window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,bindShareHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,execCommand};
+window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,bindShareHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,normalizePastedHtml,normalizePastedText,execCommand};
 })();
