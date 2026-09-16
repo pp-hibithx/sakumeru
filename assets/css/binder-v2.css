@@ -24,11 +24,19 @@
   --text:var(--sheet-text);--muted:var(--sheet-muted);--line:var(--sheet-border);
   color:var(--sheet-text)!important;background-color:var(--sheet-bg)!important;border-color:color-mix(in srgb,var(--accent) 45%,var(--sheet-border))!important;
 }
-[data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.card,.panel,.lib-panel,.dir-panel,.section,details,.pc-overview-column,.pc-detail-toggle-body){color:var(--text-primary);border-color:var(--sheet-border);background-color:var(--surface)}
+[data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.card,.panel,.lib-panel,.dir-panel,.section,.notice,details,.pc-overview-column,.pc-detail-toggle-body){color:var(--text-primary);border-color:var(--sheet-border);background-color:var(--surface)}
 [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),select,textarea,[contenteditable="true"]){background:var(--control-bg);color:var(--control-text);border-color:var(--sheet-border)}
 [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(input,textarea)::placeholder{color:var(--control-placeholder);opacity:1}
 [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.muted,.small.muted){color:var(--sheet-muted)}
 [data-sheet-theme]:not([data-sheet-theme="standard"]) a:not(.button){color:color-mix(in srgb,var(--accent2) 72%,var(--sheet-text))}
+html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]){
+  --panel:#363a3f;--panel2:#44494f;
+  --surface:#363a3f;--surface-raised:#44494f;
+  --text-primary:#f3f3f0;--text-muted:#c2c6c8;
+  --control-bg:#2b2f34;--control-text:#f3f3f0;--control-placeholder:#aeb3b6;
+}
+html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.card,.panel,.lib-panel,.dir-panel,.section,.notice,details,.pc-overview-column,.pc-detail-toggle-body){--text:var(--text-primary);--muted:var(--text-muted)}
+html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.card,.panel,.lib-panel,.dir-panel,.section,.notice,details,.pc-overview-column,.pc-detail-toggle-body) :is(.muted,.small.muted){color:var(--text-muted)}
 .sheet-theme-field{display:grid;gap:6px;max-width:360px}.sheet-theme-field select{width:100%}.sheet-theme-note{margin:0}
 html{font-size:16px}body{font-size:16px;line-height:1.7;background:var(--bg);color:var(--text)}
 main>.wrap:not(.share-page),main .wrap.directory-page,main .wrap.library-page{
