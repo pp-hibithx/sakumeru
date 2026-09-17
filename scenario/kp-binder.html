@@ -816,6 +816,81 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 
 .kp-live-order-scene{margin-bottom:8px}.kp-live-order-scene>.kp-live-order-row{grid-template-columns:auto auto minmax(0,1fr) auto}.kp-live-order-children{margin:4px 0 8px 10px;border-left:2px solid #343b46;padding-left:7px}.kp-live-order-child{background:rgba(255,255,255,.025);margin-top:4px}.kp-live-order-child .kp-live-order-handle{cursor:default;opacity:.7}.kp-live-order-grandchildren{margin:4px 0 6px 12px;border-left:1px dashed #48515f;padding-left:7px}.kp-live-order-grandchild{background:rgba(255,255,255,.015);margin-top:3px;padding-top:7px;padding-bottom:7px}.kp-live-order-grandchild .kp-live-order-title{font-size:13px}.kp-live-order-grandchild .kp-live-order-handle{cursor:default;opacity:.55}
 .kp-live-order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.kp-live-order-fold-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kp-live-order-fold-actions button{font-size:12px;padding:5px 8px}.kp-live-order-fold{width:28px;min-width:28px;height:28px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}.kp-live-order-row>div:nth-of-type(1){min-width:0;flex:1}.kp-live-order-scene.is-collapsed>.kp-live-order-children{display:none}.kp-live-order-group.is-collapsed>.kp-live-order-grandchildren{display:none}
+
+/* Dark mode contrast inside KP BINDER only. Keep the selected loose-leaf paper unchanged. */
+html[data-theme="dark"] .kptest .blog-shell{
+  border-color:color-mix(in srgb,var(--text-primary) 34%,var(--line));
+}
+html[data-theme="dark"] .kptest .blog-note,
+html[data-theme="dark"] .kptest .rich-toolbar .tb-label,
+html[data-theme="dark"] .kptest .muted-note,
+html[data-theme="dark"] .kptest .editor-placeholder:empty::before{
+  color:var(--text-muted);
+}
+html[data-theme="dark"] .kptest .rich-toolbar{
+  background:var(--surface);
+  border-bottom-color:color-mix(in srgb,var(--text-primary) 30%,var(--line));
+}
+html[data-theme="dark"] .kptest .rich-toolbar .tb-group{
+  border-color:color-mix(in srgb,var(--text-primary) 24%,var(--line));
+}
+html[data-theme="dark"] .kptest .rich-toolbar button,
+html[data-theme="dark"] .kptest .rich-toolbar select,
+html[data-theme="dark"] .kptest .rich-toolbar input[type="color"]{
+  background:var(--control-bg);
+  color:var(--control-text);
+  border-color:color-mix(in srgb,var(--text-primary) 42%,var(--line));
+}
+html[data-theme="dark"] .kptest .rich-toolbar button:hover:not(:disabled),
+html[data-theme="dark"] .kptest .rich-toolbar button:focus-visible,
+html[data-theme="dark"] .kptest .rich-toolbar select:focus-visible{
+  background:var(--surface-raised);
+  border-color:var(--accent);
+  outline:2px solid color-mix(in srgb,var(--accent) 42%,transparent);
+  outline-offset:1px;
+}
+html[data-theme="dark"] .kptest .rich-toolbar button:disabled{
+  opacity:1;
+  color:color-mix(in srgb,var(--text-muted) 72%,transparent);
+  background:color-mix(in srgb,var(--control-bg) 72%,var(--surface));
+  border-color:color-mix(in srgb,var(--text-muted) 30%,var(--line));
+}
+html[data-theme="dark"] .kptest #toggleRevealEditMode.active,
+html[data-theme="dark"] .kptest .rich-toolbar button[aria-pressed="true"]{
+  background:color-mix(in srgb,var(--accent) 24%,var(--control-bg));
+  color:var(--text-primary);
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent) inset;
+}
+html[data-theme="dark"] .kptest .blog-editor,
+html[data-theme="dark"] .kptest .edit-body,
+html[data-theme="dark"] .kptest .blog-editor .kp-reveal-summary-body{
+  background:var(--control-bg);
+  color:var(--control-text);
+  border-color:color-mix(in srgb,var(--text-primary) 32%,var(--line));
+}
+html[data-theme="dark"] .kptest .blog-editor:focus,
+html[data-theme="dark"] .kptest .edit-body:focus,
+html[data-theme="dark"] .kptest .blog-editor .kp-reveal-summary-body:focus{
+  border-color:var(--accent);
+  box-shadow:inset 0 0 0 1px var(--accent);
+}
+html[data-theme="dark"] .kptest .kp-nested-state-control,
+html[data-theme="dark"] .kptest .kp-inline-state-control{
+  background:var(--surface)!important;
+  border-color:color-mix(in srgb,var(--text-primary) 38%,var(--line))!important;
+}
+html[data-theme="dark"] .kptest .kp-nested-state-control button,
+html[data-theme="dark"] .kptest .kp-inline-state-control button{
+  color:var(--text-primary)!important;
+  border-color:color-mix(in srgb,var(--text-primary) 38%,var(--line))!important;
+}
+html[data-theme="dark"] .kptest .kp-nested-state-control button[aria-pressed="true"],
+html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="true"]{
+  color:#111!important;
+  background:var(--accent)!important;
+  border-color:var(--accent)!important;
+}
 </style><link rel="stylesheet" href="../assets/css/readability.css?v=0908-1"></head><body>
 <div data-site-header data-active="scenario"></div>
 <main><div class="wrap kptest">
