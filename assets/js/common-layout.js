@@ -10,7 +10,7 @@
     link.rel="stylesheet";link.href=headerCss;link.dataset.sakumeruCommonHeader="1";
     document.head.appendChild(link);
   }
-  const binderCss=new URL("assets/css/binder-v2.css?v=0916-dark-surfaces-2",siteRoot).href;
+  const binderCss=new URL("assets/css/binder-v2.css?v=0917-kp-binder",siteRoot).href;
   if(!document.querySelector('link[data-sakumeru-binder-v2]')){
     const link=document.createElement("link");link.rel="stylesheet";link.href=binderCss;link.dataset.sakumeruBinderV2="1";document.head.appendChild(link);
   }
