@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0901-preview1">
 <link rel="stylesheet" href="../assets/css/rich-editor.css?v=0901-common1">
 <script src="../assets/js/rich-editor-outline.js?v=0901-preview1"></script>
-<script src="../assets/js/rich-editor.js?v=0914-share-hide"></script>
+<script src="../assets/js/rich-editor.js?v=0915-delete-marker"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/beta-gate.js?v=02315"></script><script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 <style>
@@ -818,7 +818,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .kp-live-order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.kp-live-order-fold-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kp-live-order-fold-actions button{font-size:12px;padding:5px 8px}.kp-live-order-fold{width:28px;min-width:28px;height:28px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}.kp-live-order-row>div:nth-of-type(1){min-width:0;flex:1}.kp-live-order-scene.is-collapsed>.kp-live-order-children{display:none}.kp-live-order-group.is-collapsed>.kp-live-order-grandchildren{display:none}
 </style><link rel="stylesheet" href="../assets/css/readability.css?v=0908-1"></head><body>
 <div data-site-header data-active="scenario"></div>
-<main class="kptest">
+<main><div class="wrap kptest">
  <div class="test-banner production-banner">KP BINDER リッチエディタ<small>1シーン＝1つの記事として編集・保存します。開示情報はセッション専用共有URLへ送信できます。</small></div>
  <div class="head"><div><h1>KP BINDER</h1><div id="scenarioName" class="muted"></div></div><a class="button" href="./">SCENARIOへ戻る</a></div>
  <nav class="kp-prod-tabs"><button type="button" class="kp-prod-tab active" data-tab="session">シナリオ進行</button><button type="button" class="kp-prod-tab" data-tab="pc">陣・参加者</button></nav>
@@ -878,6 +878,12 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
      <div class="pc-prod-actions"><div style="flex:1"><h2 style="margin:0">陣・参加者</h2><div class="muted-note">まずPLを登録して専用URLを発行できます。HOとPCは後から設定できます。</div></div><input id="plName" placeholder="PL名" style="max-width:220px"><button type="button" id="addPl">＋ PL追加</button></div>
      <div id="shareParticipants"></div>
    </section>
+   <section class="box pc-prod-box">
+     <h2>SAKU+MERUのPCを読み込む</h2>
+     <div class="muted-note">PCページに登録済みのPCを選び、技能比較へ追加します。PCデータ本体は複製・変更しません。</div>
+     <div class="pc-prod-actions" style="margin-top:8px"><select id="pcSelect" aria-label="登録済みPC"></select><button type="button" id="addPc">選択したPCを追加</button></div>
+     <div id="participants"></div>
+   </section>
    <section class="box pc-prod-box"><h2>技能比較</h2><div class="muted-note">PC・キャラシURL連携後、この陣の技能を比較します。</div><div id="compare" style="overflow:auto"></div></section>
  </section>
 <details id="kpLiveRecoveryPanel" class="panel" style="margin-top:12px">
@@ -891,7 +897,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
     </div>
     <div id="kpLiveRecoveryStatus" class="muted-note" style="margin-top:8px"></div>
   </div>
-</details></main>
+</details></div></main>
 <div data-site-footer></div>
 <script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=0914-header-actions"></script>
 <script>
