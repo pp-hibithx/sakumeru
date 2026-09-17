@@ -1117,8 +1117,10 @@ function saveNow(){
  __kpExplicitSave=false;
  kpSnapshot(prev,"before-save");
  latest[sid]=snapshot;
- all={...latest};
- b=all[sid];
+ // Keep the live binder object used by the current editor. Replacing `b` with
+ // the serialized clone detaches renderEditor's scene reference, so later
+ // typing appears on screen but is no longer included in the next save.
+ all={...latest,[sid]:b};
  localStorage.setItem(KEY,JSON.stringify(latest));
  const st=q("#saveStatus");if(st)st.textContent="保存済み";
 }
@@ -1127,6 +1129,7 @@ function save(){
  const st=q("#saveStatus");if(st)st.textContent="保存中…";
  saveTimer=setTimeout(saveNow,120);
 }
+let flushPendingEditor=()=>{clearTimeout(saveTimer);saveNow()};
 try{
  const openedAt=new Date().toISOString();
  b.lastOpenedAt=openedAt;
@@ -1251,17 +1254,19 @@ function renderScenes(){
    <button type="button" class="mini secondary" data-sceneup="${esc(p.id)}">↑</button>
    <button type="button" class="mini secondary" data-scenedown="${esc(p.id)}">↓</button>
  </div>`).join(""):'<div class="muted-note">シーンがありません。</div>';
- list.querySelectorAll("[data-id]").forEach(btn=>btn.onclick=()=>{active=btn.dataset.id;renderScenes();renderEditor()});
+ list.querySelectorAll("[data-id]").forEach(btn=>btn.onclick=()=>{flushPendingEditor();active=btn.dataset.id;renderScenes();renderEditor()});
  list.querySelectorAll("[data-sceneup]").forEach(btn=>btn.onclick=()=>moveScene(btn.dataset.sceneup,-1));
  list.querySelectorAll("[data-scenedown]").forEach(btn=>btn.onclick=()=>moveScene(btn.dataset.scenedown,1));
 }
 function moveScene(id,dir){
+ flushPendingEditor();
  const i=b.pages.findIndex(p=>String(p.id)===String(id)),j=i+dir;
  if(i<0||j<0||j>=b.pages.length)return;
  [b.pages[i],b.pages[j]]=[b.pages[j],b.pages[i]];save();
  renderScenes();renderEditor();
 }
 function addScene(){
+ flushPendingEditor();
  const p={id:uid(),title:"新しいシーン",blocks:[],images:[]};
  b.pages.push(p);active=p.id;save();renderScenes();renderEditor();
 }
@@ -1781,6 +1786,14 @@ function renderEditor(){
    richOutline?.cleanupClone(clone);
    return clone.innerHTML;
  }
+
+ // Scene changes can happen before the debounce timer fires. Capture the
+ // current DOM into this exact scene and persist it synchronously first.
+ flushPendingEditor=()=>{
+   p.__v11ArticleHtml=cleanEditorHtml();
+   clearTimeout(saveTimer);
+   saveNow();
+ };
 
  function ensureParagraphBlocks(){
     if(window.SAKUMERichEditor?.normalizeExistingEditor){SAKUMERichEditor.normalizeExistingEditor(ed);return}
@@ -3834,7 +3847,8 @@ function renderCompare(){
 if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find(v=>String(v.id)===String(id));if(!x)return;if(b.participants.some(v=>String(v.pcId)===String(id)))return alert("追加済みです。");b.participants.push({pcId:id,name:x.name||"",abilities:"",skills:""});save();renderPC()};
 renderPC();
 renderScenes();renderEditor();saveNow();
-window.addEventListener("beforeunload",()=>{try{clearTimeout(saveTimer);saveNow()}catch(e){}});
+window.addEventListener("pagehide",()=>{try{flushPendingEditor()}catch(e){}});
+window.addEventListener("beforeunload",()=>{try{flushPendingEditor()}catch(e){}});
 </script><!-- kp-binder-safe-load-save-v1 -->
 <div id="kpSafetyModal" hidden style="position:fixed;inset:0;z-index:99999;background:#0009;padding:4vh 4vw;overflow:auto"><div style="max-width:760px;margin:auto;background:var(--panel,#fff);color:var(--text,#222);border-radius:14px;padding:18px;box-shadow:0 20px 60px #0008"><h2 style="margin-top:0">保存前プレビュー</h2><div id="kpSafetyReason" class="muted-note"></div><div id="kpSafetySummary" style="margin:12px 0"></div><details><summary>シーン一覧</summary><div id="kpSafetyScenes" style="margin-top:8px"></div></details><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button type="button" id="kpSafetyCancel" class="secondary">保存しない</button><button type="button" id="kpSafetyConfirm">確認して保存</button></div></div></div></body></html>
 
