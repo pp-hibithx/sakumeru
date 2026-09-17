@@ -705,6 +705,9 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .player-rel-detail-card{border:1px solid var(--line);border-radius:10px;padding:12px}
 .player-rel-run{padding:7px 0;border-top:1px solid var(--line);font-size:12px}
 .player-rel-run:first-of-type{border-top:0}
+.player-rel-year-list{display:grid;gap:7px;margin-top:8px}
+.player-rel-year-group>summary{justify-content:flex-start}.player-rel-year-group>summary::before{content:"▶";font-size:11px;line-height:1;transition:transform .16s ease}.player-rel-year-group[open]>summary::before{transform:rotate(90deg)}
+.player-rel-year-count{font-size:12px;color:var(--muted)}.player-rel-year-group .lib-session-group-body{padding-top:0}
 .player-rel-center{width:auto;margin-top:8px}
 @media(max-width:700px){
  .player-rel-stage{min-height:460px}
@@ -3679,6 +3682,18 @@ function showPlayerRelationNodeDetail(graph,id){
    const pcs=[...new Set((entry.pcNames||[]).filter(Boolean))];
    return `<div class="player-rel-participant"><strong>${esc(person.name)}</strong>${roles.length?` <span class="small muted">［${esc(roles.join("・"))}］</span>`:""}${pcs.length?`<div class="small">PC：${esc(pcs.join("、"))}</div>`:""}</div>`;
  };
+ const yearMap=new Map();
+ runs.forEach(run=>{
+   const match=String(run.date||"").match(/^(\d{4})/),key=match?match[1]:"unknown";
+   if(!yearMap.has(key))yearMap.set(key,[]);
+   yearMap.get(key).push(run);
+ });
+ const yearGroups=[...yearMap.entries()].sort(([a],[b])=>a==="unknown"?1:b==="unknown"?-1:Number(b)-Number(a));
+ const runHtml=run=>{
+   const ownEntry=isCenter?run.selected:null;
+   return `<div class="player-rel-run"><div>${run.date?`${esc(run.date)} ／ `:""}${esc(run.title)}</div>${isCenter?participationHtml(n,ownEntry):`${participationHtml(centerNode,run.center)}${participationHtml(n,run.selected)}`}</div>`;
+ };
+ const groupedRunsHtml=yearGroups.map(([year,items])=>`<details class="lib-session-group player-rel-year-group"><summary><strong>${year==="unknown"?"年不明":`${esc(year)}年`}</strong><span class="player-rel-year-count">${items.length}件</span></summary><div class="lib-session-group-body">${items.map(runHtml).join("")}</div></details>`).join("");
 
  q("playerRelationDetail").innerHTML=`<div class="player-rel-detail-card">
    <strong>${esc(n.name)}</strong>${n.self?` <span class="small muted">［自分］</span>`:""}${isCenter?` <span class="small muted">［中心人物］</span>`:""}
@@ -3686,11 +3701,8 @@ function showPlayerRelationNodeDetail(graph,id){
    <div class="library-dir-meta">${isCenter?`同卓ネットワーク：${connections.length}人`:`中心人物との同卓：${focusEdge?.count||0}卓`}</div>
 
    ${!isCenter?`<button type="button" class="player-rel-center" data-player-rel-center="${esc(id)}">この人を中心に見る</button>`:""}
-   <div style="margin-top:10px"><strong>${isCenter?"参加した卓":"中心人物との同卓"}</strong>
-     ${runs.length?runs.map(r=>{
-       const ownEntry=isCenter?r.selected:null;
-       return `<div class="player-rel-run"><div>${r.date?`${esc(r.date)} ／ `:""}${esc(r.title)}</div>${isCenter?participationHtml(n,ownEntry):`${participationHtml(centerNode,r.center)}${participationHtml(n,r.selected)}`}</div>`;
-     }).join(""):'<div class="small muted">該当する記録はありません。</div>'}
+   <div style="margin-top:10px"><strong>${isCenter?"参加した卓":"中心人物との同卓"} ${runs.length}件</strong>
+     ${runs.length?`<div class="player-rel-year-list">${groupedRunsHtml}</div>`:'<div class="small muted">該当する記録はありません。</div>'}
    </div>
  </div>`;
  const btn=q("playerRelationDetail").querySelector("[data-player-rel-center]");
