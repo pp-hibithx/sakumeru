@@ -905,31 +905,37 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
 
 /* Visually group the existing toolbar without changing its controls or behavior. */
 .kptest .rich-toolbar{
-  align-items:stretch;
-  gap:8px!important;
-  padding:10px!important;
+  align-items:center;
+  align-content:center;
+  gap:3px 0!important;
+  padding:6px 7px!important;
 }
 .kptest .rich-toolbar .tb-group{
-  flex:1 1 190px;
-  align-content:flex-start;
+  flex:0 1 auto;
+  align-content:center;
   align-items:center;
-  gap:5px;
+  gap:3px;
   margin:0!important;
-  padding:7px!important;
-  border:1px solid color-mix(in srgb,var(--text-primary) 28%,var(--line))!important;
-  border-radius:8px;
-  background:color-mix(in srgb,var(--surface-raised) 54%,var(--surface));
+  padding:2px 7px!important;
+  border:0!important;
+  border-right:1px solid color-mix(in srgb,var(--text-muted) 34%,var(--line))!important;
+  border-radius:0;
+  background:transparent;
 }
+.kptest .rich-toolbar .tb-group:last-child{border-right:0!important}
 .kptest .rich-toolbar .tb-label{
-  flex:0 0 100%;
-  padding:0 2px 4px;
-  border-bottom:1px solid color-mix(in srgb,var(--text-muted) 26%,transparent);
+  flex:0 0 auto;
+  padding:0 3px 0 0;
+  border:0;
   color:var(--text-muted);
+  font-size:10px;
   letter-spacing:.08em;
 }
 .kptest .rich-toolbar button,
 .kptest .rich-toolbar select{
-  min-height:34px;
+  min-height:28px;
+  padding:3px 6px;
+  font-size:11px;
 }
 .kptest .rich-toolbar button:hover:not(:disabled){
   background:var(--surface-raised);
@@ -952,7 +958,7 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
   box-shadow:0 0 0 1px var(--accent) inset;
 }
 @media(max-width:760px){
-  .kptest .rich-toolbar .tb-group{flex-basis:100%}
+  .kptest .rich-toolbar .tb-group{flex-basis:auto}
 }
 </style><link rel="stylesheet" href="../assets/css/readability.css?v=0908-1"></head><body>
 <div data-site-header data-active="scenario"></div>
