@@ -895,13 +895,22 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
 
 /* RichEditor operation gutter: controls stay in their own lane and never cover text. */
 .kptest .blog-editor{
-  --kp-editor-control-gutter:184px;
+  --kp-editor-control-gutter:78px;
   padding-left:var(--kp-editor-control-gutter)!important;
   padding-right:clamp(14px,3vw,28px)!important;
   color:var(--control-text);
 }
 .kptest .blog-editor > .sm-block{
+  display:block!important;
+  float:none!important;
+  clear:both;
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box;
   scroll-margin-top:190px;
+}
+@media(max-width:760px){
+  .kptest .blog-editor{--kp-editor-control-gutter:68px}
 }
 
 /* Visually group the existing toolbar without changing its controls or behavior. */
