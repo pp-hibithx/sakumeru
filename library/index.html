@@ -1405,6 +1405,21 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .lib-article-editor:not(.article-reorder-mode) .article-toggle-title{font-size:16px!important;font-weight:800}
 .lib-article-editor:not(.article-reorder-mode) .article-toggle-children{margin-top:4px!important}
 
+/* The record editor is transparent and sits directly on the selected sheet.
+   Its headings and labels therefore use the sheet palette, not the dark panel palette. */
+[data-sheet-theme]:not([data-sheet-theme="standard"]) #libraryEditor{
+  color:var(--sheet-text);
+}
+[data-sheet-theme]:not([data-sheet-theme="standard"]) #libraryEditor :is(h2,h3,label,.participant-head,.checkline){
+  color:var(--sheet-text);
+}
+[data-sheet-theme]:not([data-sheet-theme="standard"]) #libraryEditor :is(.muted,.small.muted){
+  color:var(--sheet-muted);
+}
+[data-sheet-theme]:not([data-sheet-theme="standard"]) #libraryEditor :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea){
+  color:var(--control-text);
+}
+
 @media(max-width:760px){
   .library-page{gap:11px}.lib-panel{padding:12px}.lib-toolbar,.library-view-tabs,.library-play-tabs{padding:9px}
   .library-view-tabs,.library-play-tabs{flex-wrap:nowrap;overflow-x:auto}.library-view-tab,.library-play-tab{flex:0 0 auto;white-space:nowrap}
