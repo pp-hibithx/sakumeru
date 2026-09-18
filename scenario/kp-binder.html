@@ -2078,7 +2078,18 @@ function renderEditor(){
 ed.addEventListener("keyup",saveRange);
  ed.addEventListener("mouseup",saveRange);
  ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle({coalesce:true});refreshBlockHandles()});
- ed.addEventListener("blur",saveRange);
+ // A one-line IME edit may leave the editor without Enter ever being pressed.
+ // Persist the committed composition and the final DOM when focus leaves the editor;
+ // Enter must never be a prerequisite for keeping a special block.
+ ed.addEventListener("compositionend",()=>{
+   ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle({coalesce:true});refreshBlockHandles();
+ });
+ ed.addEventListener("blur",()=>{
+   saveRange();
+   p.__v11ArticleHtml=cleanEditorHtml();
+   clearTimeout(saveTimer);
+   saveNow();
+ },true);
  q("#richToolbar").addEventListener("mousedown",e=>{
    if(e.target.closest("button,input,select"))saveRange();
  });
