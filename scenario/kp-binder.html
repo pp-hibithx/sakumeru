@@ -666,6 +666,7 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
   margin-left:4px;width:30px;min-width:30px;border-left:1px solid var(--line);
   color:var(--muted)
 }
+.block-handle-layer .kp-block-state-control.kp-delete-only .kp-block-delete{margin-left:0;border-left:0}
 .block-handle-layer .kp-block-state-control .kp-block-delete:hover{color:#d16a6a;border-color:#d16a6a}
 
 .blog-editor > [data-kp-reveal-state="open"]{box-shadow:inset 3px 0 0 rgba(86,150,92,.72)}
@@ -993,7 +994,7 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
   <div class="kp-outline-share-actions" style="margin-top:10px">
     <button type="button" id="applyOutlineReveal">このシーンの○をKPliveへ反映</button>
     <button type="button" class="secondary" id="toggleKpLiveOrder">↕ KPlive表示順を編集</button>
-    <span class="muted-note">このシーン内の「○」だけを反映します。通常本文だけでなく、PL向け要点・特殊ブロック内の本文／箇条書きも対象です。</span>
+    <span class="muted-note">このシーンの「開示情報」内で「○」にした本文／箇条書きを反映します。</span>
   </div>
   <section class="kp-live-order-wrap" id="kpLiveOrderWrap" hidden>
     <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">シーン（親）→大見出し（子）→小見出し（孫）の表示順を並び替えます。親・子は畳んで必要な所だけ開けます。開示した時刻や共有URLは変わりません。</div></div><div class="kp-live-order-fold-actions"><button type="button" class="secondary" id="openAllKpLiveOrder">すべて開く</button><button type="button" class="secondary" id="closeAllKpLiveOrder">すべて閉じる</button></div></div>
@@ -1661,9 +1662,12 @@ function renderEditor(){
  }
 
  let handleFrame=0;
- function appendKpStateControl(block,{left,top,nested=false}={}){
+ function showsKpRevealStateControl(block){
+   return !!block?.closest?.('section.kp-special[data-kind="reveal"]');
+ }
+ function appendKpStateControl(block,{left,top,nested=false,showRevealState=showsKpRevealStateControl(block)}={}){
    const stateWrap=document.createElement("span");
-   stateWrap.className=`kp-block-state-control sm-outline-ui${nested?" kp-nested-state-control":""}`;
+   stateWrap.className=`kp-block-state-control sm-outline-ui${nested?" kp-nested-state-control":""}${showRevealState?"":" kp-delete-only"}`;
    stateWrap.style.left=`${left}px`;stateWrap.style.top=`${top}px`;stateWrap._smBlock=block;
    const updateTab=()=>{
      if(!nested)return;
@@ -1671,19 +1675,21 @@ function renderEditor(){
      const state=kpRevealState(block);tab.dataset.currentState=state;
      tab.textContent=state==="open"?"○":state==="fail"?"×":"－";tab.title="開示状態を変更";
    };
-   if(nested){
+   if(nested&&showRevealState){
      const tab=document.createElement("button");tab.type="button";tab.className="kp-reveal-tab";
      tab.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
      tab.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(q(".blog-shell")?.classList.contains("kp-reveal-edit-mode"))return;stateWrap.classList.toggle("kp-tab-open")});
      stateWrap.appendChild(tab);updateTab();
    }
-   [["none","－","開示不要"],["open","○","取得済み・KPliveへ開示"],["fail","×","判定失敗・未取得"]].forEach(([state,label,title])=>{
-     const btn=document.createElement("button");btn.type="button";btn.dataset.kpState=state;btn.textContent=label;btn.title=title;
-     btn.setAttribute("aria-label",title);btn.setAttribute("aria-pressed",String(kpRevealState(block)===state));
-     btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
-     btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();setKpRevealState(block,state);updateTab();if(nested&&!q(".blog-shell")?.classList.contains("kp-reveal-edit-mode"))stateWrap.classList.remove("kp-tab-open")});
-     stateWrap.appendChild(btn);
-   });
+   if(showRevealState){
+     [["none","－","開示不要"],["open","○","取得済み・KPliveへ開示"],["fail","×","判定失敗・未取得"]].forEach(([state,label,title])=>{
+       const btn=document.createElement("button");btn.type="button";btn.dataset.kpState=state;btn.textContent=label;btn.title=title;
+       btn.setAttribute("aria-label",title);btn.setAttribute("aria-pressed",String(kpRevealState(block)===state));
+       btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+       btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();setKpRevealState(block,state);updateTab();if(nested&&!q(".blog-shell")?.classList.contains("kp-reveal-edit-mode"))stateWrap.classList.remove("kp-tab-open")});
+       stateWrap.appendChild(btn);
+     });
+   }
    const del=document.createElement("button");del.type="button";del.className="kp-block-delete";del.textContent="⌫";del.title="この本文ブロックを削除";del.setAttribute("aria-label",del.title);
    del.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
    del.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(kpBlockHasMeaningfulContent(block)&&!confirm("この本文ブロックを削除しますか？"))return;removeKpStateableBlock(block)});
