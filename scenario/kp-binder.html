@@ -891,6 +891,69 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
   background:var(--accent)!important;
   border-color:var(--accent)!important;
 }
+
+/* RichEditor operation gutter: controls stay in their own lane and never cover text. */
+.kptest .blog-editor{
+  --kp-editor-control-gutter:184px;
+  padding-left:var(--kp-editor-control-gutter)!important;
+  padding-right:clamp(14px,3vw,28px)!important;
+  color:var(--control-text);
+}
+.kptest .blog-editor > .sm-block{
+  scroll-margin-top:190px;
+}
+
+/* Visually group the existing toolbar without changing its controls or behavior. */
+.kptest .rich-toolbar{
+  align-items:stretch;
+  gap:8px!important;
+  padding:10px!important;
+}
+.kptest .rich-toolbar .tb-group{
+  flex:1 1 190px;
+  align-content:flex-start;
+  align-items:center;
+  gap:5px;
+  margin:0!important;
+  padding:7px!important;
+  border:1px solid color-mix(in srgb,var(--text-primary) 28%,var(--line))!important;
+  border-radius:8px;
+  background:color-mix(in srgb,var(--surface-raised) 54%,var(--surface));
+}
+.kptest .rich-toolbar .tb-label{
+  flex:0 0 100%;
+  padding:0 2px 4px;
+  border-bottom:1px solid color-mix(in srgb,var(--text-muted) 26%,transparent);
+  color:var(--text-muted);
+  letter-spacing:.08em;
+}
+.kptest .rich-toolbar button,
+.kptest .rich-toolbar select{
+  min-height:34px;
+}
+.kptest .rich-toolbar button:hover:not(:disabled){
+  background:var(--surface-raised);
+  border-color:var(--accent);
+}
+.kptest .rich-toolbar button:focus-visible,
+.kptest .rich-toolbar select:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:1px;
+}
+.kptest .rich-toolbar button:disabled{
+  cursor:not-allowed;
+  filter:saturate(.45);
+}
+.kptest .rich-toolbar button[aria-pressed="true"],
+.kptest .rich-toolbar button.active{
+  background:color-mix(in srgb,var(--accent) 24%,var(--control-bg));
+  color:var(--text-primary);
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent) inset;
+}
+@media(max-width:760px){
+  .kptest .rich-toolbar .tb-group{flex-basis:100%}
+}
 </style><link rel="stylesheet" href="../assets/css/readability.css?v=0908-1"></head><body>
 <div data-site-header data-active="scenario"></div>
 <main><div class="wrap kptest">
