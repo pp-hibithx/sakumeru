@@ -1325,6 +1325,20 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
  margin:3px 0 3px 5px!important
 }
 .lib-article-editor:not(.article-reorder-mode) .article-tree-dropzone{display:none}
+
+/* Page-scrolling article editors keep only the active block's tools within reach.
+   The sticky box remains bounded by its own RichEditor shell, so it stops before
+   the editor block/page has been scrolled past. KP BINDER uses its own toolbar. */
+.lib-article-editor:not(.article-reorder-mode) .articleRichMount .sm-rich-toolbar{
+ position:sticky!important;
+ top:8px;
+ z-index:80;
+ background:var(--panel)!important;
+ box-shadow:0 4px 12px rgba(0,0,0,.16)!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children .sm-rich-shell:focus-within>.sm-rich-toolbar{
+ position:sticky!important
+}
 @media(max-width:620px){
  .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block{padding-left:9px!important;padding-right:9px!important}
  .lib-article-editor:not(.article-reorder-mode) .article-toggle-block{margin-left:9px!important;margin-right:9px!important}
