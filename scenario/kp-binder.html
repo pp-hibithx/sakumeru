@@ -1353,11 +1353,11 @@ function addBlock(kind,body=""){
  const p=b.pages.find(x=>String(x.id)===String(active));if(!p)return;
  ensureArticle(p);
  if(window.__v11Insert){
-   if(kind==="normal")window.__v11Insert(body||"<p><br></p>");
+   if(kind==="normal")window.__v11Insert(body||'<p data-kind="normal"><br></p>');
    else window.__v11InsertSpecial(kind,body||"");
    return;
  }
- p.__v11ArticleHtml+=(kind==="normal"?(body||"<p><br></p>"):`<section class="kp-special" data-kind="${esc(kind)}"><div class="kp-special-head">${esc(FLOW_LABEL[kind]||kind)}</div><div class="kp-special-body">${body||"<p><br></p>"}</div></section>`);
+ p.__v11ArticleHtml+=(kind==="normal"?(body||'<p data-kind="normal"><br></p>'):`<section class="kp-special" data-kind="${esc(kind)}"><div class="kp-special-head">${esc(FLOW_LABEL[kind]||kind)}</div><div class="kp-special-body">${body||"<p><br></p>"}</div></section>`);
  renderEditor()
 }
 function moveBlock(i,dir){
@@ -1421,15 +1421,9 @@ function renderEditor(){
        <button type="button" id="sceneSticky">🗒 付箋</button>
        <button type="button" id="sceneClearAnno">× 解除</button>
      </div>
-     <div class="tb-group media-group">
-       <span class="tb-label">メディア</span>
-       <button type="button" id="insertImages">🖼 画像</button>
-       <button type="button" id="insertAudio">🔊 音声</button>
-       <button type="button" id="insertVideo">▶ 動画</button>
-       <button type="button" data-special="dialogue">💬 会話ログ</button>
-     </div>
      <div class="tb-group">
        <span class="tb-label">卓用</span>
+       <button type="button" id="insertParagraphBlock">＋ 本文</button>
        <button type="button" data-special="reveal">＋ 開示情報</button>
        <button type="button" data-special="memo">＋ KPメモ</button>
        <button type="button" data-special="rp">＋ RP</button>
@@ -2190,6 +2184,7 @@ ed.addEventListener("keyup",saveRange);
    restoreRange();SAKUMERichEditor.execCommand(ed,"createLink",false,url);saveRange();syncArticle();
  };
  q("#richToolbar").querySelectorAll("[data-special]").forEach(btn=>btn.onclick=()=>insertSpecial(btn.dataset.special));
+ q("#insertParagraphBlock").onclick=()=>insertTopLevelHtml('<p data-kind="normal"><br></p>');
 
  q("#sceneMarker").onclick=()=>{
    restoreRange();const sel=window.getSelection();
@@ -2216,7 +2211,8 @@ ed.addEventListener("keyup",saveRange);
    ed.normalize();sel.removeAllRanges();syncArticle();
  };
 
- q("#insertImages").onclick=()=>{
+ const insertImagesButton=q("#insertImages");
+ if(insertImagesButton)insertImagesButton.onclick=()=>{
    const input=document.createElement("input");input.type="file";input.accept="image/*";input.multiple=true;
    input.onchange=()=>{
      const files=[...(input.files||[])];if(!files.length)return;
@@ -2446,14 +2442,16 @@ q("#closeLightbox").onclick=()=>q("#imageLightbox").classList.remove("open");
  decorateBlocks();
  requestAnimationFrame(decorateBlocks);
 
-q("#insertAudio").onclick=()=>{
+const insertAudioButton=q("#insertAudio");
+if(insertAudioButton)insertAudioButton.onclick=()=>{
    const input=document.createElement("input");input.type="file";input.accept="audio/*";
    input.onchange=()=>{
      const f=input.files?.[0];if(!f)return;
      const r=new FileReader();r.onload=()=>insertHtml(`<div class="media-card" contenteditable="false"><div class="media-card-head">🔊 音声：${esc(f.name)}</div><audio controls src="${String(r.result||"")}"></audio></div><p><br></p>`);r.readAsDataURL(f);
    };input.click();
  };
- q("#insertVideo").onclick=()=>{
+ const insertVideoButton=q("#insertVideo");
+ if(insertVideoButton)insertVideoButton.onclick=()=>{
    q("#videoChoicePop").classList.add("open");
    q("#videoUrlForm").classList.remove("open");
    q("#videoUrlInput").value="";
