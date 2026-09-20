@@ -37,6 +37,12 @@ html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]){
 }
 html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.card,.panel,.box,.lib-panel,.dir-panel,.section,.notice,.test-banner,.stat,details,.pc-overview-column,.pc-detail-toggle-body){--text:var(--text-primary);--muted:var(--text-muted)}
 html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.card,.panel,.box,.lib-panel,.dir-panel,.section,.notice,.test-banner,.stat,details,.pc-overview-column,.pc-detail-toggle-body) :is(.muted,.small.muted,.muted-note){color:var(--text-muted)}
+/* Dark raised surfaces must use interface ink, not the selected loose-leaf ink.
+   Their backgrounds stay owned by each component; only text semantics change. */
+html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.home-today-panel,.work-stat,.event-detail){
+  --text:var(--text-primary);--muted:var(--text-muted);color:var(--text-primary)
+}
+html[data-theme="dark"] [data-sheet-theme]:not([data-sheet-theme="standard"]) :is(.home-today-panel,.work-stat,.event-detail) :is(.muted,.small.muted,.muted-note){color:var(--text-muted)}
 .sheet-theme-field{display:grid;gap:6px;max-width:360px}.sheet-theme-field select{width:100%}.sheet-theme-note{margin:0}
 html{font-size:16px}body{font-size:16px;line-height:1.7;background:var(--bg);color:var(--text)}
 main>.wrap:not(.share-page),main .wrap.directory-page,main .wrap.library-page{
