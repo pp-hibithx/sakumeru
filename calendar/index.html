@@ -980,6 +980,47 @@ body.calendar-editor-open{overflow:hidden}
   .event-detail-actions,.event-editor-actions{display:grid!important;grid-template-columns:1fr}
   .event-detail-actions button,.event-editor-actions button{width:100%!important;min-height:44px}
 }
+
+/* The loose-leaf text variables can be dark even while this floating panel uses
+   a dark surface. Keep the correction local to CALENDAR's detail viewer. */
+html[data-theme="dark"] .event-detail{
+ color:#f3f4f6;
+ border-color:#858c96
+}
+html[data-theme="dark"] .event-detail .event-detail-head,
+html[data-theme="dark"] .event-detail .event-detail-participants,
+html[data-theme="dark"] .event-detail .event-detail-actions{
+ border-color:#737a84
+}
+html[data-theme="dark"] .event-detail .event-detail-person{
+ border-color:#626a75
+}
+html[data-theme="dark"] .event-detail .event-detail-head h2,
+html[data-theme="dark"] .event-detail .event-detail-title,
+html[data-theme="dark"] .event-detail .event-detail-value,
+html[data-theme="dark"] .event-detail .event-detail-participants strong,
+html[data-theme="dark"] .event-detail .event-detail-person span{
+ color:#f3f4f6
+}
+html[data-theme="dark"] .event-detail .event-detail-label,
+html[data-theme="dark"] .event-detail .muted,
+html[data-theme="dark"] .event-detail .small{
+ color:#c6cbd2!important
+}
+html[data-theme="dark"] .event-detail .event-detail-item{
+ border-color:#737a84;
+ background:#30353c
+}
+html[data-theme="dark"] .event-detail button{
+ color:#f3f4f6!important;
+ border-color:#858c96!important;
+ background:#292e35!important
+}
+html[data-theme="dark"] .event-detail button:hover,
+html[data-theme="dark"] .event-detail button:focus-visible{
+ border-color:var(--accent)!important;
+ color:#fff!important
+}
 </style>
 </head>
 <body>
