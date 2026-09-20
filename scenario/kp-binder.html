@@ -2,9 +2,9 @@
 <title>KP BINDER | SAKU+MERU</title>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
 <link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0901-preview1">
-<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0901-common1">
+<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0920-style-preview">
 <script src="../assets/js/rich-editor-outline.js?v=0901-preview1"></script>
-<script src="../assets/js/rich-editor.js?v=0915-delete-marker"></script>
+<script src="../assets/js/rich-editor.js?v=0920-style-preview"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/beta-gate.js?v=02315"></script><script src="../assets/js/beta-gate-ui.js?v=0306"></script>
 <style>
@@ -949,6 +949,7 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
   padding:3px 6px;
   font-size:11px;
 }
+.kptest #formatBlock{height:28px;min-height:28px;padding:3px 24px 3px 6px;font-size:11px;line-height:1.2}
 .kptest .rich-toolbar button:hover:not(:disabled){
   background:var(--surface-raised);
   border-color:var(--accent);
@@ -1393,9 +1394,9 @@ function renderEditor(){
      </div>
      <div class="tb-group">
        <span class="tb-label">文字</span>
-       <select id="formatBlock" title="見出し">
+       <span class="sm-rich-format-wrap"><select id="formatBlock" data-rich-format title="文章種別" aria-label="文章種別">
          <option value="p">本文</option><option value="h2">大見出し</option><option value="h3">小見出し</option><option value="blockquote">引用</option>
-       </select>
+       </select><span class="sm-rich-format-preview sm-rich-render" aria-hidden="true"><h2>大見出し</h2><h3>小見出し</h3><p>本文の見本です。</p><blockquote>引用の見本です。</blockquote></span></span>
        <button type="button" data-cmd="bold"><b>B</b></button>
        <button type="button" data-cmd="italic"><i>I</i></button>
        <button type="button" data-cmd="underline"><u>U</u></button>
