@@ -25,7 +25,8 @@
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0303.css">
 <link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0830b">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<link rel="stylesheet" href="../assets/css/binder-v2.css?v=0916-shared-binder" data-sakumeru-binder-v2="1">
+<script defer src="../assets/js/common-layout.js?v=0914-header-actions"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .kp-share-wrap{max-width:1180px;margin:0 auto;padding:20px}
@@ -85,13 +86,39 @@
 .kp-live-item[data-kind="outline-scene"] .kp-live-scene-group{margin:12px 0 8px}
 .kp-live-item[data-kind="outline-scene"] .kp-live-group-toggle>summary{font-size:1.03rem}
 
+/* KPlive reads on the same ruled sheet as the editor; disclosure controls stay intact. */
+.kp-share-wrap{color:var(--binder-ink)}
+.kp-share-wrap #kpLiveContent{background:transparent;border:0;box-shadow:none;padding:0;color:inherit}
+.kp-share-wrap .kp-live{background:transparent!important;color:inherit!important;border-color:var(--binder-rule)!important}
+.kp-share-wrap .kp-live>h2{color:var(--binder-ink);font-size:clamp(1.55rem,3vw,2rem);border-bottom:2px solid var(--binder-rule);padding-bottom:.35em}
+.kp-share-wrap .kp-live>.muted{color:var(--muted)}
+.kp-share-wrap .kp-live-toc{background:color-mix(in srgb,var(--binder-sheet) 94%,var(--accent) 6%);color:var(--binder-ink);border-color:var(--binder-rule);border-left:4px solid var(--accent)}
+.kp-share-wrap .kp-live-item,.kp-share-wrap .kp-live-scene-group,.kp-share-wrap .kp-live-grandchild-toggle{background:transparent!important;color:var(--binder-ink)!important;border-color:var(--binder-rule)!important;box-shadow:none!important}
+.kp-share-wrap .kp-live-item{border-width:0 0 1px!important;border-radius:0;margin-bottom:22px;overflow:visible}
+.kp-share-wrap .kp-live-item>summary{padding:10px 0;font-size:1.15rem;color:var(--binder-ink);font-weight:800}
+.kp-share-wrap .kp-live-body{padding:10px 0 4px;color:var(--binder-ink)}
+.kp-share-wrap .kp-live-scene-group{border-width:0 0 1px 3px;border-style:solid;border-radius:0;padding-left:14px}
+.kp-share-wrap .kp-live-scene-group.kp-live-special{border-left:4px solid var(--accent)!important}
+.kp-share-wrap .kp-live-group-toggle>summary{font-size:1.35rem!important;line-height:1.4;font-weight:800;color:var(--binder-ink);padding:11px 4px}
+.kp-share-wrap .kp-live-group-content{border-left:0;padding:4px 8px 12px}
+.kp-share-wrap .kp-live-grandchild-toggle{border-left:2px solid var(--accent)!important}
+.kp-share-wrap .kp-live-grandchild-toggle>summary{font-size:1.1rem;line-height:1.45;font-weight:750;color:var(--binder-ink)}
+.kp-share-wrap .kp-live-outline-block{font-size:1rem;line-height:1.85;color:var(--binder-ink)}
+.kp-share-wrap .kp-live-outline-block+.kp-live-outline-block{border-top-color:var(--binder-rule)}
+.kp-share-wrap .kp-live-body h1,.kp-share-wrap .kp-live-body h2{font-size:1.65rem;font-weight:800;color:var(--binder-ink)}
+.kp-share-wrap .kp-live-body h3,.kp-share-wrap .kp-live-body h4{font-size:1.25rem;font-weight:750;color:var(--binder-ink)}
+.kp-share-wrap .kp-live-body blockquote{color:var(--binder-ink);background:color-mix(in srgb,var(--binder-sheet) 89%,var(--accent) 11%);border-left-color:var(--accent)}
+.kp-share-wrap .kp-live-body .kp-special{border-left:4px solid var(--accent);padding:10px 14px}
+.kp-share-wrap .kp-live :is(.sm-drag-handle,.sm-outline-ui,.kp-special-move,.kp-special-action,.kp-reveal-sharebox){display:none!important}
+@media(max-width:760px){.kp-share-wrap .kp-live-layout{grid-template-columns:1fr}.kp-share-wrap .kp-live-sidebar{position:static}}
+
 </style>
 </head>
 <body>
 <div data-site-header></div>
-<main class="kp-share-wrap">
+<main><div class="wrap kp-share-wrap">
   <div id="kpLiveContent" class="share-card"><p>読み込み中...</p></div>
-</main>
+</div></main>
 <div class="kp-image-lightbox" id="kpImageLightbox" hidden>
   <button type="button" class="kp-image-lightbox-close" id="kpImageLightboxClose" aria-label="画像を閉じる" title="閉じる">×</button>
   <img id="kpImageLightboxImg" alt="拡大画像">
@@ -287,7 +314,7 @@
        // gaps created by Enter-generated empty information units.
        if(!body)return "";
        return title
-         ? `<details class="kp-live-outline-child kp-live-grandchild-toggle" data-level="grandchild"><summary>${esc(title)}</summary><div class="kp-live-grandchild-content">${body}</div></details>`
+         ? `<details class="kp-live-outline-child kp-live-grandchild-toggle" data-level="grandchild"><summary><span class="kp-live-heading-small" role="heading" aria-level="4">${esc(title)}</span></summary><div class="kp-live-grandchild-content">${body}</div></details>`
          : `<section class="kp-live-outline-child is-untitled" data-level="grandchild">${body}</section>`;
      }).join("");
    };
@@ -357,7 +384,8 @@
        // scene -> big heading/title -> child content.  Even when their labels match,
        // the nested toggle makes the hierarchy explicit instead of looking duplicated.
        const groupTitle=title||"開示情報";
-       return `<details class="kp-live-scene-group kp-live-group-toggle"><summary>${esc(groupTitle)}</summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
+       const special=String(group?.id||"").startsWith("special:")||String(group?.shareSource||"").startsWith("special");
+       return `<details class="kp-live-scene-group kp-live-group-toggle${special?" kp-live-special":""}"><summary><span class="kp-live-heading-big" role="heading" aria-level="3">${esc(groupTitle)}</span></summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
      }).join("");
      return legacy+outline;
    };
@@ -393,3 +421,4 @@
 </script>
 </body>
 </html>
+
