@@ -2088,6 +2088,20 @@ function renderEditor(){
 
 
  refreshRevealActions();
+ ed.addEventListener("paste",event=>{
+   const sourceHtml=event.clipboardData?.getData("text/html");
+   if(!sourceHtml)return;
+   event.preventDefault();
+   const pasted=document.createElement("template");
+   pasted.innerHTML=SAKUMERichEditor.sanitizeHtml(sourceHtml,{allowAllHeadings:true});
+   pasted.content.querySelectorAll("[style]").forEach(node=>{
+     ["background","background-color","color","font","font-family","font-size"].forEach(name=>node.style.removeProperty(name));
+     if(!node.style.length)node.removeAttribute("style");
+   });
+   SAKUMERichEditor.execCommand(ed,"insertHTML",false,pasted.innerHTML);
+   saveRange();
+   syncArticle({coalesce:true});
+ });
 ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
  ed.addEventListener("mouseup",()=>{saveRange();syncFormatSelect()});
  ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncFormatSelect();syncArticle({coalesce:true});refreshBlockHandles()});
