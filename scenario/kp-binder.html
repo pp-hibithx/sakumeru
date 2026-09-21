@@ -2802,10 +2802,12 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
    const containers=selectedContainer?[selectedContainer]:[];
    const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>shareIsNestedStateable(x,ed)&&shareRevealState(x)==="open"));
    if(!openUnits.length)return false;
-   const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[],shareSource:"outline-state"};
+   const context=revealMode==="summary"?revealHeadingContext(section):null;
+   const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:context?.big?headingText(context.big,specialTitle):specialTitle,outlineChildren:[],shareSource:"outline-state"};
    let sourceOrder=0;
    for(const container of containers){
-     let subgroup=null;
+     let subgroup=context?.small?{id:ensureHeadingShareId(context.small,"inner"),title:headingText(context.small,""),blocks:[]}:null;
+     if(subgroup)specialRoot.outlineChildren.push(subgroup);
      // Walk the actual DOM in document order.  The special-block title is the big
      // heading (child of the scene); headings inside its body become grandchildren.
      // Keeping one ordered stream also keeps image galleries exactly where the KP put them.
@@ -3360,12 +3362,24 @@ function resolveRevealBody(section,mode){
  return null;
 }
 
+function revealHeadingContext(section){
+ const editor=section?.closest?.("#blogEditor");
+ if(!editor||section.parentElement!==editor)return null;
+ let big=null,small=null;
+ for(let node=section.previousElementSibling;node;node=node.previousElementSibling){
+   if(!small&&node.matches("h3,h4"))small=node;
+   if(node.matches("h1,h2")){big=node;break}
+ }
+ return big||small?{big,small}:null;
+}
 async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
  section=normalizeRevealSection(section)||section;
  if(!section||!source)return null;
  const blockId=String(section.dataset.blockId||"")||(crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`));
- const group={id:`special:${blockId}`,title:String(title||"開示情報").replace(/\s+/g," ").trim()||"開示情報",outlineChildren:[],shareSource:"special-full",shareMode};
- let child=null,order=0,untitledNo=0;
+ const context=shareMode==="summary"?revealHeadingContext(section):null;
+ const group={id:`special:${blockId}`,title:context?.big?headingText(context.big,title):String(title||"開示情報").replace(/\s+/g," ").trim()||"開示情報",outlineChildren:[],shareSource:"special-full",shareMode};
+ let child=context?.small?{id:ensureHeadingShareId(context.small,"inner"),title:headingText(context.small,""),blocks:[]}:null,order=0,untitledNo=0;
+ if(child)group.outlineChildren.push(child);
  const makeChild=(heading=null)=>{
    const text=heading?headingText(heading,""):"";
    const id=heading?ensureHeadingShareId(heading,"inner"):`inner:${blockId}:untitled:${untitledNo++}`;
