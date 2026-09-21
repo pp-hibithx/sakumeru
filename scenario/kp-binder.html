@@ -1174,11 +1174,19 @@ function kpDestructive(prev,next){
 }
 function kpSnapshot(prev,reason="before-save"){
  if(!prev||!kpMeaningful(kpBinderMetrics(prev)))return;
- let store={};try{store=JSON.parse(localStorage.getItem(KP_BACKUP_KEY)||"{}")}catch{}
+ let store;try{store=JSON.parse(localStorage.getItem(KP_BACKUP_KEY)||"{}");if(!store||typeof store!=="object"||Array.isArray(store))throw Error("Invalid snapshot store")}
+ catch(e){console.warn("KP snapshot skipped; current binder was saved",e);return}
  const rows=Array.isArray(store[sid])?store[sid]:[];
- rows.unshift({savedAt:new Date().toISOString(),reason,binder:prev});
- store[sid]=rows.slice(0,3);
- try{localStorage.setItem(KP_BACKUP_KEY,JSON.stringify(store))}catch(e){console.warn("KP snapshot failed",e)}
+ store[sid]=[{savedAt:new Date().toISOString(),reason,binder:prev},...rows].slice(0,3);
+ try{localStorage.setItem(KP_BACKUP_KEY,JSON.stringify(store))}catch(e){console.warn("KP snapshot skipped; current binder was saved",e)}
+}
+function kpTrimSnapshotsForQuota(keep){
+ let store;try{store=JSON.parse(localStorage.getItem(KP_BACKUP_KEY)||"{}")}catch{return false}
+ if(!store||typeof store!=="object"||Array.isArray(store))return false;
+ const rows=Array.isArray(store?.[sid])?store[sid]:[];
+ if(rows.length<=keep)return false;
+ if(keep)store[sid]=rows.slice(0,keep);else delete store[sid];
+ try{localStorage.setItem(KP_BACKUP_KEY,JSON.stringify(store));return true}catch(e){console.warn("KP snapshot trim failed",e);return false}
 }
 function kpPreviewSave(prev,next,reason="保存内容が大きく変わっています"){
  const modal=q("#kpSafetyModal"),sum=q("#kpSafetySummary"),scenes=q("#kpSafetyScenes");
@@ -1202,14 +1210,24 @@ function saveNow(){
    return;
  }
  __kpExplicitSave=false;
- kpSnapshot(prev,"before-save");
  latest[sid]=snapshot;
+ const payload=JSON.stringify(latest);
+ let saveError=null,trimmedForQuota=false;
+ for(const keep of [null,1,0]){
+   if(keep!==null){if(!kpTrimSnapshotsForQuota(keep))continue;trimmedForQuota=true}
+   try{localStorage.setItem(KEY,payload);saveError=null;break}
+   catch(e){saveError=e;if(e?.name!=="QuotaExceededError"&&e?.code!==22)break}
+ }
+ if(saveError){
+   const st=q("#saveStatus");if(st)st.textContent="保存失敗：容量不足です。ページを閉じずにバックアップを取得してください。";
+   throw saveError;
+ }
  // Keep the live binder object used by the current editor. Replacing `b` with
  // the serialized clone detaches renderEditor's scene reference, so later
  // typing appears on screen but is no longer included in the next save.
  all={...latest,[sid]:b};
- localStorage.setItem(KEY,JSON.stringify(latest));
  const st=q("#saveStatus");if(st)st.textContent="保存済み";
+ if(!trimmedForQuota)kpSnapshot(prev,"before-save");
 }
 function save(){
  clearTimeout(saveTimer);
