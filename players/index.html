@@ -1085,7 +1085,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
-<script src="../assets/js/shared-data.js?v=02304"></script>
+<script src="../assets/js/shared-data.js?v=02305"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
@@ -1575,7 +1575,7 @@ function save(){
    }
    let pcId=String(r.pcId||"");
    if(r.pcName&&TRPG39.ensurePC){
-     const pc=TRPG39.ensurePC(r.pcName,{system:q("system").value.trim(),ownerPlayerId:playerId});
+     const pc=TRPG39.ensurePC(r.pcName,{system:q("system").value.trim(),ownerPlayerId:playerId,ownershipType:"player"});
      pcId=pc?.id||pcId;
    }
    return {...r,playerId,pcId};
