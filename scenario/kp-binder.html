@@ -128,6 +128,11 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .blog-editor .kp-special-body{min-height:1.8em}
 .blog-editor .kp-special-action{margin-top:9px}
 .blog-editor .kp-special-action button{padding:6px 10px;font-size:12px}
+.kptest .blog-editor .kp-special{color:var(--text-primary)}
+.kptest .blog-editor .kp-special-head,.kptest .blog-editor .kp-reveal-mode,.kptest .blog-editor .kp-reveal-summary-label{color:var(--text-muted)}
+.kptest .blog-editor .kp-special-title,.kptest .blog-editor .kp-special-body,.kptest .blog-editor .kp-special :is(h1,h2,h3,h4,blockquote){color:var(--text-primary)}
+.kptest .blog-editor .kp-special .kind-chip{color:#111}
+.kptest .blog-editor .kp-special-move,.kptest .blog-editor .kp-special-action button{background:var(--control-bg);color:var(--control-text);border-color:var(--line)}
 
 .blog-editor .kp-reveal-sharebox{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}
 .blog-editor .kp-reveal-mode{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
@@ -1172,7 +1177,7 @@ function kpSnapshot(prev,reason="before-save"){
  let store={};try{store=JSON.parse(localStorage.getItem(KP_BACKUP_KEY)||"{}")}catch{}
  const rows=Array.isArray(store[sid])?store[sid]:[];
  rows.unshift({savedAt:new Date().toISOString(),reason,binder:prev});
- store[sid]=rows.slice(0,12);
+ store[sid]=rows.slice(0,3);
  try{localStorage.setItem(KP_BACKUP_KEY,JSON.stringify(store))}catch(e){console.warn("KP snapshot failed",e)}
 }
 function kpPreviewSave(prev,next,reason="保存内容が大きく変わっています"){
@@ -1908,6 +1913,17 @@ function renderEditor(){
      const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);sel.addRange(r);
    }
  }
+ function syncFormatSelect(){
+   const select=q("#formatBlock"),sel=window.getSelection();
+   const live=sel?.rangeCount?sel.getRangeAt(0):null;
+   const range=live&&ed.contains(live.commonAncestorContainer)?live:savedRange;
+   if(!select||!range)return;
+   let node=range.startContainer;
+   if(node.nodeType===Node.TEXT_NODE)node=node.parentElement;
+   if(!node||!ed.contains(node))return;
+   const tag=node.closest?.("p,h1,h2,h3,h4,blockquote")?.tagName.toLowerCase()||"p";
+   select.value=tag==="h1"||tag==="h2"?"h2":tag==="h3"||tag==="h4"?"h3":tag==="blockquote"?"blockquote":"p";
+ }
  function getEditorHistory(){
    let h=editorHistoryByScene.get(String(p.id));
    const current=cleanEditorHtml();
@@ -2072,9 +2088,9 @@ function renderEditor(){
 
 
  refreshRevealActions();
-ed.addEventListener("keyup",saveRange);
- ed.addEventListener("mouseup",saveRange);
- ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle({coalesce:true});refreshBlockHandles()});
+ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
+ ed.addEventListener("mouseup",()=>{saveRange();syncFormatSelect()});
+ ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncFormatSelect();syncArticle({coalesce:true});refreshBlockHandles()});
  // A one-line IME edit may leave the editor without Enter ever being pressed.
  // Persist the committed composition and the final DOM when focus leaves the editor;
  // Enter must never be a prerequisite for keeping a special block.
@@ -2109,7 +2125,10 @@ ed.addEventListener("keyup",saveRange);
  q("#sceneTitleInput").oninput=e=>{p.title=e.target.value;save();renderScenes();refreshStats()};
  q("#deleteScene").onclick=()=>{if(!confirm(`「${p.title||"このシーン"}」を削除しますか？`))return;b.pages=b.pages.filter(x=>String(x.id)!==String(p.id));active=b.pages[0]?.id||"";saveNow();renderScenes();renderEditor()};
 
- q("#formatBlock").onchange=e=>{restoreRange();SAKUMERichEditor.execCommand(ed,"formatBlock",false,e.target.value);saveRange();syncArticle()};
+ const formatSelect=q("#formatBlock");
+ formatSelect.addEventListener("pointerdown",syncFormatSelect);
+ formatSelect.addEventListener("focus",syncFormatSelect);
+ formatSelect.onchange=e=>{restoreRange();SAKUMERichEditor.execCommand(ed,"formatBlock",false,e.target.value);saveRange();syncFormatSelect();syncArticle()};
  q("#richToolbar").querySelectorAll("[data-cmd]").forEach(btn=>btn.onclick=()=>{
    const cmd=btn.dataset.cmd;
    restoreRange();
