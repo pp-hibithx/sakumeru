@@ -94,7 +94,7 @@ const POMODORO_MODES={focus:{label:"25分集中",durationSec:1500},short:{label:
 const HOME_GUIDE_PERIODS={lateNight:[0,5],morning:[5,11],afternoon:[11,16],evening:[16,19],night:[19,24]};
 const HOME_GUIDE_TEXT=window.SAKUMERU_HOME_GUIDE_TEXT;
 const HOME_TUTORIAL_TOPICS=[{key:"scenario",label:"SCENARIO"},{key:"calendar",label:"CALENDAR"},{key:"library",label:"LIBRARY"},{key:"pc",label:"PC"},{key:"players",label:"PLAYERS"},{key:"share",label:"SHARE"},{key:"tools",label:"TOOLS"}];
-const HOME_TUTORIAL_STEPS=HOME_TUTORIAL_TOPICS.map(topic=>HOME_GUIDE_TEXT.tutorial[topic.key]);
+const HOME_TUTORIAL_STEPS=HOME_TUTORIAL_TOPICS.map(topic=>HOME_GUIDE_TEXT?.tutorial?.[topic.key]||"");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let homeScenariosCache=null,homeTimerTick=0,homeConciergeOpen=false,homeConciergeMode="",homeTutorialStep=0,homeHelpTopicIndex=0,homeTutorialReview=false,homeTutorialDismissed=false,workQuickOpen=false,workEditingId="";
 function localYmd(d=new Date()){const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
@@ -418,7 +418,13 @@ function renderPrepTasks(){
    return `<a class="home-task${cls}" href="${href}"><div class="home-task-main"><div class="home-task-title">${esc(t.item.title)}</div><div class="home-task-meta">${esc(t.title)}${esc(label)} ／ 締切 ${esc(t.deadline.replaceAll("-","/"))}</div></div><div class="home-task-due">${esc(dueText(t.deadline))}</div></a>`;
  }).join("");
 }
-function renderHomePanels(){if(syncExpiredTimer())return;renderHomeGuide();renderPomodoro();renderWorkLog();renderPrepTasks();renderHomeConcierge();startHomeTimerTick()}
+function renderHomePanels(){
+ if(syncExpiredTimer())return;
+ for(const render of [renderHomeGuide,renderPomodoro,renderWorkLog,renderPrepTasks,renderHomeConcierge]){
+  try{render()}catch(error){console.error("HOME panel render failed:",render.name,error)}
+ }
+ startHomeTimerTick();
+}
 document.getElementById("openHomeFavorites")?.addEventListener("click",openHomeFavorites);
 document.getElementById("saveHomeFavorites")?.addEventListener("click",saveHomeFavorites);
 document.getElementById("openHomeDecor")?.addEventListener("click",openHomeDecor);
