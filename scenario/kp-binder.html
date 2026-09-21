@@ -3751,7 +3751,7 @@ q("#toggleRevealEditMode")?.addEventListener("click",e=>{
 });
 document.addEventListener("pointerdown",e=>{
  if(e.target.closest?.(".kp-nested-state-control"))return;
- handleLayer?.querySelectorAll(".kp-nested-state-control.kp-tab-open").forEach(x=>x.classList.remove("kp-tab-open"));
+ q("#blockHandleLayer")?.querySelectorAll(".kp-nested-state-control.kp-tab-open").forEach(x=>x.classList.remove("kp-tab-open"));
 });
 q("#newShareSession").onclick=()=>{
  shareTest=currentShare()||shareTest;
