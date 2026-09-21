@@ -1195,7 +1195,7 @@ html[data-theme="dark"] .event-detail button:focus-visible{
 <div data-site-footer></div>
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
-<script src="../assets/js/shared-data.js?v=0292"></script>
+<script src="../assets/js/shared-data.js?v=0293"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
@@ -1488,7 +1488,7 @@ function addEventParticipantRow(value="",opts={}){
  row.querySelector(".eventPartRole")?.addEventListener("change",syncCalendarParticipantHidden);
  row.querySelector(".participant-remove").onclick=()=>{row.remove();syncCalendarParticipantHidden()};
 }
-function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];const rows=[...host.querySelectorAll(".calendar-library-participant-row")].map(r=>{const role=r.querySelector(".eventPartRole")?.value||"PL",plName=r.querySelector(".eventPartPl")?.value.trim()||"",ho=r.querySelector(".eventPartHo")?.value.trim()||"",pcName=r.querySelector(".eventPartPc")?.value.trim()||"";let playerId=String(r.dataset.playerId||""),pcId=String(r.dataset.pcId||"");if(plName&&TRPG39.ensurePlayer&&TRPG39.playersEnabled?.()&&!playerId){const p=TRPG39.ensurePlayer(plName);playerId=p?.id||"";r.dataset.playerId=playerId}if(pcName&&TRPG39.ensurePC){const pcs=TRPG39.loadPCs?.()||[];const existing=pcId?pcs.find(p=>String(p.id)===pcId):null;if(!existing||String(existing.name||"").trim()!==pcName){const pc=TRPG39.ensurePC(pcName,{system:$("eventSystem")?.value.trim()||"",ownerPlayerId:playerId});pcId=pc?.id||"";r.dataset.pcId=pcId}}else if(!pcName){pcId="";r.dataset.pcId=""}return {role,plName,playerId,ho,pcName,pcId,relation:""}}).filter(r=>r.plName||r.ho||r.pcName);return TRPG39.normalizeParticipantRows?TRPG39.normalizeParticipantRows(rows):rows}
+function calendarParticipantRows(){const host=$("eventParticipantRows");if(!host)return [];const rows=[...host.querySelectorAll(".calendar-library-participant-row")].map(r=>{const role=r.querySelector(".eventPartRole")?.value||"PL",plName=r.querySelector(".eventPartPl")?.value.trim()||"",ho=r.querySelector(".eventPartHo")?.value.trim()||"",pcName=r.querySelector(".eventPartPc")?.value.trim()||"";let playerId=String(r.dataset.playerId||""),pcId=String(r.dataset.pcId||"");if(plName&&TRPG39.ensurePlayer&&TRPG39.playersEnabled?.()&&!playerId){const p=TRPG39.ensurePlayer(plName);playerId=p?.id||"";r.dataset.playerId=playerId}if(pcName&&TRPG39.ensurePC){const pcs=TRPG39.loadPCs?.()||[];const existing=pcId?pcs.find(p=>String(p.id)===pcId):null;if(!existing||String(existing.name||"").trim()!==pcName){const pc=TRPG39.ensurePC(pcName,{system:$("eventSystem")?.value.trim()||"",ownerPlayerId:playerId,ownershipType:"player"});pcId=pc?.id||"";r.dataset.pcId=pcId}}else if(!pcName){pcId="";r.dataset.pcId=""}return {role,plName,playerId,ho,pcName,pcId,relation:""}}).filter(r=>r.plName||r.ho||r.pcName);return TRPG39.normalizeParticipantRows?TRPG39.normalizeParticipantRows(rows):rows}
 function calendarParticipantNames(){return [...new Set(calendarParticipantRows().map(r=>r.plName).filter(Boolean))]}
 function calendarLibraryRowsForEvent(x){
  const album=TRPG39.loadAlbum?.()||[];
