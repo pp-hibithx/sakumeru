@@ -329,41 +329,41 @@
    const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
    const normLabel=s=>String(s||"").replace(/\s+/g," ").trim();
    const renderSceneLegacyItems=(legacyItems,outlineGroups=[])=>{
-     const outlineIds=new Set((Array.isArray(outlineGroups)?outlineGroups:[])
+     const groups=Array.isArray(outlineGroups)?outlineGroups:[];
+     const outlineIds=new Set(groups
        .map(g=>String(g?.id||""))
        .filter(Boolean));
-     const outlineTitles=new Set((Array.isArray(outlineGroups)?outlineGroups:[])
-       .map(g=>normLabel(g?.title))
-       .filter(Boolean));
-     const outlineContent=new Set();
-     for(const group of (Array.isArray(outlineGroups)?outlineGroups:[])){
-       for(const child of (Array.isArray(group?.outlineChildren)?group.outlineChildren:[])){
-         for(const block of (Array.isArray(child?.blocks)?child.blocks:[])){
-           outlineContent.add(normalizedBlockKey(block));
-         }
-       }
-     }
-     const legacySeen=new Set();
+     const textKey=html=>{
+       const tpl=document.createElement("template");tpl.innerHTML=String(html||"");
+       return normLabel(tpl.content.textContent);
+     };
+     const legacySeenIds=new Set(),legacySeenWithoutId=new Set();
      return (Array.isArray(legacyItems)?legacyItems:[])
        .filter(item=>{
          const id=String(item?.id||"");
          // New outline sharing stores a special block as `special:<blockId>`.
          // If that counterpart exists, the legacy snapshot is the same reveal and must not be rendered twice.
-         if(id && outlineIds.has(`special:${id}`))return false;
-         // Compatibility fallback for very old shares whose block id was not persisted.
-         // Only suppress by title when there is exactly one outline group with that title.
+         if(id && (outlineIds.has(`special:${id}`)||outlineIds.has(id)))return false;
          const title=normLabel(meaningfulTitle(item));
-         if(title){
-           const matches=(Array.isArray(outlineGroups)?outlineGroups:[]).filter(g=>normLabel(g?.title)===title);
-           if(matches.length===1 && outlineTitles.has(title))return false;
+         const body=textKey(item?.bodyHtml??item?.body??"");
+         const images=(Array.isArray(item?.images)?item.images:[]).map(String).join("|");
+         // Older shares may lack matching IDs. Suppress only an exact title AND
+         // visible-content match; a same-titled but different reveal must survive.
+         if(title && (body||images)){
+           const matches=groups.filter(g=>normLabel(g?.title)===title);
+           if(matches.length===1){
+             const blocks=(matches[0].outlineChildren||[]).flatMap(c=>Array.isArray(c?.blocks)?c.blocks:[]);
+             const groupBody=normLabel(blocks.map(b=>textKey(b?.bodyHtml)).join(" "));
+             const groupImages=blocks.flatMap(b=>Array.isArray(b?.images)?b.images:[]).map(String).join("|");
+             if(body===groupBody&&images===groupImages)return false;
+           }
          }
-         // Old snapshots and modern outline blocks may have unrelated IDs/titles even
-         // though their actual PL-visible body is identical.  Compare the rendered
-         // content as a final compatibility guard.
-         const contentKey=normalizedBlockKey({bodyHtml:item?.bodyHtml??item?.body??"",images:item?.images});
-         if(outlineContent.has(contentKey))return false;
-         if(legacySeen.has(contentKey))return false;
-         legacySeen.add(contentKey);
+         if(id){if(legacySeenIds.has(id))return false;legacySeenIds.add(id)}
+         else{
+           const key=`${title}::${body}::${images}`;
+           if(legacySeenWithoutId.has(key))return false;
+           legacySeenWithoutId.add(key);
+         }
          return true;
        })
        .map(item=>{
@@ -378,9 +378,8 @@
        return ao-zo;
      });
      const sceneTitle=normLabel(x.title);
-     // A refreshed scene's outline is the authoritative representation.  Legacy
-     // full-HTML is only a compatibility fallback for scenes that have no outline yet.
-     const legacy=groups.length?"":renderSceneLegacyItems(x.legacyItems,groups);
+     // Mixed published scenes must retain legacy reveals with no outline counterpart.
+     const legacy=renderSceneLegacyItems(x.legacyItems,groups);
      const seenGroups=new Set();
      const outline=groups.map(group=>{
        const title=normLabel(group.title);
