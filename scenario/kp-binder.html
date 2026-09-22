@@ -122,8 +122,9 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .blog-editor .kp-special[data-kind="memo"]{border-left:4px dashed var(--line)}
 .blog-editor .kp-special[data-kind="rp"]{border-left:4px dotted var(--line)}
 .blog-editor .kp-special[data-kind="secret"]{border-left:4px double var(--accent)}
-.blog-editor .kp-special-head{display:flex;gap:8px;align-items:center;margin-bottom:7px;font-size:12px;font-weight:800;color:var(--muted)}
+.blog-editor .kp-special-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px;font-size:12px;font-weight:800;color:var(--muted)}
 .blog-editor .kp-special-head .kp-special-move{margin-left:auto;padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap}
+.blog-editor .kp-special-head .kp-special-delete{padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap}
 .blog-editor .kp-special-title{font-weight:800;color:var(--text)}
 .blog-editor .kp-special-body{min-height:1.8em}
 .blog-editor .kp-special-action{margin-top:9px}
@@ -1684,14 +1685,65 @@ function renderEditor(){
      close();moveSpecialBlockToScene(section,id);
    };
  }
+ function askSpecialBlockDeletion(section){
+   if(!section?.matches?.("section.kp-special")||section.parentElement!==ed)return;
+   const veil=document.createElement("div");
+   veil.className="video-choice-pop";veil.style.display="flex";veil.setAttribute("contenteditable","false");
+   veil.innerHTML='<div class="video-choice-card"><h3>ブロックを削除</h3><p>このブロックを削除します。共有中の場合はKP Liveからも削除されます。</p><div class="video-choice-actions"><button type="button" class="secondary" data-special-delete-cancel>キャンセル</button><button type="button" class="danger" data-special-delete-confirm>削除</button></div></div>';
+   document.body.appendChild(veil);
+   const close=()=>veil.remove();
+   veil.querySelector("[data-special-delete-cancel]").onclick=close;
+   veil.addEventListener("mousedown",e=>{if(e.target===veil)close()});
+   veil.querySelector("[data-special-delete-confirm]").onclick=async()=>{
+     if(section.parentElement!==ed)return close();
+     const blockId=String(section.dataset.blockId||"");
+     const next=section.nextSibling,previousHtml=cleanEditorHtml();
+     shareTest=currentShare()||shareTest;
+     const previousItems=structuredClone(shareTest.items||[]);
+     close();
+     section.remove();
+     ensureParagraphBlocks();decorateBlocks();syncArticle();
+     const unshared=blockId?removeSharedBlockIdFromCurrentSession(blockId):false;
+     try{
+       clearTimeout(saveTimer);saveNow();
+       const savedPage=readLatestBinderStore()[sid]?.pages?.find(x=>String(x.id)===String(p.id));
+       if(savedPage?.__v11ArticleHtml!==p.__v11ArticleHtml)throw new Error("本文の保存が確認できませんでした。")
+     }catch(err){
+       ed.insertBefore(section,next?.parentNode===ed?next:null);
+       p.__v11ArticleHtml=previousHtml;shareTest.items=previousItems;
+       clearTimeout(saveTimer);decorateBlocks();refreshRevealActions();refreshStats();
+       const st=q("#testShareStatus");if(st)st.textContent=`ブロックを削除できませんでした：${err?.message||err}`;
+       console.error("特殊ブロック削除エラー",err);
+       return;
+     }
+     renderTestShareBar();
+     if(unshared&&shareTest.shareId){
+       try{await syncTestShare()}
+       catch(err){
+         const st=q("#testShareStatus");if(st)st.textContent=`本文とローカルの共有解除は保存しましたが、KP Liveへの反映に失敗しました：${err?.message||err}`;
+         console.error("KP Live共有反映エラー",err);
+         return;
+       }
+     }
+     const st=q("#testShareStatus");if(st)st.textContent=unshared?"ブロックを削除し、共有も解除しました。":"ブロックを削除しました。";
+   };
+ }
  function decorateSpecialMoveButtons(){
    [...ed.querySelectorAll(":scope > section.kp-special")].forEach(section=>{
      const head=section.querySelector(":scope > .kp-special-head");
-     if(!head||head.querySelector(":scope > .kp-special-move"))return;
-     const btn=document.createElement("button");btn.type="button";btn.className="secondary kp-special-move sm-outline-ui";btn.textContent="↪ 別シーンへ移動";btn.setAttribute("contenteditable","false");
-     btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
-     btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();askSpecialMoveDestination(section)});
-     head.appendChild(btn);
+     if(!head)return;
+     if(!head.querySelector(":scope > .kp-special-move")){
+       const btn=document.createElement("button");btn.type="button";btn.className="secondary kp-special-move sm-outline-ui";btn.textContent="↪ 別シーンへ移動";btn.setAttribute("contenteditable","false");
+       btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+       btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();askSpecialMoveDestination(section)});
+       head.appendChild(btn);
+     }
+     if(!head.querySelector(":scope > .kp-special-delete")){
+       const btn=document.createElement("button");btn.type="button";btn.className="danger kp-special-delete sm-outline-ui";btn.textContent="ブロックを削除";btn.setAttribute("contenteditable","false");
+       btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
+       btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();askSpecialBlockDeletion(section)});
+       head.appendChild(btn);
+     }
    });
  }
 
@@ -1887,7 +1939,7 @@ function renderEditor(){
       return SAKUMERichEditor.cleanupEditorHtml(ed,clone=>richOutline?.cleanupClone(clone));
     }
     const clone=ed.cloneNode(true);
-   clone.querySelectorAll(".sm-drag-handle,.kp-special-move").forEach(h=>h.remove());
+   clone.querySelectorAll(".sm-drag-handle,.sm-outline-ui,.kp-special-move,.kp-special-delete").forEach(h=>h.remove());
    clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail").forEach(el=>{
      el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail");
      if(!el.className)el.removeAttribute("class");
@@ -3687,6 +3739,26 @@ function removeRevealFromScene(id){
  const before=(shareTest?.items||[]).length;
  shareTest.items=(shareTest?.items||[]).filter(x=>String(x?.id||"")!==String(id));
  return shareTest.items.length!==before;
+}
+function removeSharedBlockIdFromCurrentSession(blockId){
+ blockId=String(blockId||"");if(!blockId)return false;
+ shareTest=currentShare()||shareTest;
+ let changed=false;
+ shareTest.items=(shareTest.items||[]).filter(item=>{
+   if(item?.kind!=="outline-scene"){
+     if(String(item?.id||"")!==blockId)return true;
+     changed=true;return false;
+   }
+   const groups=Array.isArray(item.outlineGroups)?item.outlineGroups:[];
+   const legacy=Array.isArray(item.legacyItems)?item.legacyItems:[];
+   const keptGroups=groups.filter(g=>![`special:${blockId}`,blockId].includes(String(g?.id||"")));
+   const keptLegacy=legacy.filter(x=>String(x?.id||"")!==blockId);
+   if(keptGroups.length===groups.length&&keptLegacy.length===legacy.length)return true;
+   changed=true;item.outlineGroups=keptGroups;item.legacyItems=keptLegacy;
+   if(!keptGroups.length&&!keptLegacy.length)return false;
+   item.updatedAt=new Date().toISOString();return true;
+ });
+ return changed;
 }
 function setRevealAction(section){
  section=normalizeRevealSection(section)||section;
