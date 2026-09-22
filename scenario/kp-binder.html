@@ -1062,12 +1062,13 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
   </div>
 </details></div></main>
 <div data-site-footer></div>
-<script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=0914-header-actions"></script>
+<script src="../assets/js/shared-data.js?v=0292"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js"></script><script src="../assets/js/common-layout.js?v=0914-header-actions"></script><script src="../assets/js/kp-binder-storage.js?v=0923-phase1"></script>
 <script>
+(async()=>{
 const q=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const params=new URLSearchParams(location.search);
 const KEY="39x2_scenario_kp_binders_v1";
-let all={};try{all=JSON.parse(localStorage.getItem(KEY)||"{}")}catch{}
+let all=await KPBinderStorage.loadAll();
 let sid=params.get("id")||"";
 if(!sid){
  try{
@@ -1144,7 +1145,7 @@ setTimeout(()=>{
  const load=q("#kpLiveRecoveryLoad"),commit=q("#kpLiveRecoveryCommit"),status=q("#kpLiveRecoveryStatus"),ta=q("#kpLiveRecoveryUrls");if(!load)return;
  ta.value="";
  load.onclick=async()=>{commit.disabled=true;__kpLiveRecoveryPreview=null;const ids=ta.value.split(/\r?\n/).map(kpLiveIdFromUrl).filter(Boolean);if(!ids.length){status.textContent="共有URLを入力してください。";return}try{if(!window.TRPG39Cloud?.getSharedPage)throw new Error("共有読み込み機能を読み込めませんでした。");status.textContent="KPlive共有データを読み込み中…";const payloads=[];for(const id of ids){const raw=await TRPG39Cloud.getSharedPage(id);const p=unwrapKpShared(raw);if(!p||p.kind!=="kp-live-share")throw new Error(`${id} はKP共有データではありません。`);payloads.push(p)}const merged=mergeKpPayloads(payloads,ids);if(!merged.pages.length)throw new Error("共有URLには復旧できる開示本文がありませんでした。");__kpLiveRecoveryPreview=merged.binder;b=(typeof cloneBinderSafe==="function"?cloneBinderSafe(merged.binder):JSON.parse(JSON.stringify(merged.binder)));active=b.pages[0]?.id||"";q("#scenarioName").textContent=(b.scenarioTitle||"シナリオ")+" ／ KPlive復旧プレビュー（未保存）";renderScenes();renderEditor();refreshStats();commit.disabled=false;status.textContent=`読み込み成功：${ids.length} URL ／ ${merged.pages.length}シーン。まだ保存していません。画面の本文を確認してください。`;renderTestShareBar?.()}catch(e){status.textContent=`読み込み失敗：${e?.message||e}`}};
- commit.onclick=()=>{if(!__kpLiveRecoveryPreview)return;if(!confirm("現在プレビューしているKPlive共有内容をKP BINDERへ復旧保存しますか？\n※共有されていなかった本文はKPliveからは復元できません。"))return;b=JSON.parse(JSON.stringify(__kpLiveRecoveryPreview));delete b.__unsavedNewBinder;__kpExplicitSave=true;saveNow();status.textContent="復旧保存しました。ページを再読み込みします。";setTimeout(()=>location.reload(),300)};
+ commit.onclick=async()=>{if(!__kpLiveRecoveryPreview)return;if(!confirm("現在プレビューしているKPlive共有内容をKP BINDERへ復旧保存しますか？\n※共有されていなかった本文はKPliveからは復元できません。"))return;b=JSON.parse(JSON.stringify(__kpLiveRecoveryPreview));delete b.__unsavedNewBinder;__kpExplicitSave=true;try{await saveNow();status.textContent="復旧保存しました。ページを再読み込みします。";location.reload()}catch(error){status.textContent=`復旧保存に失敗しました：${error?.message||error}`}};
 },0);
 
 
@@ -1158,6 +1159,9 @@ function readLatestBinderStore(){
 const KP_BACKUP_KEY="39x2_kp_binder_snapshots_v2";
 let kpSnapshotQuotaBlocked=false;
 let __kpExplicitSave=false;
+let idbSavedBinder=KPBinderStorage.isActive()?JSON.parse(JSON.stringify(b)):null;
+let idbSaveQueue=Promise.resolve();
+let idbPendingSaves=0;
 function kpBinderMetrics(x){
  const pages=Array.isArray(x?.pages)?x.pages:[];
  const htmlLen=pages.reduce((n,p)=>n+String(p?.__v11ArticleHtml||p?.body||"").replace(/<[^>]*>/g," ").trim().length,0);
@@ -1207,6 +1211,39 @@ function kpPreviewSave(prev,next,reason="保存内容が大きく変わってい
  return true;
 }
 function saveNow(){
+ clearTimeout(saveTimer);saveTimer=0;
+ if(KPBinderStorage.isActive()){
+   const next=JSON.parse(JSON.stringify(b||{}));delete next.__unsavedNewBinder;
+   const explicit=__kpExplicitSave;__kpExplicitSave=false;
+   idbPendingSaves++;
+   const task=idbSaveQueue.then(async()=>{
+     const prev=idbSavedBinder;
+     if(prev&&JSON.stringify(prev)===JSON.stringify(next)){
+       const st=q("#saveStatus");if(st)st.textContent="保存済み";
+       return true;
+     }
+     if(!explicit&&kpDestructive(prev,next)){
+       kpPreviewSave(prev,next,"空データまたは大幅なデータ減少を検知したため、自動保存を停止しました。");
+       return false;
+     }
+     try{
+       await KPBinderStorage.saveBinder(sid,next);
+       idbSavedBinder=next;
+       all={...all,[sid]:b};
+       const st=q("#saveStatus");if(st)st.textContent="保存済み";
+       if(!kpSnapshotQuotaBlocked&&prev&&kpMeaningful(kpBinderMetrics(prev))){
+         try{await KPBinderStorage.saveSnapshot(sid,{savedAt:new Date().toISOString(),reason:"before-save",binder:prev})}
+         catch(error){if(error?.name==="QuotaExceededError"||error?.code===22)kpSnapshotQuotaBlocked=true;console.warn("KP snapshot skipped; current binder was saved",error)}
+       }
+       return true;
+     }catch(error){
+       const st=q("#saveStatus");if(st)st.textContent="保存失敗：IndexedDBへ保存できません。ページを閉じずにバックアップを確認してください。";
+       throw error;
+     }
+   });
+   idbSaveQueue=task.catch(()=>{});
+   return task.finally(()=>{idbPendingSaves--});
+ }
  const latest=readLatestBinderStore();
  const prev=latest[sid];
  const snapshot=JSON.parse(JSON.stringify(b||{}));
@@ -1238,9 +1275,9 @@ function saveNow(){
 function save(){
  clearTimeout(saveTimer);
  const st=q("#saveStatus");if(st)st.textContent="保存中…";
- saveTimer=setTimeout(saveNow,120);
+ saveTimer=setTimeout(()=>{saveNow().catch(error=>console.error("KP BINDER autosave failed",error))},120);
 }
-let flushPendingEditor=()=>{clearTimeout(saveTimer);saveNow()};
+let flushPendingEditor=()=>{clearTimeout(saveTimer);return saveNow()};
 try{
  const openedAt=new Date().toISOString();
  b.lastOpenedAt=openedAt;
@@ -1701,12 +1738,15 @@ function renderEditor(){
      shareTest=currentShare()||shareTest;
      const previousItems=structuredClone(shareTest.items||[]);
      close();
-     section.remove();
-     ensureParagraphBlocks();decorateBlocks();syncArticle();
+     // Detach this exact blockId from the active share before removing its
+     // editor node. A same-titled block (or a heading inside this one) is not
+     // a match. The public update still happens only after the article saves.
      const unshared=blockId?removeSharedBlockIdFromCurrentSession(blockId):false;
      try{
-       clearTimeout(saveTimer);saveNow();
-       const savedPage=readLatestBinderStore()[sid]?.pages?.find(x=>String(x.id)===String(p.id));
+       section.remove();
+       ensureParagraphBlocks();decorateBlocks();syncArticle();
+       clearTimeout(saveTimer);await saveNow();
+       const savedPage=(await KPBinderStorage.loadAll())[sid]?.pages?.find(x=>String(x.id)===String(p.id));
        if(savedPage?.__v11ArticleHtml!==p.__v11ArticleHtml)throw new Error("本文の保存が確認できませんでした。")
      }catch(err){
        ed.insertBefore(section,next?.parentNode===ed?next:null);
@@ -3949,7 +3989,7 @@ document.addEventListener("click",async e=>{
      const snap=await revealSnapshot(section);
      if(!confirm(`「${snap.title}」を共有しますか？`))return;
      const before=structuredClone(shareTest.items||[]);
-     upsertRevealIntoScene(snap);saveNow();
+     upsertRevealIntoScene(snap);await saveNow();
      try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
      st.textContent=`「${snap.sceneTitle}」シーンに「${snap.title}」を共有しました。`;
    }else if(upd){
@@ -3957,14 +3997,14 @@ document.addEventListener("click",async e=>{
      st.textContent="共有内容を準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
      const before=structuredClone(shareTest.items||[]);
-     upsertRevealIntoScene(snap);saveNow();
+     upsertRevealIntoScene(snap);await saveNow();
      try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
      st.textContent=`「${snap.sceneTitle}」シーンの「${snap.title}」を更新しました。`;
    }else if(wd){
      const found=findSharedRevealById(id);if(!found)return;
      if(!confirm(`「${found.item.title}」を共有から削除しますか？`))return;
      const before=structuredClone(shareTest.items||[]);
-     removeRevealFromScene(id);saveNow();
+     removeRevealFromScene(id);await saveNow();
      try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
      st.textContent=`「${found.item.title}」を共有から削除しました。`;
    }
@@ -4146,9 +4186,16 @@ function renderCompare(){
 }
 if(q("#addPc"))q("#addPc").onclick=()=>{const id=q("#pcSelect").value,x=pcs.find(v=>String(v.id)===String(id));if(!x)return;if(b.participants.some(v=>String(v.pcId)===String(id)))return alert("追加済みです。");b.participants.push({pcId:id,name:x.name||"",abilities:"",skills:""});save();renderPC()};
 renderPC();
-renderScenes();renderEditor();saveNow();
-window.addEventListener("pagehide",()=>{try{flushPendingEditor()}catch(e){}});
-window.addEventListener("beforeunload",()=>{try{flushPendingEditor()}catch(e){}});
+renderScenes();renderEditor();
+if(!KPBinderStorage.isActive())saveNow();
+window.addEventListener("beforeunload",event=>{
+ if(KPBinderStorage.isActive()){
+   if(saveTimer||idbPendingSaves){event.preventDefault();event.returnValue=""}
+   return;
+ }
+ try{flushPendingEditor()}catch(error){console.error(error)}
+});
+})().catch(error=>{console.error("KP BINDER initialization failed",error);const status=document.querySelector("#saveStatus");if(status)status.textContent="KP BINDERを読み込めませんでした。ページを閉じずにバックアップを確認してください。"});
 </script><!-- kp-binder-safe-load-save-v1 -->
 <div id="kpSafetyModal" hidden style="position:fixed;inset:0;z-index:99999;background:#0009;padding:4vh 4vw;overflow:auto"><div style="max-width:760px;margin:auto;background:var(--panel,#fff);color:var(--text,#222);border-radius:14px;padding:18px;box-shadow:0 20px 60px #0008"><h2 style="margin-top:0">保存前プレビュー</h2><div id="kpSafetyReason" class="muted-note"></div><div id="kpSafetySummary" style="margin:12px 0"></div><details><summary>シーン一覧</summary><div id="kpSafetyScenes" style="margin-top:8px"></div></details><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button type="button" id="kpSafetyCancel" class="secondary">保存しない</button><button type="button" id="kpSafetyConfirm">確認して保存</button></div></div></div></body></html>
 
