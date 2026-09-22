@@ -2812,7 +2812,7 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
    if(!root)makeRoot(null);const id=heading?ensureHeadingShareId(heading,"child"):(crypto.randomUUID?.()||`child-${Date.now()}-${Math.random()}`);
    child={id,title:titleOverride||headingText(heading,""),blocks:[]};root.outlineChildren.push(child);return child;
  };
- const appendSpecialStates=async section=>{
+  const appendSpecialStates=async section=>{
    const specialTitle=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim() ||
      String(section.querySelector(":scope > .kp-special-head .kind-chip")?.textContent||"開示情報").trim();
    // A reveal block has two editable representations: the scenario text and the optional PL summary.
@@ -2824,43 +2824,9 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
    const containers=selectedContainer?[selectedContainer]:[];
    const openUnits=containers.flatMap(c=>[...c.querySelectorAll("p,blockquote,li,div.image-grid")].filter(x=>shareIsNestedStateable(x,ed)&&shareRevealState(x)==="open"));
    if(!openUnits.length)return false;
-   const context=revealMode==="summary"?revealHeadingContext(section):null;
-   const specialRoot={id:`special:${section.dataset.blockId||ensureHeadingShareId(section,"special")}`,title:specialTitle,outlineChildren:[],shareSource:"outline-state"};
-   if(context)specialRoot.headingContext=context;
-   let sourceOrder=0;
-   for(const container of containers){
-     let subgroup=null;
-     // Walk the actual DOM in document order.  The special-block title is the big
-     // heading (child of the scene); headings inside its body become grandchildren.
-     // Keeping one ordered stream also keeps image galleries exactly where the KP put them.
-     const nodes=[...container.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,div.image-grid")];
-     for(const node of nodes){
-       // Ignore editor-only image controls/captions when building the heading tree.
-       // A filename/help label inside an image grid must never become a KPlive
-       // small heading; only a real RichEditor heading (e.g. 「画像はこちら」) may.
-       if(node.closest?.(".image-grid,[data-image-grid]") && !node.matches("div.image-grid,[data-image-grid]"))continue;
-       if(node.closest?.(".sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help"))continue;
-       // Ignore nodes that belong to a nested special/summary container.  We only
-       // want the visible stream of the currently selected container.
-       if(node.closest?.(".kp-special-body,[data-reveal-summary]")!==container)continue;
-       if(node.matches("h1,h2,h3,h4,h5,h6")){
-         const title=headingText(node,"");
-         // Some old special blocks still contain a heading that repeats the block title.
-         // It is a visual duplicate, not a new small-heading level.
-         if(title && title!==specialTitle){
-           subgroup={id:ensureHeadingShareId(node,"inner"),title,blocks:[]};
-           specialRoot.outlineChildren.push(subgroup);
-         }
-         continue;
-       }
-       if(!shareIsNestedStateable(node,ed)||shareRevealState(node)!=="open")continue;
-       if(!subgroup){subgroup={id:`inner:${shareEnsureRevealBlockId(node)}`,title:"",blocks:[]};specialRoot.outlineChildren.push(subgroup)}
-       subgroup.blocks.push(await outlineShareBlockSnapshot(node,sourceOrder++));
-     }
-   }
-   specialRoot.outlineChildren=specialRoot.outlineChildren.filter(c=>c.blocks.length);
-   if(specialRoot.outlineChildren.length)roots.push(specialRoot);
-   return !!specialRoot.outlineChildren.length;
+    const specialRoot=await buildSpecialOutlineGroup(section,selectedContainer,specialTitle,revealMode,{onlyOpen:true,shareSource:"outline-state"});
+    if(specialRoot)roots.push(specialRoot);
+    return !!specialRoot;
  };
  let sourceOrder=0;
  for(const block of [...ed.children]){
@@ -2873,7 +2839,7 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
  }
  roots.forEach(g=>g.outlineChildren=g.outlineChildren.filter(c=>c.blocks.length));
  return {id:`outline-scene:${page.id}`,kind:"outline-scene",source:"outline",sceneId:String(page.id),
-   title:String(page.title||"無題のシーン").trim()||"無題のシーン",target:"全員",outlineGroups:roots.filter(g=>g.outlineChildren.length)};
+    title:String(page.title||"無題のシーン").trim()||"無題のシーン",target:"全員",outlineGroups:roots.filter(g=>g.outlineChildren.length||g.outlineRoots?.length)};
 }
 
 async function applyOutlineRevealToShare(){
@@ -2962,7 +2928,8 @@ async function applyOutlineRevealToShare(){
    return true;
  });
  const stateGroups=(fresh.outlineGroups||[]).filter(g=>g?.shareSource!=="special-full");
- const stateCount=stateGroups.reduce((n,g)=>n+(g.outlineChildren||[]).reduce((m,c)=>m+(c.blocks||[]).length,0),0);
+  const stateCount=stateGroups.reduce((n,g)=>n+(g.outlineChildren||[]).reduce((m,c)=>m+(c.blocks||[]).length,0)+
+    (g.outlineRoots||[]).reduce((m,r)=>m+(r.outlineChildren||[]).reduce((k,c)=>k+(c.blocks||[]).length,0),0),0);
  // If there is no ○ information and nothing old needed migration, do not withdraw or
  // delete anything from KPlive. Existing sharing remains exactly as it was.
  if(!stateCount&&!migratedLegacyCount){
@@ -3399,14 +3366,71 @@ function revealHeadingContext(section){
  }
  return headings.length?{headings:headings.map(({title,tag})=>({title,tag}))}:null;
 }
-async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
- section=normalizeRevealSection(section)||section;
- if(!section||!source)return null;
- const blockId=String(section.dataset.blockId||"")||(crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`));
- const context=shareMode==="summary"?revealHeadingContext(section):null;
- const group={id:`special:${blockId}`,title:String(title||"開示情報").replace(/\s+/g," ").trim()||"開示情報",outlineChildren:[],shareSource:"special-full",shareMode};
- if(context)group.headingContext=context;
- let child=null,order=0,untitledNo=0;
+async function buildSpecialOutlineGroup(section,source,title,shareMode="full",options={}){
+  section=normalizeRevealSection(section)||section;
+  if(!section||!source)return null;
+  const blockId=String(section.dataset.blockId||"")||(crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`));
+  const context=shareMode==="summary"?revealHeadingContext(section):null;
+  const group={id:`special:${blockId}`,title:String(title||"開示情報").replace(/\s+/g," ").trim()||"開示情報",outlineChildren:[],shareSource:options.shareSource||"special-full",shareMode};
+  if(context)group.headingContext=context;
+  // Keep real H2/H3 in the article outline. The special block still has one
+  // stable ID and kind; its display title must not consume a matching H2.
+  const fullBody=section.querySelector(":scope > .kp-special-body");
+  const headingSource=shareMode==="summary"&&fullBody?.querySelector("h1,h2,h3,h4,h5,h6")?fullBody:source;
+  const headingNodes=[...headingSource.querySelectorAll("h1,h2,h3,h4,h5,h6")].filter(node=>
+    node.closest?.(".kp-special-body,[data-reveal-summary]")===headingSource);
+  if(headingNodes.length){
+    const editor=section.closest("#blogEditor");
+    const roots=[];let root=null,child=null,order=0;
+    const makeRoot=(node=null)=>{
+      const index=roots.length;
+      root={id:`special:${blockId}:h2:${index}`,title:node?headingText(node,""):group.title,outlineChildren:[]};
+      roots.push(root);child=null;return root;
+    };
+    const makeChild=(node=null)=>{
+      if(!root)makeRoot();
+      child={id:`special:${blockId}:h2:${roots.length-1}:h3:${root.outlineChildren.length}`,title:node?headingText(node,""):"",blocks:[]};
+      root.outlineChildren.push(child);return child;
+    };
+    const isContent=node=>{
+      if(!node.matches?.("p,blockquote,li,div.image-grid"))return false;
+      if(options.onlyOpen && (!shareIsNestedStateable(node,editor)||shareRevealState(node)!=="open"))return false;
+      if(node.matches("li"))return !!node.parentElement?.matches?.("ul,ol");
+      const parentStateable=node.parentElement?.closest?.("p,blockquote,li,div.image-grid");
+      return !(parentStateable&&source.contains(parentStateable));
+    };
+    const appendContent=async node=>{
+      if(!isContent(node))return;
+      if(!child)makeChild();
+      child.blocks.push(await outlineShareBlockSnapshot(node,order++));
+    };
+    const headingNodesInSource=headingSource===source;
+    for(const node of headingSource.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,div.image-grid")){
+      if(node.closest?.(".image-grid,[data-image-grid]") && !node.matches("div.image-grid,[data-image-grid]"))continue;
+      if(node.closest?.(".sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help"))continue;
+      if(node.closest?.(".kp-special-body,[data-reveal-summary]")!==headingSource)continue;
+      if(node.matches("h1,h2")){makeRoot(node);continue}
+      if(node.matches("h3,h4,h5,h6")){makeChild(node);continue}
+      if(headingNodesInSource)await appendContent(node);
+    }
+    if(!headingNodesInSource){
+      // "要点だけ" replaces the prose, not the source heading hierarchy.
+      for(const node of source.querySelectorAll("p,blockquote,li,div.image-grid")){
+        if(node.closest?.(".image-grid,[data-image-grid]") && !node.matches("div.image-grid,[data-image-grid]"))continue;
+        if(node.closest?.(".kp-special-body,[data-reveal-summary]")!==source)continue;
+        await appendContent(node);
+      }
+    }
+    const blockCount=roots.reduce((n,r)=>n+r.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
+    if(options.onlyOpen&&!blockCount)return null;
+    group.outlineRoots=roots;
+    group.specialLabel=String(section.querySelector(":scope > .kp-special-head .kind-chip")?.textContent||"開示情報").trim()||"開示情報";
+    const explicitTitle=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim();
+    group.title=explicitTitle&&!["開示情報","KPメモ","RP","秘匿","会話ログ"].includes(explicitTitle)?explicitTitle:group.specialLabel;
+    if(headingNodes.some(node=>node.matches("h1,h2")))delete group.headingContext;
+    return roots.length?group:null;
+  }
+  let child=null,order=0,untitledNo=0;
  const makeChild=(heading=null)=>{
    const text=heading?headingText(heading,""):"";
    const id=heading?ensureHeadingShareId(heading,"inner"):`inner:${blockId}:untitled:${untitledNo++}`;
@@ -3422,7 +3446,7 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
    // outline heading. Keep the grid itself as content under the preceding H3.
    if(node.closest?.(".image-grid,[data-image-grid]") && !node.matches("div.image-grid,[data-image-grid]"))continue;
    if(node.closest?.(".sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help"))continue;
-   if(node.closest?.(".kp-special-body,[data-reveal-summary]") && node.closest?.(".kp-special-body,[data-reveal-summary]")!==source)continue;
+        if(node.closest?.(".kp-special-body,[data-reveal-summary]") && node.closest?.(".kp-special-body,[data-reveal-summary]")!==source)continue;
    if(node.matches("h1,h2,h3,h4,h5,h6")){
      const text=headingText(node,"");
      // Imported reveal blocks often repeat their own title as the first heading.
@@ -3443,7 +3467,8 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full"){
      if(parentStateable&&source.contains(parentStateable))continue;
    }
    if(!child)child=makeChild(null);
-   child.blocks.push(await outlineShareBlockSnapshot(node,order++));
+    if(options.onlyOpen && (!shareIsNestedStateable(node,section.closest("#blogEditor"))||shareRevealState(node)!=="open"))continue;
+    child.blocks.push(await outlineShareBlockSnapshot(node,order++));
  }
  group.outlineChildren=group.outlineChildren.filter(c=>c.blocks.length);
  repairImageOutlineChildren(group);
