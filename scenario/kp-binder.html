@@ -2162,10 +2162,27 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
  q("#sceneTitleInput").oninput=e=>{p.title=e.target.value;save();renderScenes();refreshStats()};
  q("#deleteScene").onclick=()=>{if(!confirm(`「${p.title||"このシーン"}」を削除しますか？`))return;b.pages=b.pages.filter(x=>String(x.id)!==String(p.id));active=b.pages[0]?.id||"";saveNow();renderScenes();renderEditor()};
 
- const formatSelect=q("#formatBlock");
- formatSelect.addEventListener("pointerdown",syncFormatSelect);
- formatSelect.addEventListener("focus",syncFormatSelect);
- formatSelect.onchange=e=>{restoreRange();SAKUMERichEditor.execCommand(ed,"formatBlock",false,e.target.value);saveRange();syncFormatSelect();syncArticle()};
+  const formatSelect=q("#formatBlock");
+  formatSelect.addEventListener("pointerdown",syncFormatSelect);
+  formatSelect.addEventListener("focus",syncFormatSelect);
+  formatSelect.onchange=e=>{
+    restoreRange();
+    const range=window.getSelection()?.getRangeAt(0);
+    const inSpecialBody=node=>{
+      const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
+      return !!element?.closest?.("section.kp-special .kp-special-body");
+    };
+    const heading=e.target.value==="h2"||e.target.value==="h3";
+    const touchesSpecialBody=range&&(inSpecialBody(range.startContainer)||inSpecialBody(range.endContainer)||
+      (!range.collapsed&&[...ed.querySelectorAll("section.kp-special .kp-special-body")].some(body=>range.intersectsNode(body))));
+    if(heading&&touchesSpecialBody){
+      syncFormatSelect();
+      alert("開示情報などの特殊ブロック内では独立見出しにできません。カード外に本文ブロックを追加して見出しを設定してください。");
+      return;
+    }
+    SAKUMERichEditor.execCommand(ed,"formatBlock",false,e.target.value);
+    saveRange();syncFormatSelect();syncArticle();
+  };
  q("#richToolbar").querySelectorAll("[data-cmd]").forEach(btn=>btn.onclick=()=>{
    const cmd=btn.dataset.cmd;
    restoreRange();
