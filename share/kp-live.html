@@ -105,6 +105,7 @@
 .kp-share-wrap .kp-live-body :is(p,li,blockquote,td,th){color:var(--kp-share-ink)!important}
 .kp-share-wrap .kp-live-scene-group{border-width:0 0 1px 3px;border-style:solid;border-radius:0;padding-left:14px}
 .kp-share-wrap .kp-live-scene-group.kp-live-special{border-left:4px solid var(--accent)!important}
+.kp-share-wrap .kp-live-special-kind{display:inline-block;margin:6px 4px 0;padding:2px 6px;border:1px solid var(--accent);border-radius:999px;color:var(--accent);font-size:.7rem;font-weight:700}
 .kp-share-wrap .kp-live-group-toggle>summary{font-size:1.35rem!important;line-height:1.4;font-weight:800;color:var(--kp-share-ink)!important;padding:11px 4px}
 .kp-share-wrap .kp-live-heading-context[data-heading-level="4"]>summary{font-size:1.16rem!important}
 .kp-share-wrap .kp-live-heading-context .kp-live-special>summary{font-size:1.03rem!important}
@@ -269,21 +270,21 @@
        return true;
      });
    };
-   const renderOutlineChildren=children=>{
+    const renderOutlineChildren=(children,{keepEmptyHeadings=false}={})=>{
      const seenChildren=new Set();
      const ordered=[...(Array.isArray(children)?children:[])].sort((a,z)=>{
        const ao=Number.isFinite(Number(a?.displayOrder))?Number(a.displayOrder):Number.MAX_SAFE_INTEGER;
        const zo=Number.isFinite(Number(z?.displayOrder))?Number(z.displayOrder):Number.MAX_SAFE_INTEGER;
        return ao-zo;
      });
-     return ordered.map(child=>{
+      return ordered.map((child,index)=>{
        const blocks=dedupeBlocks(child.blocks).sort((a,z)=>{
          const ao=Number.isFinite(Number(a?.sourceOrder))?Number(a.sourceOrder):Number.MAX_SAFE_INTEGER;
          const zo=Number.isFinite(Number(z?.sourceOrder))?Number(z.sourceOrder):Number.MAX_SAFE_INTEGER;
          return ao-zo;
        });
        const title=String(child.title||"").trim();
-       const childKey=`${title}::${blocks.map(normalizedBlockKey).join("||")}`;
+        const childKey=keepEmptyHeadings?String(child.id||index):`${title}::${blocks.map(normalizedBlockKey).join("||")}`;
        if(seenChildren.has(childKey))return "";
        seenChildren.add(childKey);
        // Each shared unit is rendered in the same order as KP BINDER.  Image grids
@@ -320,13 +321,21 @@
        const body=blocks.map(renderOutlineBlock).filter(Boolean).join("");
        // Do not render an empty child/toggle either. This removes stray vertical
        // gaps created by Enter-generated empty information units.
-       if(!body)return "";
+        if(!body && !(keepEmptyHeadings&&title))return "";
        return title
          ? `<details class="kp-live-outline-child kp-live-grandchild-toggle" data-level="grandchild"><summary><span class="kp-live-heading-small" role="heading" aria-level="4">${esc(title)}</span></summary><div class="kp-live-grandchild-content">${body}</div></details>`
          : `<section class="kp-live-outline-child is-untitled" data-level="grandchild">${body}</section>`;
      }).join("");
    };
-   const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
+    const renderOutlineGroup=x=>renderOutlineChildren(x.outlineChildren);
+    const renderSpecialOutlineRoots=group=>{
+      const roots=Array.isArray(group.outlineRoots)?group.outlineRoots:[];
+      const label=group.specialLabel||"開示情報";
+      return `<div class="kp-live-special-outline" data-special-id="${esc(group.id||"")}"><span class="kp-live-special-kind">${esc(label)}</span>${roots.map(root=>{
+        const children=renderOutlineChildren(root.outlineChildren,{keepEmptyHeadings:true});
+        return `<details class="kp-live-scene-group kp-live-group-toggle kp-live-special"><summary><span role="heading" aria-level="3">${esc(root.title||label)}</span></summary><div class="kp-live-group-content">${children}</div></details>`;
+      }).join("")}</div>`;
+    };
    const normLabel=s=>String(s||"").replace(/\s+/g," ").trim();
    const renderSceneLegacyItems=(legacyItems,outlineGroups=[])=>{
      const groups=Array.isArray(outlineGroups)?outlineGroups:[];
@@ -350,12 +359,15 @@
          // Older shares may lack matching IDs. Suppress only an exact title AND
          // visible-content match; a same-titled but different reveal must survive.
          if(title && (body||images)){
-           const matches=groups.filter(g=>normLabel(g?.title)===title);
+            const matches=groups.filter(g=>normLabel(g?.title)===title||(g?.outlineRoots||[]).some(r=>normLabel(r?.title)===title));
            if(matches.length===1){
-             const blocks=(matches[0].outlineChildren||[]).flatMap(c=>Array.isArray(c?.blocks)?c.blocks:[]);
-             const groupBody=normLabel(blocks.map(b=>textKey(b?.bodyHtml)).join(" "));
-             const groupImages=blocks.flatMap(b=>Array.isArray(b?.images)?b.images:[]).map(String).join("|");
-             if(body===groupBody&&images===groupImages)return false;
+              const roots=matches[0].outlineRoots||[];
+              const children=[...(matches[0].outlineChildren||[]),...roots.flatMap(r=>r.outlineChildren||[])];
+              const blocks=children.flatMap(c=>Array.isArray(c?.blocks)?c.blocks:[]);
+              const groupBody=normLabel(blocks.map(b=>textKey(b?.bodyHtml)).join(" "));
+              const groupWithHeadings=normLabel(roots.flatMap(r=>[r.title,...(r.outlineChildren||[]).flatMap(c=>[c.title,...(c.blocks||[]).map(b=>textKey(b?.bodyHtml))])]).join(" "));
+              const groupImages=blocks.flatMap(b=>Array.isArray(b?.images)?b.images:[]).map(String).join("|");
+              if((body===groupBody||body===groupWithHeadings)&&images===groupImages)return false;
            }
          }
          if(id){if(legacySeenIds.has(id))return false;legacySeenIds.add(id)}
@@ -383,8 +395,9 @@
      const seenGroups=new Set();
      const outline=groups.map(group=>{
        const title=normLabel(group.title);
-       const childrenHtml=renderOutlineChildren(group.outlineChildren);
-       const groupKey=`${title}::${childrenHtml.replace(/\s+/g," ").trim()}`;
+        const childrenHtml=renderOutlineChildren(group.outlineChildren);
+        const structured=Array.isArray(group.outlineRoots)&&group.outlineRoots.length>0;
+        const groupKey=structured?String(group.id||`${title}::${JSON.stringify(group.outlineRoots)}`):`${title}::${childrenHtml.replace(/\s+/g," ").trim()}`;
        if(seenGroups.has(groupKey))return "";
        seenGroups.add(groupKey);
        // Scene and H2 are deliberately separate disclosure levels on KPlive:
@@ -394,7 +407,7 @@
        const special=String(group?.id||"").startsWith("special:")||String(group?.shareSource||"").startsWith("special");
        const context=group.headingContext;
        const headings=Array.isArray(context?.headings)?context.headings:[];
-       let html=`<details class="kp-live-scene-group kp-live-group-toggle${special?" kp-live-special":""}"><summary><span role="heading" aria-level="${Math.min(3+headings.length,6)}">${esc(groupTitle)}</span></summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
+        let html=structured?renderSpecialOutlineRoots(group):`<details class="kp-live-scene-group kp-live-group-toggle${special?" kp-live-special":""}"><summary><span role="heading" aria-level="${Math.min(3+headings.length,6)}">${esc(groupTitle)}</span></summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
        // New summary shares retain the source outline outside the reveal label.
        // Older published groups have no headingContext and render unchanged.
        for(let i=headings.length-1;i>=0;i--){
