@@ -83,7 +83,7 @@ body.home-page #pomodoroPanel{width:100%;max-width:none;color:var(--text-primary
   <div class="home-task-head"><h2>卓準備</h2><span id="prepTaskCount" class="small muted"></span></div>
   <div id="prepTaskList" class="home-task-list"></div>
 </section>
-</div></main><div data-site-footer></div><script>
+</div></main><div data-site-footer></div><script src="assets/js/kp-binder-storage.js?v=0923-phase1"></script><script>
 (()=>{"use strict";
 const KEY="39x2_prep_v1";
 const HOME_GUIDE_SETTINGS_KEY="trpg39_home_guide_v1";
@@ -210,8 +210,9 @@ function timerElapsed(state,now=Date.now()){const resumed=Date.parse(state.lastR
 function timerRemaining(state,now=Date.now()){return Math.max(0,state.durationSec-timerElapsed(state,now))}
 function timerSpeech(){const s=timerState(),text=HOME_GUIDE_TEXT.pomodoro;if(s.message)return s.message;if(s.status==="running")return s.mode==="focus"?text.focusStart:text.breakStart;if(s.status==="paused")return s.mode==="focus"?text.focusPaused:text.breakPaused;return ""}
 function workLogs(){const rows=readJson(WORK_LOG_KEY,[]);return Array.isArray(rows)?rows:[]}
+let homeKpBinders={},homeKpSnapshots={};
 function kpBinderHistoryEvents(){
- const store=readJson("39x2_kp_binder_snapshots_v2",{}),events=[];
+ const store=homeKpSnapshots,events=[];
  if(!store||typeof store!=="object"||Array.isArray(store))return events;
  Object.entries(store).forEach(([scenarioId,rows])=>{
   if(!Array.isArray(rows))return;
@@ -355,7 +356,7 @@ function renderPomodoro(){
 }
 function aggregateWorkLogs(logs){const result={todaySec:0,totalSec:0,byTitle:new Map(),byPc:new Map(),byScenario:new Map(),byRun:new Map()},today=localYmd();for(const log of logs){const sec=Math.max(0,Number(log.durationSec)||0);result.totalSec+=sec;if(dateKey(log.endedAt||log.startedAt)===today)result.todaySec+=sec;[[result.byTitle,log.title],[result.byPc,log.pcId],[result.byScenario,log.scenarioId],[result.byRun,log.runId]].forEach(([map,key])=>{key=String(key||"");if(key)map.set(key,(map.get(key)||0)+sec)})}return result}
 function renderWorkLog(){
- const host=document.getElementById("workLogPanel");if(!host)return;const logs=workLogs(),summary=aggregateWorkLogs(logs),timer=timerState(),tasks=prepTaskRows(),task=tasks.find(x=>x.id===timer.taskId)||null,latest=logs[0]||null,isWorking=timer.status!=="idle",nowTitle=isWorking?(timer.title||task?.title||"名称未設定の作業"):"現在作業中の項目はありません",currentTotal=isWorking?(summary.byTitle.get(nowTitle)||0)+timerElapsed(timer):0,pcs=window.TRPG39?.loadPCs?.()||[],scenarios=loadScenarios();let binders={};try{binders=readJson("39x2_scenario_kp_binders_v1",{})||{}}catch{}const activeScenarioId=String(timer.scenarioId||task?.scenarioId||""),activeBinder=isWorking&&task?.scope==="kpRun"&&activeScenarioId&&binders[activeScenarioId]?{scenarioId:activeScenarioId,title:binders[activeScenarioId]?.scenarioTitle||scenarios.find(x=>String(x.id)===activeScenarioId)?.title||"KPバインダー"}:null;const history=[...logs.map(log=>({kind:"work",at:log.endedAt||log.startedAt,log})),...kpBinderHistoryEvents()].sort((a,b)=>String(b.at||"").localeCompare(String(a.at||""))),days=new Map();history.forEach(item=>{const key=dateKey(item.at)||"日付不明";if(!days.has(key))days.set(key,[]);days.get(key).push(item)});
+ const host=document.getElementById("workLogPanel");if(!host)return;const logs=workLogs(),summary=aggregateWorkLogs(logs),timer=timerState(),tasks=prepTaskRows(),task=tasks.find(x=>x.id===timer.taskId)||null,latest=logs[0]||null,isWorking=timer.status!=="idle",nowTitle=isWorking?(timer.title||task?.title||"名称未設定の作業"):"現在作業中の項目はありません",currentTotal=isWorking?(summary.byTitle.get(nowTitle)||0)+timerElapsed(timer):0,pcs=window.TRPG39?.loadPCs?.()||[],scenarios=loadScenarios(),binders=homeKpBinders;const activeScenarioId=String(timer.scenarioId||task?.scenarioId||""),activeBinder=isWorking&&task?.scope==="kpRun"&&activeScenarioId&&binders[activeScenarioId]?{scenarioId:activeScenarioId,title:binders[activeScenarioId]?.scenarioTitle||scenarios.find(x=>String(x.id)===activeScenarioId)?.title||"KPバインダー"}:null;const history=[...logs.map(log=>({kind:"work",at:log.endedAt||log.startedAt,log})),...kpBinderHistoryEvents()].sort((a,b)=>String(b.at||"").localeCompare(String(a.at||""))),days=new Map();history.forEach(item=>{const key=dateKey(item.at)||"日付不明";if(!days.has(key))days.set(key,[]);days.get(key).push(item)});
  const clock=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?"--:--":d.toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})};
  const editRow=log=>`<div class="work-log-edit" data-edit-log="${esc(log.id)}"><div class="work-form-grid"><label class="wide">タイトル<input data-edit-title value="${esc(log.title||"")}"></label><label>開始<input type="datetime-local" data-edit-start value="${esc(datetimeLocalValue(log.startedAt))}"></label><label>終了<input type="datetime-local" data-edit-end value="${esc(datetimeLocalValue(log.endedAt))}"></label><label>作業時間（分）<input type="number" min="0" step="1" data-edit-duration value="${Math.max(0,Math.round((Number(log.durationSec)||0)/60))}"></label><label>関連PC<select data-edit-pc>${optionHtml(pcs,log.pcId,"関連PCなし")}</select></label><label>関連シナリオ<select data-edit-scenario>${optionHtml(scenarios,log.scenarioId,"関連シナリオなし")}</select></label><label>関連タスク<select data-edit-task>${optionHtml(tasks,log.taskId,"関連タスクなし")}</select></label><label>runId<input data-edit-run value="${esc(log.runId||"")}"></label><label>albumId<input data-edit-album value="${esc(log.albumId||"")}"></label><label class="wide">進捗<textarea data-edit-progress>${esc(log.progress||"")}</textarea></label></div><div class="work-progress-actions"><button type="button" data-edit-save>保存</button><button type="button" data-edit-cancel>キャンセル</button></div><div class="small muted" data-edit-status></div></div>`;
  const historyRow=item=>{if(item.kind==="work"){const log=item.log;if(String(log.id)===workEditingId)return editRow(log);const start=clock(log.startedAt),end=log.endedAt?clock(log.endedAt):"",range=end&&end!==start?`${start}–${end}`:start;return `<div class="work-log-row"><div class="work-log-row-head"><span class="work-log-time">${esc(range)}</span><span class="work-log-kind">WORK LOG</span><span class="work-log-title">${esc(log.title||"名称未設定")}</span><span>${Number(log.durationSec)>0?formatDuration(log.durationSec):"時間なし"}</span><span class="work-log-actions"><button type="button" data-edit-log-start="${esc(log.id)}">編集</button></span></div>${log.progress?`<div class="work-log-progress">「${esc(log.progress)}」</div>`:""}</div>`}const title=[item.scenarioTitle,item.runLabel].filter(Boolean).join(" ／ ")||"KPバインダー",detail=item.detail==="before-save"?"保存前の履歴":item.detail;return `<div class="work-log-row"><div class="work-log-row-head"><span class="work-log-time">${esc(clock(item.at))}</span><span class="work-log-kind work-log-kind-kp">KP BINDER</span><span class="work-log-title">${esc(title)}</span>${item.scenarioId?`<a class="work-log-link" href="scenario/kp-binder.html?id=${encodeURIComponent(item.scenarioId)}">バインダーを開く</a>`:""}</div>${detail?`<div class="work-log-detail">${esc(detail)}</div>`:""}</div>`};
@@ -384,7 +385,7 @@ function renderLastKpBinder(){
  // 専用キーが無い／壊れている場合は、KPバインダー本体の保存データから最後に開いたものを拾う。
  if(!x?.scenarioId){
    try{
-     const all=JSON.parse(localStorage.getItem("39x2_scenario_kp_binders_v1")||"{}");
+     const all=homeKpBinders;
      const scenarios=loadScenarios();
      const names=new Map(scenarios.map(s=>[String(s.id),s.title||"シナリオ"]));
      const rows=Object.entries(all||{}).map(([scenarioId,binder])=>({
@@ -448,7 +449,8 @@ document.getElementById("openHomeFavorites")?.addEventListener("click",openHomeF
 document.getElementById("saveHomeFavorites")?.addEventListener("click",saveHomeFavorites);
 document.getElementById("openHomeDecor")?.addEventListener("click",openHomeDecor);
 document.getElementById("saveHomeDecor")?.addEventListener("click",saveHomeDecor);
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",renderHomePanels);else renderHomePanels();
+async function startHomePanels(){renderHomePanels();try{[homeKpBinders,homeKpSnapshots]=await Promise.all([KPBinderStorage.loadAll(),KPBinderStorage.loadSnapshots()]);renderHomePanels()}catch(error){console.error("HOME KP BINDER load failed",error)}}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startHomePanels);else startHomePanels();
 })();
 </script>
 <script src="./assets/js/shared-data.js?v=0292"></script>
