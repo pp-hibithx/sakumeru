@@ -387,6 +387,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
 <script src="../assets/js/shared-data.js?v=0292"></script>
+<script src="../assets/js/kp-binder-storage.js?v=0923-phase1"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
@@ -1573,13 +1574,13 @@ function detail(id){
 // --- KP用バインダー：シナリオ単位。CALENDAR/卓予定には一切登録しない ---
 const KP_BINDER_KEY="39x2_scenario_kp_binders_v1";
 let kpBinders=null;
-function loadKpBinders(){if(kpBinders)return kpBinders;try{kpBinders=JSON.parse(localStorage.getItem(KP_BINDER_KEY)||"{}")||{}}catch{kpBinders={}}return kpBinders}
-const saveKpBinders=()=>localStorage.setItem(KP_BINDER_KEY,JSON.stringify(loadKpBinders()));
+function loadKpBinders(){return kpBinders||(kpBinders={})}
+const saveKpBinders=id=>KPBinderStorage.saveBinder(id,loadKpBinders()[id]).catch(error=>{console.error("KP BINDER save failed",error);alert("KP BINDERを保存できませんでした。ページを閉じずにバックアップを確認してください。")});
 function kpDefault(){return {overview:"",pages:[],participants:[]}}
 function kpGet(id){const all=loadKpBinders();return all[id]||(all[id]=kpDefault())}
 function kpParseLines(text){const out={};String(text||"").split(/\n/).forEach(line=>{const m=line.trim().match(/^(.+?)[\s:：=]+(\d{1,3})\s*%?$/);if(m)out[m[1].trim()]=Number(m[2])});return out}
-function kpSaveField(id,fn){const b=kpGet(id);fn(b);saveKpBinders()}
-function openKpBinder(id){renderKpBinder(id);q("kpBinderDialog").showModal()}
+function kpSaveField(id,fn){const b=kpGet(id);fn(b);saveKpBinders(id)}
+async function openKpBinder(id){try{kpBinders=await KPBinderStorage.loadAll();renderKpBinder(id);q("kpBinderDialog").showModal()}catch(error){console.error(error);alert("KP BINDERを読み込めませんでした。")}}
 function renderKpBinder(id,activePageId){
  const sc=data.find(v=>v.id===id);if(!sc)return;const b=kpGet(id),pcs=TRPG39.loadPCs?.()||[];
  if(!activePageId&&b.pages[0])activePageId=b.pages[0].id;const pg=b.pages.find(p=>p.id===activePageId)||null;
@@ -1591,13 +1592,13 @@ function renderKpBinder(id,activePageId){
  <section class="kp-box"><h3>技能比較</h3><div class="kp-compare">${kpCompareHtml(b)}</div></section></div>`;
  const root=q("kpBinderContent");root.querySelector("[data-kp-close]").onclick=()=>q("kpBinderDialog").close();
  root.querySelector("[data-kp-overview]").oninput=e=>kpSaveField(id,x=>x.overview=e.target.value);
- root.querySelector("[data-kp-add-page]").onclick=()=>{const p={id:TRPG39.uuid(),title:"新しいページ",body:""};b.pages.push(p);saveKpBinders();renderKpBinder(id,p.id)};
+ root.querySelector("[data-kp-add-page]").onclick=()=>{const p={id:TRPG39.uuid(),title:"新しいページ",body:""};b.pages.push(p);saveKpBinders(id);renderKpBinder(id,p.id)};
  root.querySelectorAll("[data-kp-page]").forEach(el=>el.onclick=()=>renderKpBinder(id,el.dataset.kpPage));
- if(pg){root.querySelector("[data-kp-page-title]").oninput=e=>{pg.title=e.target.value;saveKpBinders()};root.querySelector("[data-kp-page-body]").oninput=e=>{pg.body=e.target.value;saveKpBinders()};root.querySelector("[data-kp-dup-page]").onclick=()=>{const n={...pg,id:TRPG39.uuid(),title:(pg.title||"無題")+" コピー"};b.pages.push(n);saveKpBinders();renderKpBinder(id,n.id)};root.querySelector("[data-kp-del-page]").onclick=()=>{if(confirm("この個別ページを削除しますか？")){b.pages=b.pages.filter(x=>x.id!==pg.id);saveKpBinders();renderKpBinder(id)}}}
- root.querySelector("[data-kp-add-pc]").onclick=()=>{const pid=root.querySelector("[data-kp-pc]").value;if(!pid)return;const src=pcs.find(x=>x.id===pid);if(!src)return;if(b.participants.some(x=>x.pcId===pid))return alert("このPCは追加済みです。");b.participants.push({pcId:pid,name:src.name||"",abilities:"",skills:""});saveKpBinders();renderKpBinder(id,activePageId)};
- root.querySelectorAll("[data-kp-remove-pc]").forEach(el=>el.onclick=()=>{b.participants.splice(Number(el.dataset.kpRemovePc),1);saveKpBinders();renderKpBinder(id,activePageId)});
- root.querySelectorAll("[data-kp-abilities]").forEach(el=>el.oninput=()=>{b.participants[Number(el.dataset.kpAbilities)].abilities=el.value;saveKpBinders();root.querySelector(".kp-compare").innerHTML=kpCompareHtml(b)});
- root.querySelectorAll("[data-kp-skills]").forEach(el=>el.oninput=()=>{b.participants[Number(el.dataset.kpSkills)].skills=el.value;saveKpBinders();root.querySelector(".kp-compare").innerHTML=kpCompareHtml(b)});
+ if(pg){root.querySelector("[data-kp-page-title]").oninput=e=>{pg.title=e.target.value;saveKpBinders(id)};root.querySelector("[data-kp-page-body]").oninput=e=>{pg.body=e.target.value;saveKpBinders(id)};root.querySelector("[data-kp-dup-page]").onclick=()=>{const n={...pg,id:TRPG39.uuid(),title:(pg.title||"無題")+" コピー"};b.pages.push(n);saveKpBinders(id);renderKpBinder(id,n.id)};root.querySelector("[data-kp-del-page]").onclick=()=>{if(confirm("この個別ページを削除しますか？")){b.pages=b.pages.filter(x=>x.id!==pg.id);saveKpBinders(id);renderKpBinder(id)}}}
+ root.querySelector("[data-kp-add-pc]").onclick=()=>{const pid=root.querySelector("[data-kp-pc]").value;if(!pid)return;const src=pcs.find(x=>x.id===pid);if(!src)return;if(b.participants.some(x=>x.pcId===pid))return alert("このPCは追加済みです。");b.participants.push({pcId:pid,name:src.name||"",abilities:"",skills:""});saveKpBinders(id);renderKpBinder(id,activePageId)};
+ root.querySelectorAll("[data-kp-remove-pc]").forEach(el=>el.onclick=()=>{b.participants.splice(Number(el.dataset.kpRemovePc),1);saveKpBinders(id);renderKpBinder(id,activePageId)});
+ root.querySelectorAll("[data-kp-abilities]").forEach(el=>el.oninput=()=>{b.participants[Number(el.dataset.kpAbilities)].abilities=el.value;saveKpBinders(id);root.querySelector(".kp-compare").innerHTML=kpCompareHtml(b)});
+ root.querySelectorAll("[data-kp-skills]").forEach(el=>el.oninput=()=>{b.participants[Number(el.dataset.kpSkills)].skills=el.value;saveKpBinders(id);root.querySelector(".kp-compare").innerHTML=kpCompareHtml(b)});
 }
 function kpCompareHtml(b){if(!b.participants.length)return '<div class="small muted">参加PCを追加すると比較できます。</div>';const maps=b.participants.map(p=>kpParseLines(p.skills)),names=[...new Set(maps.flatMap(m=>Object.keys(m)))].sort((a,z)=>a.localeCompare(z,"ja"));if(!names.length)return '<div class="small muted">技能値を入力するとここに一覧表示されます。</div>';return `<table><thead><tr><th>技能</th>${b.participants.map(p=>`<th>${esc(p.name||"PC")}</th>`).join("")}</tr></thead><tbody>${names.map(n=>`<tr><td>${esc(n)}</td>${maps.map(m=>`<td>${m[n]??"—"}</td>`).join("")}</tr>`).join("")}</tbody></table>`}
 
