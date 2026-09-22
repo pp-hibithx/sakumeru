@@ -2,13 +2,32 @@
 "use strict";
 
 const BACKUP_KIND="SAKUMERU_FULL_BACKUP";
-const BACKUP_VERSION=1;
+const BACKUP_VERSION=2;
 const DB_ALLOWLIST=[
+  "sakumeru_kp_binder_v1",
   "saku_meru_article_media_v1",
   "saku_meru_guest_pc_images_db_v1",
   "saku_meru_media_v1",
   "sakumeru_display_maker"
 ];
+const KP_DB="sakumeru_kp_binder_v1";
+function kpBackupRecords(dbs){
+ const db=dbs.find(x=>x.name===KP_DB);
+ if(!db)return null;
+ const store=name=>db.stores.find(x=>x.name===name);
+ if(!store("binders")||!store("snapshots")||!store("meta"))throw new Error("KP BINDER IndexedDBの保存構造が不完全です。");
+ const binders=store("binders").records.map(x=>decodeValue(x.value));
+ const snapshots=store("snapshots").records.map(x=>decodeValue(x.value));
+ const active=store("meta").records.map(x=>decodeValue(x.value)).some(x=>x.key==="active"&&x.value===true);
+ for(const row of binders){
+  if(!row||!row.scenarioId||!row.binder||!Array.isArray(row.binder.pages))throw new Error("KP BINDER本文をバックアップで確認できません。");
+  if(row.binder.pages.some(page=>!page||typeof page!=="object"))throw new Error("KP BINDERページがバックアップにありません。");
+  if(row.binder.currentShareSession!==undefined&&typeof row.binder.currentShareSession!=="object")throw new Error("KP BINDER共有セッションが不正です。");
+  if(row.binder.shareSessions!==undefined&&!Array.isArray(row.binder.shareSessions))throw new Error("KP BINDER共有履歴が不正です。");
+ }
+ for(const row of snapshots)if(!row||!row.scenarioId||!Array.isArray(row.rows)||row.rows.some(x=>!x?.binder))throw new Error("KP BINDER snapshotが不正です。");
+ return {active,binders,snapshots};
+}
 const EXCLUDED_KEYS=new Set([
   "sakumeru_beta_access_v1",
   "39x2_cloud_sync_id_v1",
@@ -36,7 +55,7 @@ function clearSakumeruLocalStorage(){
   const keys=[];
   for(let i=0;i<localStorage.length;i++){
     const key=localStorage.key(i);
-    if(isSakumeruKey(key))keys.push(key);
+    if(isSakumeruKey(key)&&key!=="39x2_scenario_kp_binders_v1"&&key!=="39x2_kp_binder_snapshots_v2")keys.push(key);
   }
   keys.forEach(k=>localStorage.removeItem(k));
 }
@@ -111,6 +130,7 @@ function decodeValue(value){
 
 async function snapshotStore(db,storeName,onProgress){
   const tx=db.transaction(storeName,"readonly");
+  const done=txPromise(tx);
   const store=tx.objectStore(storeName);
   const meta={
     name:storeName,
@@ -129,7 +149,7 @@ async function snapshotStore(db,storeName,onProgress){
     reqPromise(store.getAllKeys()),
     reqPromise(store.getAll())
   ]);
-  await txPromise(tx).catch(()=>{});
+  await done;
   const records=[];
   for(let i=0;i<values.length;i++){
     records.push({key:await encodeValue(keys[i]),value:await encodeValue(values[i])});
@@ -201,6 +221,27 @@ async function restoreDb(snap){
     }
   }finally{db.close()}
 }
+async function restoreKpDb(snap){
+ kpBackupRecords([snap]);
+ const req=indexedDB.open(KP_DB,1);
+ req.onupgradeneeded=()=>{
+  const db=req.result;
+  for(const name of ["binders","snapshots","meta"])if(!db.objectStoreNames.contains(name))db.createObjectStore(name,{keyPath:name==="meta"?"key":"scenarioId"});
+ };
+ const db=await reqPromise(req);
+ try{
+  const names=["binders","snapshots","meta"];
+  const tx=db.transaction(names,"readwrite"),done=txPromise(tx);
+  for(const name of names){
+   const store=tx.objectStore(name),source=snap.stores.find(x=>x.name===name);
+   store.clear();
+   for(const rec of source.records||[])store.put(decodeValue(rec.value));
+  }
+  await done;
+ }finally{db.close()}
+ const check=kpBackupRecords([await snapshotDb(KP_DB)]),expected=kpBackupRecords([snap]);
+ if(JSON.stringify(check)!==JSON.stringify(expected))throw new Error("復元後のKP BINDER内容がバックアップと一致しません。再読み込みせずに確認してください。");
+}
 
 async function gzipBytes(text){
   const bytes=new TextEncoder().encode(text);
@@ -235,6 +276,7 @@ function status(msg,type=""){
 async function renderSummary(){
   const c=coreCounts(),local=collectLocalStorage();
   let idb={total:0,perDb:{}};try{idb=await countAllDbs()}catch{}
+  try{const db=await openDb(KP_DB);try{if(db.objectStoreNames.contains("meta")&&db.objectStoreNames.contains("binders")){const active=await reqPromise(db.transaction("meta","readonly").objectStore("meta").get("active"));if(active?.value===true)c.kpBinders=await reqPromise(db.transaction("binders","readonly").objectStore("binders").count())}}finally{db.close()}}catch{}
   let est={};try{est=await navigator.storage?.estimate?.()||{}}catch{}
   const el=$("backupSummary");if(!el)return;
   el.innerHTML=`<div class="backup-stat"><b>${c.scenarios}</b><span>SCENARIO</span></div><div class="backup-stat"><b>${c.events}</b><span>CALENDAR</span></div><div class="backup-stat"><b>${c.library}</b><span>LIBRARY</span></div><div class="backup-stat"><b>${c.pcs}</b><span>PC</span></div><div class="backup-stat"><b>${c.players}</b><span>PLAYERS</span></div><div class="backup-stat"><b>${c.kpBinders}</b><span>KPバインダー</span></div><div class="backup-stat"><b>${idb.total}</b><span>端末画像・音声等</span></div><div class="backup-stat"><b>${Object.keys(local).length}</b><span>保存キー</span></div>${est.usage?`<div class="backup-stat"><b>${fmtBytes(est.usage)}</b><span>このサイトの使用量</span></div>`:""}`;
@@ -246,6 +288,13 @@ async function exportFullBackup(){
     status("バックアップを作成しています。画像・音声が多い場合は少し時間がかかります…");
     let processed=0;
     const dbs=await snapshotAllDbs(()=>{processed++;if(processed%10===0)status(`端末画像・音声等を回収中… ${processed}件`)});
+    const kp=kpBackupRecords(dbs);
+    if(kp?.active){
+      const live=kpBackupRecords([await snapshotDb(KP_DB)]);
+      if(!live?.active||JSON.stringify(kp)!==JSON.stringify(live))throw new Error("KP BINDERのバックアップ内容が保存中に変化しました。再実行してください。");
+    }else if(safeObjectCount("39x2_scenario_kp_binders_v1") && !collectLocalStorage()["39x2_scenario_kp_binders_v1"]){
+      throw new Error("KP BINDERの旧データをバックアップに含められませんでした。");
+    }
     const payload={
       kind:BACKUP_KIND,
       formatVersion:BACKUP_VERSION,
@@ -253,7 +302,7 @@ async function exportFullBackup(){
       exportedAt:new Date().toISOString(),
       source:{origin:location.origin,path:location.pathname},
       exclusions:[...EXCLUDED_KEYS],
-      counts:coreCounts(),
+      counts:{...coreCounts(),kpBinders:kp?.active?kp.binders.length:coreCounts().kpBinders,kpSnapshots:kp?.active?kp.snapshots.reduce((n,x)=>n+x.rows.length,0):undefined},
       localStorage:collectLocalStorage(),
       indexedDB:dbs
     };
@@ -274,14 +323,31 @@ async function importFullBackup(file){
     const text=await decodeBackupBytes(await file.arrayBuffer());
     const payload=JSON.parse(text);
     if(payload?.kind!==BACKUP_KIND||!payload.localStorage||!Array.isArray(payload.indexedDB))throw new Error("SAKU+MERU完全バックアップではありません。");
+    const kpSnap=payload.indexedDB.find(db=>db.name===KP_DB),kp=kpBackupRecords(payload.indexedDB);
+    if(kpSnap&&Number(payload.counts?.kpBinders??kp?.binders.length)!==kp.binders.length)throw new Error("KP BINDERのバックアップ件数が一致しません。");
+    if(!kpSnap&&kpBackupRecords([await snapshotDb(KP_DB)])?.active)throw new Error("この旧形式バックアップには現在のKP BINDER IndexedDBが含まれません。先に最新版の完全バックアップを作成してください。");
+    for(const [key,value] of Object.entries(payload.localStorage))if(typeof value!=="string")throw new Error(`保存キー ${key} の内容が不正です。`);
     const when=payload.exportedAt?new Date(payload.exportedAt).toLocaleString("ja-JP"):"日時不明";
     const c=payload.counts||{};
     const summary=`作成：${when}\nSCENARIO：${c.scenarios??"?"}件\nCALENDAR：${c.events??"?"}件\nLIBRARY：${c.library??"?"}件\nPC：${c.pcs??"?"}件\nPLAYERS：${c.players??"?"}件\nKPバインダー：${c.kpBinders??"?"}件\n\n現在のSAKU+MERUブラウザ保存データを、このバックアップ内容で置き換えます。続けますか？`;
     if(!confirm(summary))return;
     status("復元しています。SAKU+MERUの他のタブは閉じたままにしてください…");
-    clearSakumeruLocalStorage();
-    for(const [k,v] of Object.entries(payload.localStorage))if(isSakumeruKey(k))localStorage.setItem(k,String(v));
-    for(const db of payload.indexedDB)if(DB_ALLOWLIST.includes(db.name))await restoreDb(db);
+    for(const db of payload.indexedDB)if(DB_ALLOWLIST.includes(db.name)&&db.name!==KP_DB)await restoreDb(db);
+    const previousKp=kpSnap?await snapshotDb(KP_DB):null;
+    try{
+      if(kpSnap)await restoreKpDb(kpSnap);
+      clearSakumeruLocalStorage();
+      for(const [k,v] of Object.entries(payload.localStorage)){
+        if(!isSakumeruKey(k))continue;
+        // A restored active IndexedDB is authoritative; keep the pre-restore
+        // legacy KP values untouched as a recoverable Phase 1 safety copy.
+        if(kp?.active&&(k==="39x2_scenario_kp_binders_v1"||k==="39x2_kp_binder_snapshots_v2"))continue;
+        localStorage.setItem(k,v);
+      }
+    }catch(error){
+      if(previousKp)try{await restoreKpDb(previousKp)}catch(rollbackError){console.error("KP BINDER rollback failed",rollbackError)}
+      throw error;
+    }
     localStorage.setItem("sakumeru_last_full_restore_at_v1",new Date().toISOString());
     status("✓ 復元しました。ページを再読み込みします…","ok");
     await sleep(900);location.reload();
