@@ -1155,6 +1155,7 @@ function readLatestBinderStore(){
  }catch(_){return {}}
 }
 const KP_BACKUP_KEY="39x2_kp_binder_snapshots_v2";
+let kpSnapshotQuotaBlocked=false;
 let __kpExplicitSave=false;
 function kpBinderMetrics(x){
  const pages=Array.isArray(x?.pages)?x.pages:[];
@@ -1173,12 +1174,16 @@ function kpDestructive(prev,next){
  return false;
 }
 function kpSnapshot(prev,reason="before-save"){
+ if(kpSnapshotQuotaBlocked)return;
  if(!prev||!kpMeaningful(kpBinderMetrics(prev)))return;
  let store;try{store=JSON.parse(localStorage.getItem(KP_BACKUP_KEY)||"{}");if(!store||typeof store!=="object"||Array.isArray(store))throw Error("Invalid snapshot store")}
  catch(e){console.warn("KP snapshot skipped; current binder was saved",e);return}
  const rows=Array.isArray(store[sid])?store[sid]:[];
  store[sid]=[{savedAt:new Date().toISOString(),reason,binder:prev},...rows].slice(0,3);
- try{localStorage.setItem(KP_BACKUP_KEY,JSON.stringify(store))}catch(e){console.warn("KP snapshot skipped; current binder was saved",e)}
+ try{localStorage.setItem(KP_BACKUP_KEY,JSON.stringify(store))}catch(e){
+   if(e?.name==="QuotaExceededError"||e?.code===22)kpSnapshotQuotaBlocked=true;
+   console.warn("KP snapshot skipped; current binder was saved",e);
+ }
 }
 function kpTrimSnapshotsForQuota(keep){
  let store;try{store=JSON.parse(localStorage.getItem(KP_BACKUP_KEY)||"{}")}catch{return false}
