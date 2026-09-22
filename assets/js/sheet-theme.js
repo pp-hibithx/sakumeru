@@ -6,7 +6,7 @@
   const normalize=value=>THEMES.includes(String(value||""))?String(value):"standard";
   const globalTheme=()=>{try{return normalize(localStorage.getItem(STORAGE_KEY))}catch{return "standard"}};
   const setGlobalTheme=value=>{const theme=normalize(value);try{localStorage.setItem(STORAGE_KEY,theme)}catch{}applyGlobal(theme);window.dispatchEvent(new CustomEvent("sakumeru:sheet-theme",{detail:{theme}}));return theme};
-  const sheetRoots=()=>document.querySelectorAll("main>.wrap:not(.share-page),.share-manage-page .share-manage-sheet");
+  const sheetRoots=()=>document.querySelectorAll("main>.wrap:not(.share-page):not(.kp-share-wrap),.share-manage-page .share-manage-sheet");
   function applyGlobal(value=globalTheme()){
     const theme=normalize(value);
     document.documentElement.dataset.sheetThemeCurrent=theme;
