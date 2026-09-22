@@ -25,8 +25,8 @@
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0303.css">
 <link rel="stylesheet" href="../assets/css/rich-editor-outline.css?v=0830b">
-<link rel="stylesheet" href="../assets/css/binder-v2.css?v=0916-shared-binder" data-sakumeru-binder-v2="1">
-<script defer src="../assets/js/common-layout.js?v=0914-header-actions"></script>
+<link rel="stylesheet" href="../assets/css/binder-v2.css?v=0922-public-share" data-sakumeru-binder-v2="1">
+<script defer src="../assets/js/common-layout.js?v=0922-public-share"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .kp-share-wrap{max-width:1180px;margin:0 auto;padding:20px}
@@ -88,11 +88,11 @@
 
 /* Keep the shared binder sheet, with its contents in the same dark panel family as LIBRARY/PLAYERS. */
 .kp-share-wrap{color:var(--binder-ink)}
-.kp-share-wrap #kpLiveContent{background:transparent;border:0;box-shadow:none;padding:0;color:inherit}
+.kp-share-wrap #kpLiveContent{background:transparent!important;border:0!important;box-shadow:none;padding:0;color:inherit}
 .kp-share-wrap .kp-live{background:transparent!important;color:inherit!important;border-color:var(--binder-rule)!important}
 .kp-share-wrap .kp-live>h2{color:var(--binder-ink);font-size:clamp(1.55rem,3vw,2rem);border-bottom:2px solid var(--binder-rule);padding-bottom:.35em}
-.kp-share-wrap .kp-live>.muted{color:var(--muted)}
-.kp-share-wrap .kp-live-layout{--kp-share-ink:#f3f3f0;--kp-share-muted:#c2c6c8;--kp-share-rule:#858c92;--text:var(--kp-share-ink);--muted:var(--kp-share-muted);--line:var(--kp-share-rule);--text-primary:var(--kp-share-ink);--text-muted:var(--kp-share-muted);--surface:#363a3f;background:var(--surface);color:var(--kp-share-ink);border:2px solid var(--kp-share-rule);border-radius:10px;padding:14px}
+.kp-share-wrap .kp-live>.muted{color:#656158!important}
+.kp-share-wrap .kp-live-layout{--kp-share-ink:var(--share-panel-ink);--kp-share-muted:var(--share-panel-muted);--kp-share-rule:var(--share-panel-rule);--text:var(--kp-share-ink);--muted:var(--kp-share-muted);--line:var(--kp-share-rule);--text-primary:var(--kp-share-ink);--text-muted:var(--kp-share-muted);--surface:var(--share-panel-bg);background:var(--surface);color:var(--kp-share-ink);border:2px solid var(--kp-share-rule);border-radius:10px;padding:14px}
 .kp-share-wrap .kp-live-toc{background:color-mix(in srgb,var(--surface) 90%,white 10%);color:var(--kp-share-ink);border-color:var(--kp-share-rule);border-left:4px solid var(--accent)}
 .kp-share-wrap .kp-live-toc a{color:color-mix(in srgb,var(--accent2) 80%,white)!important}
 .kp-share-wrap .kp-live-body a{color:color-mix(in srgb,var(--accent2) 80%,white)!important}
@@ -106,6 +106,8 @@
 .kp-share-wrap .kp-live-scene-group{border-width:0 0 1px 3px;border-style:solid;border-radius:0;padding-left:14px}
 .kp-share-wrap .kp-live-scene-group.kp-live-special{border-left:4px solid var(--accent)!important}
 .kp-share-wrap .kp-live-group-toggle>summary{font-size:1.35rem!important;line-height:1.4;font-weight:800;color:var(--kp-share-ink)!important;padding:11px 4px}
+.kp-share-wrap .kp-live-heading-context[data-heading-level="4"]>summary{font-size:1.16rem!important}
+.kp-share-wrap .kp-live-heading-context .kp-live-special>summary{font-size:1.03rem!important}
 .kp-share-wrap .kp-live-group-content{border-left:0;padding:4px 8px 12px}
 .kp-share-wrap .kp-live-grandchild-toggle{border-left:2px solid var(--accent)!important}
 .kp-share-wrap .kp-live-grandchild-toggle>summary{font-size:1.1rem;line-height:1.45;font-weight:750;color:var(--kp-share-ink)!important}
@@ -391,7 +393,17 @@
        // the nested toggle makes the hierarchy explicit instead of looking duplicated.
        const groupTitle=title||"開示情報";
        const special=String(group?.id||"").startsWith("special:")||String(group?.shareSource||"").startsWith("special");
-       return `<details class="kp-live-scene-group kp-live-group-toggle${special?" kp-live-special":""}"><summary><span class="kp-live-heading-big" role="heading" aria-level="3">${esc(groupTitle)}</span></summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
+       const context=group.headingContext;
+       const headings=Array.isArray(context?.headings)?context.headings:[];
+       let html=`<details class="kp-live-scene-group kp-live-group-toggle${special?" kp-live-special":""}"><summary><span role="heading" aria-level="${Math.min(3+headings.length,6)}">${esc(groupTitle)}</span></summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
+       // New summary shares retain the source outline outside the reveal label.
+       // Older published groups have no headingContext and render unchanged.
+       for(let i=headings.length-1;i>=0;i--){
+         const heading=headings[i],level=Math.min(3+i,6);
+         if(!heading?.title)continue;
+         html=`<details class="kp-live-scene-group kp-live-group-toggle kp-live-heading-context" data-heading-level="${level}"><summary><span role="heading" aria-level="${level}">${esc(heading.title)}</span></summary><div class="kp-live-group-content">${html}</div></details>`;
+       }
+       return html;
      }).join("");
      return legacy+outline;
    };
