@@ -3379,6 +3379,16 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full",op
   const headingSource=shareMode==="summary"&&fullBody?.querySelector("h1,h2,h3,h4,h5,h6")?fullBody:source;
   const headingNodes=[...headingSource.querySelectorAll("h1,h2,h3,h4,h5,h6")].filter(node=>
     node.closest?.(".kp-special-body,[data-reveal-summary]")===headingSource);
+  const diagnoseBlock=blockId==="bde1209a-78d9-4760-aa35-b58ecd2e9f07";
+  if(diagnoseBlock)console.log("KP outline diagnostic: branch",{
+    headingNodesLength:headingNodes.length,
+    headings:headingNodes.map(node=>({tagName:node.tagName,textContent:node.textContent})),
+    sourceIsDirectSpecialBody:source===fullBody,
+    sourceIsConnected:source.isConnected,
+    blockId:section.dataset.blockId,
+    mode:shareMode,
+    branch:headingNodes.length?"outlineRoots":"outlineChildren"
+  });
   if(headingNodes.length){
     const editor=section.closest("#blogEditor");
     const roots=[];let root=null,child=null,order=0;
@@ -3422,12 +3432,16 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full",op
       }
     }
     const blockCount=roots.reduce((n,r)=>n+r.outlineChildren.reduce((m,c)=>m+c.blocks.length,0),0);
-    if(options.onlyOpen&&!blockCount)return null;
+    if(options.onlyOpen&&!blockCount){
+      if(diagnoseBlock)console.log("KP outline diagnostic: return",{branch:"outlineRoots",hasOutlineRoots:"outlineRoots" in group,returnsGroup:false});
+      return null;
+    }
     group.outlineRoots=roots;
     group.specialLabel=String(section.querySelector(":scope > .kp-special-head .kind-chip")?.textContent||"開示情報").trim()||"開示情報";
     const explicitTitle=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim();
     group.title=explicitTitle&&!["開示情報","KPメモ","RP","秘匿","会話ログ"].includes(explicitTitle)?explicitTitle:group.specialLabel;
     if(headingNodes.some(node=>node.matches("h1,h2")))delete group.headingContext;
+    if(diagnoseBlock)console.log("KP outline diagnostic: return",{branch:"outlineRoots",hasOutlineRoots:"outlineRoots" in group,returnsGroup:!!roots.length});
     return roots.length?group:null;
   }
   let child=null,order=0,untitledNo=0;
@@ -3473,6 +3487,7 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full",op
  group.outlineChildren=group.outlineChildren.filter(c=>c.blocks.length);
  repairImageOutlineChildren(group);
  group.outlineChildren=group.outlineChildren.filter(c=>c.blocks.length || String(c.title||"").trim());
+ if(diagnoseBlock)console.log("KP outline diagnostic: return",{branch:"outlineChildren",hasOutlineRoots:"outlineRoots" in group,returnsGroup:!!group.outlineChildren.length});
  return group.outlineChildren.length?group:null;
 }
 
