@@ -27,8 +27,9 @@
 <div data-site-footer></div>
 <script src="../assets/js/common-layout.js?v=0913-sheet-themes"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
+<script src="../assets/js/kp-binder-storage.js?v=0923-phase1"></script>
 <script>
-(()=>{
+(async()=>{
  "use strict";
  const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const json=(key,fallback)=>{try{const v=JSON.parse(localStorage.getItem(key)||"null");return v??fallback}catch{return fallback}};
@@ -60,7 +61,7 @@
  const profiles=profileShareId?[{shareId:profileShareId,title:profileName?`${profileName}のプロフィール`:"プロフィール",meta:"固定共有URL",state:"固定共有URLあり",shareUrl:workerUrl(profileShareId,"profile"),fallbackUrl:viewerUrl(profileShareId,"profile"),sourceUrl:local("../profile/index.html")}]:[];
  const profilePages=unique(arr(json("39x2_profile_pages_v1",[])).filter(p=>p?.shareId).map(p=>({shareId:p.shareId,title:p.title||"プロフィール付属ページ",meta:"",shareUrl:workerUrl(p.shareId,"profile-page"),fallbackUrl:viewerUrl(p.shareId,"profile-page"),sourceUrl:local("../profile/index.html")})));
 
- const binders=json("39x2_scenario_kp_binders_v1",{}),kpRows=[];
+ const binders=await KPBinderStorage.loadAll(),kpRows=[];
  Object.entries(binders&&typeof binders==="object"?binders:{}).forEach(([scenarioId,binder])=>{
    const runs=[...arr(binder?.shareSessions),binder?.currentShareSession].filter(Boolean);
    runs.forEach(run=>{
@@ -81,8 +82,7 @@
  host.innerHTML=groups.map((g,i)=>`<details class="share-manage-group" data-group-index="${i}"><summary><span>${esc(g.label)}</span><span class="share-manage-count">${g.rows.length}件</span></summary><div class="share-manage-rows" data-group-body></div></details>`).join("");
  host.addEventListener("toggle",event=>{const detail=event.target;if(!(detail instanceof HTMLDetailsElement)||!detail.open||detail.dataset.rendered)return;const group=groups[Number(detail.dataset.groupIndex)],body=detail.querySelector("[data-group-body]");body.innerHTML=group.rows.length?group.rows.map(rowHtml).join(""):'<p class="share-manage-empty">保存済みの共有URLはありません。</p>';detail.dataset.rendered="1"},true);
  host.addEventListener("click",async event=>{const button=event.target.closest("[data-copy-url]");if(!button)return;const value=button.dataset.copyUrl||"";let copied=false;try{await navigator.clipboard.writeText(value);copied=true}catch{const ta=document.createElement("textarea");ta.value=value;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();copied=document.execCommand("copy");ta.remove()}$("#shareCopyStatus").textContent=copied?"共有URLをコピーしました。":"コピーできませんでした。共有ページを開いてURLをご確認ください。"});
-})();
+})().catch(error=>{console.error("KP BINDER load failed",error);const status=document.querySelector("#shareCopyStatus");if(status)status.textContent="KPライブ共有を読み込めませんでした。"});
 </script>
 </body>
 </html>
-
