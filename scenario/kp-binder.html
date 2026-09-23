@@ -134,6 +134,10 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .kptest .blog-editor .kp-special-title,.kptest .blog-editor .kp-special-body,.kptest .blog-editor .kp-special :is(h1,h2,h3,h4,blockquote){color:var(--text-primary)}
 .kptest .blog-editor .kp-special .kind-chip{color:#111}
 .kptest .blog-editor .kp-special-move,.kptest .blog-editor .kp-special-action button{background:var(--control-bg);color:var(--control-text);border-color:var(--line)}
+.blog-editor .kp-special-head .kp-special-duplicate,.blog-editor .kp-special-head .kp-special-lock{padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap}
+.blog-editor .kp-special[data-kp-locked="true"]{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 42%,transparent)}
+.blog-editor .kp-special[data-kp-locked="true"] > :is(.kp-special-title,.kp-special-body){cursor:not-allowed;opacity:.82}
+.blog-editor .kp-special-head .kp-special-lock[aria-pressed="true"]{border-color:var(--accent);font-weight:800}
 
 .blog-editor .kp-reveal-sharebox{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}
 .blog-editor .kp-reveal-mode{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
@@ -901,6 +905,36 @@ html[data-theme="dark"] .kptest .kp-inline-state-control button[aria-pressed="tr
   border-color:var(--accent)!important;
 }
 
+/* KP BINDER light theme: define the semantic palette locally. */
+html[data-theme="light"] .kptest{
+  --text-primary:#24211c;--text-muted:#625d54;--surface:#f7f3e9;--surface-raised:#eee5d3;
+  --control-bg:#fffdf8;--control-text:#24211c;--control-placeholder:#766f64;
+  background:#eee9df;color:var(--text-primary);
+}
+html[data-theme="light"] .kptest :is(.box,.scene-sheet,.blog-shell){background:#f7f3e9;color:var(--text-primary);border-color:#bdb3a2}
+html[data-theme="light"] .kptest .blog-note{color:var(--text-muted);border-color:#c8bdab}
+html[data-theme="light"] .kptest .rich-toolbar{background:#eee7da;border-color:#b7aa96}
+html[data-theme="light"] .kptest .rich-toolbar .tb-group{border-color:#b7aa96!important}
+html[data-theme="light"] .kptest .rich-toolbar :is(button,select,input[type="color"]){background:#fffdf8!important;color:#29251f!important;border-color:#a99d89!important}
+html[data-theme="light"] .kptest .rich-toolbar button:hover:not(:disabled){background:#e8dcc5!important;border-color:#8b651f!important;color:#241b0d!important}
+html[data-theme="light"] .kptest .rich-toolbar :is(button,select):focus-visible{outline:3px solid color-mix(in srgb,#a9791f 35%,transparent)!important;border-color:#8b651f!important}
+html[data-theme="light"] .kptest .rich-toolbar :is(button[aria-pressed="true"],button.active){background:#e4d09f!important;color:#35270d!important;border-color:#8b651f!important}
+html[data-theme="light"] .kptest .blog-editor{background:#fffdf8!important;color:var(--text-primary)!important;border-color:#bdb3a2!important}
+html[data-theme="light"] .kptest .blog-editor:focus{box-shadow:inset 0 0 0 2px rgba(169,121,31,.48)}
+html[data-theme="light"] .kptest .blog-editor .kp-special{background:#f4efe5;color:var(--text-primary);border-color:#aa9e8b}
+html[data-theme="light"] .kptest .blog-editor .kp-special-head{color:var(--text-muted);border-color:#b8ab96}
+html[data-theme="light"] .kptest .blog-editor .kp-special-body,html[data-theme="light"] .kptest .blog-editor .kp-special-title,html[data-theme="light"] .kptest .blog-editor .kp-special :is(h1,h2,h3,h4,blockquote){color:var(--text-primary)}
+html[data-theme="light"] .kptest .blog-editor .kp-reveal-sharebox{background:#ebe4d7;border-color:#ad9f89}
+html[data-theme="light"] .kptest .blog-editor .kp-reveal-summary-body{background:#fffdf8!important;color:var(--text-primary)!important;border-color:#9f917b!important}
+html[data-theme="light"] .kptest .blog-editor .kp-special-head :is(button,.kp-special-move,.kp-special-duplicate,.kp-special-lock,.kp-special-delete),html[data-theme="light"] .kptest .blog-editor .kp-special-action button{background:#fffaf0!important;color:#383027!important;border-color:#9f927e!important}
+html[data-theme="light"] .kptest .blog-editor .kp-special-head button:hover,html[data-theme="light"] .kptest .blog-editor .kp-special-action button:hover{background:#e8dcc5!important;border-color:#8b651f!important}
+html[data-theme="light"] .kptest .blog-editor .kp-special[data-kp-locked="true"]{background:#e9e1d2;box-shadow:inset 0 0 0 2px #9a762f}
+html[data-theme="light"] .kptest :is(.muted,.muted-note,.tb-label,.kp-reveal-mode,.kp-reveal-summary-label){color:var(--text-muted)!important}
+html[data-theme="light"] .kptest :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),select,textarea){background:#fffdf8!important;color:var(--control-text)!important;border-color:#9f927e!important}
+html[data-theme="light"] .kptest :is(input,select,textarea):focus{border-color:#8b651f!important;outline:3px solid rgba(169,121,31,.25)!important}
+html[data-theme="light"] .kptest .scene-list button:hover{background:#e8dcc5!important;border-color:#8b651f!important}
+html[data-theme="light"] .kptest .scene-list button.active{background:#e4d09f!important;color:#35270d!important;outline-color:#8b651f!important}
+
 /* RichEditor operation gutter: controls stay in their own lane and never cover text. */
 .kptest .blog-editor{
   --kp-editor-control-gutter:78px;
@@ -1644,7 +1678,41 @@ function renderEditor(){
      .forEach(x=>x.classList.remove("sm-drop-before","sm-drop-after"));
  }
 
+ const SPECIAL_LABELS={reveal:"開示情報",memo:"KPメモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
+ function specialIsLocked(section){return section?.dataset?.kpLocked==="true"}
+ function specialForNode(node){const el=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;return el?.closest?.("section.kp-special")||null}
+ function syncSpecialTarget(section,head){
+   const target=[...head.querySelectorAll(":scope > span")].map(x=>String(x.textContent||"").trim()).find(x=>x.startsWith("対象："));
+   if(target){const value=target.replace(/^対象：/,"").trim();if(value&&value!=="不明")section.dataset.kpTarget=value}
+ }
+ function applySpecialLock(section){
+   const locked=specialIsLocked(section);
+   section.querySelectorAll(":scope > .kp-special-title,:scope > .kp-special-body,:scope > .kp-reveal-sharebox [data-reveal-summary]").forEach(node=>{
+     node.setAttribute("contenteditable",locked?"false":"true");
+     if(locked)node.setAttribute("aria-readonly","true");else node.removeAttribute("aria-readonly");
+   });
+ }
+ function ensureSpecialStructure(section){
+   if(!section?.matches?.("section.kp-special[data-block-id]"))return false;
+   const kind=String(section.dataset.kind||""),body=section.querySelector(":scope > .kp-special-body");
+   if(!body||!SPECIAL_LABELS[kind])return false;
+   let head=section.querySelector(":scope > .kp-special-head"),repaired=false;
+   if(!head){
+     head=document.createElement("div");head.className="kp-special-head";head.setAttribute("contenteditable","false");
+     const chip=document.createElement("span");chip.className="kind-chip";chip.textContent=SPECIAL_LABELS[kind];head.appendChild(chip);
+     const target=String(section.dataset.kpTarget||"").trim();
+     if(kind==="reveal"||kind==="secret"){
+       const label=document.createElement("span");label.dataset.kpTargetLabel="";label.textContent=`対象：${target||"不明"}`;head.appendChild(label);
+     }
+     section.insertBefore(head,section.firstChild);repaired=true;
+   }else{head.setAttribute("contenteditable","false");syncSpecialTarget(section,head)}
+   applySpecialLock(section);return repaired;
+ }
+ function ensureSpecialStructures(){ed.querySelectorAll(":scope > section.kp-special[data-block-id]").forEach(ensureSpecialStructure)}
+ function specialStructuresValid(){return ![...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].some(section=>
+   !section.querySelector(":scope > .kp-special-head")||!section.querySelector(":scope > .kp-special-body"))}
  function decorateBlocks(){
+   ensureSpecialStructures();
    directEditorBlocks().forEach(block=>block.classList.add("sm-block"));
    decorateSpecialMoveButtons();
    decorateKpRevealStates();
@@ -1687,11 +1755,12 @@ function renderEditor(){
  }
  function moveSpecialBlockToScene(section,targetSceneId){
    if(!section?.matches?.("section.kp-special"))return;
+   if(specialIsLocked(section)){alert("ロック中のブロックは移動できません。");return}
    const target=b.pages.find(x=>String(x.id)===String(targetSceneId));
    if(!target||String(target.id)===String(p.id))return;
    const blockId=String(section.dataset.blockId||"");
    const clone=section.cloneNode(true);
-   clone.querySelectorAll(".kp-special-move,.sm-drag-handle").forEach(x=>x.remove());
+   clone.querySelectorAll(".kp-special-move,.kp-special-duplicate,.kp-special-lock,.kp-special-delete,.sm-drag-handle").forEach(x=>x.remove());
    clone.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after");
    const movedHtml=clone.outerHTML;
    section.remove();
@@ -1724,6 +1793,7 @@ function renderEditor(){
  }
  function askSpecialBlockDeletion(section){
    if(!section?.matches?.("section.kp-special")||section.parentElement!==ed)return;
+   if(specialIsLocked(section)){alert("ロック中のブロックは削除できません。先にロックを解除してください。");return}
    const veil=document.createElement("div");
    veil.className="video-choice-pop";veil.style.display="flex";veil.setAttribute("contenteditable","false");
    veil.innerHTML='<div class="video-choice-card"><h3>ブロックを削除</h3><p>このブロックを削除します。共有中の場合はKP Liveからも削除されます。</p><div class="video-choice-actions"><button type="button" class="secondary" data-special-delete-cancel>キャンセル</button><button type="button" class="danger" data-special-delete-confirm>削除</button></div></div>';
@@ -1768,8 +1838,29 @@ function renderEditor(){
      const st=q("#testShareStatus");if(st)st.textContent=unshared?"ブロックを削除し、共有も解除しました。":"ブロックを削除しました。";
    };
  }
+ function duplicateSpecialBlock(section){
+   if(!section?.matches?.("section.kp-special")||section.parentElement!==ed)return;
+   const clone=section.cloneNode(true),newId=uid();
+   clone.dataset.blockId=newId;clone.removeAttribute("data-kp-locked");
+   clone.classList.remove("sm-outline-collapsed","sm-block","sm-block-dragging","sm-drop-before","sm-drop-after");
+   clone.querySelectorAll(".sm-outline-ui,.kp-special-move,.kp-special-duplicate,.kp-special-lock,.kp-special-delete,.kp-special-action").forEach(x=>x.remove());
+   clone.querySelectorAll("[id]").forEach(node=>node.id=`${node.id||"kp"}-${newId}`);
+   const radioGroup=`reveal-mode-${newId}`;clone.querySelectorAll("[data-reveal-mode]").forEach(radio=>radio.name=radioGroup);
+   clone.querySelectorAll("[data-share-open],[data-share-update],[data-share-withdraw]").forEach(node=>{
+     node.removeAttribute("data-share-open");node.removeAttribute("data-share-update");node.removeAttribute("data-share-withdraw");
+   });
+   section.after(clone);ensureSpecialStructure(clone);decorateBlocks();refreshRevealActions();initImageUi();syncArticle();
+   const body=clone.querySelector(":scope > .kp-special-body");
+   if(body){const range=document.createRange(),sel=getSelection();range.selectNodeContents(body);range.collapse(false);sel.removeAllRanges();sel.addRange(range);savedRange=range.cloneRange()}
+ }
+ function toggleSpecialLock(section){
+   if(!section?.matches?.("section.kp-special"))return;
+   if(specialIsLocked(section))delete section.dataset.kpLocked;else section.dataset.kpLocked="true";
+   applySpecialLock(section);decorateSpecialMoveButtons();refreshBlockHandles();syncArticle();
+ }
  function decorateSpecialMoveButtons(){
    [...ed.querySelectorAll(":scope > section.kp-special")].forEach(section=>{
+     ensureSpecialStructure(section);
      const head=section.querySelector(":scope > .kp-special-head");
      if(!head)return;
      if(!head.querySelector(":scope > .kp-special-move")){
@@ -1778,12 +1869,24 @@ function renderEditor(){
        btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();askSpecialMoveDestination(section)});
        head.appendChild(btn);
      }
+     if(!head.querySelector(":scope > .kp-special-duplicate")){
+       const btn=document.createElement("button");btn.type="button";btn.className="secondary kp-special-duplicate sm-outline-ui";btn.textContent="複製";btn.setAttribute("contenteditable","false");
+       btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();duplicateSpecialBlock(section)});head.appendChild(btn);
+     }
+     let lock=head.querySelector(":scope > .kp-special-lock");
+     if(!lock){
+       lock=document.createElement("button");lock.type="button";lock.className="secondary kp-special-lock sm-outline-ui";lock.setAttribute("contenteditable","false");
+       lock.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});lock.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();toggleSpecialLock(section)});head.appendChild(lock);
+     }
+     lock.textContent=specialIsLocked(section)?"ロック解除":"ロック";lock.setAttribute("aria-pressed",String(specialIsLocked(section)));
      if(!head.querySelector(":scope > .kp-special-delete")){
        const btn=document.createElement("button");btn.type="button";btn.className="danger kp-special-delete sm-outline-ui";btn.textContent="ブロックを削除";btn.setAttribute("contenteditable","false");
        btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
        btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();askSpecialBlockDeletion(section)});
        head.appendChild(btn);
      }
+     const locked=specialIsLocked(section);
+     head.querySelectorAll(":scope > .kp-special-move,:scope > .kp-special-delete").forEach(btn=>{btn.disabled=locked;btn.setAttribute("aria-disabled",String(locked))});
    });
  }
 
@@ -1812,13 +1915,13 @@ function renderEditor(){
        const btn=document.createElement("button");btn.type="button";btn.dataset.kpState=state;btn.textContent=label;btn.title=title;
        btn.setAttribute("aria-label",title);btn.setAttribute("aria-pressed",String(kpRevealState(block)===state));
        btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
-       btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();setKpRevealState(block,state);updateTab();if(nested&&!q(".blog-shell")?.classList.contains("kp-reveal-edit-mode"))stateWrap.classList.remove("kp-tab-open")});
+       btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(specialIsLocked(block.closest("section.kp-special")))return;setKpRevealState(block,state);updateTab();if(nested&&!q(".blog-shell")?.classList.contains("kp-reveal-edit-mode"))stateWrap.classList.remove("kp-tab-open")});
        stateWrap.appendChild(btn);
      });
    }
    const del=document.createElement("button");del.type="button";del.className="kp-block-delete";del.textContent="⌫";del.title="この本文ブロックを削除";del.setAttribute("aria-label",del.title);
    del.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});
-   del.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(kpBlockHasMeaningfulContent(block)&&!confirm("この本文ブロックを削除しますか？"))return;removeKpStateableBlock(block)});
+   del.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(specialIsLocked(block.closest("section.kp-special")))return;if(kpBlockHasMeaningfulContent(block)&&!confirm("この本文ブロックを削除しますか？"))return;removeKpStateableBlock(block)});
    stateWrap.appendChild(del);handleLayer.appendChild(stateWrap);
  }
  function refreshBlockHandles(){
@@ -1886,10 +1989,11 @@ function renderEditor(){
    });
  }
  let pointerDrag=null;
- function startPointerBlockDrag(e){
+  function startPointerBlockDrag(e){
    if(e.button!==0)return;
-   const block=e.currentTarget._smBlock;
-   if(!block||block.parentElement!==ed)return;
+    const block=e.currentTarget._smBlock;
+    if(!block||block.parentElement!==ed)return;
+    if(block.matches?.("section.kp-special")&&specialIsLocked(block)){e.preventDefault();e.stopPropagation();return}
    e.preventDefault();e.stopPropagation();
 
    const group=richOutline?.groupFor(block,ed,OUTLINE_OPTIONS)||[block];
@@ -1990,8 +2094,10 @@ function renderEditor(){
 
  // Scene changes can happen before the debounce timer fires. Capture the
  // current DOM into this exact scene and persist it synchronously first.
- flushPendingEditor=()=>{
-   p.__v11ArticleHtml=cleanEditorHtml();
+  flushPendingEditor=()=>{
+    ensureSpecialStructures();
+    if(!specialStructuresValid()){console.error("KP特殊ブロックの必須構造が不足しているため保存を中止しました。");return}
+    p.__v11ArticleHtml=cleanEditorHtml();
    clearTimeout(saveTimer);
    saveNow();
  };
@@ -2103,15 +2209,20 @@ function renderEditor(){
    h.lastTypingAt=0;
    applyEditorHistory(h.present);
  }
- function syncArticle(options={}){
-   const html=cleanEditorHtml();
+  function syncArticle(options={}){
+    ensureSpecialStructures();
+    if(!specialStructuresValid()){console.error("KP特殊ブロックの必須構造が不足しているため保存を中止しました。");return false}
+    const html=cleanEditorHtml();
    recordEditorHistory(html,options);
    p.__v11ArticleHtml=html;
-   save();
-   refreshStats();
+    save();
+    refreshStats();
+    return true;
  }
  function insertHtml(html){
    restoreRange();
+   const liveRange=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0):null;
+   if(liveRange&&specialIsLocked(specialForNode(liveRange.commonAncestorContainer))){alert("ロック中のブロックには追加できません。");return}
    SAKUMERichEditor.execCommand(ed,"insertHTML",false,html);
    saveRange();ensureParagraphBlocks();decorateBlocks();requestAnimationFrame(()=>{decorateBlocks();refreshBlockHandles()});syncArticle();
  }
@@ -2161,7 +2272,7 @@ function renderEditor(){
    const inner=kind==="dialogue"
      ? `<div class="dialogue-lines"><div class="dialogue-row"><div class="dialogue-name">KP：</div><div class="dialogue-text">ここに会話ログを入力</div></div></div>`
      : (body||(kind==="reveal"?`<p data-kp-reveal-state="none" data-kp-reveal-id="${crypto.randomUUID?.()||(`kpblk-${Date.now()}-${Math.random().toString(36).slice(2)}`)}"><br></p>`:"<p><br></p>"));
-   insertTopLevelHtml(`<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}" data-reveal-ui="${kind==="reveal"?"nested":"standard"}">
+   insertTopLevelHtml(`<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}" data-reveal-ui="${kind==="reveal"?"nested":"standard"}"${target?` data-kp-target="${esc(target)}"`:""}>
      <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${target?`<span>対象：${esc(target)}</span>`:""}</div>
      <div class="kp-special-title">${esc(title)}</div>
      <div class="kp-special-body">${inner}</div>
@@ -2197,13 +2308,53 @@ function renderEditor(){
    syncArticle();
  });
 
- window.__v11InsertSpecial=insertSpecial;
+  window.__v11InsertSpecial=insertSpecial;
 
  
 
 
+ function rangeIntersectsNode(range,node){try{return range.intersectsNode(node)}catch{return false}}
+ function rangeTouchesSpecialHead(range){return !!range&&[...ed.querySelectorAll("section.kp-special > .kp-special-head")].some(head=>rangeIntersectsNode(range,head))}
+ function caretAtStartOf(range,container){
+   if(!range?.collapsed||!container?.contains(range.startContainer))return false;
+   try{const probe=document.createRange();probe.selectNodeContents(container);probe.setEnd(range.startContainer,range.startOffset);return !probe.toString().replace(/\u200B/g,"").trim()}catch{return false}
+ }
+ function caretAtEndOf(range,container){
+   if(!range?.collapsed||!container?.contains(range.startContainer))return false;
+   try{const probe=document.createRange();probe.selectNodeContents(container);probe.setStart(range.startContainer,range.startOffset);return !probe.toString().replace(/\u200B/g,"").trim()}catch{return false}
+ }
+ function protectedSpecialEdit(event){
+   const sel=window.getSelection(),range=sel?.rangeCount?sel.getRangeAt(0):null;if(!range)return false;
+   const section=specialForNode(range.commonAncestorContainer);
+   if(section&&specialIsLocked(section))return true;
+   if(rangeTouchesSpecialHead(range))return true;
+   if(!range.collapsed){
+     const crossesBodyBoundary=[...ed.querySelectorAll("section.kp-special > .kp-special-body")].some(body=>
+       rangeIntersectsNode(range,body)&&!(body.contains(range.startContainer)&&body.contains(range.endContainer)));
+     return crossesBodyBoundary;
+   }
+   const inputType=String(event?.inputType||"");
+   const backward=event?.key==="Backspace"||inputType.includes("Backward"),forward=event?.key==="Delete"||inputType.includes("Forward");
+   if(!backward&&!forward)return false;
+   let node=range.startContainer;if(node?.nodeType===Node.TEXT_NODE)node=node.parentElement;
+   const editable=node?.closest?.("section.kp-special > .kp-special-title,section.kp-special > .kp-special-body");
+   const owner=editable?.closest?.("section.kp-special");
+   if(backward&&owner&&owner.querySelector(":scope > .kp-special-head")&&caretAtStartOf(range,editable))return true;
+   let top=node;while(top&&top.parentElement!==ed)top=top.parentElement;
+   if(!top||top.parentElement!==ed)return false;
+   if(forward&&caretAtEndOf(range,top)&&top.nextElementSibling?.matches?.("section.kp-special"))return true;
+   if(backward&&caretAtStartOf(range,top)&&top.previousElementSibling?.matches?.("section.kp-special"))return true;
+   return false;
+ }
+
+ ensureSpecialStructures();
  refreshRevealActions();
+ ed.addEventListener("beforeinput",event=>{
+   if(protectedSpecialEdit(event)){event.preventDefault();event.stopPropagation()}
+  },true);
+ ed.addEventListener("cut",event=>{if(protectedSpecialEdit(event)){event.preventDefault();event.stopPropagation()}},true);
  ed.addEventListener("paste",event=>{
+   if(protectedSpecialEdit(event)){event.preventDefault();event.stopPropagation();return}
    const sourceHtml=event.clipboardData?.getData("text/html");
    if(!sourceHtml)return;
    event.preventDefault();
@@ -2219,26 +2370,40 @@ function renderEditor(){
  });
 ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
  ed.addEventListener("mouseup",()=>{saveRange();syncFormatSelect()});
- ed.addEventListener("input",()=>{ensureParagraphBlocks();decorateBlocks();saveRange();syncFormatSelect();syncArticle({coalesce:true});refreshBlockHandles()});
+ ed.addEventListener("input",()=>{ensureParagraphBlocks();ensureSpecialStructures();decorateBlocks();saveRange();syncFormatSelect();syncArticle({coalesce:true});refreshBlockHandles()});
  // A one-line IME edit may leave the editor without Enter ever being pressed.
  // Persist the committed composition and the final DOM when focus leaves the editor;
  // Enter must never be a prerequisite for keeping a special block.
  ed.addEventListener("compositionend",()=>{
    ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle({coalesce:true});refreshBlockHandles();
  });
- ed.addEventListener("blur",()=>{
-   saveRange();
-   p.__v11ArticleHtml=cleanEditorHtml();
+  ed.addEventListener("blur",()=>{
+    saveRange();
+    ensureSpecialStructures();
+    if(!specialStructuresValid()){console.error("KP特殊ブロックの必須構造が不足しているため保存を中止しました。");return}
+    p.__v11ArticleHtml=cleanEditorHtml();
    clearTimeout(saveTimer);
    saveNow();
  },true);
- q("#richToolbar").addEventListener("mousedown",e=>{
-   if(e.target.closest("button,input,select"))saveRange();
- });
+  q("#richToolbar").addEventListener("mousedown",e=>{
+    if(e.target.closest("button,input,select"))saveRange();
+  });
+  q("#richToolbar").addEventListener("click",e=>{
+    if(e.target.closest("#richDisplayPreview"))return;
+    const section=specialForNode(savedRange?.commonAncestorContainer);
+    if(!specialIsLocked(section))return;
+    e.preventDefault();e.stopImmediatePropagation();alert("ロック中のブロックは編集できません。");
+  },true);
+  q("#richToolbar").addEventListener("change",e=>{
+    const section=specialForNode(savedRange?.commonAncestorContainer);
+    if(!specialIsLocked(section))return;
+    e.preventDefault();e.stopImmediatePropagation();syncFormatSelect();alert("ロック中のブロックは編集できません。");
+  },true);
 
  q("#editorUndo").onclick=undoEditor;
  q("#editorRedo").onclick=redoEditor;
  ed.addEventListener("keydown",e=>{
+   if((e.key==="Backspace"||e.key==="Delete")&&protectedSpecialEdit(e)){e.preventDefault();e.stopPropagation();return}
    if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
    const key=String(e.key||"").toLowerCase();
    if(key==="z"){
@@ -2264,7 +2429,9 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
       const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
       return !!element?.closest?.("section.kp-special .kp-special-body");
     };
-    const heading=e.target.value==="h2"||e.target.value==="h3";
+   const heading=e.target.value==="h2"||e.target.value==="h3";
+   const selectedSpecial=range&&specialForNode(range.commonAncestorContainer);
+   if(selectedSpecial&&specialIsLocked(selectedSpecial)){syncFormatSelect();alert("ロック中のブロックは書式変更できません。");return}
     const touchesSpecialBody=range&&(inSpecialBody(range.startContainer)||inSpecialBody(range.endContainer)||
       (!range.collapsed&&[...ed.querySelectorAll("section.kp-special .kp-special-body")].some(body=>range.intersectsNode(body))));
     if(heading&&touchesSpecialBody){
@@ -2277,7 +2444,9 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
   };
  q("#richToolbar").querySelectorAll("[data-cmd]").forEach(btn=>btn.onclick=()=>{
    const cmd=btn.dataset.cmd;
-   restoreRange();
+    restoreRange();
+    const commandRange=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0):null;
+    if(commandRange&&specialIsLocked(specialForNode(commandRange.commonAncestorContainer))){alert("ロック中のブロックは書式変更できません。");return}
    if(cmd==="justifyLeft"||cmd==="justifyCenter"||cmd==="justifyRight"){
      const sel=window.getSelection();
      if(sel&&sel.rangeCount){
@@ -2444,9 +2613,10 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
      };
    }
 
-   if(remove){
-     remove.onclick=e=>{
-       e.preventDefault();e.stopPropagation();
+    if(remove){
+      remove.onclick=e=>{
+        e.preventDefault();e.stopPropagation();
+        if(specialIsLocked(fig.closest("section.kp-special")))return;
        const grid=fig.closest("[data-image-grid]");
        fig.remove();
        normalizeGrid(grid);
@@ -2462,7 +2632,8 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
      cap.onfocus=()=>fig.setAttribute("draggable","false");
      cap.onblur=()=>{fig.setAttribute("draggable","true");syncArticle()};
    }
-   fig.ondragstart=e=>{
+    fig.ondragstart=e=>{
+      if(specialIsLocked(fig.closest("section.kp-special"))){e.preventDefault();return}
      fig.classList.add("dragging");
      e.dataTransfer.effectAllowed="move";
      try{e.dataTransfer.setData("text/plain","image-item")}catch(_){}
@@ -2478,8 +2649,9 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
      e.dataTransfer.dropEffect="move";
    };
    fig.ondragleave=()=>fig.classList.remove("drag-over");
-   fig.ondrop=e=>{
-     e.preventDefault();
+    fig.ondrop=e=>{
+      e.preventDefault();
+      if(specialIsLocked(fig.closest("section.kp-special")))return;
      fig.classList.remove("drag-over");
      const dragging=ed.querySelector("[data-img-item].dragging");
      if(!dragging||dragging===fig)return;
@@ -2568,6 +2740,7 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
  }
 
  ed.addEventListener("keydown",e=>{
+   if(specialIsLocked(specialForNode(e.target))){e.preventDefault();return}
    if((e.key==="Backspace"||e.key==="Delete")&&deleteEmptyKpBlockFromCaret()){
      e.preventDefault();
      return;
