@@ -1043,15 +1043,23 @@ html[data-theme="light"] .kptest .scene-list button.active{background:#e4d09f!im
   </div>
   <div class="share-test-actions"><button type="button" id="makeTestShare">共通URLを作成</button><input id="testShareUrl" readonly placeholder="まだ共通URLはありません"><button type="button" class="secondary" id="copyTestShare">コピー</button><a class="button secondary" id="openTestShare" href="#" target="_blank" rel="noopener" hidden>共通ページを開く</a></div>
   <div class="muted-note" id="testShareStatus">共通URLには「全員」向けの開示情報だけが表示されます。</div>
+  <button type="button" class="secondary" id="retryShareSync" hidden>公開KP Liveへ再同期</button>
   <div class="kp-outline-share-actions" style="margin-top:10px">
     <button type="button" id="applyOutlineReveal">このシーンの○をKPliveへ反映</button>
     <button type="button" class="secondary" id="toggleKpLiveOrder">↕ KPlive表示順を編集</button>
+    <button type="button" class="secondary" id="scanOrphanShares">不要な共有情報を整理</button>
     <span class="muted-note">このシーンの「開示情報」内で「○」にした本文／箇条書きを反映します。</span>
   </div>
   <section class="kp-live-order-wrap" id="kpLiveOrderWrap" hidden>
     <div class="kp-live-order-head"><div><strong>KPlive表示順</strong><div class="muted-note">シーン（親）→大見出し（子）→小見出し（孫）の表示順を並び替えます。親・子は畳んで必要な所だけ開けます。開示した時刻や共有URLは変わりません。</div></div><div class="kp-live-order-fold-actions"><button type="button" class="secondary" id="openAllKpLiveOrder">すべて開く</button><button type="button" class="secondary" id="closeAllKpLiveOrder">すべて閉じる</button></div></div>
     <div class="kp-live-order-list" id="kpLiveOrderList"></div>
     <div class="kp-live-order-actions"><button type="button" class="secondary" id="cancelKpLiveOrder">閉じる</button><button type="button" id="applyKpLiveOrder">この順番をKPliveへ反映</button></div>
+  </section>
+  <section class="kp-live-order-wrap" id="orphanShareAudit" hidden>
+    <div class="kp-live-order-head"><div><strong>不要な共有情報の整理</strong><div class="muted-note">現在の保存本文と、選択中の陣の共有情報をblockIdで照合します。一覧表示だけでは削除されません。</div></div><button type="button" class="secondary" id="closeOrphanShareAudit">閉じる</button></div>
+    <div id="orphanShareAuditSummary" class="muted-note"></div>
+    <div id="orphanShareAuditList" class="kp-live-order-list"></div>
+    <div class="kp-live-order-actions"><button type="button" class="secondary" id="rescanOrphanShares">再スキャン</button><button type="button" id="deleteSelectedOrphanShares" disabled>選択した削除可能項目を共有から削除</button></div>
   </section>
   <details class="share-history"><summary>過去の陣</summary><div id="shareSessionHistory" class="muted-note"></div></details>
 </section>
@@ -1827,12 +1835,12 @@ function renderEditor(){
        return;
      }
      renderTestShareBar();
-     if(unshared&&shareTest.shareId){
-       try{await syncTestShare()}
-       catch(err){
-         const st=q("#testShareStatus");if(st)st.textContent=`本文とローカルの共有解除は保存しましたが、KP Liveへの反映に失敗しました：${err?.message||err}`;
-         console.error("KP Live共有反映エラー",err);
-         return;
+    if(unshared&&shareTest.shareId){
+      try{await syncTestShare()}
+      catch(err){
+        setShareSyncPending(`本文とローカルの共有解除は保存しましたが、KP Liveへの反映に失敗しました：${err?.message||err}`);
+        console.error("KP Live共有反映エラー",err);
+        return;
        }
      }
      const st=q("#testShareStatus");if(st)st.textContent=unshared?"ブロックを削除し、共有も解除しました。":"ブロックを削除しました。";
@@ -3394,12 +3402,17 @@ function renderTestShareBar(){
  renderShareHistory();refreshRevealActions();
  if(!q("#kpLiveOrderWrap")?.hidden)renderKpLiveOrder();
 }
+function setShareSyncPending(message){
+ const retry=q("#retryShareSync");if(retry)retry.hidden=false;
+ const st=q("#testShareStatus");if(st&&message)st.textContent=message;
+}
+function clearShareSyncPending(){const retry=q("#retryShareSync");if(retry)retry.hidden=true}
 async function syncTestShare(){
  shareTest=currentShare()||shareTest;
  if(!shareTest?.shareId)throw new Error("先に共通URLを作成してください。");
  await TRPG39Cloud.updateSharedPage(shareTest.shareId,sharePayloadFor(null));
  for(const p of (shareTest.participants||[])){if(p.shareId)await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p))}
- save();renderTestShareBar();renderShareParticipants();
+ save();clearShareSyncPending();renderTestShareBar();renderShareParticipants();
 }
 function wireKpLiveOrderControls(){
  const toggle=q("#toggleKpLiveOrder"),cancel=q("#cancelKpLiveOrder"),apply=q("#applyKpLiveOrder");
@@ -3412,6 +3425,82 @@ function wireKpLiveOrderControls(){
  setupKpLiveOrderDnD();
 }
 wireKpLiveOrderControls();
+
+function savedSpecialBlockIndex(){
+ const byId=new Map();
+ for(const page of (b.pages||[])){
+   const tpl=document.createElement("template");tpl.innerHTML=String(page?.__v11ArticleHtml||"");
+   for(const section of tpl.content.querySelectorAll("section.kp-special[data-block-id]")){
+     const blockId=exactSpecialBlockId(section.dataset.blockId);if(!blockId)continue;
+     const rows=byId.get(blockId)||[];rows.push({sceneId:String(page?.id||""),sceneTitle:String(page?.title||"無題のシーン")});byId.set(blockId,rows);
+   }
+ }
+ return byId;
+}
+function sharedEntryTitle(entry,fallback="開示情報"){return String(entry?.title||fallback).replace(/\s+/g," ").trim()||fallback}
+function scanCurrentShareOrphans(){
+ shareTest=currentShare()||shareTest;
+ const saved=savedSpecialBlockIndex(),normal=new Map(),records=new Map(),confirm=[],specialProofIds=new Set();
+ for(const item of (shareTest?.items||[])){
+   if(item?.kind!=="outline-scene")continue;
+   for(const group of (Array.isArray(item.outlineGroups)?item.outlineGroups:[])){
+     const id=String(group?.id||"");if(id.startsWith("special:")){const blockId=exactSpecialBlockId(id.slice(8));if(blockId)specialProofIds.add(blockId)}
+   }
+ }
+ const add=(blockId,item,scene,location,proof)=>{
+   blockId=exactSpecialBlockId(blockId);
+   if(blockId&&specialProofIds.has(blockId))proof=true;
+   const sceneId=String(scene?.sceneId||item?.sceneId||"");
+   const base={blockId,sceneId,sceneTitle:String(scene?.title||item?.sceneTitle||"シーン不明"),title:sharedEntryTitle(item),location};
+   if(!blockId||!sceneId){confirm.push({...base,status:"confirm",reason:!blockId?"blockIdを確定できません":"sceneIdがありません"});return}
+   const origins=saved.get(blockId)||[];
+   if(origins.length>1){confirm.push({...base,status:"confirm",reason:"同一blockIdが複数の保存シーンに存在します"});return}
+   if(origins.length===1){if(!normal.has(blockId))normal.set(blockId,{...base,status:"normal"});return}
+   if(!proof){confirm.push({...base,status:"confirm",reason:"特殊ブロック由来をIDだけでは証明できません"});return}
+   const row=records.get(blockId)||{...base,status:"deletable",locations:[]};
+   if(!row.locations.includes(location))row.locations.push(location);records.set(blockId,row);
+ };
+ for(const item of (shareTest?.items||[])){
+   if(item?.kind==="outline-scene"){
+     for(const group of (Array.isArray(item.outlineGroups)?item.outlineGroups:[])){
+       const id=String(group?.id||"");
+       if(id.startsWith("special:"))add(id.slice(8),group,item,"outlineGroups",true);
+       else if(String(group?.shareSource||"").startsWith("special"))add(id,group,item,"outlineGroups（旧形式）",false);
+     }
+     for(const legacy of (Array.isArray(item.legacyItems)?item.legacyItems:[]))add(legacy?.id,legacy,item,"legacyItems",false);
+   }else add(item?.id,item,null,"top-level item",false);
+ }
+ for(const row of records.values())row.location=row.locations.join(" / ");
+ return {normal:[...normal.values()],deletable:[...records.values()],confirm};
+}
+function renderOrphanShareAudit(){
+ const host=q("#orphanShareAuditList"),summary=q("#orphanShareAuditSummary");if(!host||!summary)return;
+ const result=scanCurrentShareOrphans(),rows=[...result.deletable,...result.confirm];
+ summary.textContent=`正常 ${result.normal.length}件 ／ 削除可能 ${result.deletable.length}件 ／ 要確認 ${result.confirm.length}件（選択中の陣のみ）`;
+ host.innerHTML=rows.length?rows.map(row=>`<div class="kp-live-order-row"><div>${row.status==="deletable"?`<input type="checkbox" style="width:auto" data-orphan-block-id="${esc(row.blockId)}" aria-label="${esc(row.title)}を選択">`:"⚠"}</div><div><div class="kp-live-order-title">${esc(row.title)}</div><div class="kp-live-order-target">シーン：${esc(row.sceneTitle)} ／ blockId：${esc(row.blockId||"不明")} ／ 残留場所：${esc(row.location)}${row.reason?` ／ ${esc(row.reason)}`:""}</div></div><strong>${row.status==="deletable"?"削除可能":"要確認"}</strong></div>`).join(""):'<div class="muted-note">整理候補はありません。</div>';
+ const del=q("#deleteSelectedOrphanShares");if(del)del.disabled=true;
+}
+function wireOrphanShareAudit(){
+ const open=q("#scanOrphanShares"),panel=q("#orphanShareAudit"),close=q("#closeOrphanShareAudit"),rescan=q("#rescanOrphanShares"),list=q("#orphanShareAuditList"),del=q("#deleteSelectedOrphanShares");
+ if(open)open.onclick=()=>{panel.hidden=false;renderOrphanShareAudit()};
+ if(close)close.onclick=()=>{panel.hidden=true};
+ if(rescan)rescan.onclick=renderOrphanShareAudit;
+ if(list)list.addEventListener("change",()=>{if(del)del.disabled=!list.querySelector("[data-orphan-block-id]:checked")});
+ if(del)del.onclick=async()=>{
+   const ids=[...list.querySelectorAll("[data-orphan-block-id]:checked")].map(x=>exactSpecialBlockId(x.dataset.orphanBlockId)).filter(Boolean);
+   if(!ids.length)return;
+   if(!confirm(`${ids.length}件の孤立共有情報を、選択中の陣から削除しますか？\nKP BINDER本文は変更しません。`))return;
+   const before=structuredClone((currentShare()?.items)||[]);
+   let changed=false;ids.forEach(id=>{changed=removeSharedBlockIdFromCurrentSession(id)||changed});if(!changed){renderOrphanShareAudit();return}
+   try{await saveNow()}
+   catch(err){shareTest.items=before;q("#testShareStatus").textContent=`共有解除を保存できませんでした：${err?.message||err}`;renderOrphanShareAudit();return}
+   try{await syncTestShare();q("#testShareStatus").textContent=`孤立共有情報 ${ids.length}件を削除し、KP Liveへ反映しました。`}
+   catch(err){setShareSyncPending(`ローカルの共有解除は保存されたが、KP Liveへの反映に失敗しました：${err?.message||err}`)}
+   renderOrphanShareAudit();renderKpLiveOrder();refreshRevealActions();
+ };
+ const retry=q("#retryShareSync");if(retry)retry.onclick=async()=>{try{retry.disabled=true;await syncTestShare();q("#testShareStatus").textContent="公開KP Liveへ再同期しました。"}catch(err){setShareSyncPending(`KP Liveへの再同期に失敗しました：${err?.message||err}`)}finally{retry.disabled=false}};
+}
+wireOrphanShareAudit();
 
 async function compressShareImage(src){
  src=String(src||"");
@@ -3934,30 +4023,15 @@ function upsertRevealIntoScene(snap){
  scene.updatedAt=new Date().toISOString();
  return scene;
 }
-function removeRevealFromScene(id){
- shareTest=currentShare()||shareTest;
- for(const scene of (shareTest?.items||[]).filter(x=>x?.kind==="outline-scene")){
-   const beforeLegacy=(scene.legacyItems||[]).length;
-   const beforeGroups=(scene.outlineGroups||[]).length;
-   scene.legacyItems=(scene.legacyItems||[]).filter(x=>String(x?.id||"")!==String(id));
-   scene.outlineGroups=(scene.outlineGroups||[]).filter(g=>String(g?.id||"")!==`special:${String(id)}`);
-   if(scene.legacyItems.length!==beforeLegacy||scene.outlineGroups.length!==beforeGroups){
-     scene.updatedAt=new Date().toISOString();
-     if(!(scene.legacyItems||[]).length&&!(scene.outlineGroups||[]).length){
-       shareTest.items=(shareTest.items||[]).filter(x=>x!==scene);
-     }
-     return true;
-   }
- }
- const before=(shareTest?.items||[]).length;
- shareTest.items=(shareTest?.items||[]).filter(x=>String(x?.id||"")!==String(id));
- return shareTest.items.length!==before;
+function exactSpecialBlockId(value){
+ const id=String(value||"").trim();
+ if(!id||id.length>200||/^special:/.test(id)||/[\s\u0000-\u001f\u007f]/.test(id))return "";
+ return id;
 }
-function removeSharedBlockIdFromCurrentSession(blockId){
- blockId=String(blockId||"");if(!blockId)return false;
- shareTest=currentShare()||shareTest;
+function removeSharedBlockIdFromSession(session,blockId){
+ blockId=exactSpecialBlockId(blockId);if(!blockId||!session)return false;
  let changed=false;
- shareTest.items=(shareTest.items||[]).filter(item=>{
+ session.items=(session.items||[]).filter(item=>{
    if(item?.kind!=="outline-scene"){
      if(String(item?.id||"")!==blockId)return true;
      changed=true;return false;
@@ -3973,6 +4047,11 @@ function removeSharedBlockIdFromCurrentSession(blockId){
  });
  return changed;
 }
+function removeSharedBlockIdFromCurrentSession(blockId){
+ shareTest=currentShare()||shareTest;
+ return removeSharedBlockIdFromSession(shareTest,blockId);
+}
+function removeRevealFromScene(id){return removeSharedBlockIdFromCurrentSession(id)}
 function setRevealAction(section){
  section=normalizeRevealSection(section)||section;
  shareTest=currentShare()||shareTest;
@@ -4177,8 +4256,11 @@ document.addEventListener("click",async e=>{
      const found=findSharedRevealById(id);if(!found)return;
      if(!confirm(`「${found.item.title}」を共有から削除しますか？`))return;
      const before=structuredClone(shareTest.items||[]);
-     removeRevealFromScene(id);await saveNow();
-     try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
+     const removed=removeRevealFromScene(id);if(!removed)return;
+     try{await saveNow()}
+     catch(err){shareTest.items=before;setRevealAction(section);throw err}
+     try{await syncTestShare()}
+     catch(err){setShareSyncPending(`ローカルの共有解除は保存されたが、KP Liveへの反映に失敗しました：${err?.message||err}`);setRevealAction(section);return}
      st.textContent=`「${found.item.title}」を共有から削除しました。`;
    }
    saveNow();setRevealAction(section);
