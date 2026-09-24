@@ -120,6 +120,15 @@ html[data-theme="light"] .share-manage-page .share-manage-state{color:#78581e!im
 html[data-theme="light"] body:not(.share-manage-page) .share-run,html[data-theme="light"] body:not(.share-manage-page) .share-report-block,html[data-theme="light"] body:not(.share-manage-page) .shared-conversation,html[data-theme="light"] body:not(.share-manage-page) .share-scenario-card,html[data-theme="light"] body:not(.share-manage-page) .shared-article-toggle>summary{background:#fffdf8!important;color:#24221e!important;border-color:#cfc7b8!important}
 html[data-theme="light"] body:not(.share-manage-page) .share-article-warning{background:#f5eddd!important;color:#24221e!important;border-color:#b58b3d!important}
 html[data-theme="light"] body:not(.share-manage-page) .shared-conversation-text,html[data-theme="light"] body:not(.share-manage-page) .shared-conversation-speaker,html[data-theme="light"] body:not(.share-manage-page) .shared-conversation-dice{background:#f7f3ea!important;color:#24221e!important}
+/* Restore the pre-2026-09-22 light SHARE viewer: the public article lives on
+   the light paper instead of retaining the dark public-panel palette. */
+html[data-theme="light"] main>.share-page>.share-card{
+  --text:#24221e;--muted:#656158;--line:#cfc7b8;--text-primary:#24221e;--text-muted:#656158;--panel:#fffdf8;
+  padding:0;background:transparent!important;color:#24221e!important;border:0!important;border-radius:0;
+}
+html[data-theme="light"] main>.share-page>.share-card :is(h1,h2,h3,h4,article,.share-article-text){color:#24221e!important}
+html[data-theme="light"] main>.share-page>.share-card :is(.muted,.small.muted,.share-article-updated){color:#656158!important}
+html[data-theme="light"] main>.share-page>.share-card a{color:#765615!important}
 
 /* HOME reads vertically like one sheet: cast, speech, schedule, anniversary, history. */
 body.home-page main>.wrap{display:flex;flex-direction:column;gap:0}
