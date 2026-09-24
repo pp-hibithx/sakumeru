@@ -2757,6 +2757,34 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
    return true;
  }
 
+ function splitToNewParagraphBlock(){
+   const sel=getSelection();
+   if(!sel?.rangeCount)return null;
+   const range=sel.getRangeAt(0);
+   if(!range.collapsed||!ed.contains(range.commonAncestorContainer))return null;
+   let node=range.startContainer;
+   if(node?.nodeType===Node.TEXT_NODE)node=node.parentElement;
+   const block=node?.closest?.("p,h1,h2,h3,h4,blockquote");
+   if(!block||!ed.contains(block))return null;
+   const container=block.parentElement;
+   if(!container||!(container===ed||container.matches?.(".kp-special-body,[data-reveal-summary]")))return null;
+
+   const tail=document.createRange();
+   tail.selectNodeContents(block);
+   try{tail.setStart(range.startContainer,range.startOffset)}catch{return null}
+   const fragment=tail.extractContents();
+   const paragraph=document.createElement("p");
+   paragraph.dataset.kind="normal";
+   paragraph.appendChild(fragment);
+   if(!paragraph.textContent?.replace(/\u200B/g,"").trim()&&!paragraph.querySelector("img,video,audio,iframe,hr,table"))paragraph.innerHTML="<br>";
+   container.insertBefore(paragraph,block.nextSibling);
+
+   const nextRange=document.createRange();
+   nextRange.selectNodeContents(paragraph);nextRange.collapse(true);
+   sel.removeAllRanges();sel.addRange(nextRange);
+   return paragraph;
+ }
+
  ed.addEventListener("keydown",e=>{
    if(specialIsLocked(specialForNode(e.target))){e.preventDefault();return}
    if((e.key==="Backspace"||e.key==="Delete")&&deleteEmptyKpBlockFromCaret()){
@@ -2772,16 +2800,19 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
      // Native Shift+Enter gives a soft line break inside the current block.
      return;
    }
-   // Normal Enter should produce a new paragraph/block rather than a loose DIV.
-   // execCommand keeps the caret behavior reliable in this prototype.
+   // Normal Enter always starts a new information block. Shift+Enter above is
+   // intentionally left to the browser as a soft line break in the same block.
    e.preventDefault();
-   restoreRange();
-   const beforeBlock=currentSelectionDirectBlock();
+   const beforeBlock=currentSelectionStateBlock();
    const beforeId=beforeBlock?.dataset?.kpRevealId||"";
-   SAKUMERichEditor.execCommand(ed,"insertParagraph",false,null);
+   const created=splitToNewParagraphBlock();
+   if(!created){
+     restoreRange();
+     SAKUMERichEditor.execCommand(ed,"insertParagraph",false,null);
+   }
    requestAnimationFrame(()=>{
      ensureParagraphBlocks();
-     const now=currentSelectionDirectBlock();
+      const now=currentSelectionStateBlock();
      if(now&&isKpStateableBlock(now)){
        // Enter means "next information block": never inherit the previous block's result.
        if(!now.dataset.kpRevealId || (beforeId&&now.dataset.kpRevealId===beforeId)){
