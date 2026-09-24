@@ -263,7 +263,8 @@
     const sharedBlockId=x=>String(x?.id||"").replace(/^special:/,"");
     const sharedLinkAttrs=x=>{
       const blockId=sharedBlockId(x),related=[...new Set((Array.isArray(x?.relatedBlockIds)?x.relatedBlockIds:[]).map(String).filter(Boolean))];
-      return `${blockId?` data-kp-shared-block-id="${esc(blockId)}"`:""}${related.length?` data-kp-related-ids="${esc(JSON.stringify(related))}"`:""}`;
+      const placement=String(x?.relatedLinkPlacement||"end");
+      return `${blockId?` data-kp-shared-block-id="${esc(blockId)}"`:""}${related.length?` data-kp-related-ids="${esc(JSON.stringify(related))}" data-kp-related-placement="${esc(placement)}"`:""}`;
     };
    const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
    const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
@@ -336,7 +337,7 @@
          const visibleRaw=images.length&&isImageFilenameOnly(rawBody)?"":rawBody;
          if(!images.length&&!hasMeaningfulRichBody(visibleRaw))return "";
          const bodyHtml=hasMeaningfulRichBody(visibleRaw)?richText(visibleRaw):"";
-         return `<div class="kp-live-outline-block">${bodyHtml}${renderImages(images)}</div>`;
+         return `<div class="kp-live-outline-block"${block?.id?` data-kp-share-unit-id="${esc(block.id)}"`:""}>${bodyHtml}${renderImages(images)}</div>`;
        };
        const body=blocks.map(renderOutlineBlock).filter(Boolean).join("");
        // Do not render an empty child/toggle either. This removes stray vertical
@@ -533,8 +534,12 @@
       if(!targets.length)return;
       const nav=document.createElement("nav");nav.className="kp-live-related";nav.setAttribute("aria-label","関連情報");nav.innerHTML="<strong>詳しくは</strong>";
       targets.forEach(target=>{const button=document.createElement("button");button.type="button";button.className="secondary";button.textContent=sharedTargetTitle(target);button.onclick=event=>{event.preventDefault();event.stopPropagation();openSharedTarget(target)};nav.appendChild(button)});
-      const summary=source.matches("details")?source.querySelector(":scope > summary"):null;
-      if(summary)summary.insertAdjacentElement("afterend",nav);else source.querySelector(":scope > .kp-live-special-kind")?.insertAdjacentElement("afterend",nav);
+      const placement=String(source.dataset.kpRelatedPlacement||"end"),content=source.matches("details")?source.querySelector(":scope > .kp-live-group-content"):source.querySelector(".kp-live-group-content");
+      const anchorId=placement.startsWith("after:")?placement.slice(6):"",anchor=anchorId?source.querySelector(`[data-kp-share-unit-id="${CSS.escape(anchorId)}"]`):null;
+      if(anchor)anchor.insertAdjacentElement("afterend",nav);
+      else if(content&&placement==="start")content.prepend(nav);
+      else if(content)content.append(nav);
+      else{const summary=source.matches("details")?source.querySelector(":scope > summary"):null;if(summary)summary.insertAdjacentElement("afterend",nav);else source.append(nav)}
     });
 
     const lightbox=document.getElementById("kpImageLightbox");
