@@ -830,6 +830,23 @@ mark.kp-marker{padding:0 .08em;border-radius:3px}
 .kp-live-order-scene{margin-bottom:8px}.kp-live-order-scene>.kp-live-order-row{grid-template-columns:auto auto minmax(0,1fr) auto}.kp-live-order-children{margin:4px 0 8px 10px;border-left:2px solid #343b46;padding-left:7px}.kp-live-order-child{background:rgba(255,255,255,.025);margin-top:4px}.kp-live-order-child .kp-live-order-handle{cursor:default;opacity:.7}.kp-live-order-grandchildren{margin:4px 0 6px 12px;border-left:1px dashed #48515f;padding-left:7px}.kp-live-order-grandchild{background:rgba(255,255,255,.015);margin-top:3px;padding-top:7px;padding-bottom:7px}.kp-live-order-grandchild .kp-live-order-title{font-size:13px}.kp-live-order-grandchild .kp-live-order-handle{cursor:default;opacity:.55}
 .kp-live-order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.kp-live-order-fold-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.kp-live-order-fold-actions button{font-size:12px;padding:5px 8px}.kp-live-order-fold{width:28px;min-width:28px;height:28px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}.kp-live-order-row>div:nth-of-type(1){min-width:0;flex:1}.kp-live-order-scene.is-collapsed>.kp-live-order-children{display:none}.kp-live-order-group.is-collapsed>.kp-live-order-grandchildren{display:none}
 
+/* KP BINDER owns its semantic palette locally; do not depend on binder-v2.css. */
+.kptest{
+  --text-primary:var(--text);--text-muted:var(--muted);--surface:var(--panel);--surface-raised:var(--panel2);
+  --control-bg:#101216;--control-text:var(--text);--control-placeholder:#979ca5;
+}
+html[data-theme="dark"] .kptest{
+  --text-primary:#eef0f3;--text-muted:#aeb4bd;--surface:#171a20;--surface-raised:#232832;
+  --control-bg:#101216;--control-text:#eef0f3;--control-placeholder:#979ca5;
+}
+.kptest :is(.share-test-panel,.kp-live-order-wrap,.pdf-check-section,.pdf-current){color:var(--text-primary);border-color:var(--line)}
+.kptest :is(.share-test-panel,.kp-live-order-wrap,.pdf-current){background:var(--surface)}
+.kptest .kp-live-order-row{background:var(--surface-raised);color:var(--text-primary);border-color:var(--line)}
+.kptest .pdf-original-wrap{background:var(--control-bg);color:var(--control-text);border-color:var(--line)}
+.kptest :is(.share-test-panel,.kp-live-order-wrap,.pdf-check-section) :is(label,strong,.kp-live-order-title){color:var(--text-primary)}
+.kptest :is(.share-test-panel,.kp-live-order-wrap,.pdf-check-section) :is(.muted,.muted-note,.kp-live-order-target){color:var(--text-muted)}
+.kptest :is(.share-test-panel,.kp-live-order-wrap,.pdf-check-section) :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){background:var(--control-bg);color:var(--control-text);border-color:var(--line)}
+
 /* Dark mode contrast inside KP BINDER only. Keep the selected loose-leaf paper unchanged. */
 html[data-theme="dark"] .kptest .blog-shell{
   border-color:color-mix(in srgb,var(--text-primary) 34%,var(--line));
@@ -911,7 +928,10 @@ html[data-theme="light"] .kptest{
   --control-bg:#fffdf8;--control-text:#24211c;--control-placeholder:#766f64;
   background:#eee9df;color:var(--text-primary);
 }
-html[data-theme="light"] .kptest :is(.box,.scene-sheet,.blog-shell){background:#f7f3e9;color:var(--text-primary);border-color:#bdb3a2}
+html[data-theme="light"] .kptest :is(.box,.scene-sheet,.blog-shell,.share-test-panel,.kp-live-order-wrap,.pdf-current){background:var(--surface);color:var(--text-primary);border-color:#bdb3a2}
+html[data-theme="light"] .kptest .kp-live-order-row{background:var(--surface-raised);color:var(--text-primary);border-color:#bdb3a2}
+html[data-theme="light"] .kptest .pdf-check-section{color:var(--text-primary);border-color:#bdb3a2}
+html[data-theme="light"] .kptest .pdf-original-wrap{background:var(--control-bg);color:var(--control-text);border-color:#bdb3a2}
 html[data-theme="light"] .kptest .blog-note{color:var(--text-muted);border-color:#c8bdab}
 html[data-theme="light"] .kptest .rich-toolbar{background:#eee7da;border-color:#b7aa96}
 html[data-theme="light"] .kptest .rich-toolbar .tb-group{border-color:#b7aa96!important}
