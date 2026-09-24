@@ -2157,9 +2157,10 @@ function renderEditor(){
    ed.focus();
    const sel=window.getSelection();
    sel.removeAllRanges();
-   if(savedRange)sel.addRange(savedRange);
+   if(savedRange&&ed.contains(savedRange.commonAncestorContainer))sel.addRange(savedRange);
    else{
      const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);sel.addRange(r);
+     savedRange=r.cloneRange();
    }
  }
  function syncFormatSelect(){
@@ -2431,7 +2432,7 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
  q("#editorUndo").onclick=undoEditor;
  q("#editorRedo").onclick=redoEditor;
  ed.addEventListener("keydown",e=>{
-   if((e.key==="Backspace"||e.key==="Delete")&&protectedSpecialEdit(e)){e.preventDefault();e.stopPropagation();return}
+   if((e.key==="Backspace"||e.key==="Delete")&&protectedSpecialEdit(e)){e.preventDefault();e.stopImmediatePropagation();return}
    if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
    const key=String(e.key||"").toLowerCase();
    if(key==="z"){
