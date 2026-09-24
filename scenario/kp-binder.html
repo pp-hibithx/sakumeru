@@ -1762,7 +1762,7 @@ function renderEditor(){
  }
  function specialLinkPlacement(section){
    const value=String(section?.dataset?.kpLinkPlacement||"end");
-   return value==="start"||value==="end"||value.startsWith("after:")?value:"end";
+   return value==="start"||value==="end"||value.startsWith("after:")||value.startsWith("replace:")?value:"end";
  }
  function setSpecialLinkPlacement(section,value){
    value=String(value||"end");
@@ -1784,6 +1784,7 @@ function renderEditor(){
    }).forEach((node,index)=>{
      const id=shareEnsureRevealBlockId(node),text=String(node.textContent||"").replace(/\s+/g," ").trim();
      const label=text?`${index+1}. ${text.slice(0,48)}${text.length>48?"…":""}`:`${index+1}. 画像・本文ブロック`;
+     if(text.includes("詳細はこちら"))options.push({value:`replace:${id}`,label:`「詳細はこちら」の位置（${index+1}番）`});
      options.push({value:`after:${id}`,label:`「${label}」の後`});
    });
    options.push({value:"end",label:"本文の末尾"});return options;
@@ -3408,7 +3409,7 @@ function sharedSpecialLinkIds(section){
 }
 function sharedSpecialLinkPlacement(section){
  const value=String(section?.dataset?.kpLinkPlacement||"end");
- return value==="start"||value==="end"||value.startsWith("after:")?value:"end";
+ return value==="start"||value==="end"||value.startsWith("after:")||value.startsWith("replace:")?value:"end";
 }
 function sharePayloadFor(participant=null){
  shareTest=currentShare()||shareTest;
