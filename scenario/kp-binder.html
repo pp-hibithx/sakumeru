@@ -1748,6 +1748,13 @@ function renderEditor(){
    richOutline?.refresh(ed,OUTLINE_OPTIONS);
    refreshBlockHandles();
  }
+ function collapseSceneOutlineOnOpen(){
+   if(!richOutline)return;
+   directEditorBlocks().forEach(block=>{
+     if(richOutline.isCollapsible(block,OUTLINE_OPTIONS))richOutline.setCollapsed(block,true);
+   });
+   richOutline.refresh(ed,OUTLINE_OPTIONS);
+ }
  function moveSharedSpecialToScene(blockId,fromPage,toPage){
    if(!blockId||!fromPage||!toPage||String(fromPage.id)===String(toPage.id))return;
    const items=Array.isArray(shareTest?.items)?shareTest.items:[];
@@ -2310,6 +2317,7 @@ function renderEditor(){
    </section>`);
     refreshRevealActions();
  }
+ collapseSceneOutlineOnOpen();
  decorateBlocks();
  refreshBlockHandles();
  window.addEventListener("resize",refreshBlockHandles);
