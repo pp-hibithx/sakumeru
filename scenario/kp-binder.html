@@ -3403,6 +3403,13 @@ function compareShareDisplayOrder(a,z){
  if(ao!==zo)return ao-zo;
  return new Date(a?.revealedAt||0)-new Date(z?.revealedAt||0);
 }
+function sharedSpecialLinkIds(section){
+ try{return [...new Set(JSON.parse(section?.dataset?.kpLinks||"[]").map(String).filter(Boolean))]}catch{return []}
+}
+function sharedSpecialLinkPlacement(section){
+ const value=String(section?.dataset?.kpLinkPlacement||"end");
+ return value==="start"||value==="end"||value.startsWith("after:")?value:"end";
+}
 function sharePayloadFor(participant=null){
  shareTest=currentShare()||shareTest;
  refreshSharedRelationsFromBinder();
@@ -3414,13 +3421,14 @@ function refreshSharedRelationsFromBinder(){
  const sections=new Map();
  for(const page of (b.pages||[])){
    const holder=document.createElement("div");
-   if(String(page.id)===String(active))holder.append(...[...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(node=>node.cloneNode(true)));
+   const liveEditor=document.querySelector("#blogEditor");
+   if(String(page.id)===String(active)&&liveEditor)holder.append(...[...liveEditor.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(node=>node.cloneNode(true)));
    else holder.innerHTML=String(page.__v11ArticleHtml||"");
    holder.querySelectorAll(":scope > section.kp-special[data-block-id]").forEach(section=>{const id=String(section.dataset.blockId||"");if(id)sections.set(id,section)});
  }
  const apply=(entry,section)=>{
-   const ids=specialLinkIds(section);if(ids.length)entry.relatedBlockIds=ids;else delete entry.relatedBlockIds;
-   const placement=specialLinkPlacement(section);if(placement!=="end")entry.relatedLinkPlacement=placement;else delete entry.relatedLinkPlacement;
+   const ids=sharedSpecialLinkIds(section);if(ids.length)entry.relatedBlockIds=ids;else delete entry.relatedBlockIds;
+   const placement=sharedSpecialLinkPlacement(section);if(placement!=="end")entry.relatedLinkPlacement=placement;else delete entry.relatedLinkPlacement;
  };
  for(const item of (shareTest?.items||[])){
    if(item?.kind!=="outline-scene"){
@@ -3955,9 +3963,9 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full",op
   const blockId=String(section.dataset.blockId||"")||(crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`));
    const context=shareMode==="summary"?revealHeadingContext(section):null;
    const group={id:`special:${blockId}`,title:String(title||"開示情報").replace(/\s+/g," ").trim()||"開示情報",outlineChildren:[],shareSource:options.shareSource||"special-full",shareMode};
-   const relatedBlockIds=specialLinkIds(section);
+   const relatedBlockIds=sharedSpecialLinkIds(section);
    if(relatedBlockIds.length)group.relatedBlockIds=relatedBlockIds;
-   const relatedLinkPlacement=specialLinkPlacement(section);
+   const relatedLinkPlacement=sharedSpecialLinkPlacement(section);
    if(relatedLinkPlacement!=="end")group.relatedLinkPlacement=relatedLinkPlacement;
   if(context)group.headingContext=context;
   // Keep real H2/H3 in the article outline. The special block still has one
@@ -4133,8 +4141,8 @@ async function revealSnapshot(section){
  const images=[];for(let i=0;i<raw.length;i++)images.push(await uploadShareImage(raw[i],id,i));
  const selectedItemIds=mode==="checked"?[...section.querySelectorAll("[data-reveal-check-item]")].filter(row=>row.querySelector("[data-reveal-check]")?.checked).map(row=>row.dataset.itemId||"").filter(Boolean):[];
  const outlineGroup=await buildSpecialOutlineGroup(section,source,title,mode);
-  const relatedBlockIds=specialLinkIds(section);
-  const relatedLinkPlacement=specialLinkPlacement(section);
+  const relatedBlockIds=sharedSpecialLinkIds(section);
+  const relatedLinkPlacement=sharedSpecialLinkPlacement(section);
   return {id,title,target,kind:section.dataset.kind||"reveal",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,relatedBlockIds,relatedLinkPlacement,outlineGroup,revealedAt:new Date().toISOString()};
 }
 function makeRevealCheckItem(html=""){
