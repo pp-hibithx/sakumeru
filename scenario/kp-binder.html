@@ -3432,12 +3432,37 @@ function savedSpecialBlockIndex(){
    const tpl=document.createElement("template");tpl.innerHTML=String(page?.__v11ArticleHtml||"");
    for(const section of tpl.content.querySelectorAll("section.kp-special[data-block-id]")){
      const blockId=exactSpecialBlockId(section.dataset.blockId);if(!blockId)continue;
-     const rows=byId.get(blockId)||[];rows.push({sceneId:String(page?.id||""),sceneTitle:String(page?.title||"無題のシーン")});byId.set(blockId,rows);
+     const headings=[...section.querySelectorAll("h1,h2,h3,h4")].map(h=>({tag:h.tagName,title:String(h.textContent||"").replace(/\s+/g," ").trim()})).filter(x=>x.title);
+     const rows=byId.get(blockId)||[];rows.push({sceneId:String(page?.id||""),sceneTitle:String(page?.title||"無題のシーン"),headings});byId.set(blockId,rows);
    }
  }
  return byId;
 }
 function sharedEntryTitle(entry,fallback="開示情報"){return String(entry?.title||fallback).replace(/\s+/g," ").trim()||fallback}
+function sharedModeLabel(mode){return mode==="full"?"full（全文）":mode==="summary"?"summary（要点）":String(mode||"その他／不明")}
+function readableSharedHtml(html){
+ const tpl=document.createElement("template");
+ tpl.innerHTML=String(html||"").replace(/<br\s*\/?>/gi,"\n").replace(/<\/(p|div|li|blockquote|h[1-6]|tr)>/gi,"</$1>\n");
+ return String(tpl.content.textContent||"").replace(/\u200b/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function sharedEntryDetail(entry,location){
+ const lines=[],seen=new Set();
+ const add=(label,value)=>{const text=readableSharedHtml(value);if(!text)return;const key=`${label}:${text}`;if(seen.has(key))return;seen.add(key);lines.push(`${label}\n${text}`)};
+ add("共有タイトル",entry?.title);
+ add("要点",entry?.summaryHtml??entry?.summary??entry?.summaryBody);
+ add("本文",entry?.bodyHtml??entry?.body);
+ const addBlocks=children=>{
+   for(const child of (Array.isArray(children)?children:[])){
+     add("小見出し",child?.title);
+     for(const block of (Array.isArray(child?.blocks)?child.blocks:[])){
+       add("ブロック見出し",block?.title);add("共有本文",block?.bodyHtml??block?.body);add("ブロック要点",block?.summaryHtml??block?.summary);
+     }
+   }
+ };
+ for(const root of (Array.isArray(entry?.outlineRoots)?entry.outlineRoots:[])){add("大見出し",root?.title);addBlocks(root?.outlineChildren)}
+ addBlocks(entry?.outlineChildren);
+ return {location,mode:sharedModeLabel(entry?.shareMode),source:String(entry?.shareSource||entry?.source||"不明"),text:lines.join("\n\n")||"共有本文・要点はこの項目に直接保存されていません。"};
+}
 function scanCurrentShareOrphans(){
  shareTest=currentShare()||shareTest;
  const saved=savedSpecialBlockIndex(),normal=new Map(),records=new Map(),confirm=[],specialProofIds=new Set();
@@ -3451,33 +3476,42 @@ function scanCurrentShareOrphans(){
    blockId=exactSpecialBlockId(blockId);
    if(blockId&&specialProofIds.has(blockId))proof=true;
    const sceneId=String(scene?.sceneId||item?.sceneId||"");
-   const base={blockId,sceneId,sceneTitle:String(scene?.title||item?.sceneTitle||"シーン不明"),title:sharedEntryTitle(item),location};
+   const detail=sharedEntryDetail(item,location);
+   const base={blockId,sceneId,sceneTitle:String(scene?.title||item?.sceneTitle||"シーン不明"),title:sharedEntryTitle(item),location,details:[detail],savedHeadings:[]};
    if(!blockId||!sceneId){confirm.push({...base,status:"confirm",reason:!blockId?"blockIdを確定できません":"sceneIdがありません"});return}
    const origins=saved.get(blockId)||[];
    if(origins.length>1){confirm.push({...base,status:"confirm",reason:"同一blockIdが複数の保存シーンに存在します"});return}
-   if(origins.length===1){if(!normal.has(blockId))normal.set(blockId,{...base,status:"normal"});return}
+   if(origins.length===1){
+     const row=normal.get(blockId)||{...base,status:"normal",locations:[],details:[]};
+     if(!row.locations.includes(location))row.locations.push(location);row.details.push(detail);row.savedHeadings=origins.flatMap(x=>x.headings||[]);normal.set(blockId,row);return
+   }
    if(!proof){confirm.push({...base,status:"confirm",reason:"特殊ブロック由来をIDだけでは証明できません"});return}
-   const row=records.get(blockId)||{...base,status:"deletable",locations:[]};
-   if(!row.locations.includes(location))row.locations.push(location);records.set(blockId,row);
+   const row=records.get(blockId)||{...base,status:"deletable",locations:[],details:[]};
+   if(!row.locations.includes(location))row.locations.push(location);row.details.push(detail);records.set(blockId,row);
  };
  for(const item of (shareTest?.items||[])){
    if(item?.kind==="outline-scene"){
      for(const group of (Array.isArray(item.outlineGroups)?item.outlineGroups:[])){
        const id=String(group?.id||"");
        if(id.startsWith("special:"))add(id.slice(8),group,item,"outlineGroups",true);
-       else if(String(group?.shareSource||"").startsWith("special"))add(id,group,item,"outlineGroups（旧形式）",false);
+       else add(id,group,item,String(group?.shareSource||"").startsWith("special")?"outlineGroups（旧形式）":"outlineGroups（blockId対応未確定）",false);
      }
      for(const legacy of (Array.isArray(item.legacyItems)?item.legacyItems:[]))add(legacy?.id,legacy,item,"legacyItems",false);
    }else add(item?.id,item,null,"top-level item",false);
  }
- for(const row of records.values())row.location=row.locations.join(" / ");
+ for(const row of [...normal.values(),...records.values()])row.location=row.locations.join(" / ");
  return {normal:[...normal.values()],deletable:[...records.values()],confirm};
 }
 function renderOrphanShareAudit(){
  const host=q("#orphanShareAuditList"),summary=q("#orphanShareAuditSummary");if(!host||!summary)return;
- const result=scanCurrentShareOrphans(),rows=[...result.deletable,...result.confirm];
+ const result=scanCurrentShareOrphans(),rows=[...result.normal,...result.deletable,...result.confirm];
  summary.textContent=`正常 ${result.normal.length}件 ／ 削除可能 ${result.deletable.length}件 ／ 要確認 ${result.confirm.length}件（選択中の陣のみ）`;
- host.innerHTML=rows.length?rows.map(row=>`<div class="kp-live-order-row"><div>${row.status==="deletable"?`<input type="checkbox" style="width:auto" data-orphan-block-id="${esc(row.blockId)}" aria-label="${esc(row.title)}を選択">`:"⚠"}</div><div><div class="kp-live-order-title">${esc(row.title)}</div><div class="kp-live-order-target">シーン：${esc(row.sceneTitle)} ／ blockId：${esc(row.blockId||"不明")} ／ 残留場所：${esc(row.location)}${row.reason?` ／ ${esc(row.reason)}`:""}</div></div><strong>${row.status==="deletable"?"削除可能":"要確認"}</strong></div>`).join(""):'<div class="muted-note">整理候補はありません。</div>';
+ const statusLabel=row=>row.status==="normal"?"正常":row.status==="deletable"?"削除可能":"要確認";
+ host.innerHTML=rows.length?rows.map(row=>{
+   const savedHeadings=(row.savedHeadings||[]).length?`<div class="kp-live-order-target" style="margin-top:6px">現在本文の見出し：${(row.savedHeadings||[]).map(h=>`${esc(h.tag)} ${esc(h.title)}`).join(" ／ ")}</div>`:"";
+   const details=(row.details||[]).map(detail=>`<div style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:7px"><div class="kp-live-order-target">残留場所：${esc(detail.location)} ／ 共有モード：${esc(detail.mode)} ／ shareSource：${esc(detail.source)}</div><div style="white-space:pre-wrap;margin-top:6px;max-height:320px;overflow:auto">${esc(detail.text)}</div></div>`).join("");
+   return `<div class="kp-live-order-row"><div>${row.status==="deletable"?`<input type="checkbox" style="width:auto" data-orphan-block-id="${esc(row.blockId)}" aria-label="${esc(row.title)}を選択">`:row.status==="normal"?"✓":"⚠"}</div><div><div class="kp-live-order-title">${esc(row.title)}</div><div class="kp-live-order-target">シーン：${esc(row.sceneTitle)} ／ blockId：${esc(row.blockId||"不明")} ／ 残留場所：${esc(row.location)} ／ 本文対応：${row.status==="normal"?"あり":"なし／未確定"}${row.reason?` ／ ${esc(row.reason)}`:""}</div>${savedHeadings}<details><summary>内容を確認</summary>${details}</details></div><strong>${statusLabel(row)}</strong></div>`;
+ }).join(""):'<div class="muted-note">共有情報はありません。</div>';
  const del=q("#deleteSelectedOrphanShares");if(del)del.disabled=true;
 }
 function wireOrphanShareAudit(){
