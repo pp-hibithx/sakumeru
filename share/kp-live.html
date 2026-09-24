@@ -90,6 +90,7 @@
 .kp-live.kp-filter-memo [data-kp-note-key]:not(.kp-personal-has-memo){display:none!important}
 .kp-live-related{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 10px 10px;padding:7px 9px;border:1px dashed var(--line);border-radius:7px;font-size:12px}
 .kp-live-related strong{color:var(--muted);font-size:11px}.kp-live-related button{padding:4px 8px;font-size:12px}
+.kp-live-related.is-inline{display:inline-flex;margin:0 3px;padding:2px 5px;vertical-align:middle}
 .kp-live-related-target{outline:3px solid var(--accent);outline-offset:3px}
 
 .kp-share-empty{padding:24px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
@@ -532,11 +533,19 @@
       // Never expose an unshared target's title or ID. A relation appears only
       // when both source and destination exist in this exact published payload.
       if(!targets.length)return;
-      const nav=document.createElement("nav");nav.className="kp-live-related";nav.setAttribute("aria-label","関連情報");nav.innerHTML="<strong>詳しくは</strong>";
+      const placement=String(source.dataset.kpRelatedPlacement||"end"),inline=placement.startsWith("replace:");
+      const nav=document.createElement(inline?"span":"nav");nav.className=`kp-live-related${inline?" is-inline":""}`;nav.setAttribute("aria-label","関連情報");nav.innerHTML="<strong>詳しくは</strong>";
       targets.forEach(target=>{const button=document.createElement("button");button.type="button";button.className="secondary";button.textContent=sharedTargetTitle(target);button.onclick=event=>{event.preventDefault();event.stopPropagation();openSharedTarget(target)};nav.appendChild(button)});
-      const placement=String(source.dataset.kpRelatedPlacement||"end"),content=source.matches("details")?source.querySelector(":scope > .kp-live-group-content"):source.querySelector(".kp-live-group-content");
+      const content=source.matches("details")?source.querySelector(":scope > .kp-live-group-content"):source.querySelector(".kp-live-group-content");
       const anchorId=placement.startsWith("after:")?placement.slice(6):"",anchor=anchorId?source.querySelector(`[data-kp-share-unit-id="${CSS.escape(anchorId)}"]`):null;
-      if(anchor)anchor.insertAdjacentElement("afterend",nav);
+      const replaceId=placement.startsWith("replace:")?placement.slice(8):"",replaceUnit=replaceId?source.querySelector(`[data-kp-share-unit-id="${CSS.escape(replaceId)}"]`):null;
+      let replaced=false;
+      if(replaceUnit){
+        const walker=document.createTreeWalker(replaceUnit,NodeFilter.SHOW_TEXT);let node;
+        while((node=walker.nextNode())){const at=String(node.nodeValue||"").indexOf("詳細はこちら");if(at<0)continue;const tail=node.splitText(at);tail.nodeValue=tail.nodeValue.slice("詳細はこちら".length);tail.parentNode.insertBefore(nav,tail);replaced=true;break}
+      }
+      if(replaced){}
+      else if(anchor)anchor.insertAdjacentElement("afterend",nav);
       else if(content&&placement==="start")content.prepend(nav);
       else if(content)content.append(nav);
       else{const summary=source.matches("details")?source.querySelector(":scope > summary"):null;if(summary)summary.insertAdjacentElement("afterend",nav);else source.append(nav)}
