@@ -361,7 +361,16 @@
  };
  const renderArticle=p=>{
    const blocks=Array.isArray(p.blocks)?p.blocks:[];
-    const sharedTextHasContent=b=>!!String(b?.html||b?.text||"").replace(/<br\s*\/?\s*>/gi,"").replace(/&nbsp;|&#160;/gi," ").replace(/<[^>]*>/g,"").trim();
+    const sharedTextHasContent=b=>{
+      const raw=String(b?.html||b?.text||"");
+      if(!raw)return false;
+      if(!String(b?.html||"").trim())return !!raw.trim();
+      const tpl=document.createElement("template");
+      tpl.innerHTML=window.SAKUMERichEditor?SAKUMERichEditor.sanitizeHtml(raw):sanitizeRichHtml(raw);
+      const text=String(tpl.content.textContent||"").replace(/[\u00a0\u200b]/g," ").trim();
+      if(text)return true;
+      return !!tpl.content.querySelector("img[src],figure img[src],hr,table");
+    };
     const renderArticleBlocks=(items,level=0)=>(Array.isArray(items)?items:[]).map(b=>{
        const type=String(b?.type||"").toLowerCase();
 
