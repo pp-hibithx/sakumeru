@@ -1760,6 +1760,41 @@ function renderEditor(){
    const clean=[...new Set((ids||[]).map(String).filter(Boolean))];
    if(clean.length)section.dataset.kpLinks=JSON.stringify(clean);else delete section.dataset.kpLinks;
  }
+ function specialLinkPlacement(section){
+   const value=String(section?.dataset?.kpLinkPlacement||"end");
+   return value==="start"||value==="end"||value.startsWith("after:")?value:"end";
+ }
+ function setSpecialLinkPlacement(section,value){
+   value=String(value||"end");
+   if(value==="end")delete section.dataset.kpLinkPlacement;else section.dataset.kpLinkPlacement=value;
+ }
+ async function saveAndPublishSpecialLinks(){
+   if(!syncArticle())return;
+   shareTest=currentShare()||shareTest;if(!shareTest?.shareId)return;
+   const status=q("#testShareStatus");
+   try{if(status)status.textContent="関連情報をKP Liveへ反映中…";await syncTestShare();if(status)status.textContent="関連情報をKP Liveへ反映しました。"}
+   catch(err){setShareSyncPending("関連情報はBinderへ保存しましたが、KP Liveへ反映できませんでした。再同期してください。");if(status)status.textContent=`関連情報はBinderへ保存しましたが、KP Liveへ反映できませんでした：${err?.message||String(err)}`}
+ }
+ function specialLinkPlacementOptions(section){
+   const options=[{value:"start",label:"本文の先頭"}],body=section?.querySelector?.(":scope > .kp-special-body");
+   if(body)[...body.querySelectorAll("p,blockquote,li,div.image-grid")].filter(node=>{
+     if(node.closest("section.kp-special")!==section)return false;
+     const nested=node.parentElement?.closest?.("p,blockquote,li,div.image-grid");
+     return !nested||!body.contains(nested);
+   }).forEach((node,index)=>{
+     const id=shareEnsureRevealBlockId(node),text=String(node.textContent||"").replace(/\s+/g," ").trim();
+     const label=text?`${index+1}. ${text.slice(0,48)}${text.length>48?"…":""}`:`${index+1}. 画像・本文ブロック`;
+     options.push({value:`after:${id}`,label:`「${label}」の後`});
+   });
+   options.push({value:"end",label:"本文の末尾"});return options;
+ }
+ function chooseSpecialLinkPlacement(section){
+   const veil=document.createElement("div");veil.className="video-choice-pop";veil.style.display="flex";veil.setAttribute("contenteditable","false");
+   const options=specialLinkPlacementOptions(section).map(row=>`<option value="${esc(row.value)}"${row.value===specialLinkPlacement(section)?" selected":""}>${esc(row.label)}</option>`).join("");
+   veil.innerHTML=`<div class="video-choice-card"><h3>KP Liveでの表示位置</h3><p class="muted-note">指定した本文が共有されない場合は、本文末尾へ表示します。</p><select data-special-link-placement style="width:100%;margin:10px 0">${options}</select><div class="video-choice-actions"><button type="button" class="secondary" data-special-link-cancel>キャンセル</button><button type="button" data-special-link-save>決定</button></div></div>`;
+   document.body.appendChild(veil);const close=()=>veil.remove();veil.querySelector("[data-special-link-cancel]").onclick=close;veil.addEventListener("mousedown",e=>{if(e.target===veil)close()});
+   veil.querySelector("[data-special-link-save]").onclick=()=>{setSpecialLinkPlacement(section,veil.querySelector("[data-special-link-placement]").value);close();decorateSpecialLinks();saveAndPublishSpecialLinks()};
+ }
  function specialLinkTitle(section){
    const generic=new Set(["開示情報","KPメモ","RP","秘匿","会話ログ"]);
    const explicit=String(section?.querySelector?.(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim();
@@ -1799,9 +1834,10 @@ function renderEditor(){
    const veil=document.createElement("div");veil.className="video-choice-pop";veil.style.display="flex";veil.setAttribute("contenteditable","false");
    const grouped=new Map();choices.forEach(row=>{const arr=grouped.get(row.sceneId)||[];arr.push(row);grouped.set(row.sceneId,arr)});
    const options=[...grouped.entries()].map(([sceneId,rows])=>`<optgroup label="${esc(rows[0]?.sceneTitle||"無題のシーン")}">${rows.map(row=>`<option value="${esc(row.blockId)}">${esc(row.title)}</option>`).join("")}</optgroup>`).join("");
-   veil.innerHTML=`<div class="video-choice-card"><h3>関連情報を追加</h3><p class="muted-note">別シーンのブロックも選択できます。リンクはKP BINDER内だけで使用され、KP Liveには公開されません。</p><select data-special-link-select style="width:100%;margin:10px 0">${options}</select><div class="video-choice-actions"><button type="button" class="secondary" data-special-link-cancel>キャンセル</button><button type="button" data-special-link-add>関連付ける</button></div></div>`;
+   const placements=specialLinkPlacementOptions(section).map(row=>`<option value="${esc(row.value)}"${row.value===specialLinkPlacement(section)?" selected":""}>${esc(row.label)}</option>`).join("");
+   veil.innerHTML=`<div class="video-choice-card"><h3>関連情報を追加</h3><p class="muted-note">別シーンも選択できます。KP Liveではリンク先も同じ共有URLに公開済みの場合だけ表示します。</p><label>リンク先<select data-special-link-select style="width:100%;margin:6px 0 10px">${options}</select></label><label>KP Liveでの表示位置<select data-special-link-placement style="width:100%;margin:6px 0 10px">${placements}</select></label><div class="video-choice-actions"><button type="button" class="secondary" data-special-link-cancel>キャンセル</button><button type="button" data-special-link-add>関連付ける</button></div></div>`;
    document.body.appendChild(veil);const close=()=>veil.remove();veil.querySelector("[data-special-link-cancel]").onclick=close;veil.addEventListener("mousedown",e=>{if(e.target===veil)close()});
-   veil.querySelector("[data-special-link-add]").onclick=()=>{const id=veil.querySelector("[data-special-link-select]").value;if(!id)return;setSpecialLinkIds(section,[...linked,id]);close();decorateSpecialLinks();syncArticle()};
+   veil.querySelector("[data-special-link-add]").onclick=()=>{const id=veil.querySelector("[data-special-link-select]").value;if(!id)return;setSpecialLinkIds(section,[...linked,id]);setSpecialLinkPlacement(section,veil.querySelector("[data-special-link-placement]").value);close();decorateSpecialLinks();saveAndPublishSpecialLinks()};
  }
  function decorateSpecialLinks(){
    const index=new Map(specialLinkIndex().map(row=>[row.blockId,row]));
@@ -1813,8 +1849,9 @@ function renderEditor(){
        const row=index.get(id),item=document.createElement("span");item.className="kp-special-link-row";
        if(row){const jump=document.createElement("button");jump.type="button";jump.className="secondary";jump.textContent=`${row.sceneTitle} › ${row.title}`;jump.onclick=e=>{e.preventDefault();e.stopPropagation();focusLinkedSpecial(row)};item.appendChild(jump)}
        else{const broken=document.createElement("span");broken.className="kp-special-link-broken";broken.textContent=`リンク切れ（${id}）`;item.appendChild(broken)}
-       const remove=document.createElement("button");remove.type="button";remove.className="secondary";remove.textContent="×";remove.title="関連付けを解除";remove.disabled=specialIsLocked(section);remove.onclick=e=>{e.preventDefault();e.stopPropagation();if(remove.disabled)return;setSpecialLinkIds(section,specialLinkIds(section).filter(x=>x!==id));decorateSpecialLinks();syncArticle()};item.appendChild(remove);wrap.appendChild(item);
+       const remove=document.createElement("button");remove.type="button";remove.className="secondary";remove.textContent="×";remove.title="関連付けを解除";remove.disabled=specialIsLocked(section);remove.onclick=e=>{e.preventDefault();e.stopPropagation();if(remove.disabled)return;setSpecialLinkIds(section,specialLinkIds(section).filter(x=>x!==id));decorateSpecialLinks();saveAndPublishSpecialLinks()};item.appendChild(remove);wrap.appendChild(item);
      });
+     const position=document.createElement("button");position.type="button";position.className="secondary";position.textContent="表示位置";position.disabled=specialIsLocked(section);position.onclick=e=>{e.preventDefault();e.stopPropagation();if(!position.disabled)chooseSpecialLinkPlacement(section)};wrap.appendChild(position);
      const head=section.querySelector(":scope > .kp-special-head");head?.insertAdjacentElement("afterend",wrap);
    });
  }
@@ -3368,9 +3405,35 @@ function compareShareDisplayOrder(a,z){
 }
 function sharePayloadFor(participant=null){
  shareTest=currentShare()||shareTest;
+ refreshSharedRelationsFromBinder();
  ensureShareDisplayOrder();
  const items=(shareTest.items||[]).filter(x=>participant?targetMatches(x.target,participant.ho):String(x.target||"全員").trim()==="全員");
  return {kind:"kp-live-share",title:b.scenarioTitle||"セッション共有",scenarioId:String(sid),sessionId:shareTest.sessionId,runId:shareTest.runId,runLabel:shareTest.runLabel||defaultRunLabel(shareTest),runCompleted:!!shareTest.completed,sessionStartedAt:shareTest.startedAt,participant:participant?{name:participant.name||"",ho:participant.ho||""}:null,updatedAt:new Date().toISOString(),items:[...items].sort(compareShareDisplayOrder)}
+}
+function refreshSharedRelationsFromBinder(){
+ const sections=new Map();
+ for(const page of (b.pages||[])){
+   const holder=document.createElement("div");
+   if(String(page.id)===String(active))holder.append(...[...ed.querySelectorAll(":scope > section.kp-special[data-block-id]")].map(node=>node.cloneNode(true)));
+   else holder.innerHTML=String(page.__v11ArticleHtml||"");
+   holder.querySelectorAll(":scope > section.kp-special[data-block-id]").forEach(section=>{const id=String(section.dataset.blockId||"");if(id)sections.set(id,section)});
+ }
+ const apply=(entry,section)=>{
+   const ids=specialLinkIds(section);if(ids.length)entry.relatedBlockIds=ids;else delete entry.relatedBlockIds;
+   const placement=specialLinkPlacement(section);if(placement!=="end")entry.relatedLinkPlacement=placement;else delete entry.relatedLinkPlacement;
+ };
+ for(const item of (shareTest?.items||[])){
+   if(item?.kind!=="outline-scene"){
+     const section=sections.get(String(item?.id||"").replace(/^special:/,""));if(section)apply(item,section);
+     continue;
+   }
+   for(const group of (Array.isArray(item.outlineGroups)?item.outlineGroups:[])){
+     const section=sections.get(String(group?.id||"").replace(/^special:/,""));if(section)apply(group,section);
+   }
+   for(const legacy of (Array.isArray(item.legacyItems)?item.legacyItems:[])){
+     const section=sections.get(String(legacy?.id||""));if(section)apply(legacy,section);
+   }
+ }
 }
 function testSharePayload(){return sharePayloadFor(null)}
 function shareUrlById(id){return id?new URL(`../share/kp-live.html?id=${encodeURIComponent(id)}&v=0831j`,location.href).href:""}
@@ -3894,6 +3957,8 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full",op
    const group={id:`special:${blockId}`,title:String(title||"開示情報").replace(/\s+/g," ").trim()||"開示情報",outlineChildren:[],shareSource:options.shareSource||"special-full",shareMode};
    const relatedBlockIds=specialLinkIds(section);
    if(relatedBlockIds.length)group.relatedBlockIds=relatedBlockIds;
+   const relatedLinkPlacement=specialLinkPlacement(section);
+   if(relatedLinkPlacement!=="end")group.relatedLinkPlacement=relatedLinkPlacement;
   if(context)group.headingContext=context;
   // Keep real H2/H3 in the article outline. The special block still has one
   // stable ID and kind; its display title must not consume a matching H2.
@@ -4069,7 +4134,8 @@ async function revealSnapshot(section){
  const selectedItemIds=mode==="checked"?[...section.querySelectorAll("[data-reveal-check-item]")].filter(row=>row.querySelector("[data-reveal-check]")?.checked).map(row=>row.dataset.itemId||"").filter(Boolean):[];
  const outlineGroup=await buildSpecialOutlineGroup(section,source,title,mode);
   const relatedBlockIds=specialLinkIds(section);
-  return {id,title,target,kind:section.dataset.kind||"reveal",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,relatedBlockIds,outlineGroup,revealedAt:new Date().toISOString()};
+  const relatedLinkPlacement=specialLinkPlacement(section);
+  return {id,title,target,kind:section.dataset.kind||"reveal",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,relatedBlockIds,relatedLinkPlacement,outlineGroup,revealedAt:new Date().toISOString()};
 }
 function makeRevealCheckItem(html=""){
  const row=document.createElement("div");
