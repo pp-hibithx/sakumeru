@@ -88,6 +88,9 @@
 [data-kp-note-key].kp-personal-resolved>summary{text-decoration:line-through;opacity:.62}
 .kp-live.kp-filter-unresolved [data-kp-note-key].kp-personal-resolved{display:none!important}
 .kp-live.kp-filter-memo [data-kp-note-key]:not(.kp-personal-has-memo){display:none!important}
+.kp-live-related{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 10px 10px;padding:7px 9px;border:1px dashed var(--line);border-radius:7px;font-size:12px}
+.kp-live-related strong{color:var(--muted);font-size:11px}.kp-live-related button{padding:4px 8px;font-size:12px}
+.kp-live-related-target{outline:3px solid var(--accent);outline-offset:3px}
 
 .kp-share-empty{padding:24px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
 @media(max-width:760px){.kp-live-layout{grid-template-columns:1fr}.kp-live-sidebar{position:static}.kp-live-toc{max-height:none}}
@@ -255,8 +258,13 @@
      });
    }
 
-   const itemId=(x,i)=>"kp-item-"+String(x?.id||i+1).replace(/[^a-zA-Z0-9_-]/g,"-");
-   const meaningfulTitle=x=>{const t=String(x?.title||"").trim();return t&&t!=="開示情報"?t:""};
+    const itemId=(x,i)=>"kp-item-"+String(x?.id||i+1).replace(/[^a-zA-Z0-9_-]/g,"-");
+    const meaningfulTitle=x=>{const t=String(x?.title||"").trim();return t&&t!=="開示情報"?t:""};
+    const sharedBlockId=x=>String(x?.id||"").replace(/^special:/,"");
+    const sharedLinkAttrs=x=>{
+      const blockId=sharedBlockId(x),related=[...new Set((Array.isArray(x?.relatedBlockIds)?x.relatedBlockIds:[]).map(String).filter(Boolean))];
+      return `${blockId?` data-kp-shared-block-id="${esc(blockId)}"`:""}${related.length?` data-kp-related-ids="${esc(JSON.stringify(related))}"`:""}`;
+    };
    const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
    const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
    const renderImages=images=>Array.isArray(images)&&images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,images.length)}">${images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:"";
@@ -344,7 +352,7 @@
     const renderSpecialOutlineRoots=group=>{
       const roots=Array.isArray(group.outlineRoots)?group.outlineRoots:[];
       const label=group.specialLabel||"開示情報";
-       return `<div class="kp-live-special-outline" data-special-id="${esc(group.id||"")}"><span class="kp-live-special-kind">${esc(label)}</span>${roots.map((root,index)=>{
+       return `<div class="kp-live-special-outline" data-special-id="${esc(group.id||"")}"${sharedLinkAttrs(group)}><span class="kp-live-special-kind">${esc(label)}</span>${roots.map((root,index)=>{
          const rootKey=`special-root:${String(root?.id||group.id||index)}`;
          const children=renderOutlineChildren(root.outlineChildren,{keepEmptyHeadings:true,keyPrefix:rootKey});
          return `<details class="kp-live-scene-group kp-live-group-toggle kp-live-special" data-kp-note-key="${esc(rootKey)}"><summary><span role="heading" aria-level="3">${esc(root.title||label)}</span></summary><div class="kp-live-group-content">${children}</div></details>`;
@@ -395,7 +403,7 @@
        .map(item=>{
          const title=meaningfulTitle(item)||"開示情報";
          const noteKey=`legacy:${String(item?.id||`${title}:${normLabel(item?.bodyHtml??item?.body??"").slice(0,80)}`)}`;
-         return `<details class="kp-live-scene-group kp-live-group-toggle kp-live-scene-legacy" data-kp-note-key="${esc(noteKey)}"><summary>${esc(title)}</summary><div class="kp-live-group-content"><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></div></details>`;
+         return `<details class="kp-live-scene-group kp-live-group-toggle kp-live-scene-legacy" data-kp-note-key="${esc(noteKey)}"${sharedLinkAttrs(item)}><summary>${esc(title)}</summary><div class="kp-live-group-content"><div class="kp-live-outline-block">${richText(item.bodyHtml??item.body??"")}${renderImages(item.images)}</div></div></details>`;
        }).join("");
    };
    const renderOutlineScene=x=>{
@@ -424,7 +432,7 @@
        const special=String(group?.id||"").startsWith("special:")||String(group?.shareSource||"").startsWith("special");
        const context=group.headingContext;
        const headings=Array.isArray(context?.headings)?context.headings:[];
-         let html=structured?renderSpecialOutlineRoots(group):`<details class="kp-live-scene-group kp-live-group-toggle${special?" kp-live-special":""}" data-kp-note-key="${esc(groupNoteKey)}"><summary><span role="heading" aria-level="${Math.min(3+headings.length,6)}">${esc(groupTitle)}</span></summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
+         let html=structured?renderSpecialOutlineRoots(group):`<details class="kp-live-scene-group kp-live-group-toggle${special?" kp-live-special":""}" data-kp-note-key="${esc(groupNoteKey)}"${sharedLinkAttrs(group)}><summary><span role="heading" aria-level="${Math.min(3+headings.length,6)}">${esc(groupTitle)}</span></summary><div class="kp-live-group-content">${childrenHtml}</div></details>`;
        // New summary shares retain the source outline outside the reveal label.
        // Older published groups have no headingContext and render unchanged.
        for(let i=headings.length-1;i>=0;i--){
@@ -441,7 +449,7 @@
      const title=meaningfulTitle(x)||(["outline-group","outline-scene"].includes(x.kind)?"共有情報":"開示情報");
      const html=x.kind==="outline-scene"?renderOutlineScene(x):x.kind==="outline-group"?renderOutlineGroup(x):richText(x.bodyHtml??x.body??"")+renderImages(x.images);
      const noteAttr=x.kind==="outline-scene"?"":` data-kp-note-key="${esc(`item:${String(x?.id||i)}`)}"`;
-     return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" data-scene-id="${esc(x.sceneId||"")}" id="${itemId(x,i)}"${noteAttr} ${latest?"open":""}>
+     return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" data-scene-id="${esc(x.sceneId||"")}" id="${itemId(x,i)}"${noteAttr}${x.kind==="outline-scene"?"":sharedLinkAttrs(x)} ${latest?"open":""}>
        <summary><span class="kp-live-summary-main"><strong>${esc(title)}</strong></span></summary>
        <div class="kp-live-body">${html}</div>
      </details>`;
@@ -508,6 +516,26 @@
       const note=box.querySelector(".kp-personal-note");if(note)note.textContent="このブラウザでは自分用メモを保存できません";
       box.querySelectorAll("#kpFilterUnresolved,#kpFilterMemo").forEach(button=>button.disabled=true);
     }
+
+    const sharedTargets=new Map();
+    box.querySelectorAll("[data-kp-shared-block-id]").forEach(node=>{const key=String(node.dataset.kpSharedBlockId||"");if(key&&!sharedTargets.has(key))sharedTargets.set(key,node)});
+    const sharedTargetTitle=node=>String((node.matches("details")?node.querySelector(":scope > summary"):node.querySelector("details > summary"))?.textContent||"関連情報").replace(/解決済み|📝\s*メモあり?|自分用メモ/g,"").replace(/\s+/g," ").trim()||"関連情報";
+    const openSharedTarget=target=>{
+      let parent=target;while(parent&&parent!==box){if(parent.matches?.("details"))parent.open=true;parent=parent.parentElement}
+      target.querySelectorAll?.(":scope > details").forEach(details=>details.open=true);
+      target.classList.add("kp-live-related-target");target.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>target.classList.remove("kp-live-related-target"),1800);
+    };
+    box.querySelectorAll("[data-kp-related-ids]").forEach(source=>{
+      let ids=[];try{ids=JSON.parse(source.dataset.kpRelatedIds||"[]")}catch{}
+      const targets=[...new Set((Array.isArray(ids)?ids:[]).map(String))].map(blockId=>sharedTargets.get(blockId)).filter(Boolean);
+      // Never expose an unshared target's title or ID. A relation appears only
+      // when both source and destination exist in this exact published payload.
+      if(!targets.length)return;
+      const nav=document.createElement("nav");nav.className="kp-live-related";nav.setAttribute("aria-label","関連情報");nav.innerHTML="<strong>詳しくは</strong>";
+      targets.forEach(target=>{const button=document.createElement("button");button.type="button";button.className="secondary";button.textContent=sharedTargetTitle(target);button.onclick=event=>{event.preventDefault();event.stopPropagation();openSharedTarget(target)};nav.appendChild(button)});
+      const summary=source.matches("details")?source.querySelector(":scope > summary"):null;
+      if(summary)summary.insertAdjacentElement("afterend",nav);else source.querySelector(":scope > .kp-live-special-kind")?.insertAdjacentElement("afterend",nav);
+    });
 
     const lightbox=document.getElementById("kpImageLightbox");
    const lightboxImg=document.getElementById("kpImageLightboxImg");
