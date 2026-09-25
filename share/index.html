@@ -539,7 +539,7 @@
      if(activeStatus!=="all")shown=shown.filter(x=>scenarioStatusKeys(x).includes(activeStatus));
      if(activeSystem!=="all")shown=shown.filter(x=>normSharedSystem(x.system)===activeSystem);
      if(term)shown=shown.filter(x=>[
-       x.title,x.shortTitle,x.system,x.author,x.shareSummary,(x.tags||[]).join(" ")
+       x.title,x.shortTitle,x.system,x.author,x.summaryText,(x.tags||[]).join(" ")
      ].join(" ").toLowerCase().includes(term));
      if(players)shown=shown.filter(x=>{
        const lo=Number(x.playersMin)||0,hi=Number(x.playersMax)||0;
@@ -599,7 +599,7 @@
                ${keys.map(k=>`<span class="badge">${esc(SCENARIO_STATUS_LABELS[k])}</span>`).join("")}
              </div>
              ${(x.tags||[]).length?`<div class="share-scenario-tags">${x.tags.slice(0,3).map(t=>`<span class="badge">#${esc(t)}</span>`).join("")}</div>`:""}
-             ${String(x.shareSummary||"").trim()?`<details class="share-scenario-overview"><summary>概要を見る</summary><div class="share-scenario-overview-body">${esc(String(x.shareSummary).trim())}</div></details>`:""}
+             ${String(x.summaryText||"").trim()?`<details class="share-scenario-overview"><summary>概要を見る</summary><div class="share-scenario-overview-body">${esc(String(x.summaryText).trim())}</div></details>`:""}
              ${x.url?`<div class="share-scenario-actions"><a class="button" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">配布・掲載ページ</a></div>`:""}
            </div>
          </article>`;
