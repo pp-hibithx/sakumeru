@@ -250,6 +250,21 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 </style>
 
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
+<style>
+/* Keep SCENARIO form controls on the same palette after readability.css. */
+html[data-theme="light"] #scenarioForm :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+html.theme-light #scenarioForm :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  background:#fff!important;color:#222!important;border-color:#c9cbd0!important;color-scheme:light!important
+}
+html[data-theme="light"] #scenarioForm :is(input,textarea)::placeholder,
+html.theme-light #scenarioForm :is(input,textarea)::placeholder{color:#74777d!important;opacity:1}
+html[data-theme="dark"] #scenarioForm :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+html.theme-dark #scenarioForm :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  background:#20242b!important;color:#f2f3f5!important;border-color:#5e6570!important;color-scheme:dark!important
+}
+html[data-theme="dark"] #scenarioForm :is(input,textarea)::placeholder,
+html.theme-dark #scenarioForm :is(input,textarea)::placeholder{color:#aeb4bd!important;opacity:1}
+</style>
 </head>
 <body>
 <div data-site-header data-active="scenario"></div>
