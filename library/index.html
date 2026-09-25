@@ -2572,10 +2572,9 @@ function setRunArchived(runId,archived){
 function del(id){
  const x=data.find(v=>v.id===id);if(!x)return;
  const linked=!!x.eventId;
- const msg=linked?"この開催記録を削除しますか？\nCALENDARと連動しているため、卓予定も一緒に削除されます。":"この開催記録を削除しますか？";
+ const msg=linked?"この卓記録だけを削除しますか？\nCALENDARの卓予定は削除されません。":"この卓記録を削除しますか？";
  if(confirm(msg)){
    data=data.filter(v=>v.id!==id);persist();
-   if(linked)TRPG39.saveEvents(TRPG39.loadEvents().filter(e=>e.id!==x.eventId));
    render();
  }
 }
