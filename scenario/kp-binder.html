@@ -1863,7 +1863,17 @@ function renderEditor(){
    decorateSpecialLinks();
    decorateKpRevealStates();
    richOutline?.refresh(ed,OUTLINE_OPTIONS);
-   refreshBlockHandles();
+   refreshBlockHandles({refreshOutline:false});
+ }
+ let editorRefreshFrame=0,editorRefreshCoalesce=false;
+ function scheduleEditorRefresh({coalesce=false}={}){
+   editorRefreshCoalesce=editorRefreshCoalesce||coalesce;
+   if(editorRefreshFrame)return;
+   editorRefreshFrame=requestAnimationFrame(()=>{
+     editorRefreshFrame=0;if(!ed.isConnected)return;
+     const mergeHistory=editorRefreshCoalesce;editorRefreshCoalesce=false;
+     ensureParagraphBlocks();ensureSpecialStructures();decorateBlocks();saveRange();syncFormatSelect();syncArticle({coalesce:mergeHistory});
+   });
  }
  function collapseSceneOutlineOnOpen(){
    if(!richOutline)return;
@@ -2081,11 +2091,12 @@ function renderEditor(){
    del.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(specialIsLocked(block.closest("section.kp-special")))return;if(kpBlockHasMeaningfulContent(block)&&!confirm("この本文ブロックを削除しますか？"))return;removeKpStateableBlock(block)});
    stateWrap.appendChild(del);handleLayer.appendChild(stateWrap);
  }
- function refreshBlockHandles(){
+ function refreshBlockHandles(options={}){
+   const refreshOutline=options?.refreshOutline!==false;
    cancelAnimationFrame(handleFrame);
    handleFrame=requestAnimationFrame(()=>{
      if(!handleLayer?.isConnected||!ed?.isConnected)return;
-     richOutline?.refresh(ed,OUTLINE_OPTIONS);
+     if(refreshOutline)richOutline?.refresh(ed,OUTLINE_OPTIONS);
      handleLayer.innerHTML="";
      const shell=q(".blog-shell");
      if(!shell)return;
@@ -2382,7 +2393,7 @@ function renderEditor(){
    const liveRange=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0):null;
    if(liveRange&&specialIsLocked(specialForNode(liveRange.commonAncestorContainer))){alert("ロック中のブロックには追加できません。");return}
    SAKUMERichEditor.execCommand(ed,"insertHTML",false,html);
-   saveRange();ensureParagraphBlocks();decorateBlocks();requestAnimationFrame(()=>{decorateBlocks();refreshBlockHandles()});syncArticle();
+   saveRange();ensureParagraphBlocks();decorateBlocks();syncArticle();
  }
 
  function currentTopLevelBlock(){
@@ -2403,7 +2414,6 @@ function renderEditor(){
    });
    ensureParagraphBlocks();
    decorateBlocks();
-   refreshBlockHandles();
    syncArticle();
 
    const last=nodes[nodes.length-1];
@@ -2440,7 +2450,6 @@ function renderEditor(){
  }
  collapseSceneOutlineOnOpen();
  decorateBlocks();
- refreshBlockHandles();
  window.addEventListener("resize",refreshBlockHandles);
  ed.addEventListener("scroll",refreshBlockHandles);
  if(window.ResizeObserver){
@@ -2529,12 +2538,12 @@ function renderEditor(){
  });
 ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
  ed.addEventListener("mouseup",()=>{saveRange();syncFormatSelect()});
- ed.addEventListener("input",()=>{ensureParagraphBlocks();ensureSpecialStructures();decorateBlocks();saveRange();syncFormatSelect();syncArticle({coalesce:true});refreshBlockHandles()});
+ ed.addEventListener("input",()=>scheduleEditorRefresh({coalesce:true}));
  // A one-line IME edit may leave the editor without Enter ever being pressed.
  // Persist the committed composition and the final DOM when focus leaves the editor;
  // Enter must never be a prerequisite for keeping a special block.
  ed.addEventListener("compositionend",()=>{
-   ensureParagraphBlocks();decorateBlocks();saveRange();syncArticle({coalesce:true});refreshBlockHandles();
+   scheduleEditorRefresh({coalesce:true});
  });
   ed.addEventListener("blur",()=>{
     saveRange();
@@ -2889,18 +2898,31 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
  function splitToNewParagraphBlock(){
    const sel=getSelection();
    if(!sel?.rangeCount)return null;
-   const range=sel.getRangeAt(0);
+   const range=sel.getRangeAt(0),splitRange=range.cloneRange();
    if(!range.collapsed||!ed.contains(range.commonAncestorContainer))return null;
    let node=range.startContainer;
    if(node?.nodeType===Node.TEXT_NODE)node=node.parentElement;
-   const block=node?.closest?.("p,h1,h2,h3,h4,blockquote");
+   let block=node?.closest?.("p,h1,h2,h3,h4,blockquote");
+   // After a native Shift+Enter, Chromium may report the caret at the body
+   // boundary immediately after the paragraph instead of inside that paragraph.
+   // Recover the adjacent editable block so the following plain Enter still
+   // means "start a new information block".
+   if(!block&&range.startContainer?.nodeType===Node.ELEMENT_NODE){
+     const containerNode=range.startContainer,index=Math.max(0,range.startOffset-1);
+     let candidate=containerNode.childNodes[index]||containerNode.childNodes[range.startOffset]||null;
+     if(candidate?.nodeType===Node.TEXT_NODE)candidate=candidate.parentElement;
+     if(candidate?.nodeType===Node.ELEMENT_NODE){
+       block=candidate.matches?.("p,h1,h2,h3,h4,blockquote")?candidate:candidate.closest?.("p,h1,h2,h3,h4,blockquote");
+       if(block){splitRange.selectNodeContents(block);splitRange.collapse(false)}
+     }
+   }
    if(!block||!ed.contains(block))return null;
    const container=block.parentElement;
    if(!container||!(container===ed||container.matches?.(".kp-special-body,[data-reveal-summary]")))return null;
 
    const tail=document.createRange();
    tail.selectNodeContents(block);
-   try{tail.setStart(range.startContainer,range.startOffset)}catch{return null}
+   try{tail.setStart(splitRange.startContainer,splitRange.startOffset)}catch{return null}
    const fragment=tail.extractContents();
    const paragraph=document.createElement("p");
    paragraph.dataset.kind="normal";
@@ -2936,7 +2958,8 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
    const beforeId=beforeBlock?.dataset?.kpRevealId||"";
    const created=splitToNewParagraphBlock();
    if(!created){
-     restoreRange();
+     // This key event already owns the live caret. Restoring savedRange here can
+     // jump back before a just-inserted Shift+Enter break and merge the block.
      SAKUMERichEditor.execCommand(ed,"insertParagraph",false,null);
    }
    requestAnimationFrame(()=>{
@@ -2959,7 +2982,6 @@ q("#closeLightbox").onclick=()=>q("#imageLightbox").classList.remove("open");
  document.addEventListener("keydown",e=>{if(e.key==="Escape")q("#imageLightbox")?.classList.remove("open")});
  initImageUi();
  decorateBlocks();
- requestAnimationFrame(decorateBlocks);
 
 const insertAudioButton=q("#insertAudio");
 if(insertAudioButton)insertAudioButton.onclick=()=>{
