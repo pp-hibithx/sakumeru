@@ -169,6 +169,7 @@
 .share-scenario-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
 .share-scenario-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .share-scenario-actions a{font-size:12px}
+.share-scenario-overview{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}.share-scenario-overview>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--text);list-style-position:inside}.share-scenario-overview-body{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.7;color:var(--text)}
 .share-scenario-empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;margin-top:12px}
 @media(max-width:620px){
  .share-scenario-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
@@ -538,7 +539,7 @@
      if(activeStatus!=="all")shown=shown.filter(x=>scenarioStatusKeys(x).includes(activeStatus));
      if(activeSystem!=="all")shown=shown.filter(x=>normSharedSystem(x.system)===activeSystem);
      if(term)shown=shown.filter(x=>[
-       x.title,x.shortTitle,x.system,x.author,(x.tags||[]).join(" ")
+       x.title,x.shortTitle,x.system,x.author,x.shareSummary,(x.tags||[]).join(" ")
      ].join(" ").toLowerCase().includes(term));
      if(players)shown=shown.filter(x=>{
        const lo=Number(x.playersMin)||0,hi=Number(x.playersMax)||0;
@@ -598,6 +599,7 @@
                ${keys.map(k=>`<span class="badge">${esc(SCENARIO_STATUS_LABELS[k])}</span>`).join("")}
              </div>
              ${(x.tags||[]).length?`<div class="share-scenario-tags">${x.tags.slice(0,3).map(t=>`<span class="badge">#${esc(t)}</span>`).join("")}</div>`:""}
+             ${String(x.shareSummary||"").trim()?`<details class="share-scenario-overview"><summary>概要を見る</summary><div class="share-scenario-overview-body">${esc(String(x.shareSummary).trim())}</div></details>`:""}
              ${x.url?`<div class="share-scenario-actions"><a class="button" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">配布・掲載ページ</a></div>`:""}
            </div>
          </article>`;
