@@ -27,7 +27,7 @@
 .sc-tools{display:flex;gap:6px;flex-wrap:wrap}.sc-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap}.sc-toolbar-main{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.sc-toolbar-main>div{min-width:0}.sc-search{width:220px}.sc-filter{width:150px}.sc-scope{width:180px}.sc-number-filter{width:92px}.sc-sort{width:170px}.sc-tag-filter{width:140px}.sc-toolbar button{width:auto}
 .scenario-save-error{display:block;flex-basis:100%;color:#ffb6b6;font-weight:700;line-height:1.6}
 .sc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
-.sc-list-more{grid-column:1/-1;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.sc-list-more button{width:auto}
+.sc-list-more{grid-column:1/-1;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.sc-list-more button{width:auto}.sc-pagination{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:12px 0 2px}.sc-pagination button{width:auto;min-width:40px;padding:7px 10px}.sc-pagination button[aria-current="page"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 20%,var(--panel));color:var(--text);font-weight:800}.sc-pagination button:disabled{opacity:.42;cursor:not-allowed}.sc-pagination-ellipsis{min-width:24px;text-align:center;color:var(--muted)}.sc-pagination-status{width:100%;text-align:center;color:var(--muted);font-size:12px}
 .sc-card{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel);min-width:0;transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease;cursor:pointer}
 .sc-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.16)}
 .sc-card:has(.sc-menu.open){overflow:visible;z-index:4}
@@ -470,7 +470,7 @@ function persistScenariosVerified(next,item){
 const persist=()=>TRPG39.saveScenarios(data);
 let systemTabFilter="all";
 const OWN_SCENARIO_PAGE_SIZE=20;
-let ownScenarioDisplayLimit=OWN_SCENARIO_PAGE_SIZE;
+let ownScenarioPage=1;
 
 function systemTabKey(value){
  const raw=String(value||"").trim();
@@ -519,9 +519,15 @@ function renderSystemTabs(){
 
  box.querySelectorAll("[data-system-tab]").forEach(b=>b.onclick=()=>{
    systemTabFilter=b.dataset.systemTab||"all";
-   ownScenarioDisplayLimit=OWN_SCENARIO_PAGE_SIZE;
+   ownScenarioPage=1;
    render();
  });
+}
+function scenarioPaginationHtml(total){
+ const pageCount=Math.max(1,Math.ceil(total/OWN_SCENARIO_PAGE_SIZE));
+ if(pageCount<=1)return "";
+ const values=pageCount<=7?Array.from({length:pageCount},(_,i)=>i+1):[1,...(ownScenarioPage>3?["ellipsis-start"]:[]),...Array.from(new Set([ownScenarioPage-1,ownScenarioPage,ownScenarioPage+1])).filter(n=>n>1&&n<pageCount),...(ownScenarioPage<pageCount-2?["ellipsis-end"]:[]),pageCount];
+ return `<nav class="sc-pagination" aria-label="シナリオ一覧のページ"><button type="button" data-scenario-page="${ownScenarioPage-1}" ${ownScenarioPage<=1?"disabled":""}>前へ</button>${values.map(value=>typeof value==="number"?`<button type="button" data-scenario-page="${value}" ${value===ownScenarioPage?'aria-current="page"':""}>${value}</button>`:'<span class="sc-pagination-ellipsis" aria-hidden="true">…</span>').join("")}<button type="button" data-scenario-page="${ownScenarioPage+1}" ${ownScenarioPage>=pageCount?"disabled":""}>次へ</button><span class="sc-pagination-status">${ownScenarioPage} / ${pageCount}ページ（全${total}件）</span></nav>`;
 }
 function currentTagValues(){
  return q("tags").value.split(/[,、]/).map(v=>v.trim()).filter(Boolean);
@@ -1651,10 +1657,12 @@ function render(){
  saveScenarioCategoryState();
  if(!ownSection.open){renderFriendResults();return;}
  ownSection.dataset.rendered="true";
- const visibleXs=xs.slice(0,ownScenarioDisplayLimit);
+ const pageCount=Math.max(1,Math.ceil(xs.length/OWN_SCENARIO_PAGE_SIZE));
+ ownScenarioPage=Math.min(Math.max(1,ownScenarioPage),pageCount);
+ const pageStart=(ownScenarioPage-1)*OWN_SCENARIO_PAGE_SIZE,visibleXs=xs.slice(pageStart,pageStart+OWN_SCENARIO_PAGE_SIZE);
  const cards=visibleXs.map(x=>`<article class="sc-card" data-open="${x.id}" tabindex="0"><div class="sc-thumb-wrap">${scenarioRepresentativeHtml(x,"card")}</div><div class="sc-menu-wrap"><button class="sc-menu-btn" data-menu="${x.id}" type="button" aria-label="メニュー">⋯</button><div class="sc-menu" data-menu-panel="${x.id}">${x.url?`<a target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布ページ</a>`:""}<button data-record="${x.id}" type="button">LIBRARYに記録</button><button data-library="${x.id}" type="button">過去の開催記録</button><button data-prep="${x.id}" type="button">準備チェック</button><button data-schedule="${x.id}" type="button">卓予定を作る</button><button data-edit="${x.id}" type="button">編集</button><button data-archive="${x.id}" type="button">${x.archived?"アーカイブから戻す":"アーカイブ"}</button><button class="danger" data-del="${x.id}" type="button">削除</button></div></div><div class="sc-body"><div class="sc-head"><h3>${esc(x.title)}</h3></div>${x.system?`<div class="small sc-system">${esc(x.system)}</div>`:""}${x.author?`<div class="small muted sc-author sc-author-top">${esc(x.author)}</div>`:""}<div class="sc-meta">${pubBadge(x)}${rangeText(x.playersMin,x.playersMax,"人")?`<span class="badge">${rangeText(x.playersMin,x.playersMax,"人")}</span>`:""}${rangeText(x.hoursMin,x.hoursMax,"h")?`<span class="badge">${rangeText(x.hoursMin,x.hoursMax,"h")}</span>`:""}${Object.entries(flags).filter(([k])=>x.flags&&x.flags[k]).map(([,v])=>`<span class="badge">${v}</span>`).join("")}${(x.tags||[]).slice(0,3).map(t=>`<span class="badge">#${esc(t)}</span>`).join("")}</div>${(()=>{const owners=friendOwnersForScenario(x);return owners.length?`<div class="small muted" style="margin-top:5px">友人も所持：${owners.map(esc).join("、")}</div>`:""})()}</div></article>`).join("");
- const more=visibleXs.length<xs.length?`<div class="sc-list-more"><button id="showMoreScenarios" type="button">さらに20件表示</button><button id="showAllScenarios" type="button">すべて表示</button></div>`:"";
- q("list").innerHTML=cards+`<button id="addCard" class="sc-add-card" type="button"><span class="sc-add-plus">＋</span><span>追加</span></button>`+more;
+ const pagination=scenarioPaginationHtml(xs.length);
+ q("list").innerHTML=cards+`<button id="addCard" class="sc-add-card" type="button"><span class="sc-add-plus">＋</span><span>追加</span></button>`+pagination;
  q("list").querySelectorAll("[data-open]").forEach(c=>{c.onclick=e=>{if(e.target.closest("button,a,.sc-menu"))return;scenarioCategoryState.lastCard=c.dataset.open;saveScenarioCategoryState();detail(c.dataset.open)};c.onkeydown=e=>{if(e.key==="Enter"){scenarioCategoryState.lastCard=c.dataset.open;saveScenarioCategoryState();detail(c.dataset.open)}}});
  q("list").querySelectorAll("[data-menu]").forEach(b=>b.onclick=e=>{e.stopPropagation();const panel=q("list").querySelector(`[data-menu-panel="${b.dataset.menu}"]`);q("list").querySelectorAll(".sc-menu.open").forEach(m=>{if(m!==panel)m.classList.remove("open")});panel.classList.toggle("open")});
  q("list").querySelectorAll("[data-record]").forEach(b=>b.onclick=e=>{e.stopPropagation();recordLibrary(b.dataset.record)});q("list").querySelectorAll("[data-library]").forEach(b=>b.onclick=e=>{e.stopPropagation();library(b.dataset.library)});q("list").querySelectorAll("[data-prep]").forEach(b=>b.onclick=e=>{e.stopPropagation();prep(b.dataset.prep)});q("list").querySelectorAll("[data-schedule]").forEach(b=>b.onclick=e=>{e.stopPropagation();schedule(b.dataset.schedule)});
@@ -1662,8 +1670,7 @@ function render(){
  q("list").querySelectorAll("[data-archive]").forEach(b=>b.onclick=e=>{e.stopPropagation();toggleArchive(b.dataset.archive)});
  q("list").querySelectorAll("[data-del]").forEach(b=>b.onclick=e=>{e.stopPropagation();del(b.dataset.del)});
  q("addCard").onclick=openForm;
- q("showMoreScenarios")?.addEventListener("click",()=>{ownScenarioDisplayLimit+=OWN_SCENARIO_PAGE_SIZE;render()});
- q("showAllScenarios")?.addEventListener("click",()=>{ownScenarioDisplayLimit=xs.length;render()});
+ q("list").querySelectorAll("[data-scenario-page]").forEach(button=>button.onclick=()=>{const next=Number(button.dataset.scenarioPage)||1;if(next===ownScenarioPage)return;ownScenarioPage=Math.min(Math.max(1,next),pageCount);render();requestAnimationFrame(()=>q("list").scrollIntoView({behavior:"smooth",block:"start"}))});
  renderFriendResults();
 }
 q("system").addEventListener("input",updateFacilitatorUI);q("facilitatorPresence").onchange=updateFacilitatorUI;q("facilitatorTermMode").onchange=updateFacilitatorUI;q("facilitatorTermCustom").addEventListener("input",updateFacilitatorUI);
@@ -1695,8 +1702,8 @@ function onScenarioCategoryToggle(section,key,others){
 draftScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(draftScenarioSection,"draftOpen",[ownScenarioSection,friendScenarioSection]));
 ownScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(ownScenarioSection,"ownOpen",[draftScenarioSection,friendScenarioSection]));
 friendScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(friendScenarioSection,"friendOpen",[draftScenarioSection,ownScenarioSection]));
-const resetOwnScenarioLimitAndRender=()=>{ownScenarioDisplayLimit=OWN_SCENARIO_PAGE_SIZE;render()};
-q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioLimitAndRender;q("searchScope").onchange=resetOwnScenarioLimitAndRender;q("filter").onchange=resetOwnScenarioLimitAndRender;q("playersFilter").oninput=resetOwnScenarioLimitAndRender;q("hoursFilter").oninput=resetOwnScenarioLimitAndRender;q("tagFilter").onchange=resetOwnScenarioLimitAndRender;q("archiveFilter").onchange=resetOwnScenarioLimitAndRender;q("sort").onchange=resetOwnScenarioLimitAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
+const resetOwnScenarioPageAndRender=()=>{ownScenarioPage=1;render()};
+q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioPageAndRender;q("searchScope").onchange=resetOwnScenarioPageAndRender;q("filter").onchange=resetOwnScenarioPageAndRender;q("playersFilter").oninput=resetOwnScenarioPageAndRender;q("hoursFilter").oninput=resetOwnScenarioPageAndRender;q("tagFilter").onchange=resetOwnScenarioPageAndRender;q("archiveFilter").onchange=resetOwnScenarioPageAndRender;q("sort").onchange=resetOwnScenarioPageAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
 </body></html>
