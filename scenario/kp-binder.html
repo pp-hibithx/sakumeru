@@ -3691,7 +3691,7 @@ function sharedEntryDetail(entry,location){
 }
 function scanCurrentShareOrphans(){
  shareTest=currentShare()||shareTest;
- const saved=savedSpecialBlockIndex(),normal=new Map(),records=new Map(),confirm=[],specialProofIds=new Set();
+ const saved=savedSpecialBlockIndex(),savedSceneIds=new Set((b.pages||[]).map(page=>String(page?.id||"")).filter(Boolean)),normal=new Map(),records=new Map(),orphanScenes=new Map(),confirm=[],specialProofIds=new Set();
  for(const item of (shareTest?.items||[])){
    if(item?.kind!=="outline-scene")continue;
    for(const group of (Array.isArray(item.outlineGroups)?item.outlineGroups:[])){
@@ -3717,6 +3717,14 @@ function scanCurrentShareOrphans(){
  };
  for(const item of (shareTest?.items||[])){
    if(item?.kind==="outline-scene"){
+     const sharedSceneId=String(item?.sceneId||"");
+     if(sharedSceneId&&!savedSceneIds.has(sharedSceneId)){
+       const details=[];
+       for(const group of (Array.isArray(item.outlineGroups)?item.outlineGroups:[]))details.push(sharedEntryDetail(group,"outlineGroups"));
+       for(const legacy of (Array.isArray(item.legacyItems)?item.legacyItems:[]))details.push(sharedEntryDetail(legacy,"legacyItems"));
+       orphanScenes.set(sharedSceneId,{status:"scene-deletable",sceneId:sharedSceneId,sceneTitle:String(item.title||"削除済みシーン"),title:String(item.title||"削除済みシーン"),blockId:"",location:"outline-scene（シーン全体）",reason:"現在のKP BINDERに同じsceneIdが存在しません",details:details.length?details:[sharedEntryDetail(item,"outline-scene")],savedHeadings:[]});
+       continue;
+     }
      for(const group of (Array.isArray(item.outlineGroups)?item.outlineGroups:[])){
        const id=String(group?.id||"");
        if(id.startsWith("special:"))add(id.slice(8),group,item,"outlineGroups",true);
@@ -3726,17 +3734,19 @@ function scanCurrentShareOrphans(){
    }else add(item?.id,item,null,"top-level item",false);
  }
  for(const row of [...normal.values(),...records.values()])row.location=row.locations.join(" / ");
- return {normal:[...normal.values()],deletable:[...records.values()],confirm};
+ return {normal:[...normal.values()],deletable:[...orphanScenes.values(),...records.values()],confirm};
 }
 function renderOrphanShareAudit(){
  const host=q("#orphanShareAuditList"),summary=q("#orphanShareAuditSummary");if(!host||!summary)return;
  const result=scanCurrentShareOrphans(),rows=[...result.normal,...result.deletable,...result.confirm];
  summary.textContent=`正常 ${result.normal.length}件 ／ 削除可能 ${result.deletable.length}件 ／ 要確認 ${result.confirm.length}件（選択中の陣のみ）`;
- const statusLabel=row=>row.status==="normal"?"正常":row.status==="deletable"?"削除可能":"要確認";
+ const statusLabel=row=>row.status==="normal"?"正常":row.status==="deletable"||row.status==="scene-deletable"?"削除可能":"要確認";
  host.innerHTML=rows.length?rows.map(row=>{
    const savedHeadings=(row.savedHeadings||[]).length?`<div class="kp-live-order-target" style="margin-top:6px">現在本文の見出し：${(row.savedHeadings||[]).map(h=>`${esc(h.tag)} ${esc(h.title)}`).join(" ／ ")}</div>`:"";
    const details=(row.details||[]).map(detail=>`<div style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:7px"><div class="kp-live-order-target">残留場所：${esc(detail.location)} ／ 共有モード：${esc(detail.mode)} ／ shareSource：${esc(detail.source)}</div><div style="white-space:pre-wrap;margin-top:6px;max-height:320px;overflow:auto">${esc(detail.text)}</div></div>`).join("");
-   return `<div class="kp-live-order-row"><div>${row.status==="deletable"?`<input type="checkbox" style="width:auto" data-orphan-block-id="${esc(row.blockId)}" aria-label="${esc(row.title)}を選択">`:row.status==="normal"?"✓":"⚠"}</div><div><div class="kp-live-order-title">${esc(row.title)}</div><div class="kp-live-order-target">シーン：${esc(row.sceneTitle)} ／ blockId：${esc(row.blockId||"不明")} ／ 残留場所：${esc(row.location)} ／ 本文対応：${row.status==="normal"?"あり":"なし／未確定"}${row.reason?` ／ ${esc(row.reason)}`:""}</div>${savedHeadings}<details><summary>内容を確認</summary>${details}</details></div><strong>${statusLabel(row)}</strong></div>`;
+   const selector=row.status==="scene-deletable"?`<input type="checkbox" style="width:auto" data-orphan-scene-id="${esc(row.sceneId)}" aria-label="${esc(row.title)}を選択">`:row.status==="deletable"?`<input type="checkbox" style="width:auto" data-orphan-block-id="${esc(row.blockId)}" aria-label="${esc(row.title)}を選択">`:row.status==="normal"?"✓":"⚠";
+   const identity=row.status==="scene-deletable"?`sceneId：${esc(row.sceneId)}`:`blockId：${esc(row.blockId||"不明")}`;
+   return `<div class="kp-live-order-row"><div>${selector}</div><div><div class="kp-live-order-title">${esc(row.title)}</div><div class="kp-live-order-target">シーン：${esc(row.sceneTitle)} ／ ${identity} ／ 残留場所：${esc(row.location)} ／ 本文対応：${row.status==="normal"?"あり":"なし／未確定"}${row.reason?` ／ ${esc(row.reason)}`:""}</div>${savedHeadings}<details><summary>内容を確認</summary>${details}</details></div><strong>${statusLabel(row)}</strong></div>`;
  }).join(""):'<div class="muted-note">共有情報はありません。</div>';
  const del=q("#deleteSelectedOrphanShares");if(del)del.disabled=true;
 }
@@ -3745,16 +3755,17 @@ function wireOrphanShareAudit(){
  if(open)open.onclick=()=>{panel.hidden=false;renderOrphanShareAudit()};
  if(close)close.onclick=()=>{panel.hidden=true};
  if(rescan)rescan.onclick=renderOrphanShareAudit;
- if(list)list.addEventListener("change",()=>{if(del)del.disabled=!list.querySelector("[data-orphan-block-id]:checked")});
+ if(list)list.addEventListener("change",()=>{if(del)del.disabled=!list.querySelector("[data-orphan-block-id]:checked,[data-orphan-scene-id]:checked")});
  if(del)del.onclick=async()=>{
    const ids=[...list.querySelectorAll("[data-orphan-block-id]:checked")].map(x=>exactSpecialBlockId(x.dataset.orphanBlockId)).filter(Boolean);
-   if(!ids.length)return;
-   if(!confirm(`${ids.length}件の孤立共有情報を、選択中の陣から削除しますか？\nKP BINDER本文は変更しません。`))return;
+   const sceneIds=[...list.querySelectorAll("[data-orphan-scene-id]:checked")].map(x=>String(x.dataset.orphanSceneId||"").trim()).filter(Boolean);
+   const total=ids.length+sceneIds.length;if(!total)return;
+   if(!confirm(`${total}件の孤立共有情報を、選択中の陣から削除しますか？\n削除済みシーン候補は共有シーン全体を除外します。KP BINDER本文は変更しません。`))return;
    const before=structuredClone((currentShare()?.items)||[]);
-   let changed=false;ids.forEach(id=>{changed=removeSharedBlockIdFromCurrentSession(id)||changed});if(!changed){renderOrphanShareAudit();return}
+   let changed=false;ids.forEach(id=>{changed=removeSharedBlockIdFromCurrentSession(id)||changed});sceneIds.forEach(id=>{changed=removeSharedSceneIdFromCurrentSession(id)||changed});if(!changed){renderOrphanShareAudit();return}
    try{await saveNow()}
    catch(err){shareTest.items=before;q("#testShareStatus").textContent=`共有解除を保存できませんでした：${err?.message||err}`;renderOrphanShareAudit();return}
-   try{await syncTestShare();q("#testShareStatus").textContent=`孤立共有情報 ${ids.length}件を削除し、KP Liveへ反映しました。`}
+   try{await syncTestShare();q("#testShareStatus").textContent=`孤立共有情報 ${total}件を削除し、KP Liveへ反映しました。`}
    catch(err){setShareSyncPending(`ローカルの共有解除は保存されたが、KP Liveへの反映に失敗しました：${err?.message||err}`)}
    renderOrphanShareAudit();renderKpLiveOrder();refreshRevealActions();
  };
@@ -4307,6 +4318,11 @@ function removeSharedBlockIdFromSession(session,blockId){
 function removeSharedBlockIdFromCurrentSession(blockId){
  shareTest=currentShare()||shareTest;
  return removeSharedBlockIdFromSession(shareTest,blockId);
+}
+function removeSharedSceneIdFromCurrentSession(sceneId){
+ shareTest=currentShare()||shareTest;sceneId=String(sceneId||"").trim();if(!sceneId||!shareTest)return false;
+ const items=Array.isArray(shareTest.items)?shareTest.items:[],kept=items.filter(item=>!(item?.kind==="outline-scene"&&String(item?.sceneId||"")===sceneId));
+ if(kept.length===items.length)return false;shareTest.items=kept;return true;
 }
 function removeRevealFromScene(id){return removeSharedBlockIdFromCurrentSession(id)}
 function setRevealAction(section){
