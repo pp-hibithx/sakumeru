@@ -540,8 +540,13 @@
       const anchorId=placement.startsWith("after:")?placement.slice(6):"",anchor=anchorId?source.querySelector(`[data-kp-share-unit-id="${CSS.escape(anchorId)}"]`):null;
       const replaceId=placement.startsWith("replace:")?placement.slice(8):"",replaceUnit=replaceId?source.querySelector(`[data-kp-share-unit-id="${CSS.escape(replaceId)}"]`):null;
       let replaced=false;
-      if(replaceUnit){
-        const walker=document.createTreeWalker(replaceUnit,NodeFilter.SHOW_TEXT);let node;
+      // Older published outline blocks may have been generated before the
+      // Binder assigned the selected paragraph its stable ID. In that case,
+      // keep the explicit inline intent and locate the marker within this
+      // source block only; never search another scene or shared item.
+      const replaceScope=inline?(replaceUnit||content||source):null;
+      if(replaceScope){
+        const walker=document.createTreeWalker(replaceScope,NodeFilter.SHOW_TEXT);let node;
         while((node=walker.nextNode())){const at=String(node.nodeValue||"").indexOf("詳細はこちら");if(at<0)continue;const tail=node.splitText(at);tail.nodeValue=tail.nodeValue.slice("詳細はこちら".length);tail.parentNode.insertBefore(nav,tail);replaced=true;break}
       }
       if(replaced){}
