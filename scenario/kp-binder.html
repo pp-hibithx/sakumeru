@@ -115,7 +115,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .blog-editor h3{margin:1.4em 0 .55em;padding-left:.55em;border-left:4px solid color-mix(in srgb,var(--accent) 72%,var(--line));font-size:1.28rem;line-height:1.45;font-weight:800;color:var(--text-primary,var(--text))}
 .blog-editor h4{margin:1.2em 0 .45em;font-size:1.08rem;line-height:1.5;font-weight:800;color:var(--text-primary,var(--text))}
 .blog-editor p{margin:.75em 0;font-size:1rem;line-height:1.85}
-.blog-editor blockquote{margin:1.15em 1em;padding:.72em 1em;border-left:4px solid color-mix(in srgb,var(--accent) 72%,var(--line));border-radius:0 7px 7px 0;background:color-mix(in srgb,var(--accent) 7%,var(--panel));color:var(--text);line-height:1.8}
+.blog-editor blockquote{margin:1.15em 1em;padding:.72em 1em;border-left:4px solid color-mix(in srgb,var(--accent) 72%,var(--line));border-radius:0 7px 7px 0;background:color-mix(in srgb,var(--accent) 7%,var(--panel));color:var(--text-primary,var(--text));line-height:1.8}
 .blog-editor img{max-width:100%;height:auto}
 .blog-editor .kp-special{position:relative;margin:18px 0;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
 .blog-editor .kp-special[data-kind="reveal"]{border-left:4px solid var(--accent)}
@@ -852,6 +852,12 @@ html[data-theme="dark"] .kptest{
   --text-primary:#eef0f3;--text-muted:#aeb4bd;--surface:#171a20;--surface-raised:#232832;
   --control-bg:#101216;--control-text:#eef0f3;--control-placeholder:#979ca5;
 }
+.kptest .blog-editor blockquote{
+  background:color-mix(in srgb,var(--surface-raised) 86%,var(--accent) 14%);
+  color:var(--text-primary)!important;
+  border-left-color:color-mix(in srgb,var(--accent) 82%,var(--text-primary));
+}
+.kptest .blog-editor blockquote :is(p,li){color:inherit}
 .kptest :is(.share-test-panel,.kp-live-order-wrap,.pdf-check-section,.pdf-current){color:var(--text-primary);border-color:var(--line)}
 .kptest :is(.share-test-panel,.kp-live-order-wrap,.pdf-current){background:var(--surface)}
 .kptest .kp-live-order-row{background:var(--surface-raised);color:var(--text-primary);border-color:var(--line)}
