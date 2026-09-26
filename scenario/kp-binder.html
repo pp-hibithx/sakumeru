@@ -2290,7 +2290,32 @@ function renderEditor(){
    saveNow();
  };
 
+ function flattenLegacyBodyWrappers(){
+   const movableChild="p,h1,h2,h3,h4,blockquote,ul,ol,hr,div.image-grid,div.media-card,div.kp-cue";
+   const protectedWrapper=".image-grid,.media-card,.kp-cue,.dialogue-lines,.dialogue-row,.kp-special-body,.kp-reveal-summary,.sm-rich-ui,.sm-outline-ui";
+   let changed=false;
+   // Old imports and browser editing can leave an otherwise meaningless DIV around
+   // complete block elements. Those children then cease to be editor-level blocks.
+   // Only unwrap plain containers whose contents are already complete blocks; never
+   // touch special blocks, image/media structures, tables, or inline/text runs.
+   for(let pass=0;pass<6;pass++){
+     let passChanged=false;
+     [...ed.children].forEach(wrapper=>{
+       if(wrapper.tagName!=="DIV"||wrapper.matches(protectedWrapper))return;
+       if(wrapper.id||wrapper.hasAttribute("data-block-id")||wrapper.getAttribute("contenteditable")==="false")return;
+       const attrs=[...wrapper.attributes].filter(a=>!(a.name==="style"&&!a.value.trim()));
+       if(attrs.length)return;
+       const meaningful=[...wrapper.childNodes].filter(n=>n.nodeType===Node.ELEMENT_NODE||(n.nodeType===Node.TEXT_NODE&&n.textContent.trim()));
+       if(!meaningful.length||meaningful.some(n=>n.nodeType!==Node.ELEMENT_NODE||!n.matches(movableChild)))return;
+       wrapper.replaceWith(...wrapper.childNodes);passChanged=true;changed=true;
+     });
+     if(!passChanged)break;
+   }
+   return changed;
+ }
+
  function ensureParagraphBlocks(){
+    flattenLegacyBodyWrappers();
     if(window.SAKUMERichEditor?.normalizeExistingEditor){SAKUMERichEditor.normalizeExistingEditor(ed);return}
     // Browsers sometimes leave bare text nodes in contenteditable. Wrap them so Enter-based
    // paragraphs consistently become movable blocks.
