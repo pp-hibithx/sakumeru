@@ -1906,14 +1906,18 @@ function renderEditor(){
    const collapsedLevels=[];
    [...ed.children].forEach(block=>{
      block.classList.remove("kp-heading-group-hidden");
+     if(block.dataset.kpHeadingGroupHidden==="1"){
+       block.hidden=false;
+       delete block.dataset.kpHeadingGroupHidden;
+     }
      const level=richOutline?.levelOf(block,OUTLINE_OPTIONS)||0;
      if(level){
        while(collapsedLevels.length&&collapsedLevels[collapsedLevels.length-1]>=level)collapsedLevels.pop();
-       if(collapsedLevels.length)block.classList.add("kp-heading-group-hidden");
+       if(collapsedLevels.length){block.classList.add("kp-heading-group-hidden");block.hidden=true;block.dataset.kpHeadingGroupHidden="1"}
        if(richOutline?.isCollapsed(block))collapsedLevels.push(level);
        return;
      }
-     if(collapsedLevels.length)block.classList.add("kp-heading-group-hidden");
+     if(collapsedLevels.length){block.classList.add("kp-heading-group-hidden");block.hidden=true;block.dataset.kpHeadingGroupHidden="1"}
    });
  }
  function decorateBlocks(){
@@ -2355,13 +2359,14 @@ function renderEditor(){
     if(window.SAKUMERichEditor?.cleanupEditorHtml){
      return SAKUMERichEditor.cleanupEditorHtml(ed,clone=>{
        richOutline?.cleanupClone(clone);
-       clone.querySelectorAll(".kp-heading-group-hidden").forEach(node=>node.classList.remove("kp-heading-group-hidden"));
+       clone.querySelectorAll(".kp-heading-group-hidden,[data-kp-heading-group-hidden]").forEach(node=>{node.classList.remove("kp-heading-group-hidden");node.hidden=false;delete node.dataset.kpHeadingGroupHidden});
      });
     }
     const clone=ed.cloneNode(true);
    clone.querySelectorAll(".sm-drag-handle,.sm-outline-ui,.kp-special-move,.kp-special-delete").forEach(h=>h.remove());
-  clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail,.kp-heading-group-hidden").forEach(el=>{
+  clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail,.kp-heading-group-hidden,[data-kp-heading-group-hidden]").forEach(el=>{
     el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail","kp-heading-group-hidden");
+     if(el.dataset.kpHeadingGroupHidden==="1"){el.hidden=false;delete el.dataset.kpHeadingGroupHidden}
      if(!el.className)el.removeAttribute("class");
    });
    richOutline?.cleanupClone(clone);
