@@ -1882,6 +1882,18 @@ function renderEditor(){
      const head=section.querySelector(":scope > .kp-special-head");head?.insertAdjacentElement("afterend",wrap);
    });
  }
+ function fillSpecialOutlineSummaries(){
+   ed.querySelectorAll(":scope > section.kp-special").forEach(section=>{
+     const summary=section.querySelector(":scope > .kp-special-head > .sm-special-summary");
+     if(!summary||String(summary.textContent||"").replace(/\u200B/g,"").trim())return;
+     const body=section.querySelector(":scope > .kp-special-body");
+     const clone=body?.cloneNode(true);
+     clone?.querySelectorAll(".sm-rich-ui,.sm-outline-ui,button,input,select,textarea,script,style").forEach(node=>node.remove());
+     const text=String(clone?.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+     const preview=text?`${text.slice(0,60)}${text.length>60?"…":""}`:"（内容なし）";
+     summary.textContent=`｜${preview}`;
+   });
+ }
  function decorateBlocks(){
    ensureSpecialStructures();
    directEditorBlocks().forEach(block=>block.classList.add("sm-block"));
@@ -1889,6 +1901,7 @@ function renderEditor(){
    decorateSpecialLinks();
    decorateKpRevealStates();
    richOutline?.refresh(ed,OUTLINE_OPTIONS);
+   fillSpecialOutlineSummaries();
    refreshBlockHandles({refreshOutline:false});
  }
  let editorRefreshFrame=0,editorRefreshCoalesce=false;
@@ -2163,7 +2176,7 @@ function renderEditor(){
    cancelAnimationFrame(handleFrame);
    handleFrame=requestAnimationFrame(()=>{
      if(!handleLayer?.isConnected||!ed?.isConnected)return;
-     if(refreshOutline)richOutline?.refresh(ed,OUTLINE_OPTIONS);
+     if(refreshOutline){richOutline?.refresh(ed,OUTLINE_OPTIONS);fillSpecialOutlineSummaries()}
      handleLayer.innerHTML="";
      const shell=q(".blog-shell");
      if(!shell)return;
