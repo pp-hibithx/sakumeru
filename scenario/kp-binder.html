@@ -2995,7 +2995,7 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
    return true;
  }
 
- function splitToNewParagraphBlock(){
+function splitToNewParagraphBlock(){
    const sel=getSelection();
    if(!sel?.rangeCount)return null;
    const range=sel.getRangeAt(0),splitRange=range.cloneRange();
@@ -3034,6 +3034,28 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
    nextRange.selectNodeContents(paragraph);nextRange.collapse(true);
    sel.removeAllRanges();sel.addRange(nextRange);
    return paragraph;
+}
+
+ function insertPlainQuoteSoftBreak(){
+   const sel=getSelection();if(!sel?.rangeCount)return false;
+   const range=sel.getRangeAt(0);if(!range.collapsed||!ed.contains(range.commonAncestorContainer))return false;
+   let node=range.startContainer;if(node?.nodeType===Node.TEXT_NODE)node=node.parentElement;
+   const quote=node?.closest?.("blockquote");if(!quote||!ed.contains(quote))return false;
+   // Chromium can copy the editor's computed foreground/background into new inline
+   // spans when it owns Shift+Enter inside a blockquote. Insert only a BR ourselves,
+   // so the quote keeps its semantic theme colors and no line-sized dark patches.
+   range.deleteContents();
+   const br=document.createElement("br");range.insertNode(br);
+   const caret=document.createRange();caret.setStartAfter(br);caret.collapse(true);sel.removeAllRanges();sel.addRange(caret);savedRange=caret.cloneRange();
+   quote.querySelectorAll("span[style]").forEach(span=>{
+     if(!span.querySelector("br")||span.matches("mark.kp-marker,.kp-sticky")||span.closest("mark.kp-marker,.kp-sticky"))return;
+     const hadBackground=!!(span.style.background||span.style.backgroundColor);
+     span.style.removeProperty("background");span.style.removeProperty("background-color");
+     if(hadBackground)span.style.removeProperty("color");
+     if(!span.getAttribute("style"))span.removeAttribute("style");
+   });
+   quote.dispatchEvent(new InputEvent("input",{bubbles:true,inputType:"insertLineBreak"}));
+   return true;
  }
 
  ed.addEventListener("keydown",e=>{
@@ -3048,11 +3070,12 @@ ed.addEventListener("keyup",()=>{saveRange();syncFormatSelect()});
    }
    if(e.key!=="Enter")return;
    if(e.shiftKey){
-     // Native Shift+Enter gives a soft line break inside the current block.
+     if(insertPlainQuoteSoftBreak())e.preventDefault();
+     // Outside quotes, native Shift+Enter gives a soft line break inside the block.
      return;
    }
-   // Normal Enter always starts a new information block. Shift+Enter above is
-   // intentionally left to the browser as a soft line break in the same block.
+   // Normal Enter always starts a new information block. Shift+Enter above remains
+   // a soft line break; quotes use the controlled path to avoid copied theme styles.
    e.preventDefault();
    const beforeBlock=currentSelectionStateBlock();
    const beforeId=beforeBlock?.dataset?.kpRevealId||"";
