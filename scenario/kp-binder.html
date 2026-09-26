@@ -2360,9 +2360,27 @@ function renderEditor(){
    }
    return changed;
  }
+ function cleanupQuoteSoftBreakArtifacts(root=ed){
+   const quotes=root.matches?.("blockquote")?[root]:[...(root.querySelectorAll?.("blockquote")||[])];
+   const rgb=value=>{const m=String(value||"").match(/rgba?\(\s*(\d+(?:\.\d+)?)\D+(\d+(?:\.\d+)?)\D+(\d+(?:\.\d+)?)/i);return m?[+m[1],+m[2],+m[3]]:null};
+   const luminance=color=>{const c=rgb(color);if(!c)return null;const values=c.map(v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*values[0]+.7152*values[1]+.0722*values[2]};
+   const contrast=(a,b)=>{const x=luminance(a),y=luminance(b);return x==null||y==null?Infinity:(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+   quotes.forEach(quote=>{
+     const softBroken=!!quote.querySelector("br");
+     quote.querySelectorAll("[style]").forEach(span=>{
+       if(span===quote||span.matches("mark.kp-marker,.kp-sticky")||span.closest("mark.kp-marker,.kp-sticky"))return;
+       const hadBackground=!!(span.style.background||span.style.backgroundColor);if(!hadBackground)return;
+       const computed=getComputedStyle(span),unreadable=contrast(computed.color,computed.backgroundColor)<3;
+       if(!softBroken&&!unreadable)return;
+       span.style.removeProperty("background");span.style.removeProperty("background-color");span.style.removeProperty("color");
+       if(!span.getAttribute("style"))span.removeAttribute("style");
+     });
+   });
+ }
 
  function ensureParagraphBlocks(){
     flattenLegacyBodyWrappers();
+    cleanupQuoteSoftBreakArtifacts();
     if(window.SAKUMERichEditor?.normalizeExistingEditor){SAKUMERichEditor.normalizeExistingEditor(ed);return}
     // Browsers sometimes leave bare text nodes in contenteditable. Wrap them so Enter-based
    // paragraphs consistently become movable blocks.
@@ -3047,13 +3065,7 @@ function splitToNewParagraphBlock(){
    range.deleteContents();
    const br=document.createElement("br");range.insertNode(br);
    const caret=document.createRange();caret.setStartAfter(br);caret.collapse(true);sel.removeAllRanges();sel.addRange(caret);savedRange=caret.cloneRange();
-   quote.querySelectorAll("span[style]").forEach(span=>{
-     if(!span.querySelector("br")||span.matches("mark.kp-marker,.kp-sticky")||span.closest("mark.kp-marker,.kp-sticky"))return;
-     const hadBackground=!!(span.style.background||span.style.backgroundColor);
-     span.style.removeProperty("background");span.style.removeProperty("background-color");
-     if(hadBackground)span.style.removeProperty("color");
-     if(!span.getAttribute("style"))span.removeAttribute("style");
-   });
+   cleanupQuoteSoftBreakArtifacts(quote);
    quote.dispatchEvent(new InputEvent("input",{bubbles:true,inputType:"insertLineBreak"}));
    return true;
  }
