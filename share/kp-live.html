@@ -80,6 +80,7 @@
 .kp-personal-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 14px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
 .kp-personal-bar strong{font-size:13px}.kp-personal-bar .kp-personal-note{font-size:11px;color:var(--muted)}
 .kp-personal-bar button{padding:5px 9px;font-size:12px}.kp-personal-bar button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.kp-live-channel-tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}.kp-live-channel-tabs button[aria-selected="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;font-weight:700}.kp-live-channel-tabs [data-channel-tab="secret"]{border-style:dashed}
 .kp-personal-actions{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:12px;font-weight:500;vertical-align:middle}
 .kp-personal-check{display:inline-flex;gap:4px;align-items:center;white-space:nowrap;cursor:pointer}.kp-personal-check input{margin:0}
 .kp-personal-memo-toggle{padding:3px 7px!important;font-size:11px!important}
@@ -252,6 +253,7 @@
      const sceneTitles=new Set([...byScene.values()].map(x=>String(x.title||"").trim()).filter(Boolean));
      items=items.filter(x=>{
        if(x?.kind==="outline-scene"&&x?.sceneId)return byScene.get(String(x.sceneId))===x;
+       if(x?.kind==="secret"||x?.channel==="secret")return true;
        if(x?.kind==="outline-group"&&x?.source==="outline")return false;
        if(x?.sceneId&&sceneIds.has(String(x.sceneId)))return false;
        if(!x?.sceneId&&x?.sceneTitle&&sceneTitles.has(String(x.sceneTitle).trim()))return false;
@@ -267,8 +269,9 @@
       const placement=String(x?.relatedLinkPlacement||"end");
       return `${blockId?` data-kp-shared-block-id="${esc(blockId)}"`:""}${related.length?` data-kp-related-ids="${esc(JSON.stringify(related))}" data-kp-related-placement="${esc(placement)}"`:""}`;
     };
-   const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x)})).filter(v=>v.title);
-   const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title})=>`<li><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
+   const channelOf=x=>x?.kind==="secret"||x?.channel==="secret"?"secret":"public";
+   const tocItems=items.map((x,i)=>({x,i,title:meaningfulTitle(x),channel:channelOf(x)})).filter(v=>v.title);
+   const toc=tocItems.length?`<nav class="kp-live-toc"><div class="kp-live-toc-head"><strong>目次</strong><div class="kp-live-tools"><button type="button" class="secondary" id="kpOpenAll">すべて開く</button><button type="button" class="secondary" id="kpCloseAll">すべて閉じる</button></div></div><ol>${tocItems.map(({x,i,title,channel})=>`<li data-kp-channel="${channel}"><a href="#${itemId(x,i)}">${esc(title)}</a></li>`).join("")}</ol></nav>`:"";
    const renderImages=images=>Array.isArray(images)&&images.length?`<div class="kp-live-images" style="--image-cols:${Math.min(4,images.length)}">${images.map(src=>`<img src="${esc(src)}" alt="" loading="lazy" data-kp-zoom>`).join("")}</div>`:"";
    const normalizeShareHtml=html=>String(html||"")
      .replace(/\s+/g," ")
@@ -451,12 +454,20 @@
      const title=meaningfulTitle(x)||(["outline-group","outline-scene"].includes(x.kind)?"共有情報":"開示情報");
      const html=x.kind==="outline-scene"?renderOutlineScene(x):x.kind==="outline-group"?renderOutlineGroup(x):richText(x.bodyHtml??x.body??"")+renderImages(x.images);
      const noteAttr=x.kind==="outline-scene"?"":` data-kp-note-key="${esc(`item:${String(x?.id||i)}`)}"`;
-     return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" data-scene-id="${esc(x.sceneId||"")}" id="${itemId(x,i)}"${noteAttr}${x.kind==="outline-scene"?"":sharedLinkAttrs(x)} ${latest?"open":""}>
+     return `<details class="kp-live-item" data-kind="${esc(x.kind||"reveal")}" data-kp-channel="${channelOf(x)}" data-scene-id="${esc(x.sceneId||"")}" id="${itemId(x,i)}"${noteAttr}${x.kind==="outline-scene"?"":sharedLinkAttrs(x)} ${latest?"open":""}>
        <summary><span class="kp-live-summary-main"><strong>${esc(title)}</strong></span></summary>
        <div class="kp-live-body">${html}</div>
      </details>`;
    }).join(""):'<div class="kp-share-empty">まだ開示された情報はありません。</div>';
-   box.innerHTML=`<article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報です。左の目次から情報へ移動できます。</p><div class="kp-personal-bar"><strong>自分用メモ</strong><button type="button" class="secondary" id="kpFilterUnresolved" aria-pressed="false">未解決だけ</button><button type="button" class="secondary" id="kpFilterMemo" aria-pressed="false">メモありだけ</button><span class="kp-personal-note">この端末・ブラウザ内だけに保存されます</span></div><div class="kp-live-layout"><aside class="kp-live-sidebar">${toc}</aside><main class="kp-live-main">${cards}</main></div></article>`;
+   const hasSecret=items.some(x=>channelOf(x)==="secret");
+   const channelTabs=p.participant&&hasSecret?`<div class="kp-live-channel-tabs" role="tablist" aria-label="共有情報の種類"><button type="button" data-channel-tab="public" role="tab" aria-selected="true">情報</button><button type="button" data-channel-tab="secret" role="tab" aria-selected="false">あなたへの秘匿</button></div>`:"";
+   box.innerHTML=`<article class="kp-live"><h2>${esc(p.title||"セッション共有")}</h2><p class="small muted">KPから開示された情報です。左の目次から情報へ移動できます。</p>${channelTabs}<div class="kp-personal-bar"><strong>自分用メモ</strong><button type="button" class="secondary" id="kpFilterUnresolved" aria-pressed="false">未解決だけ</button><button type="button" class="secondary" id="kpFilterMemo" aria-pressed="false">メモありだけ</button><span class="kp-personal-note">この端末・ブラウザ内だけに保存されます</span></div><div class="kp-live-layout"><aside class="kp-live-sidebar">${toc}</aside><main class="kp-live-main">${cards}</main></div></article>`;
+    const selectChannel=channel=>{
+      box.querySelectorAll("[data-channel-tab]").forEach(btn=>btn.setAttribute("aria-selected",String(btn.dataset.channelTab===channel)));
+      box.querySelectorAll(".kp-live-item[data-kp-channel],.kp-live-toc [data-kp-channel]").forEach(node=>node.hidden=node.dataset.kpChannel!==channel);
+    };
+    box.querySelectorAll("[data-channel-tab]").forEach(btn=>btn.addEventListener("click",()=>selectChannel(btn.dataset.channelTab)));
+    if(channelTabs)selectChannel("public");
     document.getElementById("kpOpenAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle,.kp-live-grandchild-toggle").forEach(d=>d.open=true));
     document.getElementById("kpCloseAll")?.addEventListener("click",()=>box.querySelectorAll(".kp-live-item,.kp-live-group-toggle,.kp-live-grandchild-toggle").forEach(d=>d.open=false));
 
