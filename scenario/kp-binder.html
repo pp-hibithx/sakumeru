@@ -1450,9 +1450,11 @@ function blocksToArticle(p){
    if(kind==="image"&&x.image)return `<div class="image-grid" data-image-grid contenteditable="false"><figure draggable="true" data-img-item contenteditable="false"><button type="button" class="img-remove" contenteditable="false">×</button><img src="${x.image}" alt="" data-full-image><figcaption contenteditable="true" spellcheck="false"></figcaption></figure><div class="grid-help" contenteditable="false">クリックで拡大・ドラッグで並べ替え</div></div><p><br></p>`;
    const label=FLOW_LABEL[kind]||kind;
    const blockId=x.id||crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);x.id=blockId;
-   const action=kind==="reveal"?`${revealShareBox(x.shareMode||"full",x.summaryBody||"")}<div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">開示する</button></div>`:"";
-   return `<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}">
-     <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${x.target?`<span>対象：${esc(x.target)}</span>`:""}</div>
+   const shareable=kind==="reveal"||kind==="secret";
+   const target=kind==="reveal"?"全員":kind==="secret"?String(x.target||"").replace(/^全員$/,""):String(x.target||"");
+   const action=shareable?`${revealShareBox(x.shareMode||"full",x.summaryBody||"")}<div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">${kind==="secret"?"秘匿送信":"全員へ開示"}</button></div>`:"";
+   return `<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}"${target?` data-kp-target="${esc(target)}"`:""}>
+     <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${shareable?`<span data-kp-target-label>対象：${esc(kind==="reveal"?"全員":target||"未設定")}</span>`:""}</div>
      ${x.title?`<div class="kp-special-title">${esc(x.title)}</div>`:""}
      <div class="kp-special-body">${x.body||"<p><br></p>"}</div>
      ${action}
@@ -1727,6 +1729,23 @@ function renderEditor(){
    const target=[...head.querySelectorAll(":scope > span")].map(x=>String(x.textContent||"").trim()).find(x=>x.startsWith("対象："));
    if(target){const value=target.replace(/^対象：/,"").trim();if(value&&value!=="不明")section.dataset.kpTarget=value}
  }
+ function normalizeSpecialTarget(section,head){
+   const kind=String(section?.dataset?.kind||"");
+   if(kind!=="reveal"&&kind!=="secret")return;
+   let label=head.querySelector(":scope > [data-kp-target-label]")||[...head.querySelectorAll(":scope > span")].find(x=>String(x.textContent||"").trim().startsWith("対象："));
+   if(!label){label=document.createElement("span");head.appendChild(label)}
+   label.dataset.kpTargetLabel="";
+   if(kind==="reveal")section.dataset.kpTarget="全員";
+   else if(String(section.dataset.kpTarget||"").trim()==="全員")delete section.dataset.kpTarget;
+   const target=String(section.dataset.kpTarget||"").trim();
+   label.textContent=`対象：${kind==="reveal"?"全員":target||"未設定"}`;
+   if(kind==="secret"){
+     label.title="クリックして秘匿の送信先HOを設定";
+     label.setAttribute("role","button");label.tabIndex=0;
+   }else{
+     label.removeAttribute("title");label.removeAttribute("role");label.removeAttribute("tabindex");
+   }
+ }
  function applySpecialLock(section){
    const locked=specialIsLocked(section);
    section.querySelectorAll(":scope > .kp-special-title,:scope > .kp-special-body,:scope > .kp-reveal-sharebox [data-reveal-summary]").forEach(node=>{
@@ -1748,6 +1767,7 @@ function renderEditor(){
      }
      section.insertBefore(head,section.firstChild);repaired=true;
    }else{head.setAttribute("contenteditable","false");syncSpecialTarget(section,head)}
+   normalizeSpecialTarget(section,head);
    applySpecialLock(section);return repaired;
  }
  function ensureSpecialStructures(){ed.querySelectorAll(":scope > section.kp-special[data-block-id]").forEach(ensureSpecialStructure)}
@@ -2433,15 +2453,16 @@ function renderEditor(){
  function insertSpecial(kind,body=""){
    const labels={reveal:"開示情報",memo:"KPメモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
    const label=labels[kind]||FLOW_LABEL[kind]||kind;
-   const target=(kind==="reveal"||kind==="secret")?"全員":"";
+   const target=kind==="reveal"?"全員":"";
    const title=kind==="reveal"?"":label;
    const blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
-   const action=kind==="reveal"?`${revealShareBox("full","")}<div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">開示する</button></div>`:"";
+   const shareable=kind==="reveal"||kind==="secret";
+   const action=shareable?`${revealShareBox("full","")}<div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">${kind==="secret"?"秘匿送信":"全員へ開示"}</button></div>`:"";
    const inner=kind==="dialogue"
      ? `<div class="dialogue-lines"><div class="dialogue-row"><div class="dialogue-name">KP：</div><div class="dialogue-text">ここに会話ログを入力</div></div></div>`
      : (body||(kind==="reveal"?`<p data-kp-reveal-state="none" data-kp-reveal-id="${crypto.randomUUID?.()||(`kpblk-${Date.now()}-${Math.random().toString(36).slice(2)}`)}"><br></p>`:"<p><br></p>"));
-   insertTopLevelHtml(`<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}" data-reveal-ui="${kind==="reveal"?"nested":"standard"}"${target?` data-kp-target="${esc(target)}"`:""}>
-     <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${target?`<span>対象：${esc(target)}</span>`:""}</div>
+   insertTopLevelHtml(`<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}" data-reveal-ui="${shareable?"nested":"standard"}"${target?` data-kp-target="${esc(target)}"`:""}>
+     <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${shareable?`<span data-kp-target-label>対象：${esc(target||"未設定")}</span>`:""}</div>
      <div class="kp-special-title">${esc(title)}</div>
      <div class="kp-special-body">${inner}</div>
      ${action}
@@ -3277,7 +3298,9 @@ async function collectOutlineShareScene(pageOverride=null,editorOverride=null){
    if(!root)makeRoot(null);const id=heading?ensureHeadingShareId(heading,"child"):(crypto.randomUUID?.()||`child-${Date.now()}-${Math.random()}`);
    child={id,title:titleOverride||headingText(heading,""),blocks:[]};root.outlineChildren.push(child);return child;
  };
-  const appendSpecialStates=async section=>{
+ const appendSpecialStates=async section=>{
+   // Scene-level common reflection must never absorb KP memos or targeted secrets.
+   if(section?.dataset?.kind!=="reveal")return false;
    const specialTitle=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim() ||
      String(section.querySelector(":scope > .kp-special-head .kind-chip")?.textContent||"開示情報").trim();
    // A reveal block has two editable representations: the scenario text and the optional PL summary.
@@ -3328,7 +3351,7 @@ async function applyOutlineRevealToShare(){
  });
  const migratedLegacy=[
    ...((old?.legacyItems)||[]),
-   ...items.filter(x=>x?.kind!=="outline-scene"&&String(x?.sceneId||"")===sceneId)
+   ...items.filter(x=>x?.kind!=="outline-scene"&&x?.kind!=="secret"&&x?.channel!=="secret"&&String(x?.sceneId||"")===sceneId)
  ];
  const outlineSpecialIds=new Set((fresh.outlineGroups||[])
    .map(g=>String(g?.id||""))
@@ -3387,6 +3410,7 @@ async function applyOutlineRevealToShare(){
  const editor=q("#blogEditor");
  const specialIds=new Set([...(editor?.querySelectorAll(":scope > section.kp-special[data-block-id]")||[])].map(x=>String(x.dataset.blockId||"")).filter(Boolean));
  const keep=items.filter(x=>{
+   if(x?.kind==="secret"||x?.channel==="secret")return true;
    if(x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId)return false;
    if(String(x?.sceneId||"")===sceneId)return false;
    if(specialIds.has(String(x?.id||"")))return false;
@@ -3826,7 +3850,8 @@ async function uploadShareImage(src,blockId,index){
 
 function isRevealSection(section){
  if(!section?.classList?.contains("kp-special"))return false;
- if(section.dataset.kind==="reveal")return true;
+ if(["memo","rp","dialogue"].includes(section.dataset.kind))return false;
+ if(section.dataset.kind==="reveal"||section.dataset.kind==="secret")return true;
  if(section.querySelector("[data-share-open],[data-share-update],[data-share-withdraw],.kp-reveal-sharebox"))return true;
  const headText=(section.querySelector(".kp-special-head")?.textContent||"").trim();
  const titleText=(section.querySelector(".kp-special-title")?.textContent||"").trim();
@@ -3874,7 +3899,7 @@ function migrateRevealChecklistToNested(section){
 
 function normalizeRevealSection(section){
  if(!isRevealSection(section))return null;
- section.dataset.kind="reveal";
+ if(section.dataset.kind!=="secret")section.dataset.kind="reveal";
  if(!section.dataset.blockId)section.dataset.blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
  migrateRevealChecklistToNested(section);
  return section;
@@ -4114,7 +4139,9 @@ async function buildSpecialOutlineGroup(section,source,title,shareMode="full",op
 async function revealSnapshot(section){
  const page=b.pages.find(x=>String(x.id)===String(active));
  const id=section.dataset.blockId||crypto.randomUUID();
- const target=[...section.querySelectorAll(".kp-special-head span")].map(x=>x.textContent).find(x=>x.startsWith("対象："))?.replace(/^対象：/,"")||"全員";
+ const kind=section.dataset.kind==="secret"?"secret":"reveal";
+ const target=kind==="reveal"?"全員":String(section.dataset.kpTarget||"").trim();
+ if(kind==="secret"&&(!target||["全員","不明","未設定"].includes(target)))throw new Error("秘匿情報の送信先HOを設定してください。");
  const modeValue=section.querySelector("[data-reveal-mode]:checked")?.value||"full";
  const mode=modeValue==="summary"?"summary":modeValue==="checked"?"checked":"full";
  section=normalizeRevealSection(section)||section;
@@ -4177,7 +4204,7 @@ async function revealSnapshot(section){
  const outlineGroup=await buildSpecialOutlineGroup(section,source,title,mode);
   const relatedBlockIds=sharedSpecialLinkIds(section);
   const relatedLinkPlacement=sharedSpecialLinkPlacement(section);
-  return {id,title,target,kind:section.dataset.kind||"reveal",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,relatedBlockIds,relatedLinkPlacement,outlineGroup,revealedAt:new Date().toISOString()};
+  return {id,title,target,kind,channel:kind==="secret"?"secret":"public",sceneId:String(page?.id||""),sceneTitle:String(page?.title||""),body,bodyHtml:body,images,shareMode:mode,selectedItemIds,relatedBlockIds,relatedLinkPlacement,outlineGroup,revealedAt:new Date().toISOString()};
 }
 function makeRevealCheckItem(html=""){
  const row=document.createElement("div");
@@ -4232,7 +4259,7 @@ function ensureSceneShareContainer(sceneId,sceneTitle){
  sceneId=String(sceneId||"");sceneTitle=String(sceneTitle||"").trim()||"無題のシーン";
  const items=Array.isArray(shareTest.items)?shareTest.items:[];
  let scene=items.find(x=>x?.kind==="outline-scene"&&String(x.sceneId||"")===sceneId);
- const migrate=items.filter(x=>x?.kind!=="outline-scene"&&String(x?.sceneId||"")===sceneId);
+ const migrate=items.filter(x=>x?.kind!=="outline-scene"&&x?.kind!=="secret"&&x?.channel!=="secret"&&String(x?.sceneId||"")===sceneId);
  if(!scene){
    let maxOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1);
    scene={
@@ -4257,6 +4284,16 @@ function ensureSceneShareContainer(sceneId,sceneTitle){
  return scene;
 }
 function upsertRevealIntoScene(snap){
+ if(snap?.kind==="secret"){
+   removeSharedBlockIdFromCurrentSession(snap.id);
+   ensureShareDisplayOrder();
+   const items=shareTest.items||[];
+   snap.displayOrder=items.reduce((m,x)=>Math.max(m,Number.isFinite(Number(x?.displayOrder))?Number(x.displayOrder):-1),-1)+1;
+   snap.updatedAt=new Date().toISOString();
+   delete snap.outlineGroup;
+   items.push(snap);
+   return snap;
+ }
  const scene=ensureSceneShareContainer(snap.sceneId,snap.sceneTitle);
  if(snap.outlineGroup){
    const group=snap.outlineGroup;
@@ -4331,15 +4368,21 @@ function setRevealAction(section){
  const id=section.dataset.blockId,item=findSharedRevealById(id)?.item;
  let host=section.querySelector(":scope > .kp-special-action");
  if(!host){host=document.createElement("div");host.className="kp-special-action";host.setAttribute("contenteditable","false");section.appendChild(host)}
+ const secret=section.dataset.kind==="secret",target=secret?String(section.dataset.kpTarget||"").trim():"全員";
+ const targetValid=!secret||(target&&!["全員","不明","未設定"].includes(target));
  if(item){
-   host.innerHTML=`<span class="shared-badge">✓ 共有済み</span><button type="button" class="share-update-btn" data-share-update="${esc(id)}">↻ 共有内容を更新</button><button type="button" class="secondary share-withdraw-btn" data-share-withdraw="${esc(id)}">共有から削除</button>`;
+   host.innerHTML=`<span class="shared-badge">✓ ${secret?`${esc(item.target||target)}へ秘匿送信済み`:"全員へ共有済み"}</span><button type="button" class="share-update-btn" data-share-update="${esc(id)}" ${targetValid?"":"disabled"}>↻ 共有内容を更新</button><button type="button" class="secondary share-withdraw-btn" data-share-withdraw="${esc(id)}">共有から削除</button>`;
  }else{
-   host.innerHTML=`<button type="button" data-share-open="${esc(id)}">開示する</button>`;
+   host.innerHTML=`<button type="button" data-share-open="${esc(id)}" ${targetValid?"":"disabled"}>${secret?targetValid?`${esc(target)}へ秘匿送信`:"送信先HOを設定":"全員へ開示"}</button>`;
  }
 }
 function refreshRevealActions(){
  const editor=q("#blogEditor");if(!editor)return;
  editor.querySelectorAll(".kp-special").forEach(rawSection=>{
+   if(!["reveal","secret"].includes(String(rawSection.dataset.kind||""))){
+     rawSection.querySelectorAll(":scope > .kp-reveal-sharebox,:scope > .kp-special-action").forEach(node=>node.remove());
+     return;
+   }
    const section=normalizeRevealSection(rawSection);
    if(!section)return;
    if(!section.querySelector(".kp-reveal-sharebox")){
@@ -4429,7 +4472,7 @@ q("#shareParticipants").addEventListener("input",e=>{
  if(i<0||!key||!shareTest.participants?.[i])return;shareTest.participants[i][key]=el.value;save();
 });
 q("#shareParticipants").addEventListener("change",async e=>{
- if(!e.target.matches("[data-pl-ho]"))return;shareTest=currentShare()||shareTest;const p=shareTest.participants?.[+e.target.dataset.plHo];if(p?.shareId){try{await TRPG39Cloud.updateSharedPage(p.shareId,sharePayloadFor(p));q("#testShareStatus").textContent=`${p.name}さんのHO設定を共有先へ反映しました。`}catch(err){q("#testShareStatus").textContent=`HO設定を反映できませんでした：${err?.message||err}`}}
+ if(!e.target.matches("[data-pl-ho]"))return;shareTest=currentShare()||shareTest;const p=shareTest.participants?.[+e.target.dataset.plHo];if(p?.shareId){try{await syncTestShare();q("#testShareStatus").textContent=`${p.name}さんのHO設定を全共有先へ反映しました。`}catch(err){setShareSyncPending(`HO設定は保存しましたが、共有先へ反映できませんでした：${err?.message||err}`)}}
 });
 q("#shareParticipants").addEventListener("click",async e=>{
  shareTest=currentShare()||shareTest;const make=e.target.closest("[data-pl-make]"),copy=e.target.closest("[data-pl-copy]"),rem=e.target.closest("[data-pl-remove]");
@@ -4503,6 +4546,21 @@ document.addEventListener("click",e=>{
 },true);
 
 document.addEventListener("click",async e=>{
+ const targetLabel=e.target.closest?.("[data-kp-target-label]");
+ if(targetLabel){
+   const targetSection=targetLabel.closest("section.kp-special[data-kind='secret']");
+   if(targetSection){
+     e.preventDefault();
+     const current=String(targetSection.dataset.kpTarget||"").trim();
+     const value=prompt("秘匿情報を送るHO名を入力してください（例：HO1）",current);
+     if(value===null)return;
+     const clean=String(value).trim();
+     if(!clean||["全員","不明","未設定"].includes(clean)){delete targetSection.dataset.kpTarget}else targetSection.dataset.kpTarget=clean;
+     ensureSpecialStructure(targetSection);syncArticle();saveNow();setRevealAction(targetSection);
+     const st=q("#testShareStatus");if(st)st.textContent=clean&&clean!=="全員"?`秘匿の送信先を「${clean}」に設定しました。共有済みの場合は「共有内容を更新」で反映してください。`:"秘匿の送信先を未設定にしました。";
+     return;
+   }
+ }
  const open=e.target.closest("[data-share-open]"),upd=e.target.closest("[data-share-update]"),wd=e.target.closest("[data-share-withdraw]");if(!open&&!upd&&!wd)return;
  e.preventDefault();const section=normalizeRevealSection(e.target.closest(".kp-special"));if(!section)return;
  shareTest=currentShare()||shareTest;
@@ -4512,11 +4570,11 @@ document.addEventListener("click",async e=>{
    if(open){
      st.textContent="開示データを準備中…画像がある場合はStorageへアップロードします。";
      const snap=await revealSnapshot(section);
-     if(!confirm(`「${snap.title}」を共有しますか？`))return;
+     if(!confirm(snap.kind==="secret"?`「${snap.title}」を ${snap.target} 専用URLへ秘匿送信しますか？`:`「${snap.title}」を全員へ開示しますか？`))return;
      const before=structuredClone(shareTest.items||[]);
      upsertRevealIntoScene(snap);await saveNow();
      try{await syncTestShare()}catch(err){shareTest.items=before;saveNow();throw err}
-     st.textContent=`「${snap.sceneTitle}」シーンに「${snap.title}」を共有しました。`;
+     st.textContent=snap.kind==="secret"?`「${snap.title}」を ${snap.target} 専用URLへ秘匿送信しました。`:`「${snap.sceneTitle}」シーンに「${snap.title}」を全員へ開示しました。`;
    }else if(upd){
      const found=findSharedRevealById(id);if(!found)return;
      st.textContent="共有内容を準備中…画像がある場合はStorageへアップロードします。";
