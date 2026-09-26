@@ -2448,12 +2448,13 @@ function renderEditor(){
    return node&&node.parentElement===ed?node:null;
  }
 
- function insertTopLevelHtml(html){
+ function insertTopLevelHtml(html,{replaceEmptyAnchor=false}={}){
    const temp=document.createElement("div");
    temp.innerHTML=html;
    const nodes=[...temp.childNodes];
    const anchor=currentTopLevelBlock();
    let ref=anchor?anchor.nextSibling:null;
+   if(replaceEmptyAnchor&&anchor?.matches?.("p")&&!kpBlockHasMeaningfulContent(anchor))anchor.remove();
    nodes.forEach(node=>{
      ed.insertBefore(node,ref);
    });
@@ -2473,25 +2474,31 @@ function renderEditor(){
      const sel=window.getSelection();
      sel.removeAllRanges();sel.addRange(r);
    }
+   return nodes;
  }
 
  function insertSpecial(kind,body=""){
    const labels={reveal:"開示情報",memo:"KPメモ",rp:"RP",secret:"秘匿",dialogue:"会話ログ"};
    const label=labels[kind]||FLOW_LABEL[kind]||kind;
    const target=kind==="reveal"?"全員":"";
-   const title=kind==="reveal"?"":label;
+   const title=kind==="reveal"||kind==="memo"?"":label;
    const blockId=crypto.randomUUID?.()||(`reveal-${Date.now()}-${Math.random()}`);
    const shareable=kind==="reveal"||kind==="secret";
    const action=shareable?`${revealShareBox("full","")}<div class="kp-special-action" contenteditable="false"><button type="button" data-share-open="${esc(blockId)}">${kind==="secret"?"秘匿送信":"全員へ開示"}</button></div>`:"";
    const inner=kind==="dialogue"
      ? `<div class="dialogue-lines"><div class="dialogue-row"><div class="dialogue-name">KP：</div><div class="dialogue-text">ここに会話ログを入力</div></div></div>`
      : (body||(kind==="reveal"?`<p data-kp-reveal-state="none" data-kp-reveal-id="${crypto.randomUUID?.()||(`kpblk-${Date.now()}-${Math.random().toString(36).slice(2)}`)}"><br></p>`:"<p><br></p>"));
-   insertTopLevelHtml(`<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}" data-reveal-ui="${shareable?"nested":"standard"}"${target?` data-kp-target="${esc(target)}"`:""}>
+   const inserted=insertTopLevelHtml(`<section class="kp-special" data-kind="${esc(kind)}" data-block-id="${esc(blockId)}" data-reveal-ui="${shareable?"nested":"standard"}"${target?` data-kp-target="${esc(target)}"`:""}>
      <div class="kp-special-head" contenteditable="false"><span class="kind-chip">${esc(label)}</span>${shareable?`<span data-kp-target-label>対象：${esc(target||"未設定")}</span>`:""}</div>
-     <div class="kp-special-title">${esc(title)}</div>
+     ${kind==="memo"?"":`<div class="kp-special-title">${esc(title)}</div>`}
      <div class="kp-special-body">${inner}</div>
      ${action}
-   </section>`);
+   </section>`,{replaceEmptyAnchor:true});
+   const section=inserted.find(node=>node.nodeType===Node.ELEMENT_NODE&&node.matches("section.kp-special"));
+   const editTarget=section?.querySelector(":scope > .kp-special-body p")||section?.querySelector(":scope > .kp-special-body");
+   if(editTarget){
+     const range=document.createRange(),sel=window.getSelection();range.selectNodeContents(editTarget);range.collapse(false);sel.removeAllRanges();sel.addRange(range);savedRange=range.cloneRange();editTarget.focus?.();
+   }
     refreshRevealActions();
  }
  collapseSceneOutlineOnOpen();
