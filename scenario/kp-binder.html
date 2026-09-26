@@ -134,7 +134,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
 .kptest .blog-editor .kp-special-title,.kptest .blog-editor .kp-special-body,.kptest .blog-editor .kp-special :is(h1,h2,h3,h4,blockquote){color:var(--text-primary)}
 .kptest .blog-editor .kp-special .kind-chip{color:#111}
 .kptest .blog-editor .kp-special-move,.kptest .blog-editor .kp-special-action button{background:var(--control-bg);color:var(--control-text);border-color:var(--line)}
-.blog-editor .kp-special-head .kp-special-duplicate,.blog-editor .kp-special-head .kp-special-lock{padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap}
+.blog-editor .kp-special-head .kp-special-copy,.blog-editor .kp-special-head .kp-special-duplicate,.blog-editor .kp-special-head .kp-special-lock{padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap}
 .blog-editor .kp-special-head .kp-special-link{padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap}
 .blog-editor .kp-special-links{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:7px 0;padding:7px 9px;border:1px dashed var(--line);border-radius:7px;color:var(--text);font-size:12px}
 .blog-editor .kp-special-links-label{color:var(--muted);font-weight:700}.blog-editor .kp-special-links button{padding:3px 7px;font-size:11px}
@@ -2041,6 +2041,43 @@ function renderEditor(){
    if(specialIsLocked(section))delete section.dataset.kpLocked;else section.dataset.kpLocked="true";
    applySpecialLock(section);decorateSpecialMoveButtons();refreshBlockHandles();syncArticle();
  }
+ function specialBodyPlainText(body){
+   if(!body)return "";
+   const clone=body.cloneNode(true);
+   clone.querySelectorAll(".sm-rich-ui,.sm-outline-ui,.kp-block-state-control,button,input,select,textarea").forEach(node=>node.remove());
+   clone.querySelectorAll("br").forEach(br=>br.replaceWith("\n"));
+   clone.querySelectorAll("li").forEach(li=>li.insertBefore(document.createTextNode("・"),li.firstChild));
+   clone.querySelectorAll("h1,h2,h3,h4,h5,h6,p,blockquote,li,ul,ol,hr,div").forEach(node=>node.appendChild(document.createTextNode("\n")));
+   return String(clone.textContent||"").replace(/\u00a0/g," ").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+ }
+ function secretCcfLabel(section){
+   if(section?.dataset?.kind!=="secret")return "";
+   const target=String(section.dataset.kpTarget||"").trim();
+   if(!target||["全員","不明","未設定"].includes(target))return "";
+   return target.split(/[、,／\/・\s]+/).map(x=>x.trim()).filter(Boolean).map(x=>`{${x}}`).join("");
+ }
+ async function copySpecialBlock(section,button){
+   const secret=section?.dataset?.kind==="secret",ccfLabel=secretCcfLabel(section);
+   if(secret&&!ccfLabel){alert("先に秘匿ブロックの対象HOを設定してください。");return}
+   const title=String(section.querySelector(":scope > .kp-special-title")?.textContent||"").replace(/\s+/g," ").trim();
+   const body=section.querySelector(":scope > .kp-special-body");
+   const bodyText=specialBodyPlainText(body);
+   const text=[ccfLabel,title?`【${title}】`:"",bodyText].filter(Boolean).join("\n\n");
+   if(!text){alert("コピーできる内容がありません。");return}
+   const bodyClone=body?.cloneNode(true);
+   bodyClone?.querySelectorAll(".sm-rich-ui,.sm-outline-ui,.kp-block-state-control,.kp-reveal-status,.kp-reveal-check-remove,.img-remove,.grid-help,button,input,select,textarea").forEach(node=>node.remove());
+   const bodyHtml=bodyClone?.innerHTML||"";
+   const html=[ccfLabel?`<p>${esc(ccfLabel)}</p>`:"",title?`<h2>${esc(title)}</h2>`:"",bodyHtml].filter(Boolean).join("");
+   try{
+     if(globalThis.ClipboardItem&&navigator.clipboard?.write){
+       await navigator.clipboard.write([new ClipboardItem({"text/plain":new Blob([text],{type:"text/plain"}),"text/html":new Blob([html],{type:"text/html"})})]);
+     }else await navigator.clipboard.writeText(text);
+     if(button){const old=button.textContent;button.textContent="コピー済み";setTimeout(()=>{if(button.isConnected)button.textContent=old},1200)}
+   }catch(err){
+     try{await navigator.clipboard.writeText(text);if(button){const old=button.textContent;button.textContent="コピー済み";setTimeout(()=>{if(button.isConnected)button.textContent=old},1200)}}
+     catch{alert(`コピーできませんでした：${err?.message||err}`)}
+   }
+ }
  function decorateSpecialMoveButtons(){
    [...ed.querySelectorAll(":scope > section.kp-special")].forEach(section=>{
      ensureSpecialStructure(section);
@@ -2052,9 +2089,13 @@ function renderEditor(){
        btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();askSpecialMoveDestination(section)});
        head.appendChild(btn);
      }
-      if(!head.querySelector(":scope > .kp-special-duplicate")){
+     if(!head.querySelector(":scope > .kp-special-duplicate")){
         const btn=document.createElement("button");btn.type="button";btn.className="secondary kp-special-duplicate sm-outline-ui";btn.textContent="複製";btn.setAttribute("contenteditable","false");
         btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();duplicateSpecialBlock(section)});head.appendChild(btn);
+      }
+      if(!head.querySelector(":scope > .kp-special-copy")){
+        const btn=document.createElement("button");btn.type="button";btn.className="secondary kp-special-copy sm-outline-ui";btn.textContent="コピー";btn.title=section.dataset.kind==="secret"?"ココフォリア用HOラベル付きでコピー":"タイトルと本文をコピー";btn.setAttribute("contenteditable","false");
+        btn.addEventListener("mousedown",e=>{e.preventDefault();e.stopPropagation()});btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();copySpecialBlock(section,btn)});head.appendChild(btn);
       }
       if(!head.querySelector(":scope > .kp-special-link")){
         const btn=document.createElement("button");btn.type="button";btn.className="secondary kp-special-link sm-outline-ui";btn.textContent="🔗 関連";btn.setAttribute("contenteditable","false");
