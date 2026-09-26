@@ -156,6 +156,7 @@ mark.kp-marker .kp-sticky::after,.kp-sticky mark.kp-marker::after{filter:none}
   margin:0;padding:0;border:0;color:var(--muted)!important;
   font-size:12px;font-weight:700;line-height:1.3;letter-spacing:0
 }
+.blog-editor > .kp-heading-group-hidden{display:none!important}
 
 .blog-editor .kp-reveal-sharebox{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.018)}
 .blog-editor .kp-reveal-mode{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700}
@@ -1901,14 +1902,30 @@ function renderEditor(){
      summary.textContent=hasContent?"｜本文あり":"｜未入力";
    });
  }
+ function syncHeadingOutlineVisibility(){
+   const collapsedLevels=[];
+   [...ed.children].forEach(block=>{
+     block.classList.remove("kp-heading-group-hidden");
+     const level=richOutline?.levelOf(block,OUTLINE_OPTIONS)||0;
+     if(level){
+       while(collapsedLevels.length&&collapsedLevels[collapsedLevels.length-1]>=level)collapsedLevels.pop();
+       if(collapsedLevels.length)block.classList.add("kp-heading-group-hidden");
+       if(richOutline?.isCollapsed(block))collapsedLevels.push(level);
+       return;
+     }
+     if(collapsedLevels.length)block.classList.add("kp-heading-group-hidden");
+   });
+ }
  function decorateBlocks(){
    ensureSpecialStructures();
+   ed.querySelectorAll(":scope > section.kp-special[data-kp-locked='true']").forEach(section=>richOutline?.setCollapsed(section,false));
    directEditorBlocks().forEach(block=>block.classList.add("sm-block"));
    decorateSpecialMoveButtons();
    decorateSpecialLinks();
    decorateKpRevealStates();
    richOutline?.refresh(ed,OUTLINE_OPTIONS);
    fillSpecialOutlineSummaries();
+   syncHeadingOutlineVisibility();
    refreshBlockHandles({refreshOutline:false});
  }
  let editorRefreshFrame=0,editorRefreshCoalesce=false;
@@ -1924,9 +1941,10 @@ function renderEditor(){
  function collapseSceneOutlineOnOpen(){
    if(!richOutline)return;
    directEditorBlocks().forEach(block=>{
-     if(richOutline.isCollapsible(block,OUTLINE_OPTIONS))richOutline.setCollapsed(block,true);
+     if(richOutline.isCollapsible(block,OUTLINE_OPTIONS)&&!(block.matches("section.kp-special")&&specialIsLocked(block)))richOutline.setCollapsed(block,true);
    });
    richOutline.refresh(ed,OUTLINE_OPTIONS);
+   syncHeadingOutlineVisibility();
  }
  function moveSharedSpecialToScene(blockId,fromPage,toPage){
    if(!blockId||!fromPage||!toPage||String(fromPage.id)===String(toPage.id))return;
@@ -2064,7 +2082,7 @@ function renderEditor(){
  }
  function toggleSpecialLock(section){
    if(!section?.matches?.("section.kp-special"))return;
-   if(specialIsLocked(section))delete section.dataset.kpLocked;else section.dataset.kpLocked="true";
+   if(specialIsLocked(section))delete section.dataset.kpLocked;else{section.dataset.kpLocked="true";richOutline?.setCollapsed(section,false)}
    applySpecialLock(section);decorateSpecialMoveButtons();refreshBlockHandles();syncArticle();
  }
  function specialBodyPlainText(body){
@@ -2183,7 +2201,7 @@ function renderEditor(){
    cancelAnimationFrame(handleFrame);
    handleFrame=requestAnimationFrame(()=>{
      if(!handleLayer?.isConnected||!ed?.isConnected)return;
-     if(refreshOutline){richOutline?.refresh(ed,OUTLINE_OPTIONS);fillSpecialOutlineSummaries()}
+     if(refreshOutline){richOutline?.refresh(ed,OUTLINE_OPTIONS);fillSpecialOutlineSummaries();syncHeadingOutlineVisibility()}
      handleLayer.innerHTML="";
      const shell=q(".blog-shell");
      if(!shell)return;
@@ -2192,7 +2210,7 @@ function renderEditor(){
 
      directEditorBlocks().forEach(block=>{
        block.classList.add("sm-block");
-       if(richOutline?.isHidden(block))return;
+       if(richOutline?.isHidden(block)||block.classList.contains("kp-heading-group-hidden"))return;
        const r=block.getBoundingClientRect();
 
        const h=document.createElement("button");
@@ -2212,7 +2230,7 @@ function renderEditor(){
          appendKpStateControl(block,{left:edRect.left-shellRect.left+37,top:parseFloat(h.style.top)||0});
        }
 
-       if(richOutline?.isCollapsible(block,OUTLINE_OPTIONS)){
+       if(richOutline?.isCollapsible(block,OUTLINE_OPTIONS)&&!(block.matches("section.kp-special")&&specialIsLocked(block))){
          const t=document.createElement("button");
          t.type="button";
          t.className="sm-outline-toggle sm-outline-ui";
@@ -2234,7 +2252,7 @@ function renderEditor(){
      });
 
      nestedKpStateableBlocks().forEach(block=>{
-       if(block.closest("[hidden],.sm-outline-hidden"))return;
+       if(block.closest("[hidden],.sm-outline-hidden,.kp-heading-group-hidden"))return;
        const r=block.getBoundingClientRect();
        if(!r.height)return;
        const left=Math.max(edRect.left-shellRect.left+2,r.left-shellRect.left-58);
@@ -2335,12 +2353,15 @@ function renderEditor(){
 
  function cleanEditorHtml(){
     if(window.SAKUMERichEditor?.cleanupEditorHtml){
-      return SAKUMERichEditor.cleanupEditorHtml(ed,clone=>richOutline?.cleanupClone(clone));
+     return SAKUMERichEditor.cleanupEditorHtml(ed,clone=>{
+       richOutline?.cleanupClone(clone);
+       clone.querySelectorAll(".kp-heading-group-hidden").forEach(node=>node.classList.remove("kp-heading-group-hidden"));
+     });
     }
     const clone=ed.cloneNode(true);
    clone.querySelectorAll(".sm-drag-handle,.sm-outline-ui,.kp-special-move,.kp-special-delete").forEach(h=>h.remove());
-   clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail").forEach(el=>{
-     el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail");
+  clone.querySelectorAll(".sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.kp-state-open,.kp-state-fail,.kp-heading-group-hidden").forEach(el=>{
+    el.classList.remove("sm-block","sm-block-dragging","sm-drop-before","sm-drop-after","kp-state-open","kp-state-fail","kp-heading-group-hidden");
      if(!el.className)el.removeAttribute("class");
    });
    richOutline?.cleanupClone(clone);
