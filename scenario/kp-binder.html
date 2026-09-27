@@ -1912,12 +1912,15 @@ function renderEditor(){
    if(heading.querySelector(":scope .kp-heading-collapsed-tail"))return;
    const firstBreak=heading.querySelector("br");
    if(!firstBreak)return;
-   const marker=document.createTextNode("");firstBreak.before(marker);
-   const range=document.createRange();
-   range.setStartAfter(marker);range.setEnd(heading,heading.childNodes.length);
-   const fragment=range.extractContents();
-   if(!String(fragment.textContent||"").replace(/\u200B/g,"").trim()&&!fragment.querySelector?.("br,img,table,ul,ol,blockquote,hr")){marker.remove();return}
-   const tail=document.createElement("span");tail.className="kp-heading-collapsed-tail";tail.appendChild(fragment);marker.after(tail);marker.remove();
+   let marker=null;
+   try{
+     marker=document.createTextNode("");firstBreak.before(marker);
+     const range=document.createRange();
+     range.setStartAfter(marker);range.setEnd(heading,heading.childNodes.length);
+     const fragment=range.extractContents();
+     if(!String(fragment.textContent||"").replace(/\u200B/g,"").trim()&&!fragment.querySelector?.("br,img,table,ul,ol,blockquote,hr")){marker.remove();return}
+     const tail=document.createElement("span");tail.className="kp-heading-collapsed-tail";tail.appendChild(fragment);marker.after(tail);marker.remove();
+   }catch(err){marker?.remove();console.warn("見出し内改行の折りたたみを省略しました",err)}
  }
  function syncHeadingOutlineVisibility(){
    const collapsedLevels=[];
@@ -1929,9 +1932,10 @@ function renderEditor(){
      }
      const level=richOutline?.levelOf(block,OUTLINE_OPTIONS)||0;
      if(level){
-       syncCollapsedHeadingTail(block);
        while(collapsedLevels.length&&collapsedLevels[collapsedLevels.length-1]>=level)collapsedLevels.pop();
-       if(collapsedLevels.length){block.classList.add("kp-heading-group-hidden");block.hidden=true;block.dataset.kpHeadingGroupHidden="1"}
+       const hiddenByParent=collapsedLevels.length>0;
+       if(hiddenByParent){block.classList.add("kp-heading-group-hidden");block.hidden=true;block.dataset.kpHeadingGroupHidden="1"}
+       else syncCollapsedHeadingTail(block);
        if(richOutline?.isCollapsed(block))collapsedLevels.push(level);
        return;
      }
