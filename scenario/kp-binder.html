@@ -1923,23 +1923,22 @@ function renderEditor(){
    }catch(err){marker?.remove();console.warn("見出し内改行の折りたたみを省略しました",err)}
  }
  function syncHeadingOutlineVisibility(){
-   const collapsedLevels=[];
    [...ed.children].forEach(block=>{
      block.classList.remove("kp-heading-group-hidden");
      if(block.dataset.kpHeadingGroupHidden==="1"){
        block.hidden=false;
        delete block.dataset.kpHeadingGroupHidden;
      }
-     const level=richOutline?.levelOf(block,OUTLINE_OPTIONS)||0;
-     if(level){
-       while(collapsedLevels.length&&collapsedLevels[collapsedLevels.length-1]>=level)collapsedLevels.pop();
-       const hiddenByParent=collapsedLevels.length>0;
-       if(hiddenByParent){block.classList.add("kp-heading-group-hidden");block.hidden=true;block.dataset.kpHeadingGroupHidden="1"}
-       else syncCollapsedHeadingTail(block);
-       if(richOutline?.isCollapsed(block))collapsedLevels.push(level);
-       return;
-     }
-     if(collapsedLevels.length){block.classList.add("kp-heading-group-hidden");block.hidden=true;block.dataset.kpHeadingGroupHidden="1"}
+   });
+   [...ed.children].filter(block=>(richOutline?.levelOf(block,OUTLINE_OPTIONS)||0)>0).forEach(heading=>{
+     syncCollapsedHeadingTail(heading);
+     if(!richOutline?.isCollapsed(heading))return;
+     const group=richOutline.groupFor(heading,ed,OUTLINE_OPTIONS)||[];
+     group.slice(1).forEach(block=>{
+       block.classList.add("kp-heading-group-hidden");
+       block.hidden=true;
+       block.dataset.kpHeadingGroupHidden="1";
+     });
    });
  }
  function decorateBlocks(){
