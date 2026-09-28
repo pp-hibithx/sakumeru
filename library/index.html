@@ -4309,7 +4309,7 @@ async function shareArticlePage(runId,pageId,options={}){
    await TRPG39Cloud.updateSharedPage(shareId,payload);
    saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));
    const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
-   previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");
+   previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");previewUrl.searchParams.set("v",Date.now().toString(36));
    const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。卓記事タイトルのOGPを使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
    return previewUrl.href;
  }catch(e){console.error(e);alert(e.message||e);return ""}
@@ -4378,7 +4378,7 @@ function trimArticleExcerptByWeight(text,maxWeight){
  return out.replace(/[\s、，,]+$/u,"")+suffix;
 }
 function articleXPostText(page){
- const suffix="続きはURLから\n\n#SAKUMERU";
+ const suffix="続きはこちらから\n\n#SAKUMERU";
  if(page.passwordProtected)return `SAKU+MERUで記事を共有しました。\n\n${suffix}`;
  const rawTitle=String(page.title||"").trim()||"SAKU+MERUで記事を共有しました。";
  const body=articleTextForX(page);
