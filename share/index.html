@@ -452,7 +452,7 @@
      <h2>${esc(p.title||"卓記事")}</h2>
      ${p.updatedAt?`<div class="share-article-updated">更新 ${esc(p.updatedAt)}</div>`:""}
    </div>
-   ${p.spoilerWarning?`<aside class="share-article-warning" role="note"><strong>⚠ この先、${esc(p.scenarioTitle?`【${p.scenarioTitle}】の`:"")}ネタバレを含みます。</strong><span>伏せられた内容を読む場合は「🙈 この部分は隠されています」をクリックしてください。</span></aside>`:""}
+   ${p.spoilerWarning?`<aside class="share-article-warning" role="note"><strong>🙈 伏せ字があります。</strong><span>「この部分は隠されています」をクリックすると表示されます。</span></aside>`:""}
    ${p.body&&!blocks.some(b=>String(b?.type||"").toLowerCase()==="text"&&String(b?.text||"").trim())?`<div class="share-article-text">${esc(p.body)}</div>`:""}
    <div class="shared-article-blocks">${blocksHtml}</div>`;
    SAKUMERichEditor.bindShareHidden(box);
