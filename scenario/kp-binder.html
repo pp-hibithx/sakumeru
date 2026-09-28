@@ -1922,6 +1922,25 @@ function renderEditor(){
      const tail=document.createElement("span");tail.className="kp-heading-collapsed-tail";tail.appendChild(fragment);marker.after(tail);marker.remove();
    }catch(err){marker?.remove();console.warn("見出し内改行の折りたたみを省略しました",err)}
  }
+ function kpOutlineLevel(block){
+   const raw=richOutline?.levelOf(block,OUTLINE_OPTIONS)||0;
+   if(raw!==1)return raw;
+   const text=String(block.textContent||"").replace(/\u200B/g,"").replace(/\s+/g," ").trim();
+   if(!text||/^[◆◇◈◊─━―—ー‐－・･\s]+$/.test(text))return 0;
+   if(/^[◇◈◊]/.test(text))return 2;
+   if(/^◆(?![─━―—ー‐－])/.test(text))return 2;
+   return 1;
+ }
+ function kpHeadingGroup(heading){
+   const level=kpOutlineLevel(heading);if(!level)return [heading];
+   const group=[heading];let node=heading.nextElementSibling;
+   while(node){
+     const nextLevel=kpOutlineLevel(node);
+     if(nextLevel&&nextLevel<=level)break;
+     group.push(node);node=node.nextElementSibling;
+   }
+   return group;
+ }
  function syncHeadingOutlineVisibility(){
    [...ed.children].forEach(block=>{
      block.classList.remove("kp-heading-group-hidden");
@@ -1930,10 +1949,10 @@ function renderEditor(){
        delete block.dataset.kpHeadingGroupHidden;
      }
    });
-   [...ed.children].filter(block=>(richOutline?.levelOf(block,OUTLINE_OPTIONS)||0)>0).forEach(heading=>{
+   [...ed.children].filter(block=>kpOutlineLevel(block)>0).forEach(heading=>{
      syncCollapsedHeadingTail(heading);
      if(!richOutline?.isCollapsed(heading))return;
-     const group=richOutline.groupFor(heading,ed,OUTLINE_OPTIONS)||[];
+     const group=kpHeadingGroup(heading);
      group.slice(1).forEach(block=>{
        block.classList.add("kp-heading-group-hidden");
        block.hidden=true;
@@ -1966,7 +1985,8 @@ function renderEditor(){
  function collapseSceneOutlineOnOpen(){
    if(!richOutline)return;
    directEditorBlocks().forEach(block=>{
-     if(richOutline.isCollapsible(block,OUTLINE_OPTIONS)&&!(block.matches("section.kp-special")&&specialIsLocked(block)))richOutline.setCollapsed(block,true);
+     const collapsible=kpOutlineLevel(block)>0||block.matches("section.kp-special");
+     if(collapsible&&!(block.matches("section.kp-special")&&specialIsLocked(block)))richOutline.setCollapsed(block,true);
    });
    richOutline.refresh(ed,OUTLINE_OPTIONS);
    syncHeadingOutlineVisibility();
@@ -2242,7 +2262,7 @@ function renderEditor(){
        h.type="button";
        h.className="sm-drag-handle";
        h.textContent="⋮⋮";
-       const groupLevel=richOutline?.levelOf(block,OUTLINE_OPTIONS)||0;
+       const groupLevel=kpOutlineLevel(block);
        h.title=groupLevel?"ここをつかんで見出し配下ごと移動":"ここをつかんでブロックを移動";
        h.setAttribute("aria-label",h.title);
        h.style.left=`${edRect.left-shellRect.left+6}px`;
@@ -2255,7 +2275,8 @@ function renderEditor(){
          appendKpStateControl(block,{left:edRect.left-shellRect.left+37,top:parseFloat(h.style.top)||0});
        }
 
-       if(richOutline?.isCollapsible(block,OUTLINE_OPTIONS)&&!(block.matches("section.kp-special")&&specialIsLocked(block))){
+       const outlineCollapsible=groupLevel>0||block.matches("section.kp-special");
+       if(outlineCollapsible&&!(block.matches("section.kp-special")&&specialIsLocked(block))){
          const t=document.createElement("button");
          t.type="button";
          t.className="sm-outline-toggle sm-outline-ui";
