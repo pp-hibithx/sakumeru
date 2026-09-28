@@ -3499,7 +3499,7 @@ function articlePagesHtml(r){
      <div class="article-editor-preview" hidden aria-live="polite"></div>
      <div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
-       <div class="article-spoiler-setting"><label>⚠ ネタバレ警告</label><select class="articleSpoilerWarning" aria-describedby="articleSpoilerHelp-${esc(r.id)}"><option value="1">ON</option><option value="0">OFF</option></select><div class="small muted" id="articleSpoilerHelp-${esc(r.id)}">共有時にネタバレ注意と、「🙈 この部分は隠されています」をクリックすると読めることを案内します。</div></div>
+       <div class="article-spoiler-setting"><label>⚠ ネタバレ警告</label><select class="articleSpoilerWarning" aria-describedby="articleSpoilerHelp-${esc(r.id)}"><option value="1">ON</option><option value="0">OFF</option></select><div class="small muted" id="articleSpoilerHelp-${esc(r.id)}">共有時に、伏せ字をクリックすると読めることを案内します。</div></div>
        <div><label>共有パスワード <span class="small muted">（任意）</span></label><input class="articlePassword" type="password" autocomplete="new-password" placeholder="設定する場合のみ入力"></div><div><label>パスワードのヒント <span class="small muted">（任意）</span></label><input class="articlePasswordHint" value="" placeholder="例：Cから始めて5文字（英字）"></div>
      </div>
      <div class="lib-article-share-note">通常共有では画像の「SNSカードに使う」を1枚選べます。未選択なら金色のタイトルOGP。パスワード付き共有では内容を伏せ、SAKU+MERU公式OGPを自動使用します。</div>
@@ -3589,7 +3589,7 @@ function setArticleReorderMode(ed,active){
 function setArticleViewMode(ed,mode){
  const preview=mode==="preview",wrap=ed.querySelector('.article-blocks'),out=ed.querySelector('.article-editor-preview');
  if(!wrap||!out)return;
- if(preview){const {group}=articleContextForRun(ed.dataset.runId||"");setArticleReorderMode(ed,false);const warning=ed.querySelector('.articleSpoilerWarning')?.value!=="0"?`<aside class="article-preview-warning" role="note"><strong>⚠ この先、${group?.title?`【${esc(group.title)}】の`:""}ネタバレを含みます。</strong><span>伏せられた内容を読む場合は「🙈 この部分は隠されています」をクリックしてください。</span></aside>`:"";out.innerHTML=`${warning}<div class="article-preview-sheet">${articleBlockListHtml(editorBlocks(ed))||'<p class="muted">表示する本文はまだありません。</p>'}</div>`}
+ if(preview){setArticleReorderMode(ed,false);const warning=ed.querySelector('.articleSpoilerWarning')?.value!=="0"?`<aside class="article-preview-warning" role="note"><strong>🙈 伏せ字があります。</strong><span>「この部分は隠されています」をクリックすると表示されます。</span></aside>`:"";out.innerHTML=`${warning}<div class="article-preview-sheet">${articleBlockListHtml(editorBlocks(ed))||'<p class="muted">表示する本文はまだありません。</p>'}</div>`}
  wrap.hidden=preview;out.hidden=!preview;ed.classList.toggle('article-preview-mode',preview);
  ed.querySelectorAll('[data-article-view]').forEach(button=>{const active=button.dataset.articleView===mode;button.setAttribute('aria-pressed',active?'true':'false');button.classList.toggle('active',active)});
  const reorder=ed.querySelector('[data-article-reorder-toggle]');if(reorder)reorder.hidden=preview;
