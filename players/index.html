@@ -258,7 +258,21 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .participant-row label{display:none}
 .participant-row input,.participant-row select{margin:0}
 .participant-remove{width:auto;white-space:nowrap}
-.share-scope-note{margin-top:12px;padding:10px 12px;border-left:3px solid var(--accent);background:var(--panel);font-size:13px;line-height:1.65}.lib-participants{margin-top:7px;line-height:1.7}.lib-participants .honorific-note{margin-top:3px}.lib-visibility{margin-top:7px;display:inline-block}.x-preview{max-width:620px;width:calc(100% - 28px);border:1px solid var(--line);border-radius:12px;background:var(--panel);color:inherit;padding:18px}.x-preview::backdrop{background:rgba(0,0,0,.55)}.x-preview textarea{width:100%;min-height:280px}.x-preview-actions{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.share-scope-note{margin-top:12px;padding:10px 12px;border-left:3px solid var(--accent);background:var(--panel);color:#f2f3f4;font-size:13px;line-height:1.65}.lib-participants{margin-top:7px;line-height:1.7}.lib-participants .honorific-note{margin-top:3px}.lib-visibility{margin-top:7px;display:inline-block}.x-preview{max-width:620px;width:calc(100% - 28px);border:1px solid var(--line);border-radius:12px;background:var(--panel);color:inherit;padding:18px}.x-preview::backdrop{background:rgba(0,0,0,.55)}.x-preview textarea{width:100%;min-height:280px}.x-preview-actions{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+#libraryEditor .ext-row{color:#f2f3f4}
+#libraryEditor .ext-row :is(label,.checkline){color:#f2f3f4!important}
+#libraryEditor :is(#addSelfPc,#addParticipantRow,.participant-pc-add,#addExternalLink,#addImageUrl,#uploadImage){background:color-mix(in srgb,var(--accent) 15%,var(--panel))!important;color:var(--text)!important;border:1px solid var(--accent)!important;opacity:1!important;font-weight:700!important}
+#libraryEditor :is(#addSelfPc,#addParticipantRow,.participant-pc-add,#addExternalLink,#addImageUrl,#uploadImage):hover:not(:disabled){background:color-mix(in srgb,var(--accent) 28%,var(--panel))!important;color:var(--text)!important}
+#libraryEditor :is(#addSelfPc,#addParticipantRow,.participant-pc-add,#addExternalLink,#addImageUrl,#uploadImage):disabled{background:var(--panel2)!important;color:var(--muted)!important;border-color:var(--line)!important;opacity:1!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor .share-scope-note{background:#fff8e8!important;color:#29251d!important;border-color:#a9791f!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor .ext-row{background:#fff!important;color:#222!important;border-color:#b8babf!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor .ext-row :is(label,.checkline){color:#292b2f!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor :is(.ext-row,.xreport-image-add) :is(input,select,textarea){background:#fff!important;color:#222!important;border-color:#92969c!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor :is(input,textarea)::placeholder{color:#686b70!important;opacity:1!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor :is(#addSelfPc,#addParticipantRow,.participant-pc-add,#addExternalLink,#addImageUrl,#uploadImage){background:#fff8e8!important;color:#4b350e!important;border:1px solid #a9791f!important;opacity:1!important;font-weight:700!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor :is(#addSelfPc,#addParticipantRow,.participant-pc-add,#addExternalLink,#addImageUrl,#uploadImage):hover:not(:disabled){background:#f2dfb2!important;color:#281c07!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor :is(#addSelfPc,#addParticipantRow,.participant-pc-add,#addExternalLink,#addImageUrl,#uploadImage):disabled{background:#e7e8ea!important;color:#686b70!important;border-color:#b4b7bc!important;opacity:1!important}
+html:is(.theme-light,[data-theme="light"]) #libraryEditor input[type="file"]::file-selector-button{background:#f5f1e7;color:#292b2f;border:1px solid #a4a7ac;border-radius:5px;padding:6px 9px;font-weight:700}
 @media(max-width:860px){
  .participant-head{display:none}
  .participant-row{grid-template-columns:1fr 1fr}
