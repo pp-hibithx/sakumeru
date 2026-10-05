@@ -113,17 +113,9 @@ async function updateSharedPage(id,data) {
   if (!configured()) throw new Error("SupabaseのPublishable keyが未設定です。");
   let editToken=editTokenFor(id);
   if(!editToken){
-    editToken=randomToken();
-    const claim=await rpc("claim_shared_page",{p_id:id,p_edit_token:editToken});
-    if(!claim.ok){
-      if(claim.res.status===404){
-        const legacy=await rpc("update_shared_page",{p_id:id,p_data:data});
-        if(legacy.ok)return;
-        throw new Error("固定共有URLの更新に失敗しました。"+(legacy.body?" "+legacy.body.slice(0,180):""));
-      }
-      throw new Error("この共有URLの編集権限を確認できませんでした。元の端末またはバックアップからお試しください。");
-    }
-    saveEditToken(id,editToken);
+    const legacy=await rpc("update_shared_page",{p_id:id,p_data:data});
+    if(legacy.ok)return;
+    throw new Error("固定共有URLの更新に失敗しました。安全な共有URLへの再発行が必要です。"+(legacy.body?" "+legacy.body.slice(0,180):""));
   }
   const result=await rpc("update_shared_page_secure",{p_id:id,p_data:data,p_edit_token:editToken});
   if(!result.ok)throw new Error("固定共有URLの更新に失敗しました。編集権限が一致しない可能性があります。"+(result.body?" "+result.body.slice(0,180):""));
@@ -132,7 +124,7 @@ async function updateSharedPage(id,data) {
 async function deleteSharedPage(id) {
   if(!configured())throw new Error("SupabaseのPublishable keyが未設定です。");
   const editToken=editTokenFor(id);
-  if(!editToken)throw new Error("この共有URLの削除権限がこの端末にありません。");
+  if(!editToken)throw new Error("この共有URLは旧形式のため、安全なURLへ再発行してから停止してください。");
   const result=await rpc("delete_shared_page_secure",{p_id:id,p_edit_token:editToken});
   if(!result.ok)throw new Error("共有ページを停止できませんでした。"+(result.body?" "+result.body.slice(0,180):""));
   forgetEditToken(id);

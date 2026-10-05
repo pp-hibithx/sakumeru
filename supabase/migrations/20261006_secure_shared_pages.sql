@@ -128,7 +128,6 @@ revoke all on function public.delete_shared_page_secure(text,text) from public;
 revoke all on function public.unlock_shared_page(text,text) from public;
 
 grant execute on function public.create_shared_page_secure(text,jsonb,text) to anon, authenticated;
-grant execute on function public.claim_shared_page(text,text) to anon, authenticated;
 grant execute on function public.update_shared_page_secure(text,jsonb,text) to anon, authenticated;
 grant execute on function public.delete_shared_page_secure(text,text) to anon, authenticated;
 grant execute on function public.unlock_shared_page(text,text) to anon, authenticated;
