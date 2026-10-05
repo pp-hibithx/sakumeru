@@ -16,7 +16,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0303.css">
-<script defer src="../assets/js/common-layout.js?v=0303"></script>
+<script defer src="../assets/js/common-layout.js?v=1006-beta1"></script>
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script src="../assets/js/optional-features.js?v=0292" defer></script>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
@@ -33,6 +33,17 @@
 <section class="panel">
 <h2>SAKU+MERU</h2>
 <p>このサイトは一緒にサクッとシナリオを探し、卓準備をし、遊んだ記録を共有できる機能をまとめたサイトです。</p>
+</section>
+
+<section class="panel" id="beta">
+<h2>β版として運用中です</h2>
+<p>SAKU+MERUは現在、少人数で動作確認を行いながら開発しているβ版です。機能や保存形式は予告なく変更される場合があります。</p>
+<ul>
+<li>大切な記録は、BACKUPから定期的に書き出してください。</li>
+<li>共有URLは検索結果に表示されないよう設定していますが、URLを知っている人は閲覧できます。</li>
+<li>未公開作品や重要な秘匿情報を共有するときは、共有範囲とパスワード設定をご確認ください。</li>
+<li>不具合を見つけた場合は、操作内容とスクリーンショットを添えて管理者へお知らせください。</li>
+</ul>
 </section>
 
 <section class="panel">

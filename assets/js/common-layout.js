@@ -36,7 +36,7 @@
 <div class="theme-switcher" aria-label="テーマ"><button type="button" data-theme-choice="system">端末</button><span>·</span><button type="button" data-theme-choice="dark">ダーク</button><span>·</span><button type="button" data-theme-choice="light">ライト</button></div></div>
 </div></header>`;
   }
-  function footerHtml(){return `<footer class="footer"><div class="wrap">© ${new Date().getFullYear()} SAKU+MERU</div></footer>`;}
+  function footerHtml(){return `<footer class="footer"><div class="wrap"><div><a href="${escAttr(url("about/index.html#beta"))}">β版運用中</a> — 大切なデータはバックアップしてください</div><div>© ${new Date().getFullYear()} SAKU+MERU</div></div></footer>`;}
   document.querySelectorAll("[data-site-header]").forEach(slot=>{const active=(slot.dataset.active||"").trim().toLowerCase();slot.outerHTML=headerHtml(active);});
   document.querySelectorAll("[data-site-footer]").forEach(slot=>{slot.outerHTML=footerHtml();});
   document.querySelectorAll("[data-mobile-menu]").forEach(button=>button.addEventListener("click",()=>{const menu=document.getElementById(button.getAttribute("aria-controls"));const open=button.getAttribute("aria-expanded")!=="true";button.setAttribute("aria-expanded",String(open));menu?.classList.toggle("is-open",open)}));
