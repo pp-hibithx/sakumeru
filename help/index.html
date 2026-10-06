@@ -28,6 +28,12 @@
 .help-list{margin:8px 0 0;padding-left:1.2em}.help-list li+li{margin-top:5px}
 .help-note{border-left:3px solid var(--accent);padding:8px 12px;margin-top:12px;background:var(--panel)}
 .help-section{scroll-margin-top:16px}
+.help-page main>.wrap{display:grid;gap:10px}
+.help-page main>.wrap>.hero{margin-bottom:0;padding:4px 0 6px}
+.help-page main>.wrap>.hero h2{margin-bottom:2px}
+.help-page main>.wrap>.hero p{margin:0}
+.help-public-note{margin:0;padding:8px 11px;width:max-content;max-width:100%;box-sizing:border-box}
+.help-page main>.wrap>.help-section{margin-top:0}
 @media(max-width:760px){.help-flow{grid-template-columns:1fr 1fr}}
 @media(max-width:480px){.help-flow{grid-template-columns:1fr}}
 </style>
@@ -36,8 +42,9 @@
 <body class="help-page">
 <div data-site-header data-active="help"></div>
 
-<main><div class="wrap"><div class="notice small" style="margin:14px 0">テスト公開中でも、TOOLSはどなたでもご利用いただけます。</div></div><div class="wrap">
+<main><div class="wrap">
 <div class="hero"><h2>HELP</h2><p>SAKU+MERUの操作方法。やりたいことから確認できます。</p></div>
+<div class="notice small help-public-note">テスト公開中でも、TOOLSはどなたでもご利用いただけます。</div>
 
 <section class="panel help-section" id="start">
 <h2>やりたいことを選ぶ</h2>
