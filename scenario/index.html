@@ -227,9 +227,14 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 </style>
 <style>
 /* Visibility-first UI shared with MY PCs. */
-main>.wrap{display:grid;gap:18px}
+main>.wrap{display:grid;gap:10px}
+main>.wrap>.hero{padding:8px 0 10px}
+main>.wrap>.hero h2{margin-bottom:2px}
+main>.wrap>.hero p{margin:0}
+main>.wrap>.notice{margin:0;padding:9px 12px;width:max-content;max-width:100%;box-sizing:border-box}
+.sc-layout{gap:10px}
 main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(--line));box-shadow:0 5px 18px rgba(0,0,0,.1)}
-.sc-layout>.sc-browser-section{border:0;border-radius:0;background:transparent;box-shadow:none;padding:0}
+.sc-layout>.sc-browser-section{margin-top:0;border:0;border-radius:0;background:transparent;box-shadow:none;padding:0}
 .sc-toolbar{padding:4px 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none}
 .sc-toolbar label,#scenarioForm label{font-weight:750;color:inherit;margin-bottom:5px}
 .sc-toolbar input,.sc-toolbar select,#scenarioForm input:not([type="checkbox"]):not([type="radio"]),#scenarioForm select,#scenarioForm textarea{min-height:44px;border:2px solid color-mix(in srgb,currentColor 34%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--panel) 88%,#000 12%);color:inherit;padding:9px 10px;box-sizing:border-box}
@@ -246,7 +251,7 @@ main section,.sc-panel{border:2px solid color-mix(in srgb,currentColor 24%,var(-
 .sc-detail{border:3px solid color-mix(in srgb,var(--accent) 70%,currentColor);box-shadow:0 24px 70px rgba(0,0,0,.58)}.sc-detail::backdrop{background:rgba(0,0,0,.72)}.sc-detail-body>section,.scenario-overview{border:2px solid color-mix(in srgb,currentColor 22%,var(--line));border-left:5px solid var(--accent);border-radius:10px;padding:13px;background:color-mix(in srgb,var(--panel) 94%,currentColor 2%)}
 .sc-detail-actions{padding-top:13px;border-top:2px solid color-mix(in srgb,currentColor 20%,var(--line));gap:8px}.sc-detail-actions button{min-height:42px;font-weight:700}
 .danger,[data-del]{border-color:color-mix(in srgb,#dc5664 72%,var(--line))!important;color:color-mix(in srgb,#ff8e98 85%,currentColor)!important}
-@media(max-width:620px){main>.wrap{gap:14px}.sc-toolbar{padding:10px}.sc-system-tab{min-height:44px}.sc-detail{width:calc(100% - 16px);max-height:calc(100vh - 16px);border-width:2px}.sc-detail-actions{display:grid}.sc-detail-actions button,.sc-detail-actions a{width:100%;box-sizing:border-box}.sc-card{transform:none!important}}
+@media(max-width:620px){main>.wrap{gap:8px}.sc-toolbar{padding:8px 0}.sc-system-tab{min-height:44px}.sc-detail{width:calc(100% - 16px);max-height:calc(100vh - 16px);border-width:2px}.sc-detail-actions{display:grid}.sc-detail-actions button,.sc-detail-actions a{width:100%;box-sizing:border-box}.sc-card{transform:none!important}}
 </style>
 
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
