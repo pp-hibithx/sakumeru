@@ -211,14 +211,23 @@ body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
   width:100%;
   max-height:calc(100vh - 32px);
   grid-template-columns:82px minmax(0,1fr);
+  padding:10px;
+  box-sizing:border-box;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--surface);
 }
 .sakumeru-tour-figure img{width:82px;height:108px}
 .sakumeru-tour-box{
-  box-shadow:0 18px 48px rgba(0,0,0,.46);
+  padding:0 2px 2px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
 }
 @media(max-width:680px){
   .sakumeru-tour{inset:auto 8px 8px 8px;width:auto;padding:0}
-  .sakumeru-tour-inner{max-height:calc(100vh - 16px);grid-template-columns:64px minmax(0,1fr)}
+  .sakumeru-tour-inner{max-height:calc(100vh - 16px);grid-template-columns:64px minmax(0,1fr);padding:8px}
   .sakumeru-tour-figure img{width:64px;height:84px}
 }
 

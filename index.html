@@ -62,15 +62,23 @@
   justify-content:stretch;
   align-content:end;
   align-items:end;
-  padding:0;
+  padding:10px;
   box-sizing:border-box;
   overflow:auto;
-  background:transparent;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--panel);
   filter:drop-shadow(0 10px 24px rgba(0,0,0,.45));
 }
 .home-concierge.home-guide-no-art{grid-template-columns:minmax(0,1fr);width:min(430px,calc(100vw - 32px))}
 .home-concierge .home-guide-art{width:82px;height:108px}
-.home-concierge>div:last-child{box-shadow:0 18px 48px rgba(0,0,0,.46)}
+.home-concierge>div:last-child{
+  padding:0 2px 2px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
 .home-concierge-choices button,
 .home-concierge-choices .button,
 .home-concierge-close{
@@ -92,7 +100,7 @@
     width:auto;
     grid-template-columns:64px minmax(0,1fr);
     align-content:end;
-    padding:0;
+    padding:8px;
     max-height:calc(100vh - 16px);
   }
   .home-concierge.home-guide-no-art{grid-template-columns:1fr;width:auto}
