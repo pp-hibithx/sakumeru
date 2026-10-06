@@ -94,6 +94,22 @@
 .home-concierge-choices button:focus-visible,
 .home-concierge-choices .button:focus-visible,
 .home-concierge-close:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 70%,transparent);outline-offset:2px}
+html[data-theme="dark"] .home-concierge-choices button,
+html[data-theme="dark"] .home-concierge-choices .button,
+html[data-theme="dark"] .home-concierge-close{
+  background:#3b4047!important;
+  color:#fffaf0!important;
+}
+html[data-theme="dark"] .home-concierge .home-guide-head .muted,
+html[data-theme="dark"] .home-concierge .home-initial-guide-figure figcaption{color:#d7d9dc!important}
+html[data-theme="light"] .home-concierge-choices button,
+html[data-theme="light"] .home-concierge-choices .button,
+html[data-theme="light"] .home-concierge-close{
+  background:#fffaf0!important;
+  color:#24221e!important;
+}
+html[data-theme="light"] .home-concierge .home-guide-head .muted,
+html[data-theme="light"] .home-concierge .home-initial-guide-figure figcaption{color:#59554d!important}
 @media(max-width:620px){
   .home-concierge,.home-concierge.home-guide-no-art{
     inset:auto 8px 8px 8px;

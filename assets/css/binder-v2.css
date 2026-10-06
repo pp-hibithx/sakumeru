@@ -198,6 +198,22 @@ body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
   outline:3px solid color-mix(in srgb,var(--accent) 70%,transparent);
   outline-offset:2px;
 }
+html[data-theme="dark"] .sakumeru-tour .sakumeru-tour-actions button,
+html[data-theme="dark"] .sakumeru-tour .sakumeru-tour-actions a,
+html[data-theme="dark"] .sakumeru-tour .sakumeru-tour-head button{
+  background:#3b4047!important;
+  color:#fffaf0!important;
+}
+html[data-theme="dark"] .sakumeru-tour-name,
+html[data-theme="dark"] .sakumeru-tour-figure figcaption{color:#d7d9dc!important}
+html[data-theme="light"] .sakumeru-tour .sakumeru-tour-actions button,
+html[data-theme="light"] .sakumeru-tour .sakumeru-tour-actions a,
+html[data-theme="light"] .sakumeru-tour .sakumeru-tour-head button{
+  background:#fffaf0!important;
+  color:#24221e!important;
+}
+html[data-theme="light"] .sakumeru-tour-name,
+html[data-theme="light"] .sakumeru-tour-figure figcaption{color:#59554d!important}
 .sakumeru-tour{
   inset:auto 16px 16px auto;
   width:min(520px,calc(100vw - 32px));
