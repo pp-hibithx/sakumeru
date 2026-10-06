@@ -1192,9 +1192,12 @@ html:is(.theme-light,[data-theme="light"]) #libraryEditor input[type="file"]::fi
   border:2px solid color-mix(in srgb,currentColor 24%,var(--line));
   box-shadow:0 5px 18px rgba(0,0,0,.11);
 }
-.library-page>.hero{border:0;box-shadow:none;padding-left:0;background:transparent}
-.library-page>.notice{padding:11px 13px;border-left:5px solid color-mix(in srgb,var(--accent) 65%,currentColor);border-radius:9px;background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);line-height:1.65}
-.lib-panel{background:var(--panel)}
+.library-page>.hero{margin-bottom:0;border:0;box-shadow:none;padding:4px 0 6px;background:transparent}
+.library-page>.notice{padding:8px 11px;border-left:5px solid color-mix(in srgb,var(--accent) 65%,currentColor);border-radius:9px;background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);line-height:1.5}
+.lib-panel{padding:12px;background:var(--panel)}
+.lib-panel>.row{display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.lib-panel>.row h2{margin:0 0 2px}
+.lib-panel>.row #summary{line-height:1.45}
 .lib-panel>h2,.library-editor>h2{margin-top:0;padding-bottom:10px;border-bottom:2px solid color-mix(in srgb,var(--accent) 52%,var(--line))}
 
 #openLibraryEditor,#save,[data-article-save],#postSaveArticle,#postSaveX,#calendarReportConfirm,#coverSave,#pcLibraryEditorSave{
@@ -1207,10 +1210,16 @@ button,.link{min-height:40px}
 button:focus-visible,.link:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 .lib-toolbar,.library-play-tabs,.library-view-tabs,.lib-year-filter-bar{
-  padding:11px;border:2px solid color-mix(in srgb,currentColor 27%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 87%,currentColor 4%)
+  padding:8px;border:2px solid color-mix(in srgb,currentColor 27%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--panel) 87%,currentColor 4%)
 }
 .library-play-tabs,.library-view-tabs{gap:5px}
-.library-play-tab,.library-view-tab{min-height:42px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));font-weight:700}
+.library-play-tab,.library-view-tab{min-height:34px;padding:4px 8px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));font-weight:700}
+.library-filter-row{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.library-filter-row>.library-play-tabs{flex:1 1 auto;margin:0;align-items:center}
+.library-filter-row>.lib-year-filter-bar{flex:0 0 auto}
+.library-filter-row .lib-year-filter-row{display:flex;align-items:center;gap:7px}
+.library-filter-row .lib-year-filter-row label{margin:0;white-space:nowrap}
+.library-filter-row .lib-year-filter-row select{min-height:34px;padding:4px 28px 4px 8px}
 .library-play-tab.active,.library-view-tab.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:inherit;box-shadow:inset 0 -3px 0 var(--accent)}
 
 .lib-toolbar input,.lib-toolbar select,.library-editor input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),.library-editor select,.library-editor textarea,
@@ -6525,16 +6534,16 @@ function render(){
      libraryYearFilter=years[0]||"all";
    }
 
-   q("list").innerHTML=playFilterTabsHtml()+`
-     <div class="lib-year-filter-bar">
-       <div class="lib-year-filter-row">
+    q("list").innerHTML=`<div class="library-filter-row">${playFilterTabsHtml()}
+      <div class="lib-year-filter-bar">
+        <div class="lib-year-filter-row">
          <label for="libraryYearFilter">最新卓年</label>
          <select id="libraryYearFilter">
            ${years.map(y=>`<option value="${esc(y)}" ${libraryYearFilter===y?"selected":""}>${esc(y==="日付なし"?"日付なし":y+"年")}</option>`).join("")}
            <option value="all" ${libraryYearFilter==="all"?"selected":""}>すべて</option>
          </select>
-       </div>
-     </div>`;
+        </div>
+      </div></div>`;
 
    bindPlayFilterTabs();
 
