@@ -10,7 +10,7 @@
     link.rel="stylesheet";link.href=headerCss;link.dataset.sakumeruCommonHeader="1";
     document.head.appendChild(link);
   }
-  const binderCss=new URL("assets/css/binder-v2.css?v=0921-sheet-contrast",siteRoot).href;
+  const binderCss=new URL("assets/css/binder-v2.css?v=1006-guide-contrast",siteRoot).href;
   if(!document.querySelector('link[data-sakumeru-binder-v2]')){
     const link=document.createElement("link");link.rel="stylesheet";link.href=binderCss;link.dataset.sakumeruBinderV2="1";document.head.appendChild(link);
   }
@@ -42,5 +42,5 @@
   document.querySelectorAll("[data-mobile-menu]").forEach(button=>button.addEventListener("click",()=>{const menu=document.getElementById(button.getAttribute("aria-controls"));const open=button.getAttribute("aria-expanded")!=="true";button.setAttribute("aria-expanded",String(open));menu?.classList.toggle("is-open",open)}));
   document.addEventListener("click",event=>{const guideButton=event.target.closest?.("[data-header-guide]");if(!guideButton)return;let attempts=0;const open=()=>{const homeButton=document.getElementById("callHomeGuide");if(homeButton){homeButton.click();return}if(window.SAKUMERUGuide?.open){window.SAKUMERUGuide.open(guideButton);return}if(++attempts<10)setTimeout(open,100)};open()});
   document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;document.querySelectorAll("[data-mobile-menu][aria-expanded=true]").forEach(button=>{button.setAttribute("aria-expanded","false");document.getElementById(button.getAttribute("aria-controls"))?.classList.remove("is-open")})});
-  const guideText=document.createElement("script");guideText.src=url("assets/js/home-guide-text.js?v=0913-guide-modes");guideText.onload=()=>{const guide=document.createElement("script");guide.src=url("assets/js/home-guide-tour.js?v=0914-finish-home");guide.onload=()=>{const concierge=document.createElement("script");concierge.src=url("assets/js/guide-concierge-v2.js?v=0914-header-actions");document.body.appendChild(concierge)};document.body.appendChild(guide);};document.body.appendChild(guideText);
+  const guideText=document.createElement("script");guideText.src=url("assets/js/home-guide-text.js?v=0913-guide-modes");guideText.onload=()=>{const guide=document.createElement("script");guide.src=url("assets/js/home-guide-tour.js?v=0914-finish-home");guide.onload=()=>{const concierge=document.createElement("script");concierge.src=url("assets/js/guide-concierge-v2.js?v=1006-guide-contrast");document.body.appendChild(concierge)};document.body.appendChild(guide);};document.body.appendChild(guideText);
 })();

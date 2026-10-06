@@ -177,6 +177,49 @@ body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
 .sakumeru-tour-box{background:var(--surface);color:var(--text-primary)}
 .sakumeru-tour-bubble{background:var(--speech-bg);color:var(--speech-text);border-color:var(--speech-border)}
 .sakumeru-tour-name,.sakumeru-tour-figure figcaption{color:var(--text-muted)}
+.sakumeru-tour .sakumeru-tour-actions button,
+.sakumeru-tour .sakumeru-tour-actions a,
+.sakumeru-tour .sakumeru-tour-head button{
+  background:var(--surface-raised)!important;
+  border:1px solid color-mix(in srgb,var(--accent) 70%,var(--line))!important;
+  color:var(--text-primary)!important;
+  opacity:1!important;
+  text-decoration:none;
+}
+.sakumeru-tour .sakumeru-tour-actions button:hover,
+.sakumeru-tour .sakumeru-tour-actions a:hover,
+.sakumeru-tour .sakumeru-tour-head button:hover{
+  border-color:var(--accent)!important;
+  filter:brightness(1.12);
+}
+.sakumeru-tour .sakumeru-tour-actions button:focus-visible,
+.sakumeru-tour .sakumeru-tour-actions a:focus-visible,
+.sakumeru-tour .sakumeru-tour-head button:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--accent) 70%,transparent);
+  outline-offset:2px;
+}
+.sakumeru-tour{
+  inset:0;
+  width:auto;
+  padding:20px;
+  display:grid;
+  place-items:center;
+  overflow:auto;
+  background:rgba(0,0,0,.58);
+  filter:none;
+}
+.sakumeru-tour-inner{
+  width:min(720px,100%);
+  max-height:calc(100vh - 40px);
+}
+.sakumeru-tour-box{
+  box-shadow:0 18px 48px rgba(0,0,0,.46);
+}
+@media(max-width:680px){
+  .sakumeru-tour{padding:12px}
+  .sakumeru-tour-inner{max-height:calc(100vh - 24px)}
+  .sakumeru-tour-figure img{margin-inline:auto}
+}
 
 /* Light-mode contrast guardrails for HOME and SHARE UI v2. */
 html[data-theme="light"] body.home-page .home-guide-event,
