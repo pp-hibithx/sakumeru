@@ -199,26 +199,27 @@ body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
   outline-offset:2px;
 }
 .sakumeru-tour{
-  inset:0;
-  width:auto;
-  padding:20px;
-  display:grid;
-  place-items:center;
+  inset:auto 16px 16px auto;
+  width:min(520px,calc(100vw - 32px));
+  padding:0;
+  display:block;
   overflow:auto;
-  background:rgba(0,0,0,.58);
-  filter:none;
+  background:transparent;
+  filter:drop-shadow(0 10px 24px rgba(0,0,0,.45));
 }
 .sakumeru-tour-inner{
-  width:min(720px,100%);
-  max-height:calc(100vh - 40px);
+  width:100%;
+  max-height:calc(100vh - 32px);
+  grid-template-columns:82px minmax(0,1fr);
 }
+.sakumeru-tour-figure img{width:82px;height:108px}
 .sakumeru-tour-box{
   box-shadow:0 18px 48px rgba(0,0,0,.46);
 }
 @media(max-width:680px){
-  .sakumeru-tour{padding:12px}
-  .sakumeru-tour-inner{max-height:calc(100vh - 24px)}
-  .sakumeru-tour-figure img{margin-inline:auto}
+  .sakumeru-tour{inset:auto 8px 8px 8px;width:auto;padding:0}
+  .sakumeru-tour-inner{max-height:calc(100vh - 16px);grid-template-columns:64px minmax(0,1fr)}
+  .sakumeru-tour-figure img{width:64px;height:84px}
 }
 
 /* Light-mode contrast guardrails for HOME and SHARE UI v2. */
