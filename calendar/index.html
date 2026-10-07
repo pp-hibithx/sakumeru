@@ -41,6 +41,7 @@
 .event-chip[data-color="pink"]{border-color:#ad6f91;background:rgba(173,111,145,.12)}
 .event-chip[data-color="gray"]{border-color:#747982;background:rgba(116,121,130,.12)}
 .event-chip.planned{border-width:2px}.event-chip.done{border-color:#557c68;opacity:.62;background:rgba(85,124,104,.10)}.calendar-legend{display:flex;gap:10px;flex-wrap:wrap;margin:7px 0 10px;font-size:.78rem}.calendar-legend span{display:inline-flex;gap:5px;align-items:center}.calendar-legend .mark{width:10px;height:10px;border:2px solid var(--line);border-radius:3px}.calendar-legend .planned-mark{border-color:var(--accent)}.calendar-legend .done-mark{border-color:#557c68;opacity:.62}.event-chip.cancelled{opacity:.5;text-decoration:line-through}.event-chip.tentative{border-style:dashed}.event-chip.rescheduling{border-color:#b28a4a}.event-chip.postponed{opacity:.65}.event-chip.blocked{border-color:#a86b6b;background:rgba(168,107,107,.10)!important}.status-badge{white-space:nowrap}
+.calendar-legend{width:max-content;max-width:100%}
 .session-meta{display:block;margin-top:2px;font-weight:600;line-height:1.25}
 /* explicit calendar color: keep status styling (opacity/dashed/etc.) but let chosen color win */
 .event-chip:not(.blocked)[data-color="red"]{border-color:#b86464!important;background:rgba(184,100,100,.18)!important}
@@ -1672,7 +1673,7 @@ function groupedAgendaItems(rows,list){
  rows.forEach(x=>{
    if(x.type!=="blocked"){output.push({date:agendaDate(x),id:x.id,className:x.status||"",text:agendaTrpgText(x,list)});return}
    const memo=String(x.calendarMemo||"").trim()||((x.title&&x.title!=="予定あり")?String(x.title).trim():"");
-   const key=`${agendaDate(x).slice(0,7)}\u0000${memo}`;
+   const seriesId=String(x.blockedSeriesId||"").trim(),key=seriesId?`series:${seriesId}`:`event:${x.id}`;
    if(!blocked.has(key))blocked.set(key,{entries:[],memo});
    blocked.get(key).entries.push({id:x.id,day:agendaDay(x),date:agendaDate(x)});
  });
@@ -1799,11 +1800,12 @@ $("saveEvent").onclick=()=>{
  }if(!date)return alert("日付を入力してください。");if(type==="trpg"&&!$("eventTitle").value.trim())return alert("シナリオ名を入力してください。");let list=events();
  if(type==="blocked"){
    let ranges;try{ranges=collectSimpleDateRanges()}catch(e){return alert(e.message||String(e))}
-   const title=$("eventTitle").value.trim()||"予定あり",memo=$("eventMemo").value.trim(),oldFirst=id0?list.find(x=>x.id===id0):null,pending=[];
+   const title=$("eventTitle").value.trim()||"予定あり",memo=$("eventMemo").value.trim(),oldFirst=id0?list.find(x=>x.id===id0):null,pending=[],seriesId=ranges.length>1?(String(oldFirst?.blockedSeriesId||"")||TRPG39.uuid()):String(oldFirst?.blockedSeriesId||"");
    for(let n=0;n<ranges.length;n++){
      const targetDate=String(ranges[n].date||"").slice(0,10);
      const same=list.find(x=>x.type==="blocked"&&x.id!==id0&&String(x.start||"").slice(0,10)===targetDate&&String(x.title||"予定あり")===title&&String(x.calendarMemo||"")===memo);
      const old=n===0&&oldFirst?oldFirst:same||null,id=old?.id||(n===0&&id0?id0:TRPG39.uuid()),item=buildBlockedEvent(id,targetDate,old);
+     item.blockedSeriesId=seriesId;item.blockedSeriesDay=seriesId?(ranges.length>1?n+1:Number(old?.blockedSeriesDay||1)):0;
      const warning=conflictMessage(item,list.concat(pending),old);if(warning&&!confirm((ranges.length>1?`${targetDate}：\n`:"")+warning))return;
      pending.push(item);
    }
