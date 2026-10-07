@@ -135,6 +135,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 .tag-suggestion.used{opacity:.45}
 .sc-system-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .sc-system-picker .sc-system-tabs,.sc-tag-picker .sc-system-tabs,.sc-state-picker .sc-system-tabs{margin-top:4px}
+.sc-filter-fold{margin:0;border:0}.sc-filter-fold>summary{display:flex;align-items:center;gap:7px;width:max-content;cursor:pointer;list-style:none;font-weight:750}.sc-filter-fold>summary::-webkit-details-marker{display:none}.sc-filter-fold>summary:before{content:"▶";font-size:.72em;color:var(--accent)}.sc-filter-fold[open]>summary:before{content:"▼"}.sc-filter-fold>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
 .sc-system-tab{width:auto!important;padding:5px 10px!important;border-radius:999px!important;font-size:12px!important}
 .sc-system-tab.active{font-weight:700;box-shadow:inset 0 0 0 1px var(--accent)}
 .sc-system-count{opacity:.7;margin-left:4px}
@@ -296,9 +297,9 @@ html.theme-dark #scenarioForm :is(input,textarea)::placeholder{color:#aeb4bd!imp
 <div class="sc-filter sc-archive-filter"><label>表示</label><select id="archiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
 <div class="sc-sort"><label>並び順</label><select id="sort"><option value="name">50音順</option><option value="new">登録が新しい順</option><option value="old">登録が古い順</option><option value="recentRun">最近回した順</option><option value="recentPlay">最近遊んだ順</option><option value="kpCount">回した回数順</option></select></div>
 </div>
-<div class="sc-state-picker"><label>状態</label><input id="filter" type="hidden" value=""><div id="statusFilterButtons" class="sc-system-tabs" role="group" aria-label="状態で絞り込む"></div></div>
-<div class="sc-tag-picker"><label>タグ</label><input id="tagFilter" type="hidden" value=""><div id="tagFilterButtons" class="sc-system-tabs" role="group" aria-label="タグで絞り込む"></div></div>
-<div class="sc-system-picker"><label>システム</label><div id="systemFilter" class="sc-system-tabs" role="group" aria-label="システムで絞り込む"></div></div>
+<details class="sc-filter-fold sc-state-picker" data-filter-fold="status" open><summary>状態</summary><input id="filter" type="hidden" value=""><div id="statusFilterButtons" class="sc-system-tabs" role="group" aria-label="状態で絞り込む"></div></details>
+<details class="sc-filter-fold sc-tag-picker" data-filter-fold="tags" open><summary>タグ</summary><input id="tagFilter" type="hidden" value=""><div id="tagFilterButtons" class="sc-system-tabs" role="group" aria-label="タグで絞り込む"></div></details>
+<details class="sc-filter-fold sc-system-picker" data-filter-fold="systems" open><summary>システム</summary><div id="systemFilter" class="sc-system-tabs" role="group" aria-label="システムで絞り込む"></div></details>
 </div><div class="sc-tools"><div class="sc-view-switch" role="group" aria-label="作品の表示方法"><button id="scenarioListViewBtn" type="button" aria-pressed="false">作品一覧</button><button id="scenarioThumbViewBtn" type="button" aria-pressed="true">サムネイル</button></div><button id="openFriendSources" type="button">友人共有URL</button><button id="shareScenarioList" type="button">共有</button><button id="openForm" type="button">＋ 追加</button></div></div><div id="summary" class="small" style="margin-top:8px"></div>
 <div id="scenarioCompactView" class="sc-compact-view" hidden>
  <section id="compactOwnColumn" class="sc-compact-column"><h3><span>自分が所有</span><span id="compactOwnCount" class="sc-category-count">0件</span></h3><div id="compactOwnList" class="sc-compact-list"></div></section>
@@ -1795,6 +1796,11 @@ q("openFriendSources").onclick=()=>{
  friendScenarioSection.open=true;
  requestAnimationFrame(()=>{friendScenarioSection.scrollIntoView({behavior:"smooth",block:"start"});q("friendUrl").focus()});
 };
+document.querySelectorAll("[data-filter-fold]").forEach(details=>{
+ const key=`39x2_scenario_filter_fold_${details.dataset.filterFold}`;
+ try{const saved=localStorage.getItem(key);if(saved!==null)details.open=saved==="open"}catch{}
+ details.addEventListener("toggle",()=>{try{localStorage.setItem(key,details.open?"open":"closed")}catch{}});
+});
 q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioPageAndRender;q("searchScope").onchange=resetOwnScenarioPageAndRender;q("playersFilter").oninput=resetOwnScenarioPageAndRender;q("hoursFilter").oninput=resetOwnScenarioPageAndRender;q("archiveFilter").onchange=resetOwnScenarioPageAndRender;q("sort").onchange=resetOwnScenarioPageAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
