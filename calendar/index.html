@@ -24,7 +24,6 @@
 .calendar-overview[hidden],#monthCalendarView[hidden]{display:none!important}
 .calendar-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:12px}.calendar-overview-column{min-width:0;border:2px solid color-mix(in srgb,var(--line) 72%,var(--text));border-radius:12px;padding:14px;background:color-mix(in srgb,var(--panel) 94%,var(--bg))}.calendar-overview-column h3{margin:0 0 10px}.calendar-overview-month{margin-top:14px}.calendar-overview-month:first-child{margin-top:0}.calendar-overview-month h4{margin:0 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line)}.calendar-agenda-list{display:grid;gap:7px}.calendar-agenda-item{width:100%;text-align:left;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--panel) 86%,var(--bg));color:inherit;line-height:1.55}.calendar-agenda-item:hover,.calendar-agenda-item:focus-visible{border-color:var(--accent)}.calendar-agenda-item.blocked{border-left:4px solid #a86b6b}.calendar-agenda-item.tentative{border-style:dashed}.calendar-agenda-note{color:var(--muted)}.calendar-free-days{margin-top:13px;padding:10px;border:1px dashed var(--line);border-radius:8px;line-height:1.7}.calendar-overview-empty{padding:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
 .calendar-free-groups{display:grid;gap:4px;margin-top:4px}.calendar-free-group{line-height:1.7}
-.calendar-agenda-group-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.calendar-agenda-group-actions button{width:auto;min-height:30px;padding:3px 8px;font-size:.8rem}
 .calendar-month-jump{display:inline-flex;align-items:center;gap:4px}.calendar-month-jump input,.calendar-month-jump select{margin:0}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .calendar-head{font-size:.8rem;color:var(--muted);text-align:center;padding:4px}
@@ -1674,16 +1673,15 @@ function groupedAgendaItems(rows,list){
    if(x.type!=="blocked"){output.push({date:agendaDate(x),id:x.id,className:x.status||"",text:agendaTrpgText(x,list)});return}
    const memo=String(x.calendarMemo||"").trim()||((x.title&&x.title!=="予定あり")?String(x.title).trim():"");
    const key=`${agendaDate(x).slice(0,7)}\u0000${memo}`;
-   if(!blocked.has(key))blocked.set(key,{date:agendaDate(x),id:x.id,className:"blocked",days:[],entries:[],memo});
-   blocked.get(key).days.push(agendaDay(x));
-   blocked.get(key).entries.push({id:x.id,day:agendaDay(x)});
+   if(!blocked.has(key))blocked.set(key,{entries:[],memo});
+   blocked.get(key).entries.push({id:x.id,day:agendaDay(x),date:agendaDate(x)});
  });
- blocked.forEach(item=>{item.days=[...new Set(item.days)].sort((a,b)=>a-b);item.text=`${item.days.map(day=>`${pad(day)}日`).join("、")}：卓以外の予定あり${item.memo?`　※${item.memo}`:""}`;output.push(item)});
+ blocked.forEach(item=>{const entries=item.entries.slice().sort((a,b)=>a.date.localeCompare(b.date));entries.forEach((entry,index)=>output.push({date:entry.date,id:entry.id,className:"blocked",text:`${pad(entry.day)}日：卓以外の予定あり${item.memo?`　※${item.memo}`:""}${entries.length>1?`　${index+1}日目`:""}`}))});
  return output.sort((a,b)=>a.date.localeCompare(b.date)||a.text.localeCompare(b.text,"ja"));
 }
 function agendaItemsHtml(rows,list){
  const items=groupedAgendaItems(rows,list);
- return items.length?`<div class="calendar-agenda-list">${items.map(item=>item.entries?.length>1?`<div class="calendar-agenda-item ${esc(item.className)}"><div>${esc(item.text)}</div><div class="calendar-agenda-group-actions" aria-label="編集する日を選択">${item.entries.slice().sort((a,b)=>a.day-b.day).map(entry=>`<button type="button" data-agenda-event="${esc(entry.id)}">${pad(entry.day)}日を開く</button>`).join("")}</div></div>`:`<button type="button" class="calendar-agenda-item ${esc(item.className)}" data-agenda-event="${esc(item.id)}">${esc(item.text)}</button>`).join("")}</div>`:'<div class="calendar-overview-empty">予定はありません。</div>';
+ return items.length?`<div class="calendar-agenda-list">${items.map(item=>`<button type="button" class="calendar-agenda-item ${esc(item.className)}" data-agenda-event="${esc(item.id)}">${esc(item.text)}</button>`).join("")}</div>`:'<div class="calendar-overview-empty">予定はありません。</div>';
 }
 function formatFreeDayRanges(days){
  const sorted=[...new Set(days)].sort((a,b)=>a-b),parts=[];
