@@ -18,7 +18,7 @@
     const themeScript=document.createElement("script");themeScript.src=url("assets/js/sheet-theme.js?v=0916-sheet-root");themeScript.async=false;themeScript.dataset.sakumeruSheetTheme="1";document.head.appendChild(themeScript);
   }
   const NAV=[
-    ["home","HOME","index.html"],["scenario","SCENARIO","scenario/index.html?v=0292"],
+    ["home","HOME","index.html"],["scenario","SCENARIO","scenario/index.html?v=1008-list-paging"],
     ["calendar","CALENDAR","calendar/index.html?v=0292"],["library","LIBRARY","library/index.html?v=0292"],
     ["pc","PC","pcs/index.html?v=0292"],["players","PLAYERS","players/index.html?v=0292"],
     ["share","SHARE","share/manage.html"],["about","ABOUT","about/index.html"],
