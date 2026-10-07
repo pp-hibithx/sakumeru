@@ -20,6 +20,9 @@
 <script defer src="../assets/js/theme-v0296.js"></script>
 <style>
 .calendar-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.calendar-view-switch{display:flex;gap:6px;align-items:center}.calendar-view-switch button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 20%,var(--panel));font-weight:800}
+.calendar-overview[hidden],#monthCalendarView[hidden]{display:none!important}
+.calendar-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:12px}.calendar-overview-column{min-width:0;border:2px solid color-mix(in srgb,var(--line) 72%,var(--text));border-radius:12px;padding:14px;background:color-mix(in srgb,var(--panel) 94%,var(--bg))}.calendar-overview-column h3{margin:0 0 10px}.calendar-overview-month{margin-top:14px}.calendar-overview-month:first-child{margin-top:0}.calendar-overview-month h4{margin:0 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line)}.calendar-agenda-list{display:grid;gap:7px}.calendar-agenda-item{width:100%;text-align:left;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--panel) 86%,var(--bg));color:inherit;line-height:1.55}.calendar-agenda-item:hover,.calendar-agenda-item:focus-visible{border-color:var(--accent)}.calendar-agenda-item.blocked{border-left:4px solid #a86b6b}.calendar-agenda-item.tentative{border-style:dashed}.calendar-agenda-note{color:var(--muted)}.calendar-free-days{margin-top:13px;padding:10px;border:1px dashed var(--line);border-radius:8px;line-height:1.7}.calendar-overview-empty{padding:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
 .calendar-month-jump{display:inline-flex;align-items:center;gap:4px}.calendar-month-jump input,.calendar-month-jump select{margin:0}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .calendar-head{font-size:.8rem;color:var(--muted);text-align:center;padding:4px}
@@ -76,7 +79,7 @@
 .scenario-picker-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .scenario-picker-empty{padding:10px;font-size:12px;color:var(--muted)}
 #scenarioSelect{display:none}
-@media(max-width:760px){.calendar-grid{gap:3px}.calendar-day{height:152px;min-height:152px;padding:5px}.event-form{grid-template-columns:1fr}}
+@media(max-width:760px){.calendar-overview{grid-template-columns:1fr}.calendar-grid{gap:3px}.calendar-day{height:152px;min-height:152px;padding:5px}.event-form{grid-template-columns:1fr}}
 
 /* v19: schedule detail first, edit only on demand */
 .event-detail{position:fixed;right:18px;top:18px;z-index:10030;width:min(520px,calc(100vw - 36px));max-height:calc(100dvh - 36px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.42)}
@@ -1029,6 +1032,17 @@ html[data-theme="dark"] .event-detail button:focus-visible{
 
 <section class="panel calendar-page-main">
 <div class="calendar-toolbar">
+  <div class="calendar-view-switch" role="group" aria-label="カレンダーの表示方法">
+    <button id="agendaViewBtn" type="button" aria-pressed="true">予定一覧</button>
+    <button id="monthViewBtn" type="button" aria-pressed="false">月間カレンダー</button>
+  </div>
+  <div class="calendar-top-actions"><button id="newEventBtn" type="button">＋ 予定を追加</button><button id="scheduleMatchBtn" type="button" class="text-action">日程すり合わせ</button><button id="shareAvailability" type="button" class="text-action">空き日を共有</button></div>
+</div>
+<div id="calendarOverview" class="calendar-overview">
+  <section class="calendar-overview-column"><h3 id="calendarThisMonthHeading">今月の予定</h3><div id="calendarThisMonth"></div><div id="calendarFreeDays" class="calendar-free-days"></div></section>
+  <section class="calendar-overview-column"><h3>来月以降の予定</h3><div id="calendarLaterMonths"></div></section>
+</div>
+<div id="monthCalendarView" hidden>
   <div class="month-nav">
     <button id="prevMonth" type="button" aria-label="前の月">←</button>
     <span class="calendar-month-jump">
@@ -1045,11 +1059,10 @@ html[data-theme="dark"] .event-detail button:focus-visible{
     <button id="nextMonth" type="button" aria-label="次の月">→</button>
     <button id="todayBtn" type="button">今月</button>
   </div>
-  <div class="calendar-top-actions"><button id="newEventBtn" type="button">＋ 予定を追加</button><button id="scheduleMatchBtn" type="button" class="text-action">日程すり合わせ</button><button id="shareAvailability" type="button" class="text-action">空き日を共有</button></div>
-</div>
 <div class="calendar-legend"><span>□ 予定</span><span>✓ 完了（薄く表示）</span><span>△ 仮押さえ</span><span>× 卓以外の予定あり</span></div>
 <div class="calendar-grid" id="weekdayHead"></div>
 <div class="calendar-grid" id="calendar"></div>
+</div>
 </section>
 
 <section class="event-detail" id="eventDetailPanel" hidden>
@@ -1629,11 +1642,53 @@ function showEventDetail(id){
  $("reportFromDetail").hidden=blocked;$("libraryFromDetail").hidden=blocked;
 }
 function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list);let sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");fillEventRunSelect(x.runId||"");$("eventRunLabel").value=x.runLabel||$("eventRunLabel").value||"";const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);restoreExistingDateMode(x,list);$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=String(x.sessionDay||sessionDay||1);$("eventDay").dataset.originalSessionDay=String(x.sessionDay||info.rawDay||1);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventSelfHo").value=x.selfHo||"";$("eventPcSearch").value="";$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");setCalendarParticipants(calendarRowsFromEvent(x));$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();/* keep current scroll position while editing */}
+function agendaDate(x){return String(x?.start||x?.date||"").slice(0,10)}
+function agendaDay(x){return Number(agendaDate(x).slice(8,10))||0}
+function agendaStatusText(x){return ({tentative:"△ 仮押さえ",rescheduling:"リスケ中",postponed:"延期",done:"✓ 完了"})[x?.status]||""}
+function agendaTrpgText(x,list){
+ const day=agendaDay(x),timed=x.timeSpecified!==false&&String(x.start||"").includes("T"),time=timed?String(x.start).slice(11,16):"";
+ const info=runDayInfo(x,list),kind=x.sessionKind||"main",session=kind==="main"&&!info?.excluded?`${info?.day||x.sessionDay||1}日目`:(sessionKindLabel[kind]||kind);
+ const system=String(x.system||"").trim(),title=String(x.title||"卓").trim(),status=agendaStatusText(x),memo=String(x.calendarMemo||"").trim();
+ return `${day}日${time?` ${time}`:""}：${system?`${system} `:""}『${title}』${session?` ${session}`:""}${status?`　${status}`:""}${memo?`　※${memo}`:""}`;
+}
+function groupedAgendaItems(rows,list){
+ const output=[],blocked=new Map();
+ rows.forEach(x=>{
+   if(x.type!=="blocked"){output.push({date:agendaDate(x),id:x.id,className:x.status||"",text:agendaTrpgText(x,list)});return}
+   const memo=String(x.calendarMemo||"").trim()||((x.title&&x.title!=="予定あり")?String(x.title).trim():"");
+   const key=`${agendaDate(x).slice(0,7)}\u0000${memo}`;
+   if(!blocked.has(key))blocked.set(key,{date:agendaDate(x),id:x.id,className:"blocked",days:[],memo});
+   blocked.get(key).days.push(agendaDay(x));
+ });
+ blocked.forEach(item=>{item.days=[...new Set(item.days)].sort((a,b)=>a-b);item.text=`${item.days.map(day=>`${day}日`).join("、")}：卓以外の予定あり${item.memo?`　※${item.memo}`:""}`;output.push(item)});
+ return output.sort((a,b)=>a.date.localeCompare(b.date)||a.text.localeCompare(b.text,"ja"));
+}
+function agendaItemsHtml(rows,list){
+ const items=groupedAgendaItems(rows,list);
+ return items.length?`<div class="calendar-agenda-list">${items.map(item=>`<button type="button" class="calendar-agenda-item ${esc(item.className)}" data-agenda-event="${esc(item.id)}">${esc(item.text)}</button>`).join("")}</div>`:'<div class="calendar-overview-empty">予定はありません。</div>';
+}
+function renderCalendarOverview(){
+ const list=events(),now=new Date(),today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,monthKey=today.slice(0,7),active=list.filter(x=>agendaDate(x)>=today&&x.status!=="cancelled");
+ const thisMonth=active.filter(x=>agendaDate(x).slice(0,7)===monthKey),later=active.filter(x=>agendaDate(x).slice(0,7)>monthKey);
+ $("calendarThisMonthHeading").textContent=`${now.getMonth()+1}月の予定`;
+ $("calendarThisMonth").innerHTML=agendaItemsHtml(thisMonth,list);
+ const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),busy=new Set(thisMonth.map(agendaDay)),free=[];
+ for(let day=now.getDate();day<=daysInMonth;day++)if(!busy.has(day))free.push(day);
+ $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div>${free.length?free.map(day=>`${day}日`).join("、"):"今月の空き日はありません。"}</div>`;
+ const months=new Map();later.forEach(x=>{const key=agendaDate(x).slice(0,7);if(!months.has(key))months.set(key,[]);months.get(key).push(x)});
+ $("calendarLaterMonths").innerHTML=months.size?[...months.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,rows])=>{const [year,month]=key.split("-").map(Number);return `<section class="calendar-overview-month"><h4>${year}年${month}月</h4>${agendaItemsHtml(rows,list)}</section>`}).join(""):'<div class="calendar-overview-empty">来月以降の予定はありません。</div>';
+ document.querySelectorAll("[data-agenda-event]").forEach(button=>button.onclick=()=>{hideEditor();showEventDetail(button.dataset.agendaEvent)});
+}
+function setCalendarView(view){
+ const month=view==="month";$("calendarOverview").hidden=month;$("monthCalendarView").hidden=!month;
+ $("agendaViewBtn").setAttribute("aria-pressed",String(!month));$("monthViewBtn").setAttribute("aria-pressed",String(month));
+}
 function renderCalendar(){
  const y=current.getFullYear(),m=current.getMonth();$("yearJump").value=String(y);$("monthJump").value=String(m+1);$("weekdayHead").innerHTML=["月","火","水","木","金","土","日"].map(x=>`<div class="calendar-head">${x}</div>`).join("");
  const first=new Date(y,m,1),offset=(first.getDay()+6)%7,start=new Date(y,m,1-offset),ev=events(),today=new Date();let html="";
  for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;const dayEvents=ev.filter(x=>String(x.start||"").slice(0,10)===ds).sort((a,b)=>{const ta=(a.timeSpecified!==false&&String(a.start||"").includes("T"))?String(a.start).slice(11,16):"";const tb=(b.timeSpecified!==false&&String(b.start||"").includes("T"))?String(b.start).slice(11,16):"";if(ta&&tb)return ta.localeCompare(tb);if(ta)return -1;if(tb)return 1;return (timeBandOrder[a.timeBand||""]??9)-(timeBandOrder[b.timeBand||""]??9)});html+=`<div class="calendar-day ${d.getMonth()!==m?"out":""} ${d.toDateString()===today.toDateString()?"today":""} ${dayEvents.length?"has-events":""}" data-date="${ds}"><div class="daynum">${d.getDate()}</div>${dayEvents.map(x=>{const blocked=x.type==="blocked"||x.status==="blocked";const hasTime=!blocked&&x.timeSpecified!==false&&String(x.start||"").includes("T");const tm=hasTime?String(x.start||"").slice(11,16):"";const sc=!blocked&&x.scenarioId?scenarios().find(v=>v.id===x.scenarioId):null;const title=blocked?(x.title&&x.title!=="予定あり"?x.title:"予定あり"):((sc&&sc.shortTitle)||x.title||"卓");const label=blocked?"× 卓以外の予定あり":(statusLabel[x.status]||"□ 予定");const line1=blocked?title:(tm?`${tm}：${title}`:title);const dayInfo=blocked?null:runDayInfo(x,ev);const day=blocked?0:(dayInfo?.day||0);const band=blocked?"":(timeBandLabel[x.timeBand||""]||"");const kind=(x.sessionKind||"main");const runLabel=blocked?"":String(x.runLabel||"").trim();const metaParts=[];if(!blocked){if(runLabel)metaParts.push(runLabel);if(kind!=="main")metaParts.push(sessionKindLabel[kind]||kind);else if(!dayInfo?.excluded)metaParts.push(`${day}日目`);if(band)metaParts.push(band)}const meta=metaParts.join("・");const memo=blocked?"":String(x.calendarMemo||"").trim();return `<button type="button" class="event-chip ${blocked?"blocked":x.status}" data-color="${esc(x.calendarColor||"")}" data-id="${x.id}"><span class="event-chip-title">${esc(line1)}</span>${meta?`<span class="small session-meta">${esc(meta)}</span>`:""}${memo?`<span class="small muted event-memo">${esc(memo)}</span>`:""}<span class="small status-badge">${esc(label)}</span></button>`}).join("")}</div>`}
  $("calendar").innerHTML=html;
+ renderCalendarOverview();
  document.querySelectorAll(".calendar-day").forEach(x=>{x.onclick=(ev)=>{if(ev.target.closest(".event-chip"))return;resetForm(x.dataset.date);showEditor();/* keep current scroll position while editing */}});
  document.querySelectorAll(".event-chip").forEach(x=>x.onclick=e=>{e.stopPropagation();hideEditor();showEventDetail(x.dataset.id)})
 }
@@ -1645,6 +1700,8 @@ $("scenarioSearch").addEventListener("focus",renderScenarioSearch);
 $("scenarioSearch").addEventListener("keydown",e=>{if(e.key==="Escape")$("scenarioSearchResults").classList.remove("open")});
 document.addEventListener("click",e=>{if(!e.target.closest(".scenario-picker"))$("scenarioSearchResults")?.classList.remove("open")});
 $("closeEventEditor").onclick=hideEditor;
+$("agendaViewBtn").onclick=()=>setCalendarView("agenda");
+$("monthViewBtn").onclick=()=>setCalendarView("month");
 $("eventPcSearch").addEventListener("input",()=>fillEventPcSelect("",$("eventPcSearch").value));
 $("eventPcSelect").onchange=()=>{const pc=selectedEventPc();if(pc){$("eventPc").value="";$("eventPcSearch").value=pc.name||"";fillEventPcSelect(pc.id,$("eventPcSearch").value)}updateEventPcSelectionStatus()};
 $("eventPc").addEventListener("input",()=>{if($("eventPc").value.trim())$("eventPcSelect").value="";updateEventPcSelectionStatus()});
@@ -1713,7 +1770,7 @@ function syncRunLabelInMemory(runId,label,eventList,albumList){
  const album=albumList.map(a=>{if(String(a.runId||"")!==runId)return a;albumChanged=true;return TRPG39.normalizeAlbum({...a,runLabel:label})});
  return {events:evs,album,albumChanged};
 }
-function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],linkedAlbumId:""})}
+function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],calendarMemo:$("eventMemo").value.trim(),linkedAlbumId:""})}
 $("saveEvent").onclick=()=>{
  const type=$("eventType").value,date=$("eventDate").value,id0=$("eventId").value;
  if(type==="trpg"&&TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){
