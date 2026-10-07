@@ -1488,7 +1488,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
   </div>
 <div class="lib-toolbar" id="libraryToolbar">
     <div id="librarySearchField"><label>遊んだ記録を検索</label><input id="search" type="search" placeholder="タイトル・参加者・場所"></div>
-    <div id="libraryTypeField"><label>種類</label><select id="recordTypeFilter"><option value="all">すべて</option><option value="trpg">TRPG</option><option value="boardgame">ボードゲーム</option><option value="murder-mystery">マーダーミステリー</option><option value="puzzle">謎解き・脱出ゲーム</option><option value="game">ゲーム</option><option value="other">その他</option></select></div>
+    <div id="libraryTypeField"><label>種類</label><select id="recordTypeFilter"><option value="all">すべて</option><option value="trpg">TRPG</option><option value="boardgame">ボードゲーム</option><option value="murder-mystery">マーダーミステリー</option><option value="puzzle">謎解き・脱出ゲーム</option><option value="game">ゲーム</option><option value="travel">旅行・お出かけ</option><option value="other">その他</option></select></div>
     <div id="libraryRoleField"><label>役割</label><select id="filter"><option value="">すべて</option><option>PL</option><option>KP</option><option>DL</option><option>GM</option><option>SKP</option><option>見学</option><option>その他</option></select></div>
     <div id="libraryDisplayField"><label>表示</label><select id="archiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
   </div>
@@ -1502,7 +1502,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
   <div class="lib-form-section">
     <h3 id="recordBasicHeading">遊んだ記録の基本情報</h3>
     <div class="lib-form-grid">
-      <div><label>記録の種類</label><select id="recordType"><option value="trpg">TRPG</option><option value="boardgame">ボードゲーム</option><option value="murder-mystery">マーダーミステリー</option><option value="puzzle">謎解き・脱出ゲーム</option><option value="game">ゲーム</option><option value="other">その他</option></select></div>
+      <div><label>記録の種類</label><select id="recordType"><option value="trpg">TRPG</option><option value="boardgame">ボードゲーム</option><option value="murder-mystery">マーダーミステリー</option><option value="puzzle">謎解き・脱出ゲーム</option><option value="game">ゲーム</option><option value="travel">旅行・お出かけ</option><option value="other">その他</option></select></div>
       <div><label>場所・サービス <span class="small muted">（任意）</span></label><input id="place" placeholder="例：自宅、Discord、店舗名"></div>
     </div>
     <div data-trpg-only>
@@ -1720,7 +1720,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
-<script src="../assets/js/shared-data.js?v=1007-play-log-2"></script>
+<script src="../assets/js/shared-data.js?v=1007-generic-library-link"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
@@ -1733,7 +1733,7 @@ const q=id=>document.getElementById(id);
 const vis={private:"自分のみ",table:"同卓者のみ（準備中）",link:"リンク限定",public:"公開"};
 const statusLabel={tentative:"仮押さえ",planned:"予定",confirmed:"予定",done:"完了",rescheduling:"リスケ中",postponed:"延期",cancelled:"中止"};
 const sessionKindLabel={prelude:"事前導入",main:"本編",reserve:"予備日",aftertalk:"感想戦"};
-const recordTypeLabel={trpg:"TRPG",boardgame:"ボードゲーム","murder-mystery":"マーダーミステリー",puzzle:"謎解き・脱出ゲーム",game:"ゲーム",other:"その他"};
+const recordTypeLabel={trpg:"TRPG",boardgame:"ボードゲーム","murder-mystery":"マーダーミステリー",puzzle:"謎解き・脱出ゲーム",game:"ゲーム",travel:"旅行・お出かけ",other:"その他"};
 function recordTypeFromSystem(system=""){
  const value=String(system||"").trim().toLowerCase();
  if(/マーダー\s*ミステリー|マダミス|murder\s*mystery/.test(value))return "murder-mystery";
@@ -1752,6 +1752,7 @@ function updateRecordTypeUi(){
  q("recordBasicHeading").textContent=trpg?"卓の基本情報":"遊んだ記録の基本情報";
  q("recordImageLabel").textContent=trpg?"卓報告スクリーンショット":"スクリーンショット・写真";
  q("formHeading").textContent=`${recordTypeLabel[type]||"遊び"}の記録を${q("editId").value?"編集":"追加"}`;
+ document.querySelectorAll("#participantRows .partRole").forEach(sel=>{const old=sel.value||"";sel.innerHTML=roleOptions(trpg?old:(old==="主催"?"主催":"参加"),facilitatorConfig({}).label)});
 }
 let sessionKindEventIndex=null;
 function refreshSessionKindEventIndex(){
@@ -2263,7 +2264,7 @@ function scenarioById(id){
  return _scenarioByIdMap.get(String(id||""));
 }
 function facilitatorConfig(source={}){const scenario=scenarioById(source.scenarioId||q("scenarioSelect").value)||{};const system=source.system||q("system").value||scenario.system||"";const mode=source.facilitatorTermMode||q("facilitatorTermMode")?.value||scenario.facilitatorTermMode||"auto";const custom=source.facilitatorTermCustom||q("facilitatorTermCustom")?.value||scenario.facilitatorTermCustom||"";const label=source.facilitatorLabel||TRPG39.resolveFacilitatorLabel?.(system,{facilitatorTermMode:mode,facilitatorTermCustom:custom})||"GM";const less=source.facilitatorless!==undefined?!!source.facilitatorless:(source.facilitatorPresence||q("facilitatorPresence")?.value||scenario.facilitatorPresence||"present")==="less";return {label,less,mode,custom}}
-function roleOptions(selected="",label="GM"){const base=["PL",label,...(label==="KP"?["SKP"]:[]),"見学","その他"];if(selected&&!base.includes(selected))base.splice(1,0,selected);return [...new Set(base)].map(v=>`<option ${v===selected?"selected":""}>${esc(v)}</option>`).join("")}
+function roleOptions(selected="",label="GM"){const generic=q("recordType")?.value!=="trpg",base=generic?["参加","主催","その他"]:["PL",label,...(label==="KP"?["SKP"]:[]),"見学","その他"];if(selected&&!base.includes(selected))base.splice(1,0,selected);return [...new Set(base)].map(v=>`<option ${v===selected?"selected":""}>${esc(v)}</option>`).join("")}
 function updateFacilitatorControls(fromScenario=false){const scenario=scenarioById(q("scenarioSelect").value)||{};if(fromScenario){q("facilitatorPresence").value=scenario.facilitatorPresence||"present";q("facilitatorTermMode").value=scenario.facilitatorTermMode||"auto";q("facilitatorTermCustom").value=scenario.facilitatorTermCustom||""}const cfg=facilitatorConfig({});q("facilitatorTermCustom").hidden=q("facilitatorTermMode").value!=="custom";const old=q("role").value||"PL";q("role").innerHTML=roleOptions(old,cfg.label);if(cfg.less&&["KP","DL","GM"].includes(q("role").value))q("role").value="PL";[...q("participantRows").querySelectorAll(".partRole")].forEach(sel=>{const old=sel.value||"PL";sel.innerHTML=roleOptions(old,cfg.label)});return cfg}
 function addLinkRow(v={label:"",url:"",spoiler:false}){
  const wrap=document.createElement("div");wrap.className="card ext-row";
@@ -2418,6 +2419,7 @@ function recordHasSelfPc(record,name){
 }
 
 function reset(prefillScenarioId=""){editingImageUrls=[];
+ calendarSourceEventId="";
  q("editId").value="";
  ["title","place","date","startTime","endTime","system","selfHo","pc","image","comment","xReportUrl","xReportText","spoilerBody","runId","runLabel"].forEach(x=>q(x).value="");setSelfPcRows([]);q("recordType").value="trpg";q("sessionKind").value="main";
  q("status").value="done";q("facilitatorPresence").value="present";q("facilitatorTermMode").value="auto";q("facilitatorTermCustom").value="";q("role").value="PL";q("visibility").value="private";q("spoilerVisibility").value="private";q("formHeading").textContent="開催記録を追加";q("cancel").hidden=true;
@@ -2431,7 +2433,7 @@ function reset(prefillScenarioId=""){editingImageUrls=[];
 }
 
 
-let editingImageUrls=[];
+let editingImageUrls=[],calendarSourceEventId="";
 function normalizedReportImages(v){
  const rows=Array.isArray(v)?v:[];
  return [...new Set(rows.map(x=>String(x||"").trim()).filter(Boolean))].slice(0,4);
@@ -2558,7 +2560,7 @@ function save(){
  const primarySelf=selfPcRows[0]||{pcName:"",ho:"",pcId:""};
  const ownPcName=primarySelf.pcName||"",ownPcId=primarySelf.pcId||"";
  q("pc").value=ownPcName;q("selfHo").value=primarySelf.ho||"";
- let item=TRPG39.normalizeAlbum({...old,id,eventId:isTrpg?(old?.eventId||""):"",scenarioId,title,recordType,place:q("place").value.trim(),runId,runLabel,date,start,end,status:q("status").value,
+ let item=TRPG39.normalizeAlbum({...old,id,eventId:isTrpg?(old?.eventId||""):"",sourceEventId:isTrpg?"":(calendarSourceEventId||old?.sourceEventId||""),scenarioId,title,recordType,place:q("place").value.trim(),runId,runLabel,date,start,end,status:q("status").value,
    articleBody:old?.articleBody||"",
    spoilerBody:q("spoilerBody")?.value.trim()||"",spoiler:"",system:isTrpg?q("system").value.trim():"",facilitatorLabel:isTrpg?facilitatorConfig({}).label:"",facilitatorless:isTrpg&&q("facilitatorPresence").value==="less",role:isTrpg?q("role").value:"参加",selfHo:primarySelf.ho||"",pcName:ownPcName,pcId:ownPcId,selfPcRows,
    participants,participantIds,participantRows:rows,
@@ -2596,6 +2598,7 @@ function save(){
 }
 function edit(id){
  let x=data.find(v=>v.id===id);if(!x)return;fillScenarioSelect();
+ calendarSourceEventId=String(x.sourceEventId||"");
  q("editId").value=x.id;q("recordType").value=recordTypeOf(x);q("place").value=x.place||"";q("runId").value=x.runId||"";q("runLabel").value=x.runLabel||"";q("scenarioSelect").value=x.scenarioId||"";syncScenarioSearchLabel();q("title").value=x.title||"";const st=splitLibraryDateTime(x.start||x.date||""),en=splitLibraryDateTime(x.end||"");q("date").value=x.date||st.date||"";q("startTime").value=st.time||"";q("endTime").value=en.time||"";q("sessionKind").value=sessionKindForRecord(x);q("status").value=x.status||"done";q("system").value=x.system||"";const sc=scenarioById(x.scenarioId||"")||{};q("facilitatorPresence").value=x.facilitatorless?"less":(sc.facilitatorPresence||"present");q("facilitatorTermMode").value=sc.facilitatorTermMode||"auto";q("facilitatorTermCustom").value=sc.facilitatorTermCustom||"";updateFacilitatorControls(false);q("role").value=x.role||"PL";q("selfHo").value=x.selfHo||"";q("pc").value=x.pcName||"";fillPCSelect(x.pcId||"");setSelfPcRows(storedSelfPcRows(x));setParticipantRows(rowsFromRecord(x));q("rememberParticipantHo").checked=getParticipantHoTemplate(x.scenarioId,x.title).length>0;editingImageUrls=normalizedReportImages(x.imageUrls||[]);
  if(!editingImageUrls.length&&String(x.image||"").trim())editingImageUrls=[String(x.image).trim()];
  renderReportImages();q("visibility").value=x.visibility||"private";q("comment").value=x.comment||"";const xr=getXReport(x.id);q("xReportUrl").value=xr.url||x.xReportUrl||"";q("xReportText").value=xr.text||x.xReportText||"";q("spoilerBody").value=x.spoilerBody||x.spoiler||"";q("spoilerVisibility").value=x.spoilerVisibility||"private";
@@ -2605,7 +2608,18 @@ function edit(id){
 function formatLibraryReportDate(v){const m=String(v||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日`:String(v||"")}
 function openLibraryFromCalendarEvent(){
  const params=new URLSearchParams(location.search),eventId=params.get("event");if(!eventId)return;
- const rec=data.find(x=>String(x.eventId||"")===String(eventId));
+ const rec=data.find(x=>String(x.eventId||x.sourceEventId||"")===String(eventId));
+ if(!rec&&params.get("action")==="new-play"){
+   const ev=(TRPG39.loadEvents?.()||[]).find(x=>String(x.id||"")===String(eventId));
+   if(!ev)return;
+   reset();calendarSourceEventId=String(ev.id||"");
+   const title=String(ev.title||"").trim(),memo=String(ev.calendarMemo||"").trim(),start=splitLibraryDateTime(ev.start||""),end=splitLibraryDateTime(ev.end||"");
+   q("recordType").value=/ff\s*14|final\s*fantasy\s*xiv|ファイナルファンタジー\s*14/i.test(title+" "+memo)?"game":"other";
+   q("title").value=title&&title!=="予定あり"?title:(memo||"遊んだ記録");q("date").value=start.date||"";
+   q("startTime").value=ev.timeSpecified!==false?start.time||"":"";q("endTime").value=ev.timeSpecified!==false?end.time||"":"";q("comment").value=memo;
+   if(Array.isArray(ev.participantRows)&&ev.participantRows.length)setParticipantRows(ev.participantRows);
+   updateRecordTypeUi();showEditor();q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"});return;
+ }
  if(!rec)return;
  if(params.get("action")!=="report"){edit(rec.id);return;}
  const reportDate=params.get("reportDate")||String(rec.start||rec.date||"").slice(0,10);

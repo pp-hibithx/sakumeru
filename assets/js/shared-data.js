@@ -75,6 +75,7 @@
       schemaVersion: 4,
       id: input.id || uuid(),
       eventId: input.eventId || "",
+      sourceEventId: input.sourceEventId || "",
       scenarioId: input.scenarioId || "",
       title: input.title || "",
       recordType: inferRecordType(input.system, input.recordType || "trpg"),

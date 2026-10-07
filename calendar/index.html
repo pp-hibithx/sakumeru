@@ -1198,7 +1198,7 @@ html[data-theme="light"] #eventPanel .bulk-days{
 <button id="resetEvent" type="button">入力をクリア</button>
 <button id="deleteEvent" class="danger" type="button" hidden>予定を削除</button>
 </div>
-<div class="small" style="margin-top:8px">卓予定はLIBRARYにも自動反映されます。卓以外の予定（×）はCALENDARだけに保存され、空き日判定では予定ありとして扱います。</div>
+<div class="small" style="margin-top:8px">卓予定はLIBRARYにも自動反映されます。卓以外の予定（×）は、保存後に詳細画面から遊びや旅行の記録としてLIBRARYへ登録できます。</div>
 </section>
 
 <section id="scheduleMatchPanel" class="panel schedule-match-panel" hidden>
@@ -1274,7 +1274,7 @@ html[data-theme="light"] #eventPanel .bulk-days{
 <div data-site-footer></div>
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
-<script src="../assets/js/shared-data.js?v=1007-play-log"></script>
+<script src="../assets/js/shared-data.js?v=1007-generic-library-link"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
@@ -1724,7 +1724,8 @@ function showEventDetail(id){
  let html=`<div class="event-detail-title">${esc(title)}</div>${x.calendarMemo?`<div class="small muted">${esc(x.calendarMemo)}</div>`:""}<div class="event-detail-meta">${meta.map(([a,b])=>`<div class="event-detail-item"><span class="event-detail-label">${esc(a)}</span><div class="event-detail-value">${esc(String(b))}</div></div>`).join("")}</div>`;
  if(!blocked){html+=`<div class="event-detail-participants"><strong>参加者</strong>${rows.length?rows.map(r=>`<div class="event-detail-person"><span>${esc(r.role||"PL")}</span><span>${esc(r.plName||"—")}</span><span>${esc(r.ho||"—")}</span><span>${esc(r.pcName||"—")}</span></div>`).join(""):`<div class="small muted" style="margin-top:8px">参加者未登録</div>`}</div>`}
  $("eventDetailBody").innerHTML=html;$("eventDetailPanel").dataset.eventId=id;$("eventDetailPanel").hidden=false;
- $("reportFromDetail").hidden=blocked;$("libraryFromDetail").hidden=blocked;
+ $("reportFromDetail").hidden=blocked;$("libraryFromDetail").hidden=false;
+ $("libraryFromDetail").textContent=blocked?((TRPG39.loadAlbum?.()||[]).some(a=>String(a.sourceEventId||"")===String(id))?"LIBRARYを見る":"LIBRARYに記録"):"LIBRARY";
 }
 function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list);let sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");fillEventRunSelect(x.runId||"");$("eventRunLabel").value=x.runLabel||$("eventRunLabel").value||"";const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);restoreExistingDateMode(x,list);$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=String(x.sessionDay||sessionDay||1);$("eventDay").dataset.originalSessionDay=String(x.sessionDay||info.rawDay||1);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventSelfHo").value=x.selfHo||"";$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");setCalendarParticipants(calendarRowsFromEvent(x));$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();/* keep current scroll position while editing */}
 function agendaDate(x){return String(x?.start||x?.date||"").slice(0,10)}
@@ -2023,7 +2024,7 @@ function openCalendarReportInLibrary(id){
  const u=new URL("../library/",location.href);u.searchParams.set("event",id);u.searchParams.set("action","report");if(date)u.searchParams.set("reportDate",date);location.href=u.href;
 }
 $("reportFromDetail").onclick=()=>{const id=$("eventDetailPanel").dataset.eventId;if(id)openCalendarReportInLibrary(id)};
-$("libraryFromDetail").onclick=()=>{const id=$("eventDetailPanel").dataset.eventId;if(!id)return;location.href=`../library/?event=${encodeURIComponent(id)}`};
+$("libraryFromDetail").onclick=()=>{const id=$("eventDetailPanel").dataset.eventId;if(!id)return;const x=events().find(v=>String(v.id)===String(id)),action=x?.type==="blocked"?"&action=new-play":"";location.href=`../library/?event=${encodeURIComponent(id)}${action}`};
 $("reportFromEvent").onclick=()=>{const id=$("eventId").value;if(id)openCalendarReportInLibrary(id)};
 $("deleteEvent").onclick=()=>{const id=$("eventId").value;if(!id||!confirm("この予定を削除しますか？"))return;const old=events().find(x=>x.id===id);saveEvents(events().filter(x=>x.id!==id));if(old?.type!=="blocked")TRPG39.saveAlbum(TRPG39.loadAlbum().filter(x=>x.eventId!==id));resetForm();hideEditor();renderCalendar()};
 $("prevMonth").onclick=()=>{current.setMonth(current.getMonth()-1);renderCalendar()};
