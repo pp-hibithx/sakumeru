@@ -134,6 +134,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 .tag-delete{width:34px!important;min-width:34px!important;min-height:34px!important;padding:0!important;border:0!important;border-left:1px solid color-mix(in srgb,currentColor 28%,var(--line))!important;border-radius:0!important;color:#ff9b9b!important}
 .tag-suggestion.used{opacity:.45}
 .sc-system-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.sc-system-picker{flex-basis:100%}.sc-system-picker .sc-system-tabs{margin-top:4px}
 .sc-system-tab{width:auto!important;padding:5px 10px!important;border-radius:999px!important;font-size:12px!important}
 .sc-system-tab.active{font-weight:700;box-shadow:inset 0 0 0 1px var(--accent)}
 .sc-system-count{opacity:.7;margin-left:4px}
@@ -288,7 +289,7 @@ html.theme-dark #scenarioForm :is(input,textarea)::placeholder{color:#aeb4bd!imp
 <div class="sc-number-filter"><label>参加人数</label><input id="playersFilter" type="number" min="1" step="1" placeholder="例 4"></div>
 <div class="sc-number-filter"><label>遊べる時間</label><input id="hoursFilter" type="number" min="0.5" step="0.5" placeholder="最大h"></div>
 <div class="sc-tag-filter"><label>タグ</label><select id="tagFilter"><option value="">すべて</option></select></div>
-<div class="sc-filter"><label>システム</label><select id="systemFilter"><option value="all">すべて</option></select></div>
+<div class="sc-system-picker"><label>システム</label><div id="systemFilter" class="sc-system-tabs" role="group" aria-label="システムで絞り込む"></div></div>
 <div class="sc-filter"><label>表示</label><select id="archiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
 <div class="sc-sort"><label>並び順</label><select id="sort"><option value="name">50音順</option><option value="new">登録が新しい順</option><option value="old">登録が古い順</option><option value="recentRun">最近回した順</option><option value="recentPlay">最近遊んだ順</option><option value="kpCount">回した回数順</option></select></div>
 </div><div class="sc-tools"><div class="sc-view-switch" role="group" aria-label="作品の表示方法"><button id="scenarioListViewBtn" type="button" aria-pressed="false">作品一覧</button><button id="scenarioThumbViewBtn" type="button" aria-pressed="true">サムネイル</button></div><button id="openFriendSources" type="button">友人共有URL</button><button id="shareScenarioList" type="button">共有</button><button id="openForm" type="button">＋ 追加</button></div></div><div id="summary" class="small" style="margin-top:8px"></div>
@@ -485,6 +486,8 @@ const persist=()=>TRPG39.saveScenarios(data);
 let systemTabFilter="all";
 const OWN_SCENARIO_PAGE_SIZE=20;
 let ownScenarioPage=1;
+const COMPACT_SCENARIO_PAGE_SIZE=30;
+let compactOwnPage=1,compactFriendPage=1;
 
 function systemTabKey(value){
  const raw=String(value||"").trim();
@@ -528,20 +531,24 @@ function renderSystemTabs(){
     const count=k==="all"
       ? [...counts.values()].reduce((a,b)=>a+b,0)
       : (counts.get(k)||0);
-    return `<option value="${esc(k)}">${esc(systemTabLabel(k))}（${count}）</option>`;
+    return `<button type="button" class="sc-system-tab${k===systemTabFilter?" active":""}" data-system-filter="${esc(k)}" aria-pressed="${k===systemTabFilter}">${esc(systemTabLabel(k))}<span class="sc-system-count">${count}</span></button>`;
   }).join("");
-  box.value=systemTabFilter;
-  box.onchange=()=>{
-    systemTabFilter=box.value||"all";
-    ownScenarioPage=1;
+  box.querySelectorAll("[data-system-filter]").forEach(button=>button.onclick=()=>{
+    systemTabFilter=button.dataset.systemFilter||"all";
+    ownScenarioPage=1;compactOwnPage=1;compactFriendPage=1;
     render();
-  };
+  });
 }
 function scenarioPaginationHtml(total){
  const pageCount=Math.max(1,Math.ceil(total/OWN_SCENARIO_PAGE_SIZE));
  if(pageCount<=1)return "";
  const values=pageCount<=7?Array.from({length:pageCount},(_,i)=>i+1):[1,...(ownScenarioPage>3?["ellipsis-start"]:[]),...Array.from(new Set([ownScenarioPage-1,ownScenarioPage,ownScenarioPage+1])).filter(n=>n>1&&n<pageCount),...(ownScenarioPage<pageCount-2?["ellipsis-end"]:[]),pageCount];
  return `<nav class="sc-pagination" aria-label="シナリオ一覧のページ"><button type="button" data-scenario-page="${ownScenarioPage-1}" ${ownScenarioPage<=1?"disabled":""}>前へ</button>${values.map(value=>typeof value==="number"?`<button type="button" data-scenario-page="${value}" ${value===ownScenarioPage?'aria-current="page"':""}>${value}</button>`:'<span class="sc-pagination-ellipsis" aria-hidden="true">…</span>').join("")}<button type="button" data-scenario-page="${ownScenarioPage+1}" ${ownScenarioPage>=pageCount?"disabled":""}>次へ</button><span class="sc-pagination-status">${ownScenarioPage} / ${pageCount}ページ（全${total}件）</span></nav>`;
+}
+function compactPaginationHtml(total,page,kind){
+ const pageCount=Math.max(1,Math.ceil(total/COMPACT_SCENARIO_PAGE_SIZE));
+ if(pageCount<=1)return "";
+ return `<nav class="sc-pagination" aria-label="${kind==="own"?"自分が所有":"友人が所有"}のページ"><button type="button" data-compact-page="${kind}" data-page="${page-1}" ${page<=1?"disabled":""}>前へ</button><span class="sc-pagination-status" style="width:auto">${page} / ${pageCount}ページ（全${total}件）</span><button type="button" data-compact-page="${kind}" data-page="${page+1}" ${page>=pageCount?"disabled":""}>次へ</button></nav>`;
 }
 function currentTagValues(){
  return q("tags").value.split(/[,、]/).map(v=>v.trim()).filter(Boolean);
@@ -1665,12 +1672,17 @@ function renderCompactScenarioView(xs,scope){
  if(!listMode)return;
  const ownColumn=q("compactOwnColumn"),friendColumn=q("compactFriendColumn");ownColumn.hidden=scope==="friend";friendColumn.hidden=scope==="own";
  const owned=xs.filter(x=>isOwnedScenario(x,"mine"));q("compactOwnCount").textContent=`${owned.length}件`;
- q("compactOwnList").innerHTML=owned.length?owned.map(x=>`<button type="button" class="sc-compact-item" data-compact-own="${esc(x.id)}"><span class="sc-compact-title">${esc(x.title||"名称未設定")}</span><span class="sc-compact-meta">${compactScenarioMetaHtml(x,[],Array.isArray(x.tags)?x.tags:[])}</span></button>`).join(""):'<div class="sc-compact-empty">条件に合う所持作品はありません。</div>';
+ const ownPageCount=Math.max(1,Math.ceil(owned.length/COMPACT_SCENARIO_PAGE_SIZE));compactOwnPage=Math.min(Math.max(1,compactOwnPage),ownPageCount);
+ const visibleOwned=owned.slice((compactOwnPage-1)*COMPACT_SCENARIO_PAGE_SIZE,compactOwnPage*COMPACT_SCENARIO_PAGE_SIZE);
+ q("compactOwnList").innerHTML=owned.length?visibleOwned.map(x=>`<button type="button" class="sc-compact-item" data-compact-own="${esc(x.id)}"><span class="sc-compact-title">${esc(x.title||"名称未設定")}</span><span class="sc-compact-meta">${compactScenarioMetaHtml(x,[],Array.isArray(x.tags)?x.tags:[])}</span></button>`).join("")+compactPaginationHtml(owned.length,compactOwnPage,"own"):'<div class="sc-compact-empty">条件に合う所持作品はありません。</div>';
  const groups=groupedFriendScenarios().map(g=>{const sources=(g.sources||[]).filter(s=>s.source==="friend"&&isOwnedScenario(s.item,"friend"));return {...g,sources,owners:[...new Set(sources.map(s=>s.owner||"友人"))]}}).filter(g=>g.sources.length&&groupMatches(g)).sort((a,b)=>String(a.item?.title||"").localeCompare(String(b.item?.title||""),"ja"));
  compactFriendGroups=new Map(groups.map(g=>[g.key,g]));q("compactFriendCount").textContent=`${groups.length}件`;
- q("compactFriendList").innerHTML=groups.length?groups.map(g=>{const bi=mergedBasicInfo(g),tags=[...new Set(g.sources.flatMap(s=>Array.isArray(s.item?.tags)?s.item.tags:[]).filter(Boolean))];return `<button type="button" class="sc-compact-item" data-compact-friend="${esc(g.key)}"><span class="sc-compact-title">${esc(g.item?.title||"名称未設定")}</span><span class="sc-compact-meta">${compactScenarioMetaHtml({...g.item,...bi},g.owners,tags)}</span></button>`}).join(""):'<div class="sc-compact-empty">条件に合う所持作品はありません。</div>';
+ const friendPageCount=Math.max(1,Math.ceil(groups.length/COMPACT_SCENARIO_PAGE_SIZE));compactFriendPage=Math.min(Math.max(1,compactFriendPage),friendPageCount);
+ const visibleGroups=groups.slice((compactFriendPage-1)*COMPACT_SCENARIO_PAGE_SIZE,compactFriendPage*COMPACT_SCENARIO_PAGE_SIZE);
+ q("compactFriendList").innerHTML=groups.length?visibleGroups.map(g=>{const bi=mergedBasicInfo(g),tags=[...new Set(g.sources.flatMap(s=>Array.isArray(s.item?.tags)?s.item.tags:[]).filter(Boolean))];return `<button type="button" class="sc-compact-item" data-compact-friend="${esc(g.key)}"><span class="sc-compact-title">${esc(g.item?.title||"名称未設定")}</span><span class="sc-compact-meta">${compactScenarioMetaHtml({...g.item,...bi},g.owners,tags)}</span></button>`}).join("")+compactPaginationHtml(groups.length,compactFriendPage,"friend"):'<div class="sc-compact-empty">条件に合う所持作品はありません。</div>';
  q("compactOwnList").querySelectorAll("[data-compact-own]").forEach(button=>button.onclick=()=>detail(button.dataset.compactOwn));
  q("compactFriendList").querySelectorAll("[data-compact-friend]").forEach(button=>button.onclick=()=>openCompactFriendDetail(button.dataset.compactFriend));
+ root.querySelectorAll("[data-compact-page]").forEach(button=>button.onclick=()=>{const page=Math.max(1,Number(button.dataset.page)||1),kind=button.dataset.compactPage;if(kind==="own")compactOwnPage=page;else compactFriendPage=page;render();requestAnimationFrame(()=>q(kind==="own"?"compactOwnColumn":"compactFriendColumn").scrollIntoView({behavior:"smooth",block:"start"}))});
 }
 
 function render(){
@@ -1756,7 +1768,7 @@ function onScenarioCategoryToggle(section,key,others){
 draftScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(draftScenarioSection,"draftOpen",[ownScenarioSection,friendScenarioSection]));
 ownScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(ownScenarioSection,"ownOpen",[draftScenarioSection,friendScenarioSection]));
 friendScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(friendScenarioSection,"friendOpen",[draftScenarioSection,ownScenarioSection]));
-const resetOwnScenarioPageAndRender=()=>{ownScenarioPage=1;render()};
+const resetOwnScenarioPageAndRender=()=>{ownScenarioPage=1;compactOwnPage=1;compactFriendPage=1;render()};
 function setScenarioBrowserView(view){scenarioBrowserView=view==="list"?"list":"thumb";try{localStorage.setItem(SCENARIO_BROWSER_VIEW_KEY,scenarioBrowserView)}catch{}render()}
 q("scenarioListViewBtn").onclick=()=>setScenarioBrowserView("list");q("scenarioThumbViewBtn").onclick=()=>setScenarioBrowserView("thumb");
 q("openFriendSources").onclick=()=>{
