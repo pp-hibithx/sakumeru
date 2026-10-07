@@ -1557,7 +1557,7 @@ function scenarioStats(x){
 window.addEventListener("storage",e=>{if(e.key===TRPG39.KEYS?.album)scenarioStatsCache=null});
 function refreshTagFilter(){
  const input=q("tagFilter"),box=q("tagFilterButtons");if(!input||!box)return;
- const items=[...data,...friendItems],tags=[...new Set(items.flatMap(x=>Array.isArray(x.tags)?x.tags:[]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+ const items=data,tags=[...new Set(items.flatMap(x=>Array.isArray(x.tags)?x.tags:[]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
  if(input.value&&!tags.includes(input.value))input.value="";
  const counts=new Map(tags.map(tag=>[tag,items.filter(x=>Array.isArray(x.tags)&&x.tags.includes(tag)).length]));
  box.innerHTML=["",...tags].map(tag=>`<button type="button" class="sc-system-tab${tag===input.value?" active":""}" data-tag-filter="${esc(tag)}" aria-pressed="${tag===input.value}">${tag?`#${esc(tag)}`:"すべて"}<span class="sc-system-count">${tag?counts.get(tag):items.length}</span></button>`).join("");
@@ -1706,7 +1706,7 @@ function render(){
  );
  const rows=sortScenarios(xs);xs=rows.map(r=>r.x);
  q("ownMatchCount").textContent=xs.length===data.length?`${data.length}件`:`${xs.length} / ${data.length}件`;
- q("summary").textContent="検索・状態・タグ・システム・参加人数・遊べる時間は自分と友人の所持作品に、表示・並び順は自分の登録に適用されます。";
+ q("summary").textContent="タグ候補は自分の登録作品から表示します。検索・状態・システム・参加人数・遊べる時間は自分と友人の所持作品に、表示・並び順は自分の登録に適用されます。";
  const ownSection=q("ownScenarioSection"),friendSection=q("friendScenarioSection");
  renderCompactScenarioView(xs,scope);
  if(scenarioBrowserView==="list"){
