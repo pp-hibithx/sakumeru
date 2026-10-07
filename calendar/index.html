@@ -45,14 +45,14 @@
 .calendar-month-row .calendar-legend{margin:0 0 0 auto;padding:7px 10px;width:auto}.calendar-legend[hidden]{display:none!important}
 .session-meta{display:block;margin-top:2px;font-weight:600;line-height:1.25}
 /* explicit calendar color: keep status styling (opacity/dashed/etc.) but let chosen color win */
-.event-chip:not(.blocked)[data-color="red"]{border-color:#b86464!important;background:rgba(184,100,100,.18)!important}
-.event-chip:not(.blocked)[data-color="orange"]{border-color:#b57c4f!important;background:rgba(181,124,79,.18)!important}
-.event-chip:not(.blocked)[data-color="yellow"]{border-color:#aa9450!important;background:rgba(170,148,80,.18)!important}
-.event-chip:not(.blocked)[data-color="green"]{border-color:#5f8f70!important;background:rgba(95,143,112,.18)!important}
-.event-chip:not(.blocked)[data-color="blue"]{border-color:#5e7fa8!important;background:rgba(94,127,168,.18)!important}
-.event-chip:not(.blocked)[data-color="purple"]{border-color:#846aa6!important;background:rgba(132,106,166,.18)!important}
-.event-chip:not(.blocked)[data-color="pink"]{border-color:#ad6f91!important;background:rgba(173,111,145,.18)!important}
-.event-chip:not(.blocked)[data-color="gray"]{border-color:#747982!important;background:rgba(116,121,130,.18)!important}
+.event-chip[data-color="red"]{border-color:#b86464!important;background:rgba(184,100,100,.18)!important}
+.event-chip[data-color="orange"]{border-color:#b57c4f!important;background:rgba(181,124,79,.18)!important}
+.event-chip[data-color="yellow"]{border-color:#aa9450!important;background:rgba(170,148,80,.18)!important}
+.event-chip[data-color="green"]{border-color:#5f8f70!important;background:rgba(95,143,112,.18)!important}
+.event-chip[data-color="blue"]{border-color:#5e7fa8!important;background:rgba(94,127,168,.18)!important}
+.event-chip[data-color="purple"]{border-color:#846aa6!important;background:rgba(132,106,166,.18)!important}
+.event-chip[data-color="pink"]{border-color:#ad6f91!important;background:rgba(173,111,145,.18)!important}
+.event-chip[data-color="gray"]{border-color:#747982!important;background:rgba(116,121,130,.18)!important}
 .bulk-days{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px;margin-top:2px}.bulk-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:7px;align-items:end;margin:6px 0}.bulk-row .day-label{padding-bottom:8px;font-size:12px;color:var(--muted)}@media(max-width:760px){.bulk-row{grid-template-columns:1fr}.bulk-row .day-label{padding-bottom:0}}
 .event-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.event-form .full{grid-column:1/-1}.event-editor[hidden]{display:none}.event-editor-actions{font-size:11px}.event-editor-actions button{padding:3px 5px;font-size:11px}.event-editor-actions button+button::before{content:""}
 .date-mode-box{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
@@ -1028,6 +1028,11 @@ html[data-theme="dark"] .event-detail button:focus-visible{
  border-color:var(--accent)!important;
  color:#fff!important
 }
+html[data-theme="dark"] .calendar-day,
+html[data-theme="dark"] .calendar-head{
+ border-color:#626a75!important
+}
+html[data-theme="dark"] .calendar-day{border-width:2px!important}
 
 /* CALENDAR light theme: separate the page, cells and editor controls clearly. */
 html[data-theme="light"] .calendar-page-main{
@@ -1681,10 +1686,13 @@ function editableMainRunEvents(x,list=events()){
 function restoreExistingDateMode(x,list=events()){
  $("rangeEndDate").value="";
  clearMultiDates();
- const group=editableMainRunEvents(x,list);
+ const blockedSeriesId=x.type==="blocked"?String(x.blockedSeriesId||"").trim():"";
+ const group=blockedSeriesId
+   ?list.filter(v=>v.type==="blocked"&&String(v.blockedSeriesId||"").trim()===blockedSeriesId)
+   :editableMainRunEvents(x,list);
  const clickedDate=String(x.start||"").slice(0,10);
  const dates=[...new Set(group.map(v=>String(v.start||"").slice(0,10)).filter(Boolean))].sort();
- if((x.sessionKind||"main")==="main"&&dates.length>1){
+ if(((x.sessionKind||"main")==="main"||x.type==="blocked")&&dates.length>1){
    $("dateMode").value="multiple";
    $("eventDate").value=clickedDate||dates[0];
    dates.filter(d=>d!==clickedDate).forEach(d=>addMultiDate(d));
@@ -1852,7 +1860,7 @@ function syncRunLabelInMemory(runId,label,eventList,albumList){
  const album=albumList.map(a=>{if(String(a.runId||"")!==runId)return a;albumChanged=true;return TRPG39.normalizeAlbum({...a,runLabel:label})});
  return {events:evs,album,albumChanged};
 }
-function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],calendarMemo:$("eventMemo").value.trim(),linkedAlbumId:""})}
+function buildBlockedEvent(id,date,old=null){const ds=String(date||"").slice(0,10);const a=new Date(ds+"T00:00:00"),b=new Date(a);b.setDate(b.getDate()+1);const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T00:00`;return TRPG39.normalizeEvent({...(old||{}),id,type:"blocked",title:$("eventTitle").value.trim()||"予定あり",scenarioId:"",scenarioTitle:"",start:local(a),end:local(b),timeSpecified:false,timeBand:"",sessionDay:0,status:"blocked",role:"",system:"",pcName:"",pcId:"",participants:[],calendarMemo:$("eventMemo").value.trim(),calendarColor:$("eventColor").value||"",linkedAlbumId:""})}
 $("saveEvent").onclick=()=>{
  const type=$("eventType").value,date=$("eventDate").value,id0=$("eventId").value;
  if(type==="trpg"&&TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){
@@ -1861,13 +1869,20 @@ $("saveEvent").onclick=()=>{
  if(type==="blocked"){
    let ranges;try{ranges=collectSimpleDateRanges()}catch(e){return alert(e.message||String(e))}
    const title=$("eventTitle").value.trim()||"予定あり",memo=$("eventMemo").value.trim(),oldFirst=id0?list.find(x=>x.id===id0):null,pending=[],seriesId=ranges.length>1?(String(oldFirst?.blockedSeriesId||"")||TRPG39.uuid()):String(oldFirst?.blockedSeriesId||"");
+   const existingBlocked=oldFirst?.blockedSeriesId?list.filter(x=>x.type==="blocked"&&String(x.blockedSeriesId||"")===String(oldFirst.blockedSeriesId)):(oldFirst?[oldFirst]:[]),usedOldIds=new Set();
    for(let n=0;n<ranges.length;n++){
      const targetDate=String(ranges[n].date||"").slice(0,10);
      const same=list.find(x=>x.type==="blocked"&&x.id!==id0&&String(x.start||"").slice(0,10)===targetDate&&String(x.title||"予定あり")===title&&String(x.calendarMemo||"")===memo);
-     const old=n===0&&oldFirst?oldFirst:same||null,id=old?.id||(n===0&&id0?id0:TRPG39.uuid()),item=buildBlockedEvent(id,targetDate,old);
+     const old=existingBlocked.find(x=>!usedOldIds.has(x.id)&&String(x.start||"").slice(0,10)===targetDate)||(n===0&&oldFirst&&!usedOldIds.has(oldFirst.id)?oldFirst:null)||existingBlocked.find(x=>!usedOldIds.has(x.id))||same||null;
+     if(old)usedOldIds.add(old.id);
+     const id=old?.id||(n===0&&id0?id0:TRPG39.uuid()),item=buildBlockedEvent(id,targetDate,old);
      item.blockedSeriesId=seriesId;item.blockedSeriesDay=seriesId?(ranges.length>1?n+1:Number(old?.blockedSeriesDay||1)):0;
      const warning=conflictMessage(item,list.concat(pending),old);if(warning&&!confirm((ranges.length>1?`${targetDate}：\n`:"")+warning))return;
      pending.push(item);
+   }
+   if(oldFirst?.blockedSeriesId&&$("dateMode").dataset.loadedMode==="multiple"){
+     const keepIds=new Set(pending.map(x=>x.id));
+     list=list.filter(x=>String(x.blockedSeriesId||"")!==String(oldFirst.blockedSeriesId)||keepIds.has(x.id));
    }
    pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});
    if(oldFirst?.linkedAlbumId||oldFirst?.type!=="blocked")TRPG39.saveAlbum(TRPG39.loadAlbum().filter(a=>a.eventId!==id0));
