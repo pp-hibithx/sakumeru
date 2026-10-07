@@ -884,8 +884,12 @@ body.calendar-editor-open{overflow:hidden}
 <style>
 /* v0908 calendar readability: match the clear interaction hierarchy used by MY PCs. */
 .calendar-page-main{
+  --calendar-frame-color:color-mix(in srgb,var(--line) 72%,var(--text));
   border:2px solid color-mix(in srgb,var(--line) 72%,var(--text));
   box-shadow:0 12px 30px rgba(0,0,0,.16);
+}
+.calendar-overview-column,.calendar-head,.calendar-day{
+  border-color:var(--calendar-frame-color)!important;
 }
 .calendar-toolbar{
   padding:12px;
@@ -1029,14 +1033,11 @@ html[data-theme="dark"] .event-detail button:focus-visible{
  border-color:var(--accent)!important;
  color:#fff!important
 }
-html[data-theme="dark"] .calendar-day,
-html[data-theme="dark"] .calendar-head{
- border-color:#626a75!important
-}
 html[data-theme="dark"] .calendar-day{border-width:2px!important}
 
 /* CALENDAR light theme: separate the page, cells and editor controls clearly. */
 html[data-theme="light"] .calendar-page-main{
+ --calendar-frame-color:#9a9285;
  background:#f3efe6!important;
  border-color:#8f8779!important
 }
@@ -1048,7 +1049,7 @@ html[data-theme="light"] .calendar-overview-column{
 }
 html[data-theme="light"] .calendar-head{color:#37332d}
 html[data-theme="light"] .calendar-day{
- border-color:#aaa294!important;
+ border-color:var(--calendar-frame-color)!important;
  box-shadow:none
 }
 html[data-theme="light"] #eventPanel.event-editor{
