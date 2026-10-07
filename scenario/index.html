@@ -134,7 +134,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 .tag-delete{width:34px!important;min-width:34px!important;min-height:34px!important;padding:0!important;border:0!important;border-left:1px solid color-mix(in srgb,currentColor 28%,var(--line))!important;border-radius:0!important;color:#ff9b9b!important}
 .tag-suggestion.used{opacity:.45}
 .sc-system-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
-.sc-system-picker .sc-system-tabs,.sc-tag-picker .sc-system-tabs{margin-top:4px}
+.sc-system-picker .sc-system-tabs,.sc-tag-picker .sc-system-tabs,.sc-state-picker .sc-system-tabs{margin-top:4px}
 .sc-system-tab{width:auto!important;padding:5px 10px!important;border-radius:999px!important;font-size:12px!important}
 .sc-system-tab.active{font-weight:700;box-shadow:inset 0 0 0 1px var(--accent)}
 .sc-system-count{opacity:.7;margin-left:4px}
@@ -293,10 +293,10 @@ html.theme-dark #scenarioForm :is(input,textarea)::placeholder{color:#aeb4bd!imp
 </div>
 <div class="sc-filter-row sc-filter-row-secondary">
 <div class="sc-scope"><label>検索対象</label><select id="searchScope"><option value="all">すべて</option><option value="own">自分が所有</option><option value="friend">友人が所有</option></select></div>
-<div class="sc-filter sc-status-filter"><label>状態</label><select id="filter"><option value="">すべて</option><option value="owned">所持</option><option value="played">通過済み</option><option value="planned">通過予定</option><option value="watched">視聴済み</option><option value="kpDone">回した</option><option value="kpPlanned">回す予定</option><option value="wish">気になる</option><option value="roomReady">部屋あり</option></select></div>
 <div class="sc-filter sc-archive-filter"><label>表示</label><select id="archiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
 <div class="sc-sort"><label>並び順</label><select id="sort"><option value="name">50音順</option><option value="new">登録が新しい順</option><option value="old">登録が古い順</option><option value="recentRun">最近回した順</option><option value="recentPlay">最近遊んだ順</option><option value="kpCount">回した回数順</option></select></div>
 </div>
+<div class="sc-state-picker"><label>状態</label><input id="filter" type="hidden" value=""><div id="statusFilterButtons" class="sc-system-tabs" role="group" aria-label="状態で絞り込む"></div></div>
 <div class="sc-tag-picker"><label>タグ</label><input id="tagFilter" type="hidden" value=""><div id="tagFilterButtons" class="sc-system-tabs" role="group" aria-label="タグで絞り込む"></div></div>
 <div class="sc-system-picker"><label>システム</label><div id="systemFilter" class="sc-system-tabs" role="group" aria-label="システムで絞り込む"></div></div>
 </div><div class="sc-tools"><div class="sc-view-switch" role="group" aria-label="作品の表示方法"><button id="scenarioListViewBtn" type="button" aria-pressed="false">作品一覧</button><button id="scenarioThumbViewBtn" type="button" aria-pressed="true">サムネイル</button></div><button id="openFriendSources" type="button">友人共有URL</button><button id="shareScenarioList" type="button">共有</button><button id="openForm" type="button">＋ 追加</button></div></div><div id="summary" class="small" style="margin-top:8px"></div>
@@ -1559,6 +1559,14 @@ function scenarioStats(x){
  return idx.byId.get(String(x.id||""))||idx.byLegacyTitle.get(String(x.title||"").trim())||{facilitator:0,pl:0,last:"",lastRun:""};
 }
 window.addEventListener("storage",e=>{if(e.key===TRPG39.KEYS?.album)scenarioStatsCache=null});
+function refreshStatusFilter(){
+ const input=q("filter"),box=q("statusFilterButtons");if(!input||!box)return;
+ const counts=new Map(Object.keys(flags).map(key=>[key,data.filter(x=>x.flags&&x.flags[key]).length]));
+ if(input.value&&!counts.has(input.value))input.value="";
+ const keys=["",...Object.keys(flags).filter(key=>counts.get(key)>0)];
+ box.innerHTML=keys.map(key=>`<button type="button" class="sc-system-tab${key===input.value?" active":""}" data-status-filter="${esc(key)}" aria-pressed="${key===input.value}">${key?esc(flags[key]):"すべて"}<span class="sc-system-count">${key?counts.get(key):data.length}</span></button>`).join("");
+ box.querySelectorAll("[data-status-filter]").forEach(button=>button.onclick=()=>{input.value=button.dataset.statusFilter||"";ownScenarioPage=1;compactOwnPage=1;compactFriendPage=1;render()});
+}
 function refreshTagFilter(){
  const input=q("tagFilter"),box=q("tagFilterButtons");if(!input||!box)return;
  const items=data,tags=[...new Set(items.flatMap(x=>Array.isArray(x.tags)?x.tags:[]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
@@ -1699,7 +1707,7 @@ function renderCompactScenarioView(xs,scope){
 function render(){
  let term=q("search").value.trim().toLowerCase(),f=q("filter").value;
  const scope=q("searchScope")?.value||"all";
- refreshTagFilter();renderTagSuggestions();renderSystemTabs();
+ refreshStatusFilter();refreshTagFilter();renderTagSuggestions();renderSystemTabs();
  const archiveMode=q("archiveFilter")?.value||"active";
  let xs=data.filter(x=>
    (archiveMode==="all"||(archiveMode==="archived"?!!x.archived:!x.archived)) &&
@@ -1787,7 +1795,7 @@ q("openFriendSources").onclick=()=>{
  friendScenarioSection.open=true;
  requestAnimationFrame(()=>{friendScenarioSection.scrollIntoView({behavior:"smooth",block:"start"});q("friendUrl").focus()});
 };
-q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioPageAndRender;q("searchScope").onchange=resetOwnScenarioPageAndRender;q("filter").onchange=resetOwnScenarioPageAndRender;q("playersFilter").oninput=resetOwnScenarioPageAndRender;q("hoursFilter").oninput=resetOwnScenarioPageAndRender;q("archiveFilter").onchange=resetOwnScenarioPageAndRender;q("sort").onchange=resetOwnScenarioPageAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
+q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioPageAndRender;q("searchScope").onchange=resetOwnScenarioPageAndRender;q("playersFilter").oninput=resetOwnScenarioPageAndRender;q("hoursFilter").oninput=resetOwnScenarioPageAndRender;q("archiveFilter").onchange=resetOwnScenarioPageAndRender;q("sort").onchange=resetOwnScenarioPageAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
 </body></html>
