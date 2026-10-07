@@ -1695,7 +1695,7 @@ function renderCalendarOverview(){
  $("calendarThisMonth").innerHTML=agendaItemsHtml(thisMonth,list);
  const daysInMonth=new Date(selectedYear,selectedMonth,0).getDate(),busy=new Set(thisMonth.map(agendaDay)),free=[];
  for(let day=startDay;day<=daysInMonth;day++)if(!busy.has(day))free.push(day);
- const freeRanges=[[1,10],[11,20],[21,30],[31,31]];
+ const freeRanges=[[1,10],[11,19],[20,daysInMonth]];
  const freeGroups=freeRanges.map(([min,max])=>free.filter(day=>day>=min&&day<=max)).filter(days=>days.length);
  $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div class="calendar-free-groups">${freeGroups.length?freeGroups.map(days=>`<div class="calendar-free-group">${formatFreeDayRanges(days)}</div>`).join(""):'<div class="calendar-free-group">空き日はありません</div>'}</div>`;
  const months=new Map();later.forEach(x=>{const key=agendaDate(x).slice(0,7);if(!months.has(key))months.set(key,[]);months.get(key).push(x)});
