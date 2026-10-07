@@ -1216,10 +1216,10 @@ button:focus-visible,.link:focus-visible,summary:focus-visible{outline:3px solid
 .library-play-tab,.library-view-tab{min-height:34px;padding:4px 8px;border:2px solid color-mix(in srgb,currentColor 24%,var(--line));font-weight:700}
 .library-filter-row{grid-column:1/-1;display:flex;align-items:end;gap:8px;flex-wrap:wrap;width:100%;box-sizing:border-box}
 .library-filter-row>.library-play-tabs{flex:1 1 auto;margin:0;align-items:center}
-.library-filter-row>.lib-year-filter-bar{flex:0 0 auto}
-.library-filter-row .lib-year-filter-row{display:flex;align-items:center;gap:7px}
+.library-filter-row>.lib-year-filter-bar{flex:0 0 auto;display:flex;align-items:center;margin:0;box-sizing:border-box}
+.library-filter-row .lib-year-filter-row{display:flex;align-items:center;gap:7px;height:34px}
 .library-filter-row .lib-year-filter-row label{margin:0;white-space:nowrap}
-.library-filter-row .lib-year-filter-row select{min-height:34px;padding:4px 28px 4px 8px}
+.library-filter-row .lib-year-filter-row select{height:34px;min-height:34px;padding:4px 28px 4px 8px;box-sizing:border-box}
 .library-play-tab.active,.library-view-tab.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:inherit;box-shadow:inset 0 -3px 0 var(--accent)}
 
 .lib-toolbar input,.lib-toolbar select,.library-editor input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),.library-editor select,.library-editor textarea,
@@ -6564,7 +6564,7 @@ function render(){
     q("list").innerHTML=`<div class="library-filter-row">${playFilterTabsHtml()}
       <div class="lib-year-filter-bar">
         <div class="lib-year-filter-row">
-         <label for="libraryYearFilter">最新卓年</label>
+         <label for="libraryYearFilter">最新年</label>
          <select id="libraryYearFilter">
            ${years.map(y=>`<option value="${esc(y)}" ${libraryYearFilter===y?"selected":""}>${esc(y==="日付なし"?"日付なし":y+"年")}</option>`).join("")}
            <option value="all" ${libraryYearFilter==="all"?"selected":""}>すべて</option>
