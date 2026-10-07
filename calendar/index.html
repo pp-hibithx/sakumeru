@@ -1101,7 +1101,7 @@ html[data-theme="dark"] .event-detail button:focus-visible{
 <div class="trpg-field"><label>役割</label><select id="eventRole"><option value="">未設定</option><option>PL</option><option>KP</option><option>SKP</option><option>その他</option></select></div>
 <div class="trpg-field"><label>システム</label><input id="eventSystem"><div id="facilitatorHint" class="small muted"></div></div>
 <div class="trpg-field"><label>自分のHO / 役割</label><input id="eventSelfHo" placeholder="HO1 / KPC など"></div>
-<div class="trpg-field"><label>PC</label><input id="eventPcSearch" autocomplete="off" placeholder="登録済みPC名を検索"><select id="eventPcSelect"><option value="">登録済みPCを選択</option></select><input id="eventPc" autocomplete="off" placeholder="未登録PC名を直接入力"><div id="eventPcSelectionStatus" class="small muted">登録済みPCを検索・選択するか、未登録名を直接入力してください。</div></div>
+<div class="trpg-field participant-field-wrap"><label>PC</label><input id="eventPc" autocomplete="off" placeholder="PC名を検索・選択"><input id="eventPcSelect" type="hidden"><div id="eventPcResults" class="participant-picker-results"></div><div id="eventPcSelectionStatus" class="small muted">入力すると登録済みの自PCが候補に出ます。候補にない名前もそのまま使えます。</div></div>
 <div class="full trpg-field event-participants-section">
   <div class="row" style="align-items:center">
     <div><label style="margin:0">参加者</label></div>
@@ -1325,21 +1325,23 @@ function eventPcChoices(){
    .filter(p=>p&&!p.archived&&String(p.name||"").trim())
    .slice().sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ja"));
 }
-function fillEventPcSelect(selectedId="",query=null){
- const sel=$("eventPcSelect");if(!sel)return;
- const term=String(query===null?$("eventPcSearch")?.value||"":query).normalize("NFKC").trim().toLowerCase();
- const all=eventPcChoices(),selected=all.find(p=>String(p.id)===String(selectedId));
- const filtered=all.filter(p=>!term||[p.name,p.reading,p.system].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term));
- if(selected&&!filtered.some(p=>String(p.id)===String(selected.id)))filtered.unshift(selected);
- const emptyLabel=term?(filtered.length?`検索結果 ${filtered.length}件から選択`:"一致する登録済みPCなし"):"登録済みPCを選択";
- sel.innerHTML=`<option value="">${emptyLabel}</option>`+filtered.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
- sel.value=selectedId||"";
- if(sel.value&&$("eventPc"))$("eventPc").value="";
+function fillEventPcSelect(selectedId=""){
+ const field=$("eventPcSelect");if(!field)return;
+ field.value=selectedId||"";
+ const selected=selectedId?eventPcChoices().find(p=>String(p.id)===String(selectedId)):null;
+ if(selected)$("eventPc").value=selected.name||"";
  updateEventPcSelectionStatus();
 }
 function selectedEventPc(){const id=$("eventPcSelect")?.value||"";return id?(window.TRPG39?.loadPCs?.()||[]).find(p=>String(p.id)===String(id)):null}
 function eventPcName(){return selectedEventPc()?.name||$("eventPc")?.value.trim()||""}
-function updateEventPcSelectionStatus(){const status=$("eventPcSelectionStatus");if(!status)return;const pc=selectedEventPc(),typed=$("eventPc")?.value.trim()||"";status.textContent=pc?`登録済みPC「${pc.name}」を使用します。`:typed?`未登録名「${typed}」を使用します。`:"登録済みPCを検索・選択するか、未登録名を直接入力してください。"}
+function updateEventPcSelectionStatus(){const status=$("eventPcSelectionStatus");if(!status)return;const pc=selectedEventPc(),typed=$("eventPc")?.value.trim()||"";status.textContent=pc?`登録済みPC「${pc.name}」を使用します。`:typed?`候補を選ばない場合は未登録名「${typed}」として使用します。`:"入力すると登録済みの自PCが候補に出ます。候補にない名前もそのまま使えます。"}
+function renderEventPcResults(){
+ const input=$("eventPc"),box=$("eventPcResults"),term=input.value.trim().normalize("NFKC").toLowerCase();
+ const rows=eventPcChoices().filter(pc=>!term||[pc.name,pc.reading,pc.system].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term)).slice(0,40);
+ box.innerHTML=rows.length?rows.map(pc=>`<button type="button" class="participant-picker-item" data-self-pc-choice="${esc(pc.id)}">${esc(pc.name)}${pc.system?`<span class="scenario-picker-meta">${esc(pc.system)}</span>`:""}</button>`).join(""):(term?'<div class="participant-picker-empty">一致する登録済みPCはありません。この名前をそのまま使用できます。</div>':'<div class="participant-picker-empty">PC名を入力すると登録済みの自PCを検索できます。</div>');
+ box.classList.add("open");
+ box.querySelectorAll("[data-self-pc-choice]").forEach(button=>button.onclick=()=>{const pc=eventPcChoices().find(item=>String(item.id)===String(button.dataset.selfPcChoice));if(!pc)return;input.value=pc.name||"";fillEventPcSelect(pc.id);box.classList.remove("open")});
+}
 function ensureEventPc(){const selected=$("eventPcSelect")?.value||"";const selectedPc=window.TRPG39?.resolvePCReference?.({pcId:selected},{selfOnly:true});if(selectedPc)return selectedPc.id;const typed=$("eventPc")?.value.trim()||"";if(!typed)return "";const existing=window.TRPG39?.resolvePCReference?.({pcName:typed},{selfOnly:true});const pc=existing||window.TRPG39?.ensurePC?.(typed,{system:$("eventSystem")?.value.trim()||""});if(pc){fillEventPcSelect(pc.id);return pc.id}return ""}
 function showEditor(){hideEventDetail();$("eventPanel").hidden=false;document.body.classList.add("calendar-editor-open")}
 function hideEditor(){$("eventPanel").hidden=true;document.body.classList.remove("calendar-editor-open")}
@@ -1597,12 +1599,12 @@ function initCalendarParticipantPicker(){
  if(add)add.onclick=()=>addEventParticipantRow("",{placeholder:false});
  document.addEventListener("click",e=>{
    if(e.target.closest(".participant-field-wrap"))return;
-   document.querySelectorAll("#eventParticipantRows .participant-picker-results.open").forEach(x=>x.classList.remove("open"));
+   document.querySelectorAll(".participant-picker-results.open").forEach(x=>x.classList.remove("open"));
  });
  setCalendarParticipants([]);
 }
 function resetForm(dateStr="",type="trpg"){
- ["eventId","eventTitle","eventSystem","eventSelfHo","eventPcSearch","eventPc","eventMemo","eventStartTime","eventEndTime"].forEach(id=>$(id).value="");setCalendarParticipants([]);fillEventPcSelect();fillScenarioSelect();$("scenarioSearch").value="";clearBulkDays();
+ ["eventId","eventTitle","eventSystem","eventSelfHo","eventPc","eventMemo","eventStartTime","eventEndTime"].forEach(id=>$(id).value="");setCalendarParticipants([]);fillEventPcSelect();fillScenarioSelect();$("scenarioSearch").value="";clearBulkDays();
  $("eventType").value=type;$("eventStatus").value="planned";$("eventSessionKind").value="main";updateRoleOptions("");$("eventDay").value="1";delete $("eventDay").dataset.originalSessionDay;delete $("eventDay").dataset.loadedEffectiveDay;$("eventTimeBand").value="";$("eventColor").value="";$("eventDate").value=dateStr||"";$("dateMode").value="single";delete $("dateMode").dataset.loadedMode;delete $("dateMode").dataset.multipleBaseDay;$("rangeEndDate").value="";clearMultiDates();updateDateModeUI();$("eventRunLabel").value="";fillEventRunSelect("");$("eventHeading").textContent=type==="blocked"?"卓以外の予定を登録":"卓予定を登録";$("deleteEvent").hidden=true;$("reportFromEvent").hidden=true;updateTypeUI();
 }
 function editableMainRunEvents(x,list=events()){
@@ -1653,7 +1655,7 @@ function showEventDetail(id){
  $("eventDetailBody").innerHTML=html;$("eventDetailPanel").dataset.eventId=id;$("eventDetailPanel").hidden=false;
  $("reportFromDetail").hidden=blocked;$("libraryFromDetail").hidden=blocked;
 }
-function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list);let sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");fillEventRunSelect(x.runId||"");$("eventRunLabel").value=x.runLabel||$("eventRunLabel").value||"";const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);restoreExistingDateMode(x,list);$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=String(x.sessionDay||sessionDay||1);$("eventDay").dataset.originalSessionDay=String(x.sessionDay||info.rawDay||1);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventSelfHo").value=x.selfHo||"";$("eventPcSearch").value="";$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");setCalendarParticipants(calendarRowsFromEvent(x));$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();/* keep current scroll position while editing */}
+function editEvent(id){const list=events(),x=list.find(v=>v.id===id);if(!x)return;clearBulkDays();const info=runDayInfo(x,list);let sessionDay=info.specialKind?Math.max(1,Number(x.sessionDay||1)):(info.excluded?info.rawDay:info.day);$("eventId").value=x.id;$("eventType").value=x.type==="blocked"?"blocked":"trpg";$("eventTitle").value=x.type==="blocked"?(x.title==="予定あり"?"":x.title):(x.title||"");fillScenarioSelect(x.scenarioId||"");fillEventRunSelect(x.runId||"");$("eventRunLabel").value=x.runLabel||$("eventRunLabel").value||"";const start=String(x.start||""),end=String(x.end||"");$("eventDate").value=start.slice(0,10);restoreExistingDateMode(x,list);$("eventSessionKind").value=x.sessionKind||"main";$("eventDay").value=String(x.sessionDay||sessionDay||1);$("eventDay").dataset.originalSessionDay=String(x.sessionDay||info.rawDay||1);$("eventDay").dataset.loadedEffectiveDay=String(sessionDay);$("eventTimeBand").value=x.timeBand||"";$("eventColor").value=x.calendarColor||"";$("eventStartTime").value=(x.timeSpecified!==false&&start.includes("T"))?start.slice(11,16):"";$("eventEndTime").value=end.includes("T")?end.slice(11,16):"";$("eventStatus").value=x.status==="blocked"?"planned":x.status||"planned";$("eventSystem").value=x.system||"";updateRoleOptions(x.role||"");$("eventSelfHo").value=x.selfHo||"";$("eventPc").value=x.pcName||"";fillEventPcSelect(x.pcId||"");setCalendarParticipants(calendarRowsFromEvent(x));$("eventMemo").value=x.calendarMemo||"";$("eventHeading").textContent=x.type==="blocked"?"卓以外の予定を編集":"卓予定を編集";$("deleteEvent").hidden=false;$("reportFromEvent").hidden=x.type==="blocked";updateTypeUI();if(x.type!=="blocked")$("eventDay").value=sessionDay;showEditor();/* keep current scroll position while editing */}
 function agendaDate(x){return String(x?.start||x?.date||"").slice(0,10)}
 function agendaDay(x){return Number(agendaDate(x).slice(8,10))||0}
 function agendaStatusText(x){return ({tentative:"△ 仮押さえ",rescheduling:"リスケ中",postponed:"延期",done:"✓ 完了"})[x?.status]||""}
@@ -1714,9 +1716,8 @@ document.addEventListener("click",e=>{if(!e.target.closest(".scenario-picker"))$
 $("closeEventEditor").onclick=hideEditor;
 $("agendaViewBtn").onclick=()=>setCalendarView("agenda");
 $("monthViewBtn").onclick=()=>setCalendarView("month");
-$("eventPcSearch").addEventListener("input",()=>fillEventPcSelect("",$("eventPcSearch").value));
-$("eventPcSelect").onchange=()=>{const pc=selectedEventPc();if(pc){$("eventPc").value="";$("eventPcSearch").value=pc.name||"";fillEventPcSelect(pc.id,$("eventPcSearch").value)}updateEventPcSelectionStatus()};
-$("eventPc").addEventListener("input",()=>{if($("eventPc").value.trim())$("eventPcSelect").value="";updateEventPcSelectionStatus()});
+$("eventPc").addEventListener("focus",renderEventPcResults);
+$("eventPc").addEventListener("input",()=>{$("eventPcSelect").value="";renderEventPcResults();updateEventPcSelectionStatus()});
 $("eventType").onchange=updateTypeUI;$("eventStatus").onchange=updateTypeUI;$("eventSessionKind").onchange=updateTypeUI;$("eventDay").oninput=updateDayLabel;$("dateMode").onchange=updateDateModeUI;$("addMultiDate").onclick=()=>addMultiDate();$("addDayBtn").onclick=()=>addBulkDay();
 function parseLocalYmdTime(ymd,time="00:00"){const [y,m,d]=String(ymd||"").split("-").map(Number),[hh,mm]=String(time||"00:00").split(":").map(Number);if(!y||!m||!d)return null;return new Date(y,m-1,d,hh||0,mm||0,0,0)}
 function eventRange(e){const ds=String(e.start||"").slice(0,10);if(!ds)return null;if(e.type==="blocked"){const start=parseLocalYmdTime(ds),end=parseLocalYmdTime(ds);if(!start||!end)return null;end.setDate(end.getDate()+1);return[start,end]}if(e.timeSpecified!==false&&String(e.start||"").includes("T")){const st=String(e.start).slice(11,16),et=String(e.end||"").slice(11,16);const start=parseLocalYmdTime(ds,st);if(!start)return null;let end;if(e.end){const eds=String(e.end).slice(0,10)||ds;end=parseLocalYmdTime(eds,et||st)}else end=new Date(start.getTime()+4*60*60*1000);if(!end||Number.isNaN(end.getTime())||end<=start)end=new Date(start.getTime()+4*60*60*1000);return[start,end]}const bands={morning:[6,12],day:[12,18],night:[18,24],late:[0,6],"":[0,24]},b=bands[e.timeBand||""]||bands[""];const start=parseLocalYmdTime(ds);if(!start)return null;start.setHours(b[0],0,0,0);const end=parseLocalYmdTime(ds);end.setHours(0,0,0,0);end.setTime(end.getTime()+b[1]*60*60*1000);return[start,end]}
