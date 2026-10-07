@@ -24,6 +24,7 @@
 .calendar-overview[hidden],#monthCalendarView[hidden]{display:none!important}
 .calendar-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:12px}.calendar-overview-column{min-width:0;margin-top:0;border:2px solid color-mix(in srgb,var(--line) 72%,var(--text));border-radius:12px;padding:14px;background:color-mix(in srgb,var(--panel) 94%,var(--bg))}.calendar-overview-column h3{margin:0 0 10px}.calendar-overview-month{margin-top:14px}.calendar-overview-month:first-child{margin-top:0}.calendar-overview-month h4{margin:0 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line)}.calendar-agenda-list{display:grid;gap:7px}.calendar-agenda-item{width:100%;text-align:left;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--panel) 86%,var(--bg));color:inherit;line-height:1.55}.calendar-agenda-item:hover,.calendar-agenda-item:focus-visible{border-color:var(--accent)}.calendar-agenda-item.blocked{border-left:4px solid #a86b6b}.calendar-agenda-item.tentative{border-style:dashed}.calendar-agenda-item[data-color="red"]{border-left:4px solid #b86464;background:rgba(184,100,100,.14)}.calendar-agenda-item[data-color="orange"]{border-left:4px solid #b57c4f;background:rgba(181,124,79,.14)}.calendar-agenda-item[data-color="yellow"]{border-left:4px solid #aa9450;background:rgba(170,148,80,.14)}.calendar-agenda-item[data-color="green"]{border-left:4px solid #5f8f70;background:rgba(95,143,112,.14)}.calendar-agenda-item[data-color="blue"]{border-left:4px solid #5e7fa8;background:rgba(94,127,168,.14)}.calendar-agenda-item[data-color="purple"]{border-left:4px solid #846aa6;background:rgba(132,106,166,.14)}.calendar-agenda-item[data-color="pink"]{border-left:4px solid #ad6f91;background:rgba(173,111,145,.14)}.calendar-agenda-item[data-color="gray"]{border-left:4px solid #747982;background:rgba(116,121,130,.14)}.calendar-agenda-note{color:var(--muted)}.calendar-free-days{margin-top:13px;padding:10px;border:1px dashed var(--line);border-radius:8px;line-height:1.7}.calendar-overview-empty{padding:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
 .calendar-free-groups{display:grid;gap:4px;margin-top:4px}.calendar-free-group{line-height:1.7}
+.calendar-month-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .calendar-month-jump{display:inline-flex;align-items:center;gap:4px}.calendar-month-jump input,.calendar-month-jump select{margin:0}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .calendar-head{font-size:.8rem;color:var(--muted);text-align:center;padding:4px}
@@ -41,6 +42,7 @@
 .event-chip[data-color="pink"]{border-color:#ad6f91;background:rgba(173,111,145,.12)}
 .event-chip[data-color="gray"]{border-color:#747982;background:rgba(116,121,130,.12)}
 .event-chip.planned{border-width:2px}.event-chip.done{border-color:#557c68;opacity:.62;background:rgba(85,124,104,.10)}.calendar-legend{display:flex;gap:10px;flex-wrap:wrap;margin:7px 0 10px;font-size:.78rem}.calendar-legend span{display:inline-flex;gap:5px;align-items:center}.calendar-legend .mark{width:10px;height:10px;border:2px solid var(--line);border-radius:3px}.calendar-legend .planned-mark{border-color:var(--accent)}.calendar-legend .done-mark{border-color:#557c68;opacity:.62}.event-chip.cancelled{opacity:.5;text-decoration:line-through}.event-chip.tentative{border-style:dashed}.event-chip.rescheduling{border-color:#b28a4a}.event-chip.postponed{opacity:.65}.event-chip.blocked{border-color:#a86b6b;background:rgba(168,107,107,.10)!important}.status-badge{white-space:nowrap}
+.calendar-month-row .calendar-legend{margin:0 0 0 auto;padding:7px 10px;width:auto}.calendar-legend[hidden]{display:none!important}
 .session-meta{display:block;margin-top:2px;font-weight:600;line-height:1.25}
 /* explicit calendar color: keep status styling (opacity/dashed/etc.) but let chosen color win */
 .event-chip:not(.blocked)[data-color="red"]{border-color:#b86464!important;background:rgba(184,100,100,.18)!important}
@@ -974,6 +976,8 @@ body.calendar-editor-open{overflow:hidden}
 }
 @media(max-width:640px){
   .calendar-toolbar{align-items:stretch;padding:10px}
+  .calendar-month-row{display:grid;grid-template-columns:1fr}
+  .calendar-month-row .calendar-legend{margin:0}
   .calendar-toolbar,.month-nav,.calendar-top-actions{display:grid;grid-template-columns:1fr;gap:8px}
   .calendar-month-jump{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto}
   .calendar-month-jump input,.calendar-month-jump select{width:100%!important}
@@ -1092,6 +1096,7 @@ html[data-theme="light"] #eventPanel .bulk-days{
   </div>
   <div class="calendar-top-actions"><button id="newEventBtn" type="button">＋ 予定を追加</button><button id="scheduleMatchBtn" type="button" class="text-action">日程すり合わせ</button><button id="shareAvailability" type="button" class="text-action">空き日を共有</button></div>
 </div>
+<div class="calendar-month-row">
 <div class="month-nav">
   <button id="prevMonth" type="button" aria-label="前の月">←</button>
   <span class="calendar-month-jump">
@@ -1108,12 +1113,13 @@ html[data-theme="light"] #eventPanel .bulk-days{
   <button id="nextMonth" type="button" aria-label="次の月">→</button>
   <button id="todayBtn" type="button">今月</button>
 </div>
+<div id="calendarLegend" class="calendar-legend" hidden><span>□ 予定</span><span>✓ 完了（薄く表示）</span><span>△ 仮押さえ</span><span>× 卓以外の予定あり</span></div>
+</div>
 <div id="calendarOverview" class="calendar-overview">
   <section class="calendar-overview-column"><h3 id="calendarThisMonthHeading">今月の予定</h3><div id="calendarThisMonth"></div><div id="calendarFreeDays" class="calendar-free-days"></div></section>
   <section class="calendar-overview-column"><h3>来月以降の予定</h3><div id="calendarLaterMonths"></div></section>
 </div>
 <div id="monthCalendarView" hidden>
-<div class="calendar-legend"><span>□ 予定</span><span>✓ 完了（薄く表示）</span><span>△ 仮押さえ</span><span>× 卓以外の予定あり</span></div>
 <div class="calendar-grid" id="weekdayHead"></div>
 <div class="calendar-grid" id="calendar"></div>
 </div>
@@ -1757,6 +1763,7 @@ function renderCalendarOverview(){
 }
 function setCalendarView(view){
  const month=view==="month";$("calendarOverview").hidden=month;$("monthCalendarView").hidden=!month;
+ $("calendarLegend").hidden=!month;
  $("agendaViewBtn").setAttribute("aria-pressed",String(!month));$("monthViewBtn").setAttribute("aria-pressed",String(month));
 }
 function renderCalendar(){
