@@ -1038,27 +1038,27 @@ html[data-theme="dark"] .event-detail button:focus-visible{
   </div>
   <div class="calendar-top-actions"><button id="newEventBtn" type="button">＋ 予定を追加</button><button id="scheduleMatchBtn" type="button" class="text-action">日程すり合わせ</button><button id="shareAvailability" type="button" class="text-action">空き日を共有</button></div>
 </div>
+<div class="month-nav">
+  <button id="prevMonth" type="button" aria-label="前の月">←</button>
+  <span class="calendar-month-jump">
+    <input id="yearJump" type="number" min="1900" max="2100" step="1" inputmode="numeric" aria-label="表示する年" style="width:86px">
+    <span>年</span>
+    <select id="monthJump" aria-label="表示する月" style="width:68px">
+      <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+      <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      <option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+    </select>
+    <span>月</span>
+    <button id="jumpMonthBtn" type="button">移動</button>
+  </span>
+  <button id="nextMonth" type="button" aria-label="次の月">→</button>
+  <button id="todayBtn" type="button">今月</button>
+</div>
 <div id="calendarOverview" class="calendar-overview">
   <section class="calendar-overview-column"><h3 id="calendarThisMonthHeading">今月の予定</h3><div id="calendarThisMonth"></div><div id="calendarFreeDays" class="calendar-free-days"></div></section>
   <section class="calendar-overview-column"><h3>来月以降の予定</h3><div id="calendarLaterMonths"></div></section>
 </div>
 <div id="monthCalendarView" hidden>
-  <div class="month-nav">
-    <button id="prevMonth" type="button" aria-label="前の月">←</button>
-    <span class="calendar-month-jump">
-      <input id="yearJump" type="number" min="1900" max="2100" step="1" inputmode="numeric" aria-label="表示する年" style="width:86px">
-      <span>年</span>
-      <select id="monthJump" aria-label="表示する月" style="width:68px">
-        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
-        <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
-        <option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
-      </select>
-      <span>月</span>
-      <button id="jumpMonthBtn" type="button">移動</button>
-    </span>
-    <button id="nextMonth" type="button" aria-label="次の月">→</button>
-    <button id="todayBtn" type="button">今月</button>
-  </div>
 <div class="calendar-legend"><span>□ 予定</span><span>✓ 完了（薄く表示）</span><span>△ 仮押さえ</span><span>× 卓以外の予定あり</span></div>
 <div class="calendar-grid" id="weekdayHead"></div>
 <div class="calendar-grid" id="calendar"></div>
@@ -1668,13 +1668,14 @@ function agendaItemsHtml(rows,list){
  return items.length?`<div class="calendar-agenda-list">${items.map(item=>`<button type="button" class="calendar-agenda-item ${esc(item.className)}" data-agenda-event="${esc(item.id)}">${esc(item.text)}</button>`).join("")}</div>`:'<div class="calendar-overview-empty">予定はありません。</div>';
 }
 function renderCalendarOverview(){
- const list=events(),now=new Date(),today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,monthKey=today.slice(0,7),active=list.filter(x=>agendaDate(x)>=today&&x.status!=="cancelled");
- const thisMonth=active.filter(x=>agendaDate(x).slice(0,7)===monthKey),later=active.filter(x=>agendaDate(x).slice(0,7)>monthKey);
- $("calendarThisMonthHeading").textContent=`${now.getMonth()+1}月の予定`;
+ const list=events(),now=new Date(),today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,todayMonth=today.slice(0,7);
+ const selectedYear=current.getFullYear(),selectedMonth=current.getMonth()+1,monthKey=`${selectedYear}-${pad(selectedMonth)}`,startDay=monthKey===todayMonth?now.getDate():1,cutoff=`${monthKey}-${pad(startDay)}`;
+ const active=list.filter(x=>agendaDate(x)>=cutoff&&x.status!=="cancelled"),thisMonth=active.filter(x=>agendaDate(x).slice(0,7)===monthKey),later=active.filter(x=>agendaDate(x).slice(0,7)>monthKey);
+ $("calendarThisMonthHeading").textContent=`${selectedYear}年${selectedMonth}月の予定`;
  $("calendarThisMonth").innerHTML=agendaItemsHtml(thisMonth,list);
- const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),busy=new Set(thisMonth.map(agendaDay)),free=[];
- for(let day=now.getDate();day<=daysInMonth;day++)if(!busy.has(day))free.push(day);
- $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div>${free.length?free.map(day=>`${day}日`).join("、"):"今月の空き日はありません。"}</div>`;
+ const daysInMonth=new Date(selectedYear,selectedMonth,0).getDate(),busy=new Set(thisMonth.map(agendaDay)),free=[];
+ for(let day=startDay;day<=daysInMonth;day++)if(!busy.has(day))free.push(day);
+ $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div>${free.length?free.map(day=>`${day}日`).join("、"):"この月の空き日はありません。"}</div>`;
  const months=new Map();later.forEach(x=>{const key=agendaDate(x).slice(0,7);if(!months.has(key))months.set(key,[]);months.get(key).push(x)});
  $("calendarLaterMonths").innerHTML=months.size?[...months.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,rows])=>{const [year,month]=key.split("-").map(Number);return `<section class="calendar-overview-month"><h4>${year}年${month}月</h4>${agendaItemsHtml(rows,list)}</section>`}).join(""):'<div class="calendar-overview-empty">来月以降の予定はありません。</div>';
  document.querySelectorAll("[data-agenda-event]").forEach(button=>button.onclick=()=>{hideEditor();showEventDetail(button.dataset.agendaEvent)});
