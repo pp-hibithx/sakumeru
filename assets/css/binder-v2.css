@@ -180,11 +180,20 @@ body.home-page .home-guide-cast:has(>figure[hidden]){display:none;min-height:0}
 .sakumeru-tour .sakumeru-tour-actions button,
 .sakumeru-tour .sakumeru-tour-actions a,
 .sakumeru-tour .sakumeru-tour-head button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:38px;
+  padding:6px 10px;
   background:var(--surface-raised)!important;
   border:1px solid color-mix(in srgb,var(--accent) 70%,var(--line))!important;
+  border-radius:8px!important;
   color:var(--text-primary)!important;
+  font:inherit;
+  line-height:1.4;
   opacity:1!important;
   text-decoration:none;
+  box-sizing:border-box;
 }
 .sakumeru-tour .sakumeru-tour-actions button:hover,
 .sakumeru-tour .sakumeru-tour-actions a:hover,
