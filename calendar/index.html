@@ -1684,6 +1684,11 @@ function agendaItemsHtml(rows,list){
  const items=groupedAgendaItems(rows,list);
  return items.length?`<div class="calendar-agenda-list">${items.map(item=>item.entries?.length>1?`<div class="calendar-agenda-item ${esc(item.className)}"><div>${esc(item.text)}</div><div class="calendar-agenda-group-actions" aria-label="編集する日を選択">${item.entries.slice().sort((a,b)=>a.day-b.day).map(entry=>`<button type="button" data-agenda-event="${esc(entry.id)}">${pad(entry.day)}日を開く</button>`).join("")}</div></div>`:`<button type="button" class="calendar-agenda-item ${esc(item.className)}" data-agenda-event="${esc(item.id)}">${esc(item.text)}</button>`).join("")}</div>`:'<div class="calendar-overview-empty">予定はありません。</div>';
 }
+function formatFreeDayRanges(days){
+ const sorted=[...new Set(days)].sort((a,b)=>a-b),parts=[];
+ for(let i=0;i<sorted.length;){let end=i;while(end+1<sorted.length&&sorted[end+1]===sorted[end]+1)end++;parts.push(end===i?`${pad(sorted[i])}日`:`${pad(sorted[i])}日～${pad(sorted[end])}日`);i=end+1}
+ return parts.join("、");
+}
 function renderCalendarOverview(){
  const list=events(),selectedYear=current.getFullYear(),selectedMonth=current.getMonth()+1,monthKey=`${selectedYear}-${pad(selectedMonth)}`,startDay=1,cutoff=`${monthKey}-01`;
  const active=list.filter(x=>agendaDate(x)>=cutoff&&x.status!=="cancelled"),thisMonth=active.filter(x=>agendaDate(x).slice(0,7)===monthKey),later=active.filter(x=>agendaDate(x).slice(0,7)>monthKey);
@@ -1692,7 +1697,7 @@ function renderCalendarOverview(){
  const daysInMonth=new Date(selectedYear,selectedMonth,0).getDate(),busy=new Set(thisMonth.map(agendaDay)),free=[];
  for(let day=startDay;day<=daysInMonth;day++)if(!busy.has(day))free.push(day);
  const freeRanges=[[1,10],[11,20],[21,30],[31,31]];
- $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div class="calendar-free-groups">${freeRanges.map(([min,max])=>{const days=free.filter(day=>day>=min&&day<=max);return `<div class="calendar-free-group">${days.length?days.map(day=>`${pad(day)}日`).join("、"):"—"}</div>`}).join("")}</div>`;
+ $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div class="calendar-free-groups">${freeRanges.map(([min,max])=>{const days=free.filter(day=>day>=min&&day<=max);return `<div class="calendar-free-group">${days.length?formatFreeDayRanges(days):"—"}</div>`}).join("")}</div>`;
  const months=new Map();later.forEach(x=>{const key=agendaDate(x).slice(0,7);if(!months.has(key))months.set(key,[]);months.get(key).push(x)});
  $("calendarLaterMonths").innerHTML=months.size?[...months.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,rows])=>{const [year,month]=key.split("-").map(Number);return `<section class="calendar-overview-month"><h4>${year}年${month}月</h4>${agendaItemsHtml(rows,list)}</section>`}).join(""):'<div class="calendar-overview-empty">来月以降の予定はありません。</div>';
  document.querySelectorAll("[data-agenda-event]").forEach(button=>button.onclick=()=>{hideEditor();showEventDetail(button.dataset.agendaEvent)});
