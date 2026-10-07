@@ -1719,7 +1719,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 
 <script src="../assets/js/main.js?v=0292"></script>
 <script src="../assets/js/migrate-v02.js?v=0292"></script>
-<script src="../assets/js/shared-data.js?v=1007-play-log"></script>
+<script src="../assets/js/shared-data.js?v=1007-play-log-2"></script>
 <script src="../assets/js/supabase-config.js?v=0292"></script>
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
@@ -1733,7 +1733,17 @@ const vis={private:"自分のみ",table:"同卓者のみ（準備中）",link:"�
 const statusLabel={tentative:"仮押さえ",planned:"予定",confirmed:"予定",done:"完了",rescheduling:"リスケ中",postponed:"延期",cancelled:"中止"};
 const sessionKindLabel={prelude:"事前導入",main:"本編",reserve:"予備日",aftertalk:"感想戦"};
 const recordTypeLabel={trpg:"TRPG",boardgame:"ボードゲーム","murder-mystery":"マーダーミステリー",puzzle:"謎解き・脱出ゲーム",game:"ゲーム",other:"その他"};
-const recordTypeOf=x=>String(x?.recordType||"trpg");
+function recordTypeFromSystem(system=""){
+ const value=String(system||"").trim().toLowerCase();
+ if(/マーダー\s*ミステリー|マダミス|murder\s*mystery/.test(value))return "murder-mystery";
+ if(/謎解き|脱出ゲーム|escape\s*(room|game)/.test(value))return "puzzle";
+ if(/ボード\s*ゲーム|ボドゲ|board\s*game/.test(value))return "boardgame";
+ return "";
+}
+function recordTypeOf(x){
+ const system=x?.system||scenarioById(x?.scenarioId)?.system||"";
+ return recordTypeFromSystem(system)||String(x?.recordType||"trpg");
+}
 function updateRecordTypeUi(){
  const type=q("recordType")?.value||"trpg",trpg=type==="trpg";
  document.querySelectorAll("[data-trpg-only]").forEach(el=>el.hidden=!trpg);

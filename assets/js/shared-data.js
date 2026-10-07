@@ -25,6 +25,14 @@
 
   const nowISO = () => new Date().toISOString();
 
+  function inferRecordType(system = "", fallback = "trpg") {
+    const value = String(system || "").trim().toLowerCase();
+    if (/マーダー\s*ミステリー|マダミス|murder\s*mystery/.test(value)) return "murder-mystery";
+    if (/謎解き|脱出ゲーム|escape\s*(room|game)/.test(value)) return "puzzle";
+    if (/ボード\s*ゲーム|ボドゲ|board\s*game/.test(value)) return "boardgame";
+    return fallback || "trpg";
+  }
+
   function normalizeEvent(input = {}) {
     const id = input.id || uuid();
     const legacyStatus = input.status === "confirmed" ? "planned" : input.status;
@@ -69,7 +77,7 @@
       eventId: input.eventId || "",
       scenarioId: input.scenarioId || "",
       title: input.title || "",
-      recordType: input.recordType || "trpg",
+      recordType: inferRecordType(input.system, input.recordType || "trpg"),
       place: input.place || "",
       date: input.date || String(start || "").slice(0,10),
       start,
