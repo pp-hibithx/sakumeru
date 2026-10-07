@@ -23,7 +23,7 @@
 .calendar-view-switch{display:flex;gap:6px;align-items:center}.calendar-view-switch button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 20%,var(--panel));font-weight:800}
 .calendar-overview[hidden],#monthCalendarView[hidden]{display:none!important}
 .calendar-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:12px}.calendar-overview-column{min-width:0;border:2px solid color-mix(in srgb,var(--line) 72%,var(--text));border-radius:12px;padding:14px;background:color-mix(in srgb,var(--panel) 94%,var(--bg))}.calendar-overview-column h3{margin:0 0 10px}.calendar-overview-month{margin-top:14px}.calendar-overview-month:first-child{margin-top:0}.calendar-overview-month h4{margin:0 0 7px;padding-bottom:5px;border-bottom:1px solid var(--line)}.calendar-agenda-list{display:grid;gap:7px}.calendar-agenda-item{width:100%;text-align:left;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--panel) 86%,var(--bg));color:inherit;line-height:1.55}.calendar-agenda-item:hover,.calendar-agenda-item:focus-visible{border-color:var(--accent)}.calendar-agenda-item.blocked{border-left:4px solid #a86b6b}.calendar-agenda-item.tentative{border-style:dashed}.calendar-agenda-note{color:var(--muted)}.calendar-free-days{margin-top:13px;padding:10px;border:1px dashed var(--line);border-radius:8px;line-height:1.7}.calendar-overview-empty{padding:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
-.calendar-free-groups{display:grid;gap:4px;margin-top:4px}.calendar-free-group{display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px}.calendar-free-range{font-weight:700;color:var(--muted)}
+.calendar-free-groups{display:grid;gap:4px;margin-top:4px}.calendar-free-group{line-height:1.7}
 .calendar-month-jump{display:inline-flex;align-items:center;gap:4px}.calendar-month-jump input,.calendar-month-jump select{margin:0}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .calendar-head{font-size:.8rem;color:var(--muted);text-align:center;padding:4px}
@@ -1689,8 +1689,8 @@ function renderCalendarOverview(){
  $("calendarThisMonth").innerHTML=agendaItemsHtml(thisMonth,list);
  const daysInMonth=new Date(selectedYear,selectedMonth,0).getDate(),busy=new Set(thisMonth.map(agendaDay)),free=[];
  for(let day=startDay;day<=daysInMonth;day++)if(!busy.has(day))free.push(day);
- const freeRanges=[["01〜10日",1,10],["11〜20日",11,20],["21〜30日",21,30],["31日",31,31]];
- $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div class="calendar-free-groups">${freeRanges.map(([label,min,max])=>{const days=free.filter(day=>day>=min&&day<=max);return `<div class="calendar-free-group"><span class="calendar-free-range">${label}</span><span>${days.length?days.map(day=>`${pad(day)}日`).join("、"):"—"}</span></div>`}).join("")}</div>`;
+ const freeRanges=[[1,10],[11,20],[21,30],[31,31]];
+ $("calendarFreeDays").innerHTML=`<strong>空き日</strong><div class="calendar-free-groups">${freeRanges.map(([min,max])=>{const days=free.filter(day=>day>=min&&day<=max);return `<div class="calendar-free-group">${days.length?days.map(day=>`${pad(day)}日`).join("、"):"—"}</div>`}).join("")}</div>`;
  const months=new Map();later.forEach(x=>{const key=agendaDate(x).slice(0,7);if(!months.has(key))months.set(key,[]);months.get(key).push(x)});
  $("calendarLaterMonths").innerHTML=months.size?[...months.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,rows])=>{const [year,month]=key.split("-").map(Number);return `<section class="calendar-overview-month"><h4>${year}年${month}月</h4>${agendaItemsHtml(rows,list)}</section>`}).join(""):'<div class="calendar-overview-empty">来月以降の予定はありません。</div>';
  document.querySelectorAll("[data-agenda-event]").forEach(button=>button.onclick=()=>{hideEditor();showEventDetail(button.dataset.agendaEvent)});
