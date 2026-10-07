@@ -400,6 +400,8 @@ function parseIacharaText(text){
    const top=line.match(/^【\s*([^】]+)\s*】$/);if(top){const title=top[1];section=/基本情報/.test(title)?"profile":/能力値/.test(title)?"abilities":/技能値/.test(title)?"skills":/^メモ$/.test(title)?"memo":"other";skillCategory="";return}
    const sub=line.match(/^[『「]\s*([^』」]+)\s*[』」]$/);if(sub&&skillCategories.has(sub[1])){section="skills";skillCategory=sub[1];return}
    if(section==="profile"){
+     const eyeSkin=line.match(/^瞳(?:の色)?\s*[/／]\s*肌(?:の色)?\s*[:：]\s*(.*?)\s*[/／]\s*(.*?)$/);
+     if(eyeSkin){profile.eyeColor=eyeSkin[1].trim();profile.skinColor=eyeSkin[2].trim();return}
      let found=false;const re=new RegExp(`(${profileLabelPattern})\\s*[:：]\\s*(.*?)(?=\\s*[/／]\\s*(?:${profileLabelPattern})\\s*[:：]|$)`,"g");let pm;
      while((pm=re.exec(line))){const field=IACHARA_PROFILE_FIELDS[pm[1]],value=pm[2].trim();if(field){profile[field]=value;found=true}}
      if(!found&&!/^(名前|タグ|読み|ふりがな)\s*[:：]/.test(line))unparsed.push(line);return;
@@ -751,8 +753,18 @@ function systemSkillsHtml(set){return `<section class="pc-overview-skills" data-
 function wirePcSkillFilter(root){const input=root.querySelector("[data-detail-skill-filter]");if(!input)return;input.oninput=()=>{const term=normSearch(input.value);root.querySelectorAll("[data-detail-skill-row]").forEach(row=>row.hidden=!!term&&!normSearch(row.dataset.detailSkillRow).includes(term))}}
 function systemSelectorHtml(pc){const entries=Object.entries(systemStatsSets(pc));if(!entries.length)return esc(pc.system||"未登録");if(entries.length===1)return `<strong>${esc(entries[0][1].label||entries[0][0])}</strong>`;return `<div class="pc-detail-head-systems" aria-label="表示するシステム">${entries.map(([key,set],i)=>`<button type="button" data-stat-tab="${esc(key)}" aria-selected="${i===0}">${esc(set.label||key)}</button>`).join("")}</div>`}
 function systemStatsHtml(pc){const entries=Object.entries(systemStatsSets(pc));if(!entries.length)return '<section class="pc-stats-section"><h3>能力値</h3><div class="small muted">能力値は登録されていません。</div></section>';const [activeKey,active]=entries[0];return `<section class="pc-stats-section" data-system-stats><div data-stat-panel data-stat-key="${esc(activeKey)}"><h3>能力値</h3>${statGridHtml(active.abilities)}<div class="pc-derived-block"><h4>派生値</h4>${statGridHtml(active.derived)}</div></div></section>`}
+function normalizedPcProfile(pc){
+ const p={...(pc?.profile||{})},eye=String(p.eyeColor||"").trim();
+ const combined=eye.match(/^(.*?)(?:\s*[／/]\s*肌(?:の色)?\s*[:：]\s*)(.*)$/);
+ if(combined){
+   p.eyeColor=/^(?:―|-)$/.test(combined[1].trim())?"":combined[1].trim();
+   if(!String(p.skinColor||"").trim()&&combined[2].trim()&&!/^(?:―|-)$/.test(combined[2].trim()))p.skinColor=combined[2].trim();
+   if(pc?.profile&&typeof pc.profile==="object")Object.assign(pc.profile,{eyeColor:p.eyeColor,skinColor:p.skinColor||""});
+ }
+ return p;
+}
 function pcProfileHtml(pc){
- const p=pc?.profile||{},labels={occupation:"職業",age:"年齢",birthday:"誕生日",gender:"性別",height:"身長",weight:"体重",birthplace:"出身",hairColor:"髪",eyeColor:"瞳",skinColor:"肌"};
+ const p=normalizedPcProfile(pc),labels={occupation:"職業",age:"年齢",birthday:"誕生日",gender:"性別",height:"身長",weight:"体重",birthplace:"出身",hairColor:"髪",eyeColor:"瞳",skinColor:"肌"};
  return `<section class="pc-profile-summary" aria-label="PROFILE"><strong>PROFILE</strong><dl>${Object.entries(labels).map(([key,label])=>`<div><dt>${esc(label)}</dt><dd>${esc(String(p[key]||"").trim()||"―")}</dd></div>`).join("")}</dl></section>`;
 }
 function compactPcDetailHeader(pc,st,sets){const root=q("pcDetailContent"),head=root.querySelector(".pc-detail-head"),close=head?.querySelector(".pc-detail-close");if(head&&close)close.insertAdjacentHTML("beforebegin",`<div class="pc-detail-head-meta"><div>${systemSelectorHtml(pc)}</div><strong>${st.count}シナリオ</strong><span>初卓 ${esc(st.first||"―")}</span><span>最終 ${esc(st.last||"―")}</span></div>`);const management=root.querySelector(".pc-management-strip"),overview=root.querySelector(".pc-detail-overview"),isGuide=isHomeFavoritePc(pc.id);if(management&&overview){overview.insertAdjacentHTML("afterend",`<div class="pc-detail-quick-actions">${pc.sheet?`<a class="link" href="${esc(pc.sheet)}" target="_blank" rel="noopener">キャラクターシートを開く</a>`:""}<button type="button" data-detail-edit="${esc(pc.id)}">編集</button><button type="button" data-home-guide="${esc(pc.id)}" aria-pressed="${isGuide}">${isGuide?"HOMEお気に入りに追加済み":"HOMEお気に入りに追加"}</button></div>`);management.remove()}const active=Object.values(sets)[0]||{skills:{}},count=normalizedSkills(active.skills).length,skillCount=root.querySelector("[data-lazy-skills] summary span:last-child");if(skillCount)skillCount.textContent=`${count}件`}
