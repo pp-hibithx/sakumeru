@@ -1291,7 +1291,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 @media(max-width:620px){.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-head,.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-visibility{position:static;float:none}.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-head{display:flex;justify-content:flex-end;height:28px}.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"]>.article-block-visibility{display:flex;min-height:28px;margin-top:-28px;padding-right:52px;justify-content:flex-end}.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block[data-block-type="text"] .sm-rich-toolbar{padding-right:8px;margin-top:3px}}
 @media(max-width:620px){.article-block-head-tools{width:100%;margin-left:0}.article-block-head-tools .article-block-actions{margin-left:auto}.article-editor-modebar{align-items:center}.article-editor-preview{padding:12px}.article-view-switch button{min-width:76px}}
 
-/* 卓記事は一枚の編集面として見せる。block/children[] は保存と並び替えのために維持する。 */
+/* プレイ記事は一枚の編集面として見せる。block/children[] は保存と並び替えのために維持する。 */
 .lib-article-editor:not(.article-reorder-mode) .article-blocks{
  display:block;padding:0;border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--panel);overflow:visible
 }
@@ -1596,11 +1596,11 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 
 <dialog id="xReportGallery" class="xreport-gallery"><div class="xreport-gallery-panel"><div class="xreport-gallery-head"><strong>卓報告スクリーンショット</strong><button id="xReportGalleryClose" type="button">閉じる</button></div><div id="xReportGalleryGrid" class="xreport-gallery-grid"></div></div></dialog>
 <dialog id="xPreviewDialog" class="x-preview"><h2>X卓報告プレビュー</h2><p class="small muted">投稿前に自由に編集できます。SNS表示名が設定されている人は短縮名で表示します。</p><textarea id="xPreviewText"></textarea><div class="x-preview-actions"><span id="xPreviewCount" class="small muted"></span><div class="row"><button id="xPreviewCancel" type="button">戻る</button><button id="xPreviewPost" type="button">X投稿画面へ</button></div></div></dialog>
-<dialog id="calendarReportDialog" class="x-preview"><h2>この日の卓を記録しますか？</h2><p id="calendarReportSummary"></p><p class="small muted">CALENDARで選んだ日付を卓日として、LIBRARYのこの陣に卓記事を作成します。</p><div class="row" style="justify-content:flex-end;gap:8px"><button id="calendarReportCancel" type="button">キャンセル</button><button id="calendarReportConfirm" type="button">この日付で記録する</button></div></dialog>
-<dialog id="postSaveDialog" class="x-preview"><h2 id="postSaveTitle">保存しました</h2><p class="small muted">このまま次の操作へ進めます。</p><div class="row" style="justify-content:flex-end;gap:8px"><button id="postSaveClose" type="button">閉じる</button><button id="postSaveArticle" type="button">卓記事を書く</button><button id="postSaveX" type="button">Xで卓報告</button></div></dialog>
+<dialog id="calendarReportDialog" class="x-preview"><h2>この日の卓を記録しますか？</h2><p id="calendarReportSummary"></p><p class="small muted">CALENDARで選んだ日付を卓日として、LIBRARYのこの陣にプレイ記事を作成します。</p><div class="row" style="justify-content:flex-end;gap:8px"><button id="calendarReportCancel" type="button">キャンセル</button><button id="calendarReportConfirm" type="button">この日付で記録する</button></div></dialog>
+<dialog id="postSaveDialog" class="x-preview"><h2 id="postSaveTitle">保存しました</h2><p class="small muted">このまま次の操作へ進めます。</p><div class="row" style="justify-content:flex-end;gap:8px"><button id="postSaveClose" type="button">閉じる</button><button id="postSaveArticle" type="button">プレイ記事を書く</button><button id="postSaveX" type="button">Xへ投稿</button></div></dialog>
 
 <dialog id="bgmLibraryDialog" class="bgm-library-dialog"><div class="bgm-library-panel">
-  <div class="bgm-library-head"><div><h2 style="margin:0">BGM LIBRARY</h2><div class="small muted">登録した曲を卓記事で何度でも再利用できます。</div></div><button type="button" id="bgmLibraryClose">閉じる</button></div>
+  <div class="bgm-library-head"><div><h2 style="margin:0">BGM LIBRARY</h2><div class="small muted">登録した曲をプレイ記事で何度でも再利用できます。</div></div><button type="button" id="bgmLibraryClose">閉じる</button></div>
   <div class="bgm-library-toolbar"><div><label>検索</label><input id="bgmLibrarySearch" type="search" placeholder="曲名・作者・配布元・タグ"></div><div><label>タグ</label><select id="bgmLibraryTag"><option value="">すべて</option></select></div></div>
   <div id="bgmLibraryList" class="bgm-library-grid"></div>
 </div></dialog>
@@ -1847,9 +1847,9 @@ function saveRunArticlePages(v){
  const raw=JSON.stringify(v);
  localStorage.setItem(RUN_ARTICLE_PAGES_KEY,raw);
  const stored=localStorage.getItem(RUN_ARTICLE_PAGES_KEY);
- if(stored!==raw)throw new Error("卓記事の保存後検証に失敗しました。");
+if(stored!==raw)throw new Error("プレイ記事の保存後検証に失敗しました。");
  const verified=JSON.parse(stored||"{}");
- if(!verified||typeof verified!=="object")throw new Error("卓記事を保存領域から再取得できませんでした。");
+if(!verified||typeof verified!=="object")throw new Error("プレイ記事を保存領域から再取得できませんでした。");
  return verified;
 }
 function articlePagesForRun(runId){const all=loadRunArticlePages();return Array.isArray(all[runId])?all[runId]:[]}
@@ -2792,7 +2792,7 @@ function buildSharedScenarioNavigation(scenarioId,scenarioTitle,current={}){
  const addArticle=(runId,article,shareId,albumId="",label="")=>{
   if(!article||!shareId||!article.shareEnabled)return;
   const row=ensureRun(runId,albumId,label);if(!row)return;
-  if(!row.articles.some(v=>v.shareId===shareId))row.articles.push({shareId:String(shareId),articleId:String(article.id||""),title:String(article.title||"卓記事")});
+if(!row.articles.some(v=>v.shareId===shareId))row.articles.push({shareId:String(shareId),articleId:String(article.id||""),title:String(article.title||"プレイ記事")});
  };
  records.forEach(x=>addSession(x,x.shareId));
  [...new Set(records.map(x=>String(x.runId||"")).filter(Boolean))].forEach(runId=>{
@@ -3433,7 +3433,7 @@ function renderBgmLibrary(){
  const tags=[...new Set(lib.flatMap(x=>Array.isArray(x.tags)?x.tags:[]))].sort((a,b)=>a.localeCompare(b,"ja"));if(q("bgmLibraryTag")){const cur=q("bgmLibraryTag").value;q("bgmLibraryTag").innerHTML='<option value="">すべて</option>'+tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");q("bgmLibraryTag").value=tags.includes(cur)?cur:""}
  lib=lib.filter(x=>(!tag||(x.tags||[]).includes(tag))&&(!term||[x.title,x.artist,x.sourceLabel,(x.tags||[]).join(" ")].join(" ").toLowerCase().includes(term))).sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"ja"));
  list.innerHTML=lib.length?lib.map(x=>{const src=x.sourceUrl?`<a class="link" href="${esc(x.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(x.sourceLabel||"配布元")}</a>`:esc(x.sourceLabel||"");const audio=x.audioUrl?`<audio controls preload="metadata" src="${esc(x.audioUrl)}"></audio>`:(x.localAudioId?`<audio controls preload="metadata" data-local-audio-id="${esc(x.localAudioId)}"></audio>`:"");return `<article class="bgm-library-card"><div class="bgm-library-title">🎵 ${esc(x.title||"BGM")}</div><div class="bgm-library-meta">${x.artist?`作者：${esc(x.artist)}<br>`:""}${src?`配布元：${src}<br>`:""}使用 ${bgmUsageCount(x.id)}件</div>${x.tags?.length?`<div class="bgm-lib-tags">${x.tags.map(t=>`#${esc(t)}`).join(" ")}</div>`:""}${audio}<div class="bgm-library-card-actions"><button type="button" data-bgm-lib-use="${esc(x.id)}">この曲を使う</button><button type="button" class="danger" data-bgm-lib-delete="${esc(x.id)}">削除</button></div></article>`}).join(""):'<div class="bgm-library-empty">登録済みBGMはまだありません。<br>BGMブロックから「BGM LIBRARYに登録」できます。</div>';
- list.querySelectorAll('[data-bgm-lib-use]').forEach(b=>b.onclick=()=>useBgmLibraryTrack(b.dataset.bgmLibUse));list.querySelectorAll('[data-bgm-lib-delete]').forEach(b=>b.onclick=()=>{const id=b.dataset.bgmLibDelete;if(!confirm("このBGMをLIBRARYから削除しますか？\n卓記事内の使用済みBGMは消えません。"))return;saveBgmLibrary(loadBgmLibrary().filter(x=>x.id!==id));renderBgmLibrary()});hydrateLocalArticleAudio(list);
+list.querySelectorAll('[data-bgm-lib-use]').forEach(b=>b.onclick=()=>useBgmLibraryTrack(b.dataset.bgmLibUse));list.querySelectorAll('[data-bgm-lib-delete]').forEach(b=>b.onclick=()=>{const id=b.dataset.bgmLibDelete;if(!confirm("このBGMをLIBRARYから削除しますか？\nプレイ記事内の使用済みBGMは消えません。"))return;saveBgmLibrary(loadBgmLibrary().filter(x=>x.id!==id));renderBgmLibrary()});hydrateLocalArticleAudio(list);
 }
 function openBgmLibrary(row){bgmLibraryTargetRow=row;renderBgmLibrary();q("bgmLibraryDialog").showModal()}
 function useBgmLibraryTrack(id){const x=loadBgmLibrary().find(v=>v.id===id),row=bgmLibraryTargetRow;if(!x||!row)return;row.querySelector('.articleBgmLibraryId').value=x.id;row.querySelector('.articleBgmTitle').value=x.title||"";row.querySelector('.articleBgmArtist').value=x.artist||"";row.querySelector('.articleBgmSourceLabel').value=x.sourceLabel||"";row.querySelector('.articleBgmSourceUrl').value=x.sourceUrl||"";row.querySelector('.articleBgmAudioUrl').value=x.audioUrl||"";row.querySelector('.articleBgmLocalId').value=x.localAudioId||"";row.querySelector('.articleBgmLocalName').value=x.localFileName||"";row.querySelector('.articleBgmTags').value=(x.tags||[]).join("、");row.querySelector('.article-local-audio').textContent=x.localFileName?`保存済み：${x.localFileName}`:"MP3本体は共有記事には含まれません。";q("bgmLibraryDialog").close();bgmLibraryTargetRow=null}
@@ -3536,12 +3536,12 @@ function articleEditorBlockHtml(b,index,total){
 function articlePagesHtml(r){
  const pages=articlePagesForRun(r.id).slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
  return `<section class="lib-article-pages">
-   <div class="lib-article-pages-head"><div><strong>卓記事</strong><div class="small muted">1ページの中に文章・画像・YouTube・BGM・トグルを好きな順で追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div></div>
+   <div class="lib-article-pages-head"><div><strong>プレイ記事</strong><div class="small muted">1ページの中に文章・画像・YouTube・BGM・トグルを好きな順で追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div></div>
    <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page" data-article-page-id="${esc(p.id)}">
      <summary><div><div class="lib-article-page-title">${esc(p.title||`ページ ${i+1}`)} <span class="lib-article-share-badge">${esc(articleShareLabel(p))}</span></div><div class="lib-article-page-meta">${esc(p.updatedAt||p.createdAt||"")}</div></div><span>▼</span></summary>
      ${articleBlocksHtml(p)}
      <div class="lib-article-page-actions">${p.shareEnabled?`<button type="button" data-article-share="${esc(p.id)}" data-run-id="${esc(r.id)}">共有URL</button><button type="button" data-article-x="${esc(p.id)}" data-run-id="${esc(r.id)}">Xに投稿</button>`:""}<button type="button" data-article-edit="${esc(p.id)}" data-run-id="${esc(r.id)}">編集</button><button type="button" class="danger" data-article-delete="${esc(p.id)}" data-run-id="${esc(r.id)}">削除</button></div>
-   </details>`).join(""):'<div class="small muted">卓記事ページはまだありません。</div>'}</div>
+   </details>`).join(""):'<div class="small muted">プレイ記事はまだありません。</div>'}</div>
    <div class="lib-article-editor" id="articleEditor-${esc(r.id)}" hidden>
      <input type="hidden" class="articleEditId">
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
@@ -3605,7 +3605,7 @@ function setArticleSaveStatus(ed,message,type=""){
 }
 async function flushArticleDraft(ed){
  const key=articleDraftKey(ed);if(!key||!articleDirtyEditors.has(key))return false;
- try{await articleDraftPut(articleEditorSnapshot(ed));return true}catch(err){console.error("卓記事の自動下書きを保存できませんでした",err);setArticleSaveStatus(ed,"自動下書きを保存できませんでした。入力内容は画面に残っています。ページを閉じず、本文をコピーして退避してください。","error");return false}
+try{await articleDraftPut(articleEditorSnapshot(ed));return true}catch(err){console.error("プレイ記事の自動下書きを保存できませんでした",err);setArticleSaveStatus(ed,"自動下書きを保存できませんでした。入力内容は画面に残っています。ページを閉じず、本文をコピーして退避してください。","error");return false}
 }
 function scheduleArticleDraft(ed){const key=articleDraftKey(ed);if(!key)return;clearTimeout(articleDraftTimers.get(key));articleDraftTimers.set(key,setTimeout(()=>{articleDraftTimers.delete(key);flushArticleDraft(ed)},700))}
 function articleEditorChanged(ed){const key=articleDraftKey(ed);if(!key)return;articleDirtyEditors.add(key);scheduleArticleDraft(ed)}
@@ -4151,7 +4151,7 @@ async function openArticleEditor(runId,pageId=""){
  const pages=articlePagesForRun(runId),page=pages.find(p=>p.id===pageId)||null;
  const previousKey=articleDraftKey(ed);if(previousKey){articleDirtyEditors.delete(previousKey);clearTimeout(articleDraftTimers.get(previousKey));articleDraftTimers.delete(previousKey)}
  let draft=null,draftReadError=null;
- try{draft=page?await articleDraftGet(`${runId}:${page.id}`):await articleDraftLatestForRun(runId,new Set(pages.map(p=>String(p.id))))}catch(err){draftReadError=err;console.error("卓記事の下書きを確認できませんでした",err)}
+try{draft=page?await articleDraftGet(`${runId}:${page.id}`):await articleDraftLatestForRun(runId,new Set(pages.map(p=>String(p.id))))}catch(err){draftReadError=err;console.error("プレイ記事の下書きを確認できませんでした",err)}
  const articleId=page?.id||draft?.articleId||TRPG39.uuid(),draftKey=`${runId}:${articleId}`;
  ed.dataset.runId=runId;ed.dataset.articleDraftId=articleId;
  ed.querySelector('.articleEditId').value=page?.id||"";
@@ -4192,16 +4192,16 @@ async function saveArticlePage(runId){
    const verifiedPages=saveArticlePagesForRun(runId,pages),verified=verifiedPages.find(p=>String(p.id)===String(id));
    const expectedFlat=flattenArticleBlocks(blocks),actualFlat=flattenArticleBlocks(verified?.blocks||[]),expectedText=expectedFlat.filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
    const actualText=actualFlat.filter(b=>b.type==="text").map(b=>({id:String(b.id),html:String(b.html||"")}));
-   if(!verified||actualFlat.length!==expectedFlat.length||JSON.stringify(actualText)!==JSON.stringify(expectedText))throw new Error("卓記事の保存内容を再確認できませんでした。編集内容は画面に残っています。");
+if(!verified||actualFlat.length!==expectedFlat.length||JSON.stringify(actualText)!==JSON.stringify(expectedText))throw new Error("プレイ記事の保存内容を再確認できませんでした。編集内容は画面に残っています。");
    try{await articleDraftDelete(articleDraftKey(ed))}catch(err){console.warn("正常保存後の下書き削除に失敗しました",err)}
    clearArticleDirty(ed);setArticleSaveStatus(ed,"");render();
  }catch(err){
-   console.error("卓記事を保存できませんでした",err);articleDirtyEditors.add(articleDraftKey(ed));const draftSaved=await flushArticleDraft(ed);
+console.error("プレイ記事を保存できませんでした",err);articleDirtyEditors.add(articleDraftKey(ed));const draftSaved=await flushArticleDraft(ed);
    const quota=err?.name==="QuotaExceededError"||/quota|容量/i.test(String(err?.message||""));
    setArticleSaveStatus(ed,`保存できませんでした。${quota?"ブラウザの保存容量が不足しています。":""}入力内容は画面に残っています。${draftSaved?"自動下書きは端末内に保持されています。":"自動下書きも保存できなかったため、"}ページを閉じず、本文をコピーして退避してください。`,"error");
  }finally{if(saveButton&&document.contains(saveButton))saveButton.disabled=false}
 }
-function deleteArticlePage(runId,pageId){if(!confirm("この卓記事ページを削除しますか？"))return;saveArticlePagesForRun(runId,articlePagesForRun(runId).filter(p=>p.id!==pageId));render()}
+function deleteArticlePage(runId,pageId){if(!confirm("このプレイ記事を削除しますか？"))return;saveArticlePagesForRun(runId,articlePagesForRun(runId).filter(p=>p.id!==pageId));render()}
 function articleContextForRun(runId){const groups=groupData(data),g=groups.find(x=>(x.runs||[]).some(r=>r.id===runId)),r=g?.runs?.find(x=>x.id===runId);return {group:g,run:r}}
 
 function articleOgpWrapLines(ctx,text,maxWidth,maxLines=2){
@@ -4253,7 +4253,7 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,_safeExcerpt="",sp
  // brand label
  ctx.fillStyle="rgba(255,255,255,.62)";
  ctx.font='600 26px system-ui, "Yu Gothic", "Meiryo", sans-serif';
- ctx.fillText("SAKU+MERU  卓記事",110,108);
+ ctx.fillText("SAKU+MERU  PLAY ARTICLE",110,108);
 
  // scenario
  ctx.fillStyle="#f2e6bd";
@@ -4286,7 +4286,7 @@ async function createArticleOgpPng(scenarioTitle,articleTitle,_safeExcerpt="",sp
  ctx.font='800 58px system-ui, "Yu Gothic", "Meiryo", sans-serif';
  // 本文抜粋はX投稿本文とmeta descriptionへ任せ、画像では卓記録タイトルを主役にする。
  // 右下ロゴを廃止したため、シナリオ見出しが2行でもタイトルを3行まで使用できる。
- const titleLines=articleOgpWrapLines(ctx,articleTitle||"卓記事",textWidth,3);
+ const titleLines=articleOgpWrapLines(ctx,articleTitle||"プレイ記事",textWidth,3);
  titleLines.forEach((line,i)=>ctx.fillText(line,110,titleY+i*66));
 
  // footer
@@ -4348,13 +4348,13 @@ async function shareArticlePage(runId,pageId,options={}){
       const picked=shareableBlocks.find(b=>b.type==="image"&&b.ogp&&b.url);
      if(picked){articleOgpImage=picked.url;ogpSource="image"}
      else{
-       const ogpBlob=await createArticleOgpPng(group?.title||"シナリオ",page.title||"卓記事",articleTextForX(page),page.spoilerWarning!==false);
+       const ogpBlob=await createArticleOgpPng(group?.title||"遊びの記録",page.title||"プレイ記事",articleTextForX(page),page.spoilerWarning!==false);
        articleOgpImage=await uploadArticleOgpImage(ogpBlob,page.id);ogpSource="title";
      }
    }
      const sharedBlocks=await prepareConversationBlocksForShare(baseBlocks);
      const sharedBody=baseBlocks.filter(b=>b.type==="text"&&(b.visibility==="public"||b.visibility==="link")).map(b=>b.text||(b.html&&window.SAKUMERichEditor?SAKUMERichEditor.plainText(b.html):"")).filter(Boolean).join("\n\n");
-    let payload={kind:"library-article",version:14,title:page.title||"卓記事",body:sharedBody,blocks:sharedBlocks,scenarioId:group?.scenarioId||"",runId:runId||"",articleId:page.id||"",scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:page.spoilerWarning!==false,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
+    let payload={kind:"library-article",version:14,title:page.title||"プレイ記事",body:sharedBody,blocks:sharedBlocks,scenarioId:group?.scenarioId||"",runId:runId||"",articleId:page.id||"",scenarioTitle:group?.title||"",runLabel:run?.label||"",image:articleOgpImage,articleOgpImage,articleOgpSource:ogpSource,ogpKind:"article",ogDescription:"ネタバレを含む可能性があります。続きは共有ページでご覧ください。",spoilerWarning:page.spoilerWarning!==false,shareMode:"link",passwordRequired:!!page.passwordProtected,passwordHash:page.passwordHash||"",passwordHint:page.passwordHint||"",updatedAt:page.updatedAt||""};
    let shareId=page.shareId||"";
    if(!shareId)shareId=await TRPG39Cloud.createSharedPage(payload);
    const albumId=String(run?.items?.[0]?.id||"");
@@ -4363,7 +4363,7 @@ async function shareArticlePage(runId,pageId,options={}){
    saveArticlePagesForRun(runId,pages.map(p=>p.id===page.id?{...p,shareId,articleOgpImage}:p));
    const previewUrl=new URL("https://sakumeru-share.sakumeru.workers.dev/");
    previewUrl.searchParams.set("id",shareId);previewUrl.searchParams.set("type","article");previewUrl.searchParams.set("v",Date.now().toString(36));
-   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。卓記事タイトルのOGPを使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
+   const shareMsg=page.passwordProtected?"この記事の共有URLです。パスワード付きのため、SNSカードはSAKU+MERU公式OGPです。":(ogpSource==="image"?"この記事の共有URLです。選択した画像をSNSカードに使用します。":"この記事の共有URLです。プレイ記事タイトルのOGPを使用します。");if(!options.quiet)showShareUrl(previewUrl.href,shareMsg);
    return previewUrl.href;
  }catch(e){console.error(e);alert(e.message||e);return ""}
 }
