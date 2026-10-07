@@ -25,6 +25,7 @@
 .sc-form{display:none;max-width:760px;margin:0}.sc-form.open{display:block}
 .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sc-checks{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.sc-checks label{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:5px 8px;margin:0}.sc-checks input{width:auto}
 .sc-tools{display:flex;gap:6px;flex-wrap:wrap}.sc-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap}.sc-toolbar-main{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.sc-toolbar-main>div{min-width:0}.sc-search{width:220px}.sc-filter{width:150px}.sc-scope{width:180px}.sc-number-filter{width:92px}.sc-sort{width:170px}.sc-tag-filter{width:140px}.sc-toolbar button{width:auto}
+.sc-view-switch{display:flex;gap:5px}.sc-view-switch button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 20%,var(--panel));font-weight:800}.sc-compact-view{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px}.sc-compact-column{margin-top:0;border:2px solid color-mix(in srgb,var(--line) 72%,var(--text));border-radius:11px;padding:12px;min-width:0}.sc-compact-column h3{display:flex;justify-content:space-between;gap:8px;margin:0 0 9px}.sc-compact-list{display:grid;gap:6px}.sc-compact-item{width:100%;padding:8px 10px;text-align:left;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--panel) 88%,var(--bg));color:inherit}.sc-compact-title{display:block;font-weight:800;overflow-wrap:anywhere}.sc-compact-meta{display:block;margin-top:2px;color:var(--muted);font-size:.82rem}.sc-compact-empty{padding:10px;color:var(--muted);border:1px dashed var(--line);border-radius:8px}@media(max-width:760px){.sc-compact-view{grid-template-columns:1fr}.sc-view-switch{width:100%}.sc-view-switch button{flex:1}}
 .scenario-save-error{display:block;flex-basis:100%;color:#ffb6b6;font-weight:700;line-height:1.6}
 .sc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
 .sc-list-more{grid-column:1/-1;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.sc-list-more button{width:auto}.sc-pagination{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:12px 0 2px}.sc-pagination button{width:auto;min-width:40px;padding:7px 10px}.sc-pagination button[aria-current="page"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 20%,var(--panel));color:var(--text);font-weight:800}.sc-pagination button:disabled{opacity:.42;cursor:not-allowed}.sc-pagination-ellipsis{min-width:24px;text-align:center;color:var(--muted)}.sc-pagination-status{width:100%;text-align:center;color:var(--muted);font-size:12px}
@@ -288,7 +289,11 @@ html.theme-dark #scenarioForm :is(input,textarea)::placeholder{color:#aeb4bd!imp
 <div class="sc-filter"><label>システム</label><select id="systemFilter"><option value="all">すべて</option></select></div>
 <div class="sc-filter"><label>表示</label><select id="archiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
 <div class="sc-sort"><label>並び順</label><select id="sort"><option value="name">50音順</option><option value="new">登録が新しい順</option><option value="old">登録が古い順</option><option value="recentRun">最近回した順</option><option value="recentPlay">最近遊んだ順</option><option value="kpCount">回した回数順</option></select></div>
-</div><div class="sc-tools"><button id="shareScenarioList" type="button">共有</button><button id="openForm" type="button">＋ 追加</button></div></div><div id="summary" class="small" style="margin-top:8px"></div>
+</div><div class="sc-tools"><div class="sc-view-switch" role="group" aria-label="作品の表示方法"><button id="scenarioListViewBtn" type="button" aria-pressed="false">作品一覧</button><button id="scenarioThumbViewBtn" type="button" aria-pressed="true">サムネイル</button></div><button id="shareScenarioList" type="button">共有</button><button id="openForm" type="button">＋ 追加</button></div></div><div id="summary" class="small" style="margin-top:8px"></div>
+<div id="scenarioCompactView" class="sc-compact-view" hidden>
+ <section id="compactOwnColumn" class="sc-compact-column"><h3><span>自分の作品</span><span id="compactOwnCount" class="sc-category-count">0件</span></h3><div id="compactOwnList" class="sc-compact-list"></div></section>
+ <section id="compactFriendColumn" class="sc-compact-column"><h3><span>友人の作品</span><span id="compactFriendCount" class="sc-category-count">0件</span></h3><div id="compactFriendList" class="sc-compact-list"></div></section>
+</div>
 <div class="sc-categories" aria-label="シナリオの分類">
 <details class="sc-category" id="draftPanel">
  <summary class="sc-category-summary"><span>登録待ち</span><span id="draftCount" class="sc-category-count">0件</span></summary>
@@ -438,6 +443,9 @@ function scenarioRepresentativeHtml(x={},kind="card"){
 }
 
 let data=TRPG39.loadScenarios();
+const SCENARIO_BROWSER_VIEW_KEY="trpg39_scenario_browser_view_v1";
+let scenarioBrowserView="thumb";
+try{scenarioBrowserView=localStorage.getItem(SCENARIO_BROWSER_VIEW_KEY)==="list"?"list":"thumb"}catch{}
 const SCENARIO_CATEGORY_STATE_KEY="trpg39_scenario_category_state_v1";
 const scenarioMobileQuery=matchMedia("(max-width: 860px)");
 const scenarioCategoryLayout=scenarioMobileQuery.matches?"mobile":"desktop";
@@ -1628,6 +1636,33 @@ function renderKpBinder(id,activePageId){
 }
 function kpCompareHtml(b){if(!b.participants.length)return '<div class="small muted">参加PCを追加すると比較できます。</div>';const maps=b.participants.map(p=>kpParseLines(p.skills)),names=[...new Set(maps.flatMap(m=>Object.keys(m)))].sort((a,z)=>a.localeCompare(z,"ja"));if(!names.length)return '<div class="small muted">技能値を入力するとここに一覧表示されます。</div>';return `<table><thead><tr><th>技能</th>${b.participants.map(p=>`<th>${esc(p.name||"PC")}</th>`).join("")}</tr></thead><tbody>${names.map(n=>`<tr><td>${esc(n)}</td>${maps.map(m=>`<td>${m[n]??"—"}</td>`).join("")}</tr>`).join("")}</tbody></table>`}
 
+let compactFriendGroups=new Map();
+function compactScenarioMeta(x={}){
+ const people=rangeText(x.playersMin,x.playersMax,"人"),hours=rangeText(x.hoursMin,x.hoursMax,"時間");
+ return [hours,people].filter(Boolean).join(" ／ ")||"時間・人数未設定";
+}
+function openCompactFriendDetail(key){
+ const g=compactFriendGroups.get(key);if(!g)return;
+ const x=g.item||{},bi=mergedBasicInfo(g),owners=(g.owners||[]).filter(v=>v!=="自分"),tags=[...new Set((g.sources||[]).flatMap(s=>Array.isArray(s.item?.tags)?s.item.tags:[]).filter(Boolean))];
+ const meta=compactScenarioMeta({...x,...bi}),friendSource=(g.sources||[]).find(s=>s.source==="friend"),canImport=friendSource&&!ownScenarioMatch(x);
+ q("detailContent").innerHTML=`<div class="sc-detail-body"><div class="sc-detail-top"><div><h2>${esc(x.title||"名称未設定")}</h2>${x.system?`<div class="small">${esc(x.system)}</div>`:""}<div class="small muted">${esc(meta)}</div>${owners.length?`<div class="small muted">所持：${owners.map(esc).join("、")}</div>`:""}${tags.length?`<div class="sc-tags">${tags.map(t=>`<span class="badge">#${esc(t)}</span>`).join("")}</div>`:""}</div><button class="sc-detail-close" data-close type="button">×</button></div>${x.author?`<p>サークル名：${esc(x.author)}</p>`:""}${scenarioOverviewHtml(x)}<div class="sc-detail-actions">${x.url?`<a class="button" target="_blank" rel="noopener noreferrer" href="${esc(x.url)}">配布・掲載ページ</a>`:""}${canImport?`<button type="button" data-compact-import="${esc(friendSource.item._key)}">自分に追加</button>`:""}</div></div>`;
+ q("detailDialog").showModal();q("detailContent").querySelector("[data-close]").onclick=()=>q("detailDialog").close();
+ q("detailContent").querySelector("[data-compact-import]")?.addEventListener("click",e=>{q("detailDialog").close();importFriendScenario(e.currentTarget.dataset.compactImport)});
+}
+function renderCompactScenarioView(xs,scope){
+ const root=q("scenarioCompactView"),listMode=scenarioBrowserView==="list";root.hidden=!listMode;
+ q("scenarioListViewBtn").setAttribute("aria-pressed",String(listMode));q("scenarioThumbViewBtn").setAttribute("aria-pressed",String(!listMode));
+ if(!listMode)return;
+ const ownColumn=q("compactOwnColumn"),friendColumn=q("compactFriendColumn");ownColumn.hidden=scope==="friend";friendColumn.hidden=scope==="own";
+ q("compactOwnCount").textContent=`${xs.length}件`;
+ q("compactOwnList").innerHTML=xs.length?xs.map(x=>`<button type="button" class="sc-compact-item" data-compact-own="${esc(x.id)}"><span class="sc-compact-title">${esc(x.title||"名称未設定")}</span><span class="sc-compact-meta">${esc(compactScenarioMeta(x))}</span></button>`).join(""):'<div class="sc-compact-empty">条件に合う作品はありません。</div>';
+ const groups=groupedFriendScenarios().filter(g=>(g.sources||[]).some(s=>s.source==="friend")).filter(groupMatches).sort((a,b)=>String(a.item?.title||"").localeCompare(String(b.item?.title||""),"ja"));
+ compactFriendGroups=new Map(groups.map(g=>[g.key,g]));q("compactFriendCount").textContent=`${groups.length}件`;
+ q("compactFriendList").innerHTML=groups.length?groups.map(g=>{const bi=mergedBasicInfo(g);return `<button type="button" class="sc-compact-item" data-compact-friend="${esc(g.key)}"><span class="sc-compact-title">${esc(g.item?.title||"名称未設定")}</span><span class="sc-compact-meta">${esc(compactScenarioMeta({...g.item,...bi}))}</span></button>`}).join(""):'<div class="sc-compact-empty">条件に合う共有作品はありません。</div>';
+ q("compactOwnList").querySelectorAll("[data-compact-own]").forEach(button=>button.onclick=()=>detail(button.dataset.compactOwn));
+ q("compactFriendList").querySelectorAll("[data-compact-friend]").forEach(button=>button.onclick=()=>openCompactFriendDetail(button.dataset.compactFriend));
+}
+
 function render(){
  let term=q("search").value.trim().toLowerCase(),f=q("filter").value;
  const scope=q("searchScope")?.value||"all";
@@ -1644,6 +1679,11 @@ function render(){
  q("ownMatchCount").textContent=xs.length===data.length?`${data.length}件`:`${xs.length} / ${data.length}件`;
  q("summary").textContent="状態・表示・並び順・タグ・システムは自分のシナリオに、検索・参加人数・遊べる時間は両方に適用されます。";
  const ownSection=q("ownScenarioSection"),friendSection=q("friendScenarioSection");
+ renderCompactScenarioView(xs,scope);
+ if(scenarioBrowserView==="list"){
+   ownSection.hidden=true;friendSection.hidden=true;
+   return;
+ }
  ownSection.hidden=scope==="friend";
  friendSection.hidden=scope==="own";
  if(term){
@@ -1707,6 +1747,8 @@ draftScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(draf
 ownScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(ownScenarioSection,"ownOpen",[draftScenarioSection,friendScenarioSection]));
 friendScenarioSection.addEventListener("toggle",()=>onScenarioCategoryToggle(friendScenarioSection,"friendOpen",[draftScenarioSection,ownScenarioSection]));
 const resetOwnScenarioPageAndRender=()=>{ownScenarioPage=1;render()};
+function setScenarioBrowserView(view){scenarioBrowserView=view==="list"?"list":"thumb";try{localStorage.setItem(SCENARIO_BROWSER_VIEW_KEY,scenarioBrowserView)}catch{}render()}
+q("scenarioListViewBtn").onclick=()=>setScenarioBrowserView("list");q("scenarioThumbViewBtn").onclick=()=>setScenarioBrowserView("thumb");
 q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioPageAndRender;q("searchScope").onchange=resetOwnScenarioPageAndRender;q("filter").onchange=resetOwnScenarioPageAndRender;q("playersFilter").oninput=resetOwnScenarioPageAndRender;q("hoursFilter").oninput=resetOwnScenarioPageAndRender;q("tagFilter").onchange=resetOwnScenarioPageAndRender;q("archiveFilter").onchange=resetOwnScenarioPageAndRender;q("sort").onchange=resetOwnScenarioPageAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
