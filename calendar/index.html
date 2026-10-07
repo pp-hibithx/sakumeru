@@ -1771,10 +1771,13 @@ function renderCalendarOverview(){
  $("calendarLaterMonths").innerHTML=months.size?[...months.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,rows])=>{const [year,month]=key.split("-").map(Number);return `<section class="calendar-overview-month"><h4>${year}年${month}月</h4>${agendaItemsHtml(rows,list)}</section>`}).join(""):'<div class="calendar-overview-empty">来月以降の予定はありません。</div>';
  document.querySelectorAll("[data-agenda-event]").forEach(button=>button.onclick=()=>{hideEditor();showEventDetail(button.dataset.agendaEvent)});
 }
-function setCalendarView(view){
- const month=view==="month";$("calendarOverview").hidden=month;$("monthCalendarView").hidden=!month;
+const calendarViewPreferenceKey="trpg39_calendar_view";
+function savedCalendarView(){try{return localStorage.getItem(calendarViewPreferenceKey)==="month"?"month":"agenda"}catch(e){return "agenda"}}
+function setCalendarView(view,persist=true){
+ const selected=view==="month"?"month":"agenda",month=selected==="month";$("calendarOverview").hidden=month;$("monthCalendarView").hidden=!month;
  $("calendarLegend").hidden=!month;
  $("agendaViewBtn").setAttribute("aria-pressed",String(!month));$("monthViewBtn").setAttribute("aria-pressed",String(month));
+ if(persist)try{localStorage.setItem(calendarViewPreferenceKey,selected)}catch(e){}
 }
 function renderCalendar(){
  const y=current.getFullYear(),m=current.getMonth();$("yearJump").value=String(y);$("monthJump").value=String(m+1);$("weekdayHead").innerHTML=["月","火","水","木","金","土","日"].map(x=>`<div class="calendar-head">${x}</div>`).join("");
@@ -2039,7 +2042,7 @@ $("monthJump").addEventListener("change",()=>{$("jumpMonthBtn").click()});
 $("yearJump").addEventListener("keydown",e=>{if(e.key==="Enter")$("jumpMonthBtn").click()});
 $("todayBtn").onclick=()=>{current=new Date();current.setDate(1);renderCalendar()};$("newEventBtn").onclick=()=>{resetForm();showEditor();/* keep current scroll position while editing */};$("resetEvent").onclick=()=>{resetForm();hideEditor()};
 function openRequestedCalendarEvent(){const id=new URLSearchParams(location.search).get("eventId");if(!id)return;const hit=events().find(x=>String(x.id)===String(id));if(!hit)return;const day=String(hit.start||hit.date||"").slice(0,10),m=day.match(/^(\d{4})-(\d{2})/);if(m){current=new Date(Number(m[1]),Number(m[2])-1,1);renderCalendar()}showEventDetail(hit.id);requestAnimationFrame(()=>$("eventDetailPanel")?.scrollIntoView({behavior:"smooth",block:"center"}))}
-initCalendarParticipantPicker();TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();renderCalendar();openRequestedCalendarEvent();
+initCalendarParticipantPicker();TRPG39.syncAllEventsToAlbum();fillScenarioSelect();resetForm();hideEditor();renderCalendar();setCalendarView(savedCalendarView(),false);openRequestedCalendarEvent();
 })();
 </script>
 
