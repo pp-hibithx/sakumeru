@@ -1464,6 +1464,7 @@ function effectiveSessionDay(x,list=events()){return runDayInfo(x,list).day}
 function updateDayLabel(){$("dateLabel").textContent="日付"}
 function updateTypeUI(){
  const blocked=$("eventType").value==="blocked";document.querySelectorAll(".trpg-field").forEach(x=>x.hidden=blocked);$("eventStatus").disabled=blocked;
+ if(blocked)$("dateModeBox").hidden=false;
  const specialKind=!blocked&&$("eventSessionKind").value!=="main";$("eventDayWrap").hidden=blocked||specialKind;
  $("dateLabel").textContent="日付";
  $("titleHint").textContent=blocked?"空欄なら「予定あり」と表示します":"直接入力したシナリオ名はSCENARIOにも自動登録されます";
@@ -1798,7 +1799,20 @@ $("saveEvent").onclick=()=>{
  if(type==="trpg"&&TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){
    calendarParticipantNames().forEach(name=>TRPG39.ensurePlayer(name));
  }if(!date)return alert("日付を入力してください。");if(type==="trpg"&&!$("eventTitle").value.trim())return alert("シナリオ名を入力してください。");let list=events();
- if(type==="blocked"){const id=id0||TRPG39.uuid(),old=list.find(x=>x.id===id),item=buildBlockedEvent(id,date,old);const warning=conflictMessage(item,list);if(warning&&!confirm(warning))return;const i=list.findIndex(x=>x.id===id);if(i>=0)list[i]=item;else list.push(item);if(old?.linkedAlbumId||old?.type!=="blocked")TRPG39.saveAlbum(TRPG39.loadAlbum().filter(a=>a.eventId!==id));saveEvents(list)}
+ if(type==="blocked"){
+   let ranges;try{ranges=collectSimpleDateRanges()}catch(e){return alert(e.message||String(e))}
+   const title=$("eventTitle").value.trim()||"予定あり",memo=$("eventMemo").value.trim(),oldFirst=id0?list.find(x=>x.id===id0):null,pending=[];
+   for(let n=0;n<ranges.length;n++){
+     const targetDate=String(ranges[n].date||"").slice(0,10);
+     const same=list.find(x=>x.type==="blocked"&&x.id!==id0&&String(x.start||"").slice(0,10)===targetDate&&String(x.title||"予定あり")===title&&String(x.calendarMemo||"")===memo);
+     const old=n===0&&oldFirst?oldFirst:same||null,id=old?.id||(n===0&&id0?id0:TRPG39.uuid()),item=buildBlockedEvent(id,targetDate,old);
+     const warning=conflictMessage(item,list.concat(pending),old);if(warning&&!confirm((ranges.length>1?`${targetDate}：\n`:"")+warning))return;
+     pending.push(item);
+   }
+   pending.forEach(item=>{const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.push(item)});
+   if(oldFirst?.linkedAlbumId||oldFirst?.type!=="blocked")TRPG39.saveAlbum(TRPG39.loadAlbum().filter(a=>a.eventId!==id0));
+   saveEvents(list);if(ranges.length>1)alert(`${ranges.length}件の卓以外の予定を登録しました。`);
+ }
  else{
    let ranges;
    try{ranges=collectSimpleDateRanges()}catch(e){return alert(e.message||String(e))}
