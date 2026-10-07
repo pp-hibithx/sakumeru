@@ -1264,7 +1264,19 @@ function refreshCalendarParticipantRoles(){
 }
 
 function events(){return TRPG39.loadEvents()}
-function saveEvents(v){TRPG39.saveEvents(v)}
+function saveEvents(v){
+ try{
+   TRPG39.saveEvents(v);
+   const saved=TRPG39.loadEvents?.()||[];
+   const expected=new Set((v||[]).map(x=>String(x?.id||"")).filter(Boolean));
+   if(expected.size&&![...expected].every(id=>saved.some(x=>String(x?.id||"")===id)))throw new Error("保存後の確認で一部の予定が見つかりませんでした。");
+   return true;
+ }catch(error){
+   console.error("予定を保存できませんでした。",error);
+   alert(`予定を保存できませんでした。${error?.name==="QuotaExceededError"?"ブラウザの保存容量が不足している可能性があります。":"ページを再読み込みせず、入力内容を残したままお知らせください。"}`);
+   throw error;
+ }
+}
 function fillScenarioSelect(selected=""){
  const xs=scenarios().filter(x=>!x.archived);
  $("scenarioSelect").innerHTML='<option value="">直接入力</option>'+xs
@@ -1668,8 +1680,7 @@ function agendaItemsHtml(rows,list){
  return items.length?`<div class="calendar-agenda-list">${items.map(item=>`<button type="button" class="calendar-agenda-item ${esc(item.className)}" data-agenda-event="${esc(item.id)}">${esc(item.text)}</button>`).join("")}</div>`:'<div class="calendar-overview-empty">予定はありません。</div>';
 }
 function renderCalendarOverview(){
- const list=events(),now=new Date(),today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,todayMonth=today.slice(0,7);
- const selectedYear=current.getFullYear(),selectedMonth=current.getMonth()+1,monthKey=`${selectedYear}-${pad(selectedMonth)}`,startDay=monthKey===todayMonth?now.getDate():1,cutoff=`${monthKey}-${pad(startDay)}`;
+ const list=events(),selectedYear=current.getFullYear(),selectedMonth=current.getMonth()+1,monthKey=`${selectedYear}-${pad(selectedMonth)}`,startDay=1,cutoff=`${monthKey}-01`;
  const active=list.filter(x=>agendaDate(x)>=cutoff&&x.status!=="cancelled"),thisMonth=active.filter(x=>agendaDate(x).slice(0,7)===monthKey),later=active.filter(x=>agendaDate(x).slice(0,7)>monthKey);
  $("calendarThisMonthHeading").textContent=`${selectedYear}年${selectedMonth}月の予定`;
  $("calendarThisMonth").innerHTML=agendaItemsHtml(thisMonth,list);
