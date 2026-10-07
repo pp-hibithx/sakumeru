@@ -69,6 +69,8 @@
       eventId: input.eventId || "",
       scenarioId: input.scenarioId || "",
       title: input.title || "",
+      recordType: input.recordType || "trpg",
+      place: input.place || "",
       date: input.date || String(start || "").slice(0,10),
       start,
       end: input.end || "",

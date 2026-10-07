@@ -20,6 +20,6 @@
 <section class="panel"><p>現在は自動同期ではありません。SAKU+MERUのTRPG予定とアルバム記録を、共通JSON形式で書き出せます。</p><button id="exportBridge" class="primary" type="button">Life Archive向けに書き出す</button></section>
 </div></main><div data-site-footer></div>
 <script src="../assets/js/main.js?v=0292"></script><script src="../assets/js/migrate-v02.js?v=0292"></script>
-<script src="../assets/js/shared-data.js?v=0292"></script><script>
+<script src="../assets/js/shared-data.js?v=1007-play-log"></script><script>
 document.getElementById("exportBridge").onclick=()=>{const payload={format:"life-archive-bridge",schemaVersion:1,source:"SAKU+MERU",exportedAt:new Date().toISOString(),events:TRPG39.loadEvents(),records:TRPG39.loadAlbum()};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="39x2-life-archive-bridge.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 </script></body></html>
