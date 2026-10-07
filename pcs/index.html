@@ -483,15 +483,9 @@ function stats(pc){
    }
  };
  album.forEach(x=>{
-   // pcId がある記録はIDを正として判定し、旧データだけ名前で救済する。
-   if(pcRefMatches(pc,x.pcId,x.pcName))add(x,x.role||"",x.selfHo||"");
-
-   const selfRows=[
-     ...(Array.isArray(x.selfPcRows)?x.selfPcRows:[]),
-     ...(Array.isArray(x.selfPcs)?x.selfPcs:[])
-   ];
-   selfRows.forEach(r=>{
-     if(pcRefMatches(pc,r?.pcId,r?.pcName||r?.name))add(x,r?.role||x.role||"",r?.ho||r?.selfHo||"");
+   // LIBRARY と同じく、自PC欄だけでなく参加者欄に登録されたPCも集計する。
+   recordPcRows(x).forEach(r=>{
+     if(pcRefMatches(pc,r.pcId,r.pcName))add(x,r.role||x.role||"",r.ho||x.selfHo||"");
    });
  });
  const scenarios=[...runMap.values()].sort((a,b)=>String(a.first||"9999").localeCompare(String(b.first||"9999")));
