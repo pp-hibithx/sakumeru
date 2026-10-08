@@ -1707,7 +1707,9 @@ function renderCompactScenarioView(xs,scope){
  const ownPageCount=Math.max(1,Math.ceil(owned.length/COMPACT_SCENARIO_PAGE_SIZE));compactOwnPage=Math.min(Math.max(1,compactOwnPage),ownPageCount);
  const visibleOwned=owned.slice((compactOwnPage-1)*COMPACT_SCENARIO_PAGE_SIZE,compactOwnPage*COMPACT_SCENARIO_PAGE_SIZE);
  q("compactOwnList").innerHTML=owned.length?visibleOwned.map(x=>`<button type="button" class="sc-compact-item" data-compact-own="${esc(x.id)}"><span class="sc-compact-kicker">${compactScenarioKickerHtml(x,sharedScenarioStatusLabels(x))}</span><span class="sc-compact-title">${esc(x.title||"名称未設定")}</span><span class="sc-compact-meta">${compactScenarioMetaHtml(x)}</span><span class="sc-compact-tags">${compactScenarioTagsHtml(Array.isArray(x.tags)?x.tags:[])}</span></button>`).join("")+compactPaginationHtml(owned.length,compactOwnPage,"own"):'<div class="sc-compact-empty">条件に合う所持作品はありません。</div>';
- const allGroups=groupedFriendScenarios().map(g=>{const sources=(g.sources||[]).filter(s=>s.source==="friend"&&isOwnedScenario(s.item,"friend"));return {...g,sources,owners:[...new Set(sources.map(s=>s.owner||"友人"))]}}).filter(g=>g.sources.length&&groupMatches(g)).sort((a,b)=>String(a.item?.title||"").localeCompare(String(b.item?.title||""),"ja"));
+ // 友人共有URLに含まれる作品は一覧にも表示する。古い共有データは所持フラグを持たないため、
+ // 所持判定で除外するとサムネイルには出るのに作品一覧から消えてしまう。
+ const allGroups=groupedFriendScenarios().map(g=>{const sources=(g.sources||[]).filter(s=>s.source==="friend");return {...g,sources,owners:[...new Set(sources.map(s=>s.owner||"友人"))]}}).filter(g=>g.sources.length&&groupMatches(g)).sort((a,b)=>String(a.item?.title||"").localeCompare(String(b.item?.title||""),"ja"));
  const friendOwners=[...new Set(friendSources.map(source=>String(source.name||"友人").trim()||"友人"))].sort((a,b)=>a.localeCompare(b,"ja"));
  if(compactFriendOwnerFilter!=="all"&&!friendOwners.includes(compactFriendOwnerFilter))compactFriendOwnerFilter="all";
  const ownerSelect=q("compactFriendOwnerSelect");ownerSelect.innerHTML=["all",...friendOwners].map(owner=>`<option value="${esc(owner)}">${esc(owner==="all"?"すべて":owner)}</option>`).join("");ownerSelect.value=compactFriendOwnerFilter;
