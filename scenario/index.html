@@ -137,7 +137,7 @@ input,select{width:100%}label{display:block;margin:7px 0 3px}
 .sc-system-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .sc-system-picker .sc-system-tabs,.sc-tag-picker .sc-system-tabs,.sc-state-picker .sc-system-tabs{margin-top:4px}
 .sc-filter-fold{margin:0;border:0}.sc-filter-fold>summary{display:flex;align-items:center;gap:7px;width:max-content;cursor:pointer;list-style:none;font-weight:750}.sc-filter-fold>summary::-webkit-details-marker{display:none}.sc-filter-fold>summary:before{content:"▶";font-size:.72em;color:var(--accent)}.sc-filter-fold[open]>summary:before{content:"▼"}.sc-filter-fold>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
-.sc-search-sort-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.sc-search-main{width:350px;max-width:100%}.sc-filter-panel{width:100%;margin-top:2px}.sc-filter-panel>summary{width:100%;box-sizing:border-box;padding:8px 10px;background:color-mix(in srgb,var(--panel) 92%,var(--text) 8%);color:inherit}.sc-filter-panel-body{display:grid;gap:8px;padding-top:8px}.sc-filter-group-title{font-weight:750;margin-bottom:4px}
+.sc-search-sort-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.sc-search-main{width:350px;max-width:100%}.sc-filter-panel{width:100%;margin-top:2px}.sc-filter-panel>summary{width:100%;box-sizing:border-box;padding:8px 12px;background:color-mix(in srgb,var(--panel) 92%,var(--text) 8%);color:inherit}.sc-filter-panel-body{display:grid;gap:12px;padding:14px 14px 16px}.sc-filter-group-title{font-weight:750;margin-bottom:4px}
 .sc-system-tab{width:auto!important;padding:5px 10px!important;border-radius:999px!important;font-size:12px!important}
 .sc-system-tab.active{font-weight:700;box-shadow:inset 0 0 0 1px var(--accent)}
 .sc-system-count{opacity:.7;margin-left:4px}
@@ -296,10 +296,7 @@ html.theme-dark #scenarioForm :is(input,textarea)::placeholder{color:#aeb4bd!imp
 <details class="sc-filter-fold sc-filter-panel" data-filter-fold="all"><summary>絞り込み</summary><div class="sc-filter-panel-body">
 <div class="sc-filter-row sc-filter-row-primary">
 <div class="sc-number-filter sc-players-filter"><label>参加人数</label><input id="playersFilter" type="number" min="1" step="1" placeholder="例 4"></div>
-<div class="sc-number-filter sc-hours-filter"><label>遊べる時間</label><input id="hoursFilter" type="number" min="0.5" step="0.5" placeholder="最大h"></div>
-</div>
-<div class="sc-filter-row sc-filter-row-secondary">
-<div class="sc-scope"><label>検索対象</label><select id="searchScope"><option value="all">すべて</option><option value="own">自分が所有</option><option value="friend">友人が所有</option></select></div>
+<div class="sc-number-filter sc-hours-filter"><label>必要時間</label><input id="hoursFilter" type="number" min="0.5" step="0.5" placeholder="最大h"></div>
 <div class="sc-filter sc-archive-filter"><label>表示</label><select id="archiveFilter"><option value="active">通常</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select></div>
 </div>
 <div class="sc-state-picker"><div class="sc-filter-group-title">状態</div><input id="filter" type="hidden" value=""><div id="statusFilterButtons" class="sc-system-tabs" role="group" aria-label="状態で絞り込む"></div></div>
@@ -1724,7 +1721,7 @@ function renderCompactScenarioView(xs,scope){
 
 function render(){
  let term=q("search").value.trim().toLowerCase(),f=q("filter").value;
- const scope=q("searchScope")?.value||"all";
+ const scope="all";
  refreshStatusFilter();refreshTagFilter();renderTagSuggestions();renderSystemTabs();
  const archiveMode=q("archiveFilter")?.value||"active";
  let xs=data.filter(x=>
@@ -1797,7 +1794,7 @@ ownScenarioSection.open=!!scenarioCategoryState.ownOpen;
 friendScenarioSection.open=!!scenarioCategoryState.friendOpen;
 function onScenarioCategoryToggle(section,key,others){
  scenarioCategoryState[key]=section.open;
- const showingCombinedSearch=!!q("search").value.trim()&&(q("searchScope").value||"all")==="all";
+ const showingCombinedSearch=!!q("search").value.trim();
  if(section.open&&scenarioMobileQuery.matches&&!showingCombinedSearch)(Array.isArray(others)?others:[others]).filter(Boolean).forEach(other=>{if(other.open)other.open=false});
  saveScenarioCategoryState();
  if(section.open&&section!==draftScenarioSection)render();
@@ -1809,7 +1806,7 @@ const resetOwnScenarioPageAndRender=()=>{ownScenarioPage=1;compactOwnPage=1;comp
 function setScenarioBrowserView(view){scenarioBrowserView=view==="list"?"list":"thumb";try{localStorage.setItem(SCENARIO_BROWSER_VIEW_KEY,scenarioBrowserView)}catch{}render()}
 q("scenarioListViewBtn").onclick=()=>setScenarioBrowserView("list");q("scenarioThumbViewBtn").onclick=()=>setScenarioBrowserView("thumb");
 q("openFriendSources").onclick=()=>{
- q("searchScope").value="friend";scenarioCategoryState.friendOpen=true;saveScenarioCategoryState();setScenarioBrowserView("thumb");
+ scenarioCategoryState.friendOpen=true;saveScenarioCategoryState();setScenarioBrowserView("thumb");
  friendScenarioSection.open=true;
  requestAnimationFrame(()=>{friendScenarioSection.scrollIntoView({behavior:"smooth",block:"start"});q("friendUrl").focus()});
 };
@@ -1818,7 +1815,7 @@ document.querySelectorAll("[data-filter-fold]").forEach(details=>{
  try{const saved=localStorage.getItem(key);if(saved!==null)details.open=saved==="open"}catch{}
  details.addEventListener("toggle",()=>{try{localStorage.setItem(key,details.open?"open":"closed")}catch{}});
 });
-q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioPageAndRender;q("searchScope").onchange=resetOwnScenarioPageAndRender;q("playersFilter").oninput=resetOwnScenarioPageAndRender;q("hoursFilter").oninput=resetOwnScenarioPageAndRender;q("archiveFilter").onchange=resetOwnScenarioPageAndRender;q("sort").onchange=resetOwnScenarioPageAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
+q("save").onclick=save;q("saveDraft").onclick=saveDraft;q("cancel").onclick=reset;q("search").oninput=resetOwnScenarioPageAndRender;q("playersFilter").oninput=resetOwnScenarioPageAndRender;q("hoursFilter").oninput=resetOwnScenarioPageAndRender;q("archiveFilter").onchange=resetOwnScenarioPageAndRender;q("sort").onchange=resetOwnScenarioPageAndRender;q("friendViewMode").onchange=renderFriendResults;q("friendAdd").onclick=addFriendSource;q("categoryOpenForm").onclick=openForm;renderDrafts();renderFriendSources();render();loadFriendSources();
 })();
 </script>
 </body></html>
