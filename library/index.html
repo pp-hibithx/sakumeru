@@ -2542,7 +2542,8 @@ function save(openArticleAfter=false){
    const linked=data.filter(x=>x.eventId&&String(x.date||x.start||"").slice(0,10)===date&&((scenarioId&&x.scenarioId===scenarioId)||(!scenarioId&&normTitle(x.title)===normTitle(title))));
    if(linked.length===1&&confirm("CALENDARに同じシナリオ・日付の予定があります。\n\nこの予定に卓報告を追加しますか？\n［OK］既存予定を使う ／ ［キャンセル］別の記録として作成")){old=linked[0];id=old.id}
  }
- const runId=old?.runId||q("runId").value||TRPG39.uuid(),runLabel=isTrpg?(q("runLabel").value.trim()||old?.runLabel||nextRunLabelForScenario(scenarioId,title)):"";
+ const runId=isTrpg?(old?.runId||q("runId").value||TRPG39.uuid()):genericCollectionId(recordType,title),runLabel=isTrpg?(q("runLabel").value.trim()||old?.runLabel||nextRunLabelForScenario(scenarioId,title)):"";
+ if(!isTrpg&&old){const previousIds=[old.runId,genericCollectionId(recordTypeOf(old),old.title)].filter(id=>id&&id!==runId);if(previousIds.length)mergeGenericCollectionArticles(runId,previousIds)}
  const start=combineLibraryDateTime(date,q("startTime").value);
  const end=combineLibraryDateTime(date,q("endTime").value);
  const rows=getParticipantRows().map(r=>{
@@ -2606,7 +2607,7 @@ function save(openArticleAfter=false){
    else setParticipantHoTemplate(item.scenarioId,item.title,[]);
  }
  persist();const savedItem=item;reset();hideEditor();showSavedRecordDetail(savedItem);
- if(openArticleAfter)requestAnimationFrame(()=>openArticleEditor(savedItem.runId));
+ if(openArticleAfter)requestAnimationFrame(()=>openArticleEditor(articleContainerIdForRecord(savedItem)));
 }
 function edit(id){
  let x=data.find(v=>v.id===id);if(!x)return;fillScenarioSelect();
@@ -2667,6 +2668,9 @@ function del(id){
 }
 
 function groupKey(x){const type=recordTypeOf(x);return type==="trpg"&&x.scenarioId?`id:${x.scenarioId}`:`${type}:title:${normTitle(x.title)}`}
+function genericCollectionId(type,title){return `collection:${String(type||"other")}:${normTitle(title)||"untitled"}`}
+function articleContainerIdForRecord(item){return recordTypeOf(item)==="trpg"?String(item.runId||""):genericCollectionId(recordTypeOf(item),item.title)}
+function mergeGenericCollectionArticles(collectionId,legacyRunIds=[]){const all=loadRunArticlePages(),current=Array.isArray(all[collectionId])?all[collectionId]:[],seen=new Set(current.map(page=>String(page.id||""))),merged=current.slice();legacyRunIds.forEach(runId=>(Array.isArray(all[runId])?all[runId]:[]).forEach(page=>{if(!seen.has(String(page.id||""))){seen.add(String(page.id||""));merged.push(page)}}));if(merged.length!==current.length)saveArticlePagesForRun(collectionId,merged);return merged}
 function sessionSortKey(x){
  const start=String(x?.start||"").trim();
  if(start)return start;
@@ -2689,6 +2693,11 @@ function groupData(xs){
    g.runs=[...rm.values()].sort((a,b)=>String(a.items[0]?.date||"9999").localeCompare(String(b.items[0]?.date||"9999")));
    g.runs.forEach(r=>r.items.sort(bySessionStart));
    g.runs.sort((a,b)=>bySessionStart(a.items[0]||{},b.items[0]||{}));
+   if(recordTypeOf(g)!=="trpg"){
+     const legacyRunIds=g.runs.map(run=>String(run.id||"")).filter(Boolean),collectionId=genericCollectionId(recordTypeOf(g),g.title);
+     mergeGenericCollectionArticles(collectionId,legacyRunIds.filter(id=>id!==collectionId));
+     g.runs=[{id:collectionId,label:"記録",items:g.items,legacyRunIds}];
+   }
    // runLabelは作成時に固定。旧データのみ、表示時に暫定ラベルを付ける。
    // 既存データは書き換えず、表示時だけ陣名を補完する。
     let displayKpNo=0;
@@ -4701,29 +4710,27 @@ function applyRunRosterBulk(runId,box){
 }
 
 function runDetailHtml(g,r){
+ const isTrpg=recordTypeOf(g)==="trpg";
  const images=[...new Set(r.items.flatMap(x=>x.imageUrls||[]).filter(Boolean))];
  const dates=r.items.map(x=>x.date).filter(Boolean).sort();
  const range=dates.length?(dates[0]+(dates.length>1&&dates.at(-1)!==dates[0]?`〜${dates.at(-1)}`:"")):"";
- return `<div class="lib-run-detail-head">
+ return `${isTrpg?`<div class="lib-run-detail-head">
    <button id="backToRuns" type="button">← 陣一覧へ</button>
    <div class="lib-run-detail-title">${esc(r.label||"開催記録")}${range?` <span class="small muted">${esc(range)}</span>`:""}</div>
  </div>
  <div class="lib-parent-actions"><button type="button" data-add-run="${esc(r.id)}" data-run-label="${esc(r.label)}" data-run-scenario="${esc(g.scenarioId)}">＋ この陣に日程</button><button type="button" data-run-roster-edit="${esc(r.id)}">この陣の参加者・HO・PCを一括設定</button><button type="button" data-archive-run="${esc(r.id)}" data-archived="${r.items.every(x=>x.archived)?"1":"0"}">${r.items.every(x=>x.archived)?"アーカイブから戻す":"アーカイブ"}</button></div>
- <div id="runRosterBulk-${esc(r.id)}" class="run-roster-bulk" hidden></div>
+ <div id="runRosterBulk-${esc(r.id)}" class="run-roster-bulk" hidden></div>`:`<div class="lib-run-detail-head"><div class="lib-run-detail-title">遊んだ記録 ${r.items.length}件${range?` <span class="small muted">${esc(range)}</span>`:""}</div></div>`}
  ${xReportsRunHtml(r)}
  ${images.length?`<div class="lib-run-gallery">${images.map((u,i)=>`<img src="${esc(googleDriveImageUrl(u))}" alt="スクリーンショット ${i+1}" loading="lazy" data-sm-image-expand>`).join("")}</div>`:""}
  ${conversationLogsSectionHtml(r.id)}
  ${articlePagesHtml(r,g)}
  <div class="lib-session-groups">
-   ${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="prelude"),"prelude","事前導入")}
-   ${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="main"),"main","本編")}
-   ${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="aftertalk"),"aftertalk","感想戦")}
-   ${sessionGroupHtml(r.items.filter(x=>!["prelude","main","aftertalk"].includes(sessionKindForRecord(x))),"other","その他")}
+   ${isTrpg?`${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="prelude"),"prelude","事前導入")}${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="main"),"main","本編")}${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="aftertalk"),"aftertalk","感想戦")}${sessionGroupHtml(r.items.filter(x=>!["prelude","main","aftertalk"].includes(sessionKindForRecord(x))),"other","その他")}`:sessionGroupHtml(r.items,"main","遊んだ記録")}
  </div>`;
 }
 function focusedGroupHtml(g){
   const isTrpg=recordTypeOf(g)==="trpg";
- const focusedRun=focusedRunId?(g.runs||[]).find(r=>r.id===focusedRunId):null;
+ const focusedRun=isTrpg?(focusedRunId?(g.runs||[]).find(r=>r.id===focusedRunId):null):((g.runs||[])[0]||null);
  const rosterContext=createRunRosterDisplayContext(g);
  return `<div class="lib-focused-header">
    <button id="libraryBackToGrid" type="button" class="lib-focused-back">← 一覧へ</button>
