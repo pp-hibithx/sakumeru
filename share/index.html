@@ -216,6 +216,7 @@
 .shared-article-bgm-title{font-weight:700}
 .shared-article-bgm audio{width:100%;margin-top:8px}
 .shared-article-note{white-space:pre-wrap;margin-top:7px}
+.shared-article-checklist,.shared-article-calculator{display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.018)}.shared-article-tool-title{font-size:1.04rem;font-weight:800}.shared-article-check-row{display:flex;gap:9px;align-items:flex-start}.shared-article-check-mark{flex:0 0 auto}.shared-article-calculator-row,.shared-article-calculator-total{display:flex;justify-content:space-between;gap:16px}.shared-article-calculator-total{padding-top:7px;border-top:1px solid var(--line);font-weight:800}
 .shared-conversation{border:2px solid color-mix(in srgb,var(--line) 88%,#fff);border-radius:11px;padding:14px;display:grid;gap:10px;background:rgba(255,255,255,.012);font-size:16px;line-height:1.75}
 .shared-conversation-caption{font-size:1.08rem;font-weight:800;margin-bottom:5px;padding-bottom:7px;border-bottom:1px solid var(--line)}
 .shared-conversation-line{display:grid;grid-template-columns:minmax(92px,150px) minmax(0,1fr);gap:10px;align-items:start}
@@ -237,7 +238,7 @@
 <div data-site-header></div>
 <main><div class="wrap share-page"><div class="hero"><h2>SHARED</h2><p>SAKU+MERUで共有されたページです。</p></div><div id="shareContent" class="share-card"><p>読み込み中...</p></div></div></main>
 <div data-site-footer></div>
-<script src="../assets/js/main.js?v=0292"></script><script src="../assets/js/supabase-config.js?v=0292"></script><script src="../assets/js/supabase-share.js?v=1006-security2"></script><script src="../assets/js/rich-editor.js?v=0915-delete-marker"></script>
+<script src="../assets/js/main.js?v=0292"></script><script src="../assets/js/supabase-config.js?v=0292"></script><script src="../assets/js/supabase-share.js?v=1006-security2"></script><script src="../assets/js/rich-editor.js?v=1010-article-tools"></script>
 <script>
 (async()=>{
  const box=document.getElementById("shareContent");
@@ -362,6 +363,7 @@
  };
  const renderArticle=p=>{
    const blocks=Array.isArray(p.blocks)?p.blocks:[];
+   const articleNumber=value=>{const n=Number(value);return new Intl.NumberFormat("ja-JP",{maximumFractionDigits:2}).format(Number.isFinite(n)?n:0)};
     const sharedTextHasContent=b=>{
       const raw=String(b?.html||b?.text||"");
       if(!raw)return false;
@@ -440,6 +442,16 @@
            </div>`;
          }).join("")}
        </section>`;
+     }
+
+     if(type==="checklist"){
+       const items=Array.isArray(b.items)?b.items:[],done=items.filter(item=>item?.done).length;
+       return `<section class="shared-article-checklist"><div class="shared-article-tool-title">☑ ${esc(b.title||"チェックリスト")} <span class="small muted">${done}/${items.length}</span></div>${items.map(item=>`<div class="shared-article-check-row"><span class="shared-article-check-mark" aria-hidden="true">${item?.done?"☑":"☐"}</span><span>${esc(item?.text||"未入力")}</span></div>`).join("")||'<div class="small muted">項目はまだありません。</div>'}</section>`;
+     }
+
+     if(type==="calculator"){
+       const rows=(Array.isArray(b.rows)?b.rows:[]).map(row=>({label:String(row?.label||""),value:Number.isFinite(Number(row?.value))?Number(row.value):0})),total=rows.reduce((sum,row)=>sum+row.value,0),divisor=Math.max(1,Math.floor(Number(b.divisor)||1));
+       return `<section class="shared-article-calculator"><div class="shared-article-tool-title">Σ ${esc(b.title||"簡易計算")}</div>${rows.map(row=>`<div class="shared-article-calculator-row"><span>${esc(row.label||"項目")}</span><span>${articleNumber(row.value)}</span></div>`).join("")||'<div class="small muted">項目はまだありません。</div>'}<div class="shared-article-calculator-total"><span>合計</span><span>${articleNumber(total)}</span></div>${divisor>1?`<div class="shared-article-calculator-total"><span>${divisor}人で割る</span><span>1人あたり ${articleNumber(total/divisor)}</span></div>`:""}</section>`;
      }
 
      return "";
