@@ -1585,7 +1585,11 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
     <select id="visibility"><option value="private">自分のみ</option><option value="link">リンク限定</option><option value="public">公開</option><option value="table">同卓者のみ（準備中）</option></select>
   </div>
 
-  <div class="album-actions"><button id="save" type="button">保存</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
+  <div class="lib-form-section record-article-guide">
+    <h3 id="recordArticleHeading">記録記事</h3>
+    <p class="small muted">記録を保存したあと、そのまま本文・画像・動画・チェックリスト・簡易計算を使った記事を書けます。ネタバレ警告や、共有URLを知る参加メンバー向けの公開範囲も設定できます。</p>
+  </div>
+  <div class="album-actions"><button id="save" type="button">保存</button><button id="saveAndArticle" type="button">保存して記事を書く</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
 </div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.5-save-detail-x</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
@@ -1751,6 +1755,8 @@ function updateRecordTypeUi(){
  q("recordTitleLabel").textContent=trpg?"シナリオ名":"遊んだもの・イベント名";
  q("recordBasicHeading").textContent=trpg?"卓の基本情報":"遊んだ記録の基本情報";
  q("recordImageLabel").textContent=trpg?"卓報告スクリーンショット":"スクリーンショット・写真";
+ q("recordArticleHeading").textContent=trpg?"卓記事":"記録記事";
+ q("saveAndArticle").textContent=trpg?"保存して卓記事を書く":"保存して記録記事を書く";
  q("formHeading").textContent=`${recordTypeLabel[type]||"遊び"}の記録を${q("editId").value?"編集":"追加"}`;
  document.querySelectorAll("#participantRows .partRole").forEach(sel=>{const old=sel.value||"";sel.innerHTML=roleOptions(trpg?old:(old==="主催"?"主催":"参加"),facilitatorConfig({}).label)});
 }
@@ -2519,7 +2525,7 @@ function splitLibraryDateTime(value=""){
    time:s.includes("T")?s.slice(11,16):""
  };
 }
-function save(){
+function save(openArticleAfter=false){
  const recordType=q("recordType").value||"trpg",isTrpg=recordType==="trpg";
  let title=q("title").value.trim();if(!title)return alert(isTrpg?"シナリオ名を入力してください。":"遊んだもの・イベント名を入力してください。");
  let scenarioId=isTrpg?q("scenarioSelect").value:"";
@@ -2600,6 +2606,7 @@ function save(){
    else setParticipantHoTemplate(item.scenarioId,item.title,[]);
  }
  persist();const savedItem=item;reset();hideEditor();showSavedRecordDetail(savedItem);
+ if(openArticleAfter)requestAnimationFrame(()=>openArticleEditor(savedItem.runId));
 }
 function edit(id){
  let x=data.find(v=>v.id===id);if(!x)return;fillScenarioSelect();
@@ -3579,15 +3586,16 @@ function articleEditorBlockHtml(b,index,total){
  if(b.type==="youtube")return `<div class="article-block" data-block-id="${id}" data-block-type="youtube"><div class="article-block-head"><span class="article-block-label">▶ YouTube</span>${actions}</div>${scope}<label>YouTube URL</label><input class="articleBlockYoutubeUrl" type="url" value="${esc(b.url||"")}" placeholder="https://www.youtube.com/watch?v=..."><label>見出し <span class="small muted">（任意）</span></label><input class="articleBlockCaption" value="${esc(b.caption||"")}" placeholder="セッション録画 など"><div class="article-youtube-preview"></div></div>`;
  return `<div class="article-block" data-block-id="${id}" data-block-type="text"><div class="article-block-head"><span class="article-block-label">✎ 文章</span>${actions}</div>${scope}<div class="articleRichMount" data-rich-block-id="${id}"></div></div>`;
 }
-function articlePagesHtml(r){
+function articlePagesHtml(r,g=null){
  const pages=articlePagesForRun(r.id).slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+ const trpg=!g||recordTypeOf(g)==="trpg",heading=trpg?"卓記事":"記録記事";
  return `<section class="lib-article-pages">
-   <div class="lib-article-pages-head"><div><strong>プレイ記事</strong><div class="small muted">1ページの中に文章・画像・YouTube・BGM・トグルを好きな順で追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ページを追加</button></div></div>
+   <div class="lib-article-pages-head"><div><strong>${heading}</strong><div class="small muted">1ページの中に文章・画像・YouTube・BGM・チェックリスト・簡易計算などを好きな順で追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ${heading}を追加</button></div></div>
    <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page" data-article-page-id="${esc(p.id)}">
      <summary><div><div class="lib-article-page-title">${esc(p.title||`ページ ${i+1}`)} <span class="lib-article-share-badge">${esc(articleShareLabel(p))}</span></div><div class="lib-article-page-meta">${esc(p.updatedAt||p.createdAt||"")}</div></div><span>▼</span></summary>
      ${articleBlocksHtml(p)}
      <div class="lib-article-page-actions">${p.shareEnabled?`<button type="button" data-article-share="${esc(p.id)}" data-run-id="${esc(r.id)}">共有URL</button><button type="button" data-article-x="${esc(p.id)}" data-run-id="${esc(r.id)}">Xに投稿</button>`:""}<button type="button" data-article-edit="${esc(p.id)}" data-run-id="${esc(r.id)}">編集</button><button type="button" class="danger" data-article-delete="${esc(p.id)}" data-run-id="${esc(r.id)}">削除</button></div>
-   </details>`).join(""):'<div class="small muted">プレイ記事はまだありません。</div>'}</div>
+   </details>`).join(""):`<div class="small muted">${heading}はまだありません。</div>`}</div>
    <div class="lib-article-editor" id="articleEditor-${esc(r.id)}" hidden>
      <input type="hidden" class="articleEditId">
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
@@ -4705,7 +4713,7 @@ function runDetailHtml(g,r){
  ${xReportsRunHtml(r)}
  ${images.length?`<div class="lib-run-gallery">${images.map((u,i)=>`<img src="${esc(googleDriveImageUrl(u))}" alt="スクリーンショット ${i+1}" loading="lazy" data-sm-image-expand>`).join("")}</div>`:""}
  ${conversationLogsSectionHtml(r.id)}
- ${articlePagesHtml(r)}
+ ${articlePagesHtml(r,g)}
  <div class="lib-session-groups">
    ${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="prelude"),"prelude","事前導入")}
    ${sessionGroupHtml(r.items.filter(x=>sessionKindForRecord(x)==="main"),"main","本編")}
@@ -6731,7 +6739,8 @@ q("uploadImage").onclick=async()=>{try{
 }catch(e){console.error(e);alert(e.message||e)}finally{q("uploadImage").disabled=false;q("uploadImage").textContent="画像をアップロード"}};
  q("system").addEventListener("input",()=>{updateFacilitatorControls(false);fillPCSelect(q("pcSelect")?.value||"");refreshSelfPcSelectOptions()});q("facilitatorPresence").onchange=()=>updateFacilitatorControls(false);q("facilitatorTermMode").onchange=()=>updateFacilitatorControls(false);q("facilitatorTermCustom").addEventListener("input",()=>updateFacilitatorControls(false));
  q("recordType").onchange=updateRecordTypeUi;
-q("save").onclick=save;
+q("save").onclick=()=>save(false);
+q("saveAndArticle").onclick=()=>save(true);
 q("cancel").onclick=()=>{reset();hideEditor()};
 
 q("openLibraryEditor").onclick=()=>{reset();showEditor();q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"})};q("xReportGalleryClose").onclick=()=>q("xReportGallery").close();q("xReportGallery").addEventListener("click",e=>{if(e.target===q("xReportGallery"))q("xReportGallery").close()});
