@@ -1192,7 +1192,7 @@ html:is(.theme-light,[data-theme="light"]) #libraryEditor input[type="file"]::fi
   border:2px solid color-mix(in srgb,currentColor 24%,var(--line));
   box-shadow:0 5px 18px rgba(0,0,0,.11);
 }
-.library-page>.hero{margin-bottom:0;border:0;box-shadow:none;padding:4px 0 6px;background:transparent}
+.library-page>.hero{margin-bottom:18px;border:0;border-bottom:1px solid #655638;box-shadow:none;background:transparent}
 .library-page>.notice{padding:8px 11px;border-left:5px solid color-mix(in srgb,var(--accent) 65%,currentColor);border-radius:9px;background:color-mix(in srgb,var(--panel) 94%,var(--accent) 6%);line-height:1.5}
 .lib-panel{padding:12px;background:var(--panel)}
 .lib-panel>.row{display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:7px}
@@ -1479,8 +1479,6 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 
 <main><div class="wrap library-page">
 <div class="hero"><h2>LIBRARY</h2><p>これから遊ぶ予定も、遊んだ記録も、シナリオごとにまとめて残せます。</p></div>
-<div class="notice small">記録はお使いのブラウザ内に保存されます。<br>現在他の利用者とのオンライン共有には対応していません。</div>
-
 <section class="lib-panel">
   <div class="row">
     <div><h2>PLAY LOG</h2><div id="summary" class="small"></div></div>
