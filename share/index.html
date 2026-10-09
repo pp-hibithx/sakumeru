@@ -243,6 +243,7 @@
 (async()=>{
  const box=document.getElementById("shareContent");
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const displayImageUrl=value=>{const raw=String(value||"").trim();if(!raw)return "";try{const u=new URL(raw),host=u.hostname.replace(/^www\./,"").toLowerCase();if(host!=="drive.google.com"&&host!=="docs.google.com")return raw;const match=u.pathname.match(/\/file\/d\/([^/]+)/),id=match?.[1]||u.searchParams.get("id")||"";return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600`:raw}catch{return raw}};
  const sanitizeRichHtml=input=>{
    const tpl=document.createElement("template");
    tpl.innerHTML=String(input||"");
@@ -695,7 +696,7 @@
     box.innerHTML=`<h2>${esc(p.title||"卓ディスプレイ")}</h2>${meta.length?`<div class="share-meta">${meta.map(x=>`<span class="badge">${esc(x)}</span>`).join("")}</div>`:""}${p.image?`<img src="${esc(p.image)}" alt="${esc(p.title||"卓ディスプレイ")}" style="display:block;max-width:min(100%,900px);max-height:80vh;width:auto;height:auto;object-fit:contain;margin:14px auto;border-radius:10px;border:1px solid var(--line)">`:"<p>共有画像を読み込めませんでした。</p>"}<p class="muted" style="text-align:center">SAKU+MERU DISPLAY MAKER</p>`;
     return;
   }
-  if(p.kind==="library-session"){box.innerHTML=`${breadcrumbHtml(p)}<h2>${esc(p.title||"LIBRARY")}</h2><div class="share-meta">${p.system?`<span class="badge">${esc(p.system)}</span>`:""}${p.date?`<span class="badge">${esc(p.date)}</span>`:""}</div>${p.image?`<img src="${esc(p.image)}" alt="" style="max-width:420px;width:100%;border-radius:8px;border:1px solid var(--line);margin-bottom:10px">`:""}${reportHtml(p)}${p.comment?`<div class="share-report-block"><strong>ひとこと</strong><p style="white-space:pre-wrap">${esc(p.comment)}</p></div>`:""}${p.spoiler?`<details class="share-spoiler"><summary>⚠ ネタバレ</summary><div class="spoiler-body">${esc(p.spoiler)}</div></details>`:""}`;return}
+  if(p.kind==="library-session"){box.innerHTML=`${breadcrumbHtml(p)}<h2>${esc(p.title||"LIBRARY")}</h2><div class="share-meta">${p.system?`<span class="badge">${esc(p.system)}</span>`:""}${p.date?`<span class="badge">${esc(p.date)}</span>`:""}</div>${p.image?`<img src="${esc(displayImageUrl(p.image))}" alt="" style="max-width:420px;width:100%;border-radius:8px;border:1px solid var(--line);margin-bottom:10px">`:""}${reportHtml(p)}${p.comment?`<div class="share-report-block"><strong>ひとこと</strong><p style="white-space:pre-wrap">${esc(p.comment)}</p></div>`:""}${p.spoiler?`<details class="share-spoiler"><summary>⚠ ネタバレ</summary><div class="spoiler-body">${esc(p.spoiler)}</div></details>`:""}`;return}
   if(p.kind==="profile"){
     const x=p.profile||{};
     const name=String(x.socialName||x.displayName||"プロフィール").trim();
