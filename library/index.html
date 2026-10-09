@@ -97,6 +97,7 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-child-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .lib-child-note{font-size:12px;margin-top:5px;white-space:pre-wrap}
 .lib-child-actions{display:flex;gap:6px;align-items:center}
+.lib-quick-status{display:flex;align-items:center;gap:5px;margin:0!important;font-size:12px!important;white-space:nowrap}.lib-quick-status select{width:auto!important;min-width:96px;min-height:34px!important;padding:5px 26px 5px 7px!important;font-size:12px!important}
 .lib-record-just-saved{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px;background:color-mix(in srgb,var(--accent) 7%,transparent);transition:background .25s ease,outline-color .25s ease}
 .lib-child-actions button,.lib-parent-actions button,.lib-parent-actions a{font-size:12px}
 .lib-parent-actions{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0 2px}
@@ -4507,6 +4508,26 @@ function selfPcSummaryHtml(x){
  if(!rows.length){const name=String(x.pcName||"").trim(),ho=String(x.selfHo||"").trim();if(!name&&!ho)return `<div class="lib-child-title">${esc(displayRoleForRecord(x)||"開催記録")}</div>`;return `<div class="lib-child-title">${name?`PC：${esc(name)}`:esc(displayRoleForRecord(x)||"開催記録")}${ho?` <span class="badge">${esc(ho)}</span>`:""}</div>`}
  return `<div class="lib-self-pcs">${rows.map((r,idx)=>`<div class="lib-child-title">${r.pcName?`PC：${esc(r.pcName)}`:`PC ${idx+1}`}${r.ho?` <span class="badge">${esc(r.ho)}</span>`:""}</div>`).join("")}</div>`;
 }
+function quickStatusOptions(current){
+ const value=current==="confirmed"?"planned":String(current||"done");
+ return ["tentative","planned","done","rescheduling","postponed","cancelled"].map(status=>`<option value="${status}" ${status===value?"selected":""}>${esc(statusLabel[status])}</option>`).join("");
+}
+function updateLibraryRecordStatus(id,status){
+ const allowed=new Set(["tentative","planned","done","rescheduling","postponed","cancelled"]);
+ if(!allowed.has(status))return;
+ const index=data.findIndex(x=>String(x.id)===String(id));
+ if(index<0)return;
+ const updated=TRPG39.normalizeAlbum({...data[index],status});
+ data[index]=updated;persist();
+ let changed=false;
+ const events=TRPG39.loadEvents().map(event=>{
+   const linked=String(event.id||"")===String(updated.eventId||"")||String(event.linkedAlbumId||"")===String(updated.id||"");
+   if(!linked)return event;
+   changed=true;return TRPG39.normalizeEvent({...event,status});
+ });
+ if(changed)TRPG39.saveEvents(events);
+ render();
+}
 function sessionRecordHtml(x,i){
  return `<article class="lib-child" id="record-${esc(x.id)}">
    <div class="lib-child-date">${esc(x.date||`記録 ${i+1}`)}${x.start&&String(x.start).slice(11,16)?` ${esc(String(x.start).slice(11,16))}`:""}<br><span class="badge lib-session-kind">${esc(sessionKindLabel[sessionKindForRecord(x)]||"本編")}</span> <span class="badge lib-session-status" data-session-status="${esc(x.status||"done")}">${esc(statusLabel[x.status]||"完了")}</span></div>
@@ -4515,7 +4536,7 @@ function sessionRecordHtml(x,i){
      <div class="lib-child-meta">${participantHtml(x)}<span class="badge lib-visibility">公開設定：${esc(vis[x.visibility]||"自分のみ")}</span></div>
      ${x.comment?`<div class="lib-child-note">${esc(x.comment)}</div>`:""}${diceAnalysisHtml(x)}${linksHtml(x)}
    </div>
-   <div class="lib-child-actions"><button data-share="${x.id}">共有</button><button data-post-x="${x.id}">Xで卓報告</button><button data-edit="${x.id}">編集</button><button class="danger" data-del="${x.id}">削除</button></div>
+   <div class="lib-child-actions"><label class="lib-quick-status"><span>状態</span><select data-status-change="${esc(x.id)}" aria-label="${esc(x.date||x.title||"開催記録")}の状態を変更">${quickStatusOptions(x.status)}</select></label><button data-share="${x.id}">共有</button><button data-post-x="${x.id}">Xで卓報告</button><button data-edit="${x.id}">編集</button><button class="danger" data-del="${x.id}">削除</button></div>
  </article>`;
 }
 function sessionGroupHtml(items,kind,label){
@@ -6639,6 +6660,7 @@ function render(){
  document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>shareAlbum(b.dataset.share));
  document.querySelectorAll("[data-post-x]").forEach(b=>b.onclick=()=>postAlbumToX(b.dataset.postX));
  document.querySelectorAll("[data-report-gallery]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();openXReportGallery(b.dataset.reportGallery)});
+ document.querySelectorAll("[data-status-change]").forEach(select=>select.onchange=()=>updateLibraryRecordStatus(select.dataset.statusChange,select.value));
  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>edit(b.dataset.edit));
  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>del(b.dataset.del));
 }
