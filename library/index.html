@@ -2438,6 +2438,10 @@ function normalizedReportImages(v){
  const rows=Array.isArray(v)?v:[];
  return [...new Set(rows.map(x=>String(x||"").trim()).filter(Boolean))].slice(0,4);
 }
+function googleDriveImageUrl(value){
+ const raw=String(value||"").trim();if(!raw)return "";
+ try{const u=new URL(raw),host=u.hostname.replace(/^www\./,"").toLowerCase();if(host!=="drive.google.com"&&host!=="docs.google.com")return raw;const match=u.pathname.match(/\/file\/d\/([^/]+)/),id=match?.[1]||u.searchParams.get("id")||"";return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600`:raw}catch{return raw}
+}
 function syncLegacyImageField(){
  q("image").value=editingImageUrls[0]||"";
 }
@@ -2450,7 +2454,7 @@ function renderReportImages(){
  box.innerHTML=editingImageUrls.length?editingImageUrls.map((url,i)=>`
    <div class="xreport-image-item">
      <div class="xreport-image-number">${i+1}</div>
-     <img src="${esc(url)}" alt="卓報告スクリーンショット ${i+1}">
+     <img src="${esc(googleDriveImageUrl(url))}" alt="卓報告スクリーンショット ${i+1}">
      <div class="xreport-image-actions">
        <button type="button" data-report-image-left="${i}" ${i===0?"disabled":""}>←</button>
        <button type="button" data-report-image-right="${i}" ${i===editingImageUrls.length-1?"disabled":""}>→</button>
@@ -2472,11 +2476,12 @@ function renderReportImages(){
    editingImageUrls.splice(Number(b.dataset.reportImageRemove),1);renderReportImages();
  });
  q("imagePreview").hidden=!editingImageUrls.length;
- q("imagePreviewImg").src=editingImageUrls[0]||"";
+ q("imagePreviewImg").src=googleDriveImageUrl(editingImageUrls[0]||"");
 }
 function addReportImageUrl(url){
  url=String(url||"").trim();
  if(!url)return false;
+ try{const host=new URL(url).hostname.replace(/^www\./,"").toLowerCase();if(host==="photos.app.goo.gl"||host==="photos.google.com"){alert("Googleフォトの共有URLは画像本体ではないため、画像欄には表示できません。Googleドライブのファイル共有URLを使うか、画像ファイルをアップロードしてください。");return false}}catch{}
  const current=normalizedReportImages(editingImageUrls);
  if(current.includes(url)){editingImageUrls=current;renderReportImages();return true}
  if(current.length>=4){alert("卓報告スクリーンショットは最大4枚です。");return false}
@@ -2743,7 +2748,7 @@ function openXReportGallery(id){
  const x=data.find(v=>v.id===id);if(!x)return;
  const urls=normalizedReportImages(x.imageUrls||[]);
  if(!urls.length)return;
- q("xReportGalleryGrid").innerHTML=urls.map((u,i)=>`<figure><img src="${esc(u)}" alt="スクリーンショット ${i+1}" data-sm-image-expand><figcaption>${i+1} / ${urls.length}</figcaption></figure>`).join("");
+ q("xReportGalleryGrid").innerHTML=urls.map((u,i)=>`<figure><img src="${esc(googleDriveImageUrl(u))}" alt="スクリーンショット ${i+1}" data-sm-image-expand><figcaption>${i+1} / ${urls.length}</figcaption></figure>`).join("");
  q("xReportGallery").showModal();
 }
 function linksHtml(x){return (x.externalLinks||[]).length?`<div style="margin-top:5px">${x.externalLinks.map(l=>l.spoiler?`<details class="spoiler"><summary>⚠ ${esc(l.label||"ネタバレリンク")}</summary><div class="spoiler-body"><a class="link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">開く</a></div></details>`:`<a class="link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label||"外部リンク")}</a>`).join("　")}</div>`:""}
@@ -3350,7 +3355,7 @@ function runCardHtml(g,r,rosterContext){
  const selected=String(selectedThumbRunId(g.scenarioId,g.title))===String(r.id);
  return `<article class="lib-run-card" data-run-focus="${esc(r.id)}" tabindex="0">
    <input type="checkbox" class="lib-run-merge-check" data-run-merge="${esc(r.id)}" aria-label="${esc(r.label||"開催記録")}を統合対象に選択">
-   <div class="lib-run-card-thumb-wrap">${images[0]?`<img class="lib-run-card-thumb" src="${esc(images[0])}" alt="" loading="lazy" style="object-position:50% ${runCoverY(r.id)}%"><button type="button" class="lib-cover-adjust" data-cover-adjust="${esc(r.id)}" data-cover-image="${esc(images[0])}">位置を調整</button>${selected?`<span class="lib-run-thumb-selected">代表サムネ</span>`:""}`:`<div class="lib-run-card-placeholder">🌺</div>`}</div>
+   <div class="lib-run-card-thumb-wrap">${images[0]?`<img class="lib-run-card-thumb" src="${esc(googleDriveImageUrl(images[0]))}" alt="" loading="lazy" style="object-position:50% ${runCoverY(r.id)}%"><button type="button" class="lib-cover-adjust" data-cover-adjust="${esc(r.id)}" data-cover-image="${esc(googleDriveImageUrl(images[0]))}">位置を調整</button>${selected?`<span class="lib-run-thumb-selected">代表サムネ</span>`:""}`:`<div class="lib-run-card-placeholder">🌺</div>`}</div>
    <div class="lib-run-card-body">
       <div class="lib-run-card-title-row"><div class="lib-run-card-title">${esc(isTrpg?(r.label||"開催記録"):(recordTypeLabel[recordTypeOf(g)]||"遊んだ記録"))}</div>${isTrpg?`<button type="button" class="lib-run-label-edit" data-run-label-edit="${esc(r.id)}" data-run-label-current="${esc(r.label||"")}">名前を編集</button>`:""}</div>
       <div class="lib-run-card-meta">${r.items.length}件${range?` ／ ${esc(range)}`:""}</div>
@@ -4562,7 +4567,7 @@ function updateLibraryRecordStatus(id,status){
 function sessionRecordHtml(x,i){
  return `<article class="lib-child" id="record-${esc(x.id)}">
    <div class="lib-child-date">${esc(x.date||`記録 ${i+1}`)}${x.start&&String(x.start).slice(11,16)?` ${esc(String(x.start).slice(11,16))}`:""}<br><span class="badge lib-session-kind">${esc(sessionKindLabel[sessionKindForRecord(x)]||"本編")}</span> <span class="badge lib-session-status" data-session-status="${esc(x.status||"done")}">${esc(statusLabel[x.status]||"完了")}</span></div>
-   <div>${(x.imageUrls||[]).length?`<button type="button" class="lib-report-thumb-button" data-report-gallery="${esc(x.id)}"><img class="lib-child-thumb" src="${esc(normalizedReportImages(x.imageUrls)[0])}" alt="スクリーンショット" loading="lazy">${normalizedReportImages(x.imageUrls).length>1?`<span>＋${normalizedReportImages(x.imageUrls).length-1}</span>`:""}</button>`:""}
+   <div>${(x.imageUrls||[]).length?`<button type="button" class="lib-report-thumb-button" data-report-gallery="${esc(x.id)}"><img class="lib-child-thumb" src="${esc(googleDriveImageUrl(normalizedReportImages(x.imageUrls)[0]))}" alt="スクリーンショット" loading="lazy">${normalizedReportImages(x.imageUrls).length>1?`<span>＋${normalizedReportImages(x.imageUrls).length-1}</span>`:""}</button>`:""}
      ${selfPcSummaryHtml(x)}${x.articleBody?`<div class="lib-article-body">${esc(x.articleBody).replace(/\n/g,"<br>")}</div>`:""}${x.spoilerBody?`<details class="lib-spoiler"><summary>ネタバレを表示</summary><div class="spoiler-body">${esc(x.spoilerBody).replace(/\n/g,"<br>")}</div></details>`:""}
      <div class="lib-child-meta">${participantHtml(x)}<span class="badge lib-visibility">公開設定：${esc(vis[x.visibility]||"自分のみ")}</span></div>
      ${x.comment?`<div class="lib-child-note">${esc(x.comment)}</div>`:""}${diceAnalysisHtml(x)}${linksHtml(x)}
@@ -4698,7 +4703,7 @@ function runDetailHtml(g,r){
  <div class="lib-parent-actions"><button type="button" data-add-run="${esc(r.id)}" data-run-label="${esc(r.label)}" data-run-scenario="${esc(g.scenarioId)}">＋ この陣に日程</button><button type="button" data-run-roster-edit="${esc(r.id)}">この陣の参加者・HO・PCを一括設定</button><button type="button" data-archive-run="${esc(r.id)}" data-archived="${r.items.every(x=>x.archived)?"1":"0"}">${r.items.every(x=>x.archived)?"アーカイブから戻す":"アーカイブ"}</button></div>
  <div id="runRosterBulk-${esc(r.id)}" class="run-roster-bulk" hidden></div>
  ${xReportsRunHtml(r)}
- ${images.length?`<div class="lib-run-gallery">${images.map((u,i)=>`<img src="${esc(u)}" alt="スクリーンショット ${i+1}" loading="lazy" data-sm-image-expand>`).join("")}</div>`:""}
+ ${images.length?`<div class="lib-run-gallery">${images.map((u,i)=>`<img src="${esc(googleDriveImageUrl(u))}" alt="スクリーンショット ${i+1}" loading="lazy" data-sm-image-expand>`).join("")}</div>`:""}
  ${conversationLogsSectionHtml(r.id)}
  ${articlePagesHtml(r)}
  <div class="lib-session-groups">
