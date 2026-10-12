@@ -1484,7 +1484,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <section class="lib-panel">
   <div class="row">
     <div><h2>PLAY LOG</h2><div id="summary" class="small"></div></div>
-    <button id="openLibraryEditor" type="button">＋ 遊んだ記録を追加</button>
+    <button id="openLibraryEditor" type="button">＋ 新しいタイトルを登録</button>
   </div>
 <div class="lib-toolbar" id="libraryToolbar">
     <div id="librarySearchField"><label>遊んだ記録を検索</label><input id="search" type="search" placeholder="タイトル・参加者・場所"></div>
@@ -4737,7 +4737,7 @@ function focusedGroupHtml(g){
    <button id="libraryBackToGrid" type="button" class="lib-focused-back">← 一覧へ</button>
    <div class="lib-focused-title">${esc(g.title)}</div>
  </div>
-  <div class="lib-parent-actions">${g.scenarioId?`<a class="link" href="../scenario/index.html?focus=${encodeURIComponent(g.scenarioId)}">SCENARIOを見る</a>`:""}${isTrpg?`<button type="button" data-add-scenario="${esc(g.scenarioId)}" data-add-title="${esc(g.title)}">＋ 新しい陣</button>`:`<button type="button" data-add-play="${esc(recordTypeOf(g))}" data-add-title="${esc(g.title)}">＋ 同じ遊びの記録</button>`}</div>
+  <div class="lib-parent-actions">${g.scenarioId?`<a class="link" href="../scenario/index.html?focus=${encodeURIComponent(g.scenarioId)}">SCENARIOを見る</a>`:""}${isTrpg?`<button type="button" data-add-scenario="${esc(g.scenarioId)}" data-add-title="${esc(g.title)}">＋ 新しい陣</button>`:`<button type="button" data-add-play="${esc(recordTypeOf(g))}" data-add-title="${esc(g.title)}">＋ このタイトルに日程を追加</button>`}</div>
  ${focusedRun
    ? runDetailHtml(g,focusedRun)
     : `${isTrpg&&(g.runs||[]).length>1?`<div class="lib-run-repair">
