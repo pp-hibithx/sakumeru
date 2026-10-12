@@ -1552,7 +1552,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
     <p class="small muted">PLAYERS管理をONにしている場合、PL名はPLAYERSへ自動登録され、その人が使用したPCも同卓履歴から確認できます。PC同士の関係はLIBRARYのPC関係図で管理します。他PLのPCはPCページには追加されません。</p>
   </div>
 
-  <div class="lib-form-section">
+  <div class="lib-form-section" data-trpg-only>
     <h3 id="recordImageHeading">記録画像</h3>
     <label><span id="recordImageLabel">スクリーンショット・写真</span> <span class="small muted">（最大4枚）</span></label>
     <input id="image" type="hidden">
@@ -1574,14 +1574,16 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
   </div>
 
   <div class="lib-form-section">
-    <h3>追加情報・共有設定</h3>
-    <label for="spoilerBody">ネタバレ</label>
-    <textarea id="spoilerBody" rows="6" placeholder="シナリオの核心、秘匿、エンディングなど"></textarea>
-    <label>ネタバレ部分の公開範囲</label><select id="spoilerVisibility"><option value="private">自分のみ</option><option value="link">共有リンクに含める</option></select>
+    <h3 id="recordSharingHeading">追加情報・共有設定</h3>
+    <div data-trpg-only>
+      <label for="spoilerBody">ネタバレ</label>
+      <textarea id="spoilerBody" rows="6" placeholder="シナリオの核心、秘匿、エンディングなど"></textarea>
+      <label>ネタバレ部分の公開範囲</label><select id="spoilerVisibility"><option value="private">自分のみ</option><option value="link">共有リンクに含める</option></select>
 
-    <label>外部リンク</label>
-    <div id="externalLinks"></div>
-    <button id="addExternalLink" type="button">＋ 外部リンクを追加</button>
+      <label>外部リンク</label>
+      <div id="externalLinks"></div>
+      <button id="addExternalLink" type="button">＋ 外部リンクを追加</button>
+    </div>
 
     <label>公開範囲</label>
     <select id="visibility"><option value="private">自分のみ</option><option value="link">リンク限定</option><option value="public">公開</option><option value="table">同卓者のみ（準備中）</option></select>
@@ -1757,6 +1759,7 @@ function updateRecordTypeUi(){
  q("recordTitleLabel").textContent=trpg?"シナリオ名":"遊んだもの・イベント名";
  q("recordBasicHeading").textContent=trpg?"卓の基本情報":"遊んだ記録の基本情報";
  q("recordImageLabel").textContent=trpg?"卓報告スクリーンショット":"スクリーンショット・写真";
+ q("recordSharingHeading").textContent=trpg?"追加情報・共有設定":"日程記録の公開設定";
  q("recordArticleHeading").textContent=trpg?"卓記事":"タイトルの記事（各日程共通）";
  q("recordArticleGuide").textContent=trpg
    ?"この卓の記録に紐づく記事です。本文・画像・動画・チェックリスト・簡易計算を追加できます。"
