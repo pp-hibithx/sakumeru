@@ -1513,7 +1513,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
       </div>
       <select id="scenarioSelect" aria-hidden="true" tabindex="-1"><option value="">直接入力</option></select>
     </div>
-    <label id="recordTitleLabel">シナリオ名</label><input id="title">
+    <label id="recordTitleLabel">シナリオ名</label><input id="title"><div id="recordParentNotice" class="small muted" hidden></div>
     <div class="lib-form-grid">
       <div data-trpg-only><label>陣名（任意）</label><input id="runLabel" placeholder="例：1陣目／土曜組"></div>
       <div><label>状態</label><select id="status"><option value="tentative">仮押さえ</option><option value="planned">予定</option><option value="done">完了</option><option value="rescheduling">リスケ中</option><option value="postponed">延期</option><option value="cancelled">中止</option></select></div>
@@ -2427,6 +2427,7 @@ function recordHasSelfPc(record,name){
 function reset(prefillScenarioId=""){editingImageUrls=[];
  calendarSourceEventId="";
  q("editId").value="";
+ q("title").readOnly=false;q("recordParentNotice").hidden=true;q("recordParentNotice").textContent="";
  ["title","place","date","startTime","endTime","system","selfHo","pc","image","comment","xReportUrl","xReportText","spoilerBody","runId","runLabel"].forEach(x=>q(x).value="");setSelfPcRows([]);q("recordType").value="trpg";q("sessionKind").value="main";
  q("status").value="done";q("facilitatorPresence").value="present";q("facilitatorTermMode").value="auto";q("facilitatorTermCustom").value="";q("role").value="PL";q("visibility").value="private";q("spoilerVisibility").value="private";q("formHeading").textContent="開催記録を追加";q("cancel").hidden=true;
  q("externalLinks").innerHTML="";addLinkRow();q("rememberParticipantHo").checked=false;setParticipantRows();updateImagePreview();fillScenarioSelect();fillPCSelect();
@@ -3609,7 +3610,7 @@ function articlePagesHtml(r,g=null){
      <input type="hidden" class="articleEditId">
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
      <div class="article-save-status" role="status" aria-live="assertive" hidden></div>
-     <label>ページタイトル</label><input class="articleTitle" placeholder="例：セッション感想／KPメモ／あとがき">
+     <label>記事タイトル <span class="small muted">（シナリオ名・ゲーム名とは別）</span></label><input class="articleTitle" placeholder="例：セッション感想／攻略メモ／あとがき">
       <div class="article-block-toolbar article-editor-modebar"><span class="article-view-switch" role="group" aria-label="記事の表示モード"><button type="button" data-article-view="edit" aria-pressed="true">編集</button><button type="button" data-article-view="preview" aria-pressed="false">プレビュー</button></span><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div><div class="small muted article-block-help">本文ツールバーから追加したトグル・画像・URL・音声は、現在の階層の一番下へ追加されます。トグルの中でも同じ操作が使えます。</div>
      <div class="article-blocks"></div>
      <div class="article-editor-preview" hidden aria-live="polite"></div>
@@ -6703,7 +6704,7 @@ function render(){
  });
  document.querySelectorAll("[data-add-play]").forEach(b=>b.onclick=e=>{
    e.preventDefault();e.stopPropagation();
-   reset();q("recordType").value=b.dataset.addPlay||"other";q("title").value=b.dataset.addTitle||"";updateRecordTypeUi();showEditor();
+   reset();q("recordType").value=b.dataset.addPlay||"other";q("title").value=b.dataset.addTitle||"";q("title").readOnly=true;q("recordParentNotice").textContent=`「${b.dataset.addTitle||"この遊び"}」の中へ日程記録を追加します。記事タイトルは保存後の記事編集で別に入力できます。`;q("recordParentNotice").hidden=false;updateRecordTypeUi();showEditor();
    q("libraryEditor").scrollIntoView({behavior:"smooth",block:"start"});
  });
  document.querySelectorAll("[data-add-run]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();addForRun(b.dataset.runScenario,b.dataset.addRun,b.dataset.runLabel)});
