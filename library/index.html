@@ -1334,6 +1334,30 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .lib-article-editor:not(.article-reorder-mode) .article-toggle-children{
  display:block;margin:0 0 8px 7px;padding:5px 0 5px 14px;border-left:2px solid color-mix(in srgb,var(--accent) 68%,var(--line));background:transparent
 }
+
+/* 記事編集は本文を主役にする。操作類は必要な時だけ見せる。 */
+.lib-article-editor{padding:18px!important;background:color-mix(in srgb,var(--panel) 97%,currentColor 1%)!important}
+.lib-article-editor>.articleTitle{border:0!important;border-bottom:1px solid transparent!important;border-radius:0!important;background:transparent!important;padding:8px 2px!important;font-size:1.45rem!important;font-weight:800}
+.lib-article-editor>.articleTitle:focus{border-bottom-color:var(--accent)!important;box-shadow:none!important}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks{border:0;border-left:0;border-radius:0;background:transparent}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block{border:1px solid transparent!important;border-left:3px solid transparent!important;border-radius:6px!important;background:transparent!important;margin:2px 0!important;padding:5px 9px!important;transition:border-color .15s,background .15s}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block:hover,.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block:focus-within{border-color:color-mix(in srgb,currentColor 15%,transparent)!important;border-left-color:color-mix(in srgb,var(--block-color,var(--accent)) 70%,var(--line))!important;background:color-mix(in srgb,var(--panel) 95%,currentColor 2%)!important}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block-actions,.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block>.article-block-visibility{opacity:0;pointer-events:none;transition:opacity .15s}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block:hover>.article-block-head .article-block-actions,.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block:focus-within>.article-block-head .article-block-actions,.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block:hover>.article-block-visibility,.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block:focus-within>.article-block-visibility{opacity:1;pointer-events:auto}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-visibility{position:absolute;top:4px;right:52px;width:auto;border:0;padding:0;margin:0;z-index:16}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-visibility label{display:none}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-toolbar{padding:4px 120px 4px 0!important;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .sm-rich-toolbar [data-rich-insert]{display:none}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-editor{min-height:58px;padding:9px 2px}
+.lib-article-editor:not(.article-reorder-mode) .article-block[data-block-type="checklist"],.lib-article-editor:not(.article-reorder-mode) .article-block[data-block-type="calculator"]{padding:9px 12px!important}
+.lib-article-editor:not(.article-reorder-mode) .article-checklist-edit-row,.lib-article-editor:not(.article-reorder-mode) .article-calculator-edit-row{border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:4px 0}
+.lib-article-editor:not(.article-reorder-mode) .article-checklist-edit-row input:not([type="checkbox"]),.lib-article-editor:not(.article-reorder-mode) .article-calculator-edit-row input{border:0;background:transparent}
+.lib-article-editor:not(.article-reorder-mode) :is(.article-checklist-edit-row,.article-calculator-edit-row)>.danger{opacity:0;border-color:transparent;background:transparent}
+.lib-article-editor:not(.article-reorder-mode) :is(.article-checklist-edit-row,.article-calculator-edit-row):hover>.danger,.lib-article-editor:not(.article-reorder-mode) :is(.article-checklist-edit-row,.article-calculator-edit-row):focus-within>.danger{opacity:1}
+.article-add-menu{margin:8px 0 16px}.article-add-menu>summary{display:inline-flex;align-items:center;min-height:38px;padding:7px 11px;border:1px solid transparent;border-radius:7px;color:var(--muted);cursor:pointer;list-style:none}.article-add-menu>summary::-webkit-details-marker{display:none}.article-add-menu>summary:hover,.article-add-menu[open]>summary{border-color:var(--line);color:var(--text);background:color-mix(in srgb,var(--panel) 92%,currentColor 3%)}
+.article-add-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}.article-add-options button{width:auto;background:transparent}
+.article-settings{margin:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.article-settings>summary{cursor:pointer;padding:11px 2px;font-weight:700;color:var(--muted)}.article-settings[open]>summary{color:var(--text)}.article-settings .lib-article-share-row{padding:0 0 12px}.article-settings .lib-article-share-note{margin-bottom:12px}
+@media(max-width:620px){.lib-article-editor{padding:12px!important}.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block-actions,.lib-article-editor:not(.article-reorder-mode) .article-blocks .article-block>.article-block-visibility{opacity:1;pointer-events:auto}.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-visibility{position:static;width:100%}.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-toolbar{padding-right:0!important}.article-add-options{display:grid;grid-template-columns:1fr 1fr}.article-add-options button{width:100%}}
 .lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block{
  margin:0!important;padding:0 0 0 2px!important;border:0!important;background:transparent!important
 }
@@ -1475,6 +1499,12 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
   .lib-run-detail-head{align-items:flex-start;flex-direction:column}.lib-run-detail-head button{width:100%}
   .article-block-toolbar{display:grid;grid-template-columns:1fr 1fr}.article-block-toolbar button{width:100%}
 }
+/* 最終表示：書いている本文だけに書式ツールを出す。 */
+.lib-article-editor:not(.article-reorder-mode) .articleRichMount .sm-rich-toolbar{display:none;position:static!important;box-shadow:none!important;background:transparent!important}
+.lib-article-editor:not(.article-reorder-mode) .articleRichMount .sm-rich-shell:focus-within>.sm-rich-toolbar{display:flex;position:static!important;box-shadow:none!important}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block>.article-block-visibility{opacity:0;pointer-events:none}
+.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block:hover>.article-block-visibility,.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block:focus-within>.article-block-visibility{opacity:1;pointer-events:auto}
+@media(max-width:620px){.lib-article-editor:not(.article-reorder-mode) .article-toggle-children>.article-block>.article-block-visibility{opacity:1;pointer-events:auto}}
 </style>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head>
@@ -3619,15 +3649,16 @@ function articlePagesHtml(r,g=null){
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
      <div class="article-save-status" role="status" aria-live="assertive" hidden></div>
      <label>記事タイトル <span class="small muted">（シナリオ名・ゲーム名とは別）</span></label><input class="articleTitle" placeholder="例：セッション感想／攻略メモ／あとがき">
-      <div class="article-block-toolbar article-editor-modebar"><span class="article-view-switch" role="group" aria-label="記事の表示モード"><button type="button" data-article-view="edit" aria-pressed="true">編集</button><button type="button" data-article-view="preview" aria-pressed="false">プレビュー</button></span><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div><div class="small muted article-block-help">本文ツールバーから追加したトグル・画像・URL・音声は、現在の階層の一番下へ追加されます。トグルの中でも同じ操作が使えます。</div>
+      <div class="article-block-toolbar article-editor-modebar"><span class="article-view-switch" role="group" aria-label="記事の表示モード"><button type="button" data-article-view="edit" aria-pressed="true">編集</button><button type="button" data-article-view="preview" aria-pressed="false">プレビュー</button></span><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div>
      <div class="article-blocks"></div>
+     <details class="article-add-menu"><summary>＋ ブロックを追加</summary><div class="article-add-options"><button type="button" data-article-add-kind="text" data-run-id="${esc(r.id)}">本文</button><button type="button" data-article-add-kind="toggle" data-run-id="${esc(r.id)}">トグル</button><button type="button" data-article-add-kind="image" data-run-id="${esc(r.id)}">画像</button><button type="button" data-article-add-kind="url" data-run-id="${esc(r.id)}">URL</button><button type="button" data-article-add-kind="conversation" data-run-id="${esc(r.id)}">会話</button><button type="button" data-article-add-kind="mediaGroup" data-run-id="${esc(r.id)}">メディア</button><button type="button" data-article-add-kind="checklist" data-run-id="${esc(r.id)}">チェック</button><button type="button" data-article-add-kind="calculator" data-run-id="${esc(r.id)}">計算</button></div></details>
      <div class="article-editor-preview" hidden aria-live="polite"></div>
-     <div class="lib-article-share-row">
+     <details class="article-settings"><summary>共有・公開設定</summary><div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
        <div class="article-spoiler-setting"><label>⚠ ネタバレ警告</label><select class="articleSpoilerWarning" aria-describedby="articleSpoilerHelp-${esc(r.id)}"><option value="1">ON</option><option value="0">OFF</option></select><div class="small muted" id="articleSpoilerHelp-${esc(r.id)}">共有時に、伏せ字をクリックすると読めることを案内します。</div></div>
        <div><label>共有パスワード <span class="small muted">（任意）</span></label><input class="articlePassword" type="password" autocomplete="new-password" placeholder="設定する場合のみ入力"></div><div><label>パスワードのヒント <span class="small muted">（任意）</span></label><input class="articlePasswordHint" value="" placeholder="例：Cから始めて5文字（英字）"></div>
      </div>
-     <div class="lib-article-share-note">通常共有では画像の「SNSカードに使う」を1枚選べます。未選択なら金色のタイトルOGP。パスワード付き共有では内容を伏せ、SAKU+MERU公式OGPを自動使用します。</div>
+     <div class="lib-article-share-note">通常共有では画像の「SNSカードに使う」を1枚選べます。未選択なら金色のタイトルOGP。パスワード付き共有では内容を伏せ、SAKU+MERU公式OGPを自動使用します。</div></details>
      <div class="album-actions"><button type="button" data-article-save="${esc(r.id)}">保存</button><button type="button" data-article-cancel="${esc(r.id)}">キャンセル</button></div>
    </div>
  </section>`;
@@ -4556,6 +4587,7 @@ function bindArticlePageButtons(){
  document.querySelectorAll('[data-article-cancel]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.articleCancel}`);if(ed)ed.hidden=true});
  document.querySelectorAll('[data-article-reorder-toggle]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.articleReorderToggle}`);if(ed)setArticleReorderMode(ed,!ed.classList.contains('article-reorder-mode'))});
  document.querySelectorAll('[data-article-view]').forEach(b=>b.onclick=()=>{const ed=b.closest('.lib-article-editor');if(ed)setArticleViewMode(ed,b.dataset.articleView||'edit')});
+ document.querySelectorAll('[data-article-add-kind]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.runId}`);if(!ed)return;addEditorBlock(ed,b.dataset.articleAddKind||"text");const menu=b.closest('.article-add-menu');if(menu)menu.open=false});
  document.querySelectorAll('[data-block-add-text]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddText}`);if(ed)addEditorBlock(ed,"text")});
  document.querySelectorAll('[data-block-add-image]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddImage}`);if(ed)addEditorBlock(ed,"image")});
  document.querySelectorAll('[data-block-add-conversation]').forEach(b=>b.onclick=()=>{const ed=document.getElementById(`articleEditor-${b.dataset.blockAddConversation}`);if(ed)addEditorBlock(ed,"conversation")});
