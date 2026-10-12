@@ -1253,6 +1253,8 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
   display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:2px solid color-mix(in srgb,currentColor 29%,var(--line));border-radius:8px;font-weight:700;text-decoration:none;box-sizing:border-box
 }
 .lib-child-actions button:hover,.lib-parent-actions button:hover,.lib-parent-actions .link:hover,.album-actions button:hover,.album-actions .link:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+#saveAndArticle{background:var(--panel2);color:var(--text);border-color:color-mix(in srgb,currentColor 42%,var(--line));opacity:1}
+#saveAndArticle:hover{background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:var(--text);border-color:var(--accent)}
 
 #libraryEditor{border-color:var(--accent);border-left-width:6px;background:color-mix(in srgb,var(--panel) 96%,var(--accent) 4%)}
 .form-section,.article-block,.lib-article-page,.run-roster-bulk-card,.run-roster-self,.ext-row{
@@ -1586,10 +1588,10 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
   </div>
 
   <div class="lib-form-section record-article-guide">
-    <h3 id="recordArticleHeading">記録記事</h3>
-    <p class="small muted">記録を保存したあと、そのまま本文・画像・動画・チェックリスト・簡易計算を使った記事を書けます。ネタバレ警告や、共有URLを知る参加メンバー向けの公開範囲も設定できます。</p>
+    <h3 id="recordArticleHeading">タイトルの記事</h3>
+    <p id="recordArticleGuide" class="small">この記事は特定の日程には紐づかず、同じタイトル内の日程すべてで共有されます。本文・画像・動画・チェックリスト・簡易計算を追加できます。</p>
   </div>
-  <div class="album-actions"><button id="save" type="button">保存</button><button id="saveAndArticle" type="button">保存して記事を書く</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
+  <div class="album-actions"><button id="save" type="button">保存</button><button id="saveAndArticle" type="button">保存してタイトルの記事を書く</button><button id="cancel" type="button" hidden>編集をやめる</button></div>
 </section>
 </div><div class="wrap small muted" data-build-marker="02332">build v0.2.35.5.19.5-save-detail-x</div></main>
 <div id="coverEditor" class="lib-cover-editor" hidden><div class="lib-cover-panel">
@@ -1755,8 +1757,11 @@ function updateRecordTypeUi(){
  q("recordTitleLabel").textContent=trpg?"シナリオ名":"遊んだもの・イベント名";
  q("recordBasicHeading").textContent=trpg?"卓の基本情報":"遊んだ記録の基本情報";
  q("recordImageLabel").textContent=trpg?"卓報告スクリーンショット":"スクリーンショット・写真";
- q("recordArticleHeading").textContent=trpg?"卓記事":"記録記事";
- q("saveAndArticle").textContent=trpg?"保存して卓記事を書く":"保存して記録記事を書く";
+ q("recordArticleHeading").textContent=trpg?"卓記事":"タイトルの記事（各日程共通）";
+ q("recordArticleGuide").textContent=trpg
+   ?"この卓の記録に紐づく記事です。本文・画像・動画・チェックリスト・簡易計算を追加できます。"
+   :"この記事は今入力している日程だけのものではなく、同じタイトル内の日程すべてで共有されます。本文・画像・動画・チェックリスト・簡易計算を追加できます。";
+ q("saveAndArticle").textContent=trpg?"保存して卓記事を書く":"保存してタイトルの記事を書く";
  q("formHeading").textContent=`${recordTypeLabel[type]||"遊び"}の記録を${q("editId").value?"編集":"追加"}`;
  document.querySelectorAll("#participantRows .partRole").forEach(sel=>{const old=sel.value||"";sel.innerHTML=roleOptions(trpg?old:(old==="主催"?"主催":"参加"),facilitatorConfig({}).label)});
 }
