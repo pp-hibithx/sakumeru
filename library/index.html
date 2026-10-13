@@ -15,7 +15,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<link rel="stylesheet" href="../assets/css/rich-editor.css?v=0920-style-preview">
+<link rel="stylesheet" href="../assets/css/rich-editor.css?v=1013-inline-blocks">
 <link rel="stylesheet" href="../assets/css/image-lightbox.css?v=0905-1">
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script defer src="../assets/js/image-lightbox.js?v=0905-1"></script>
@@ -1347,7 +1347,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-visibility{position:absolute;top:4px;right:52px;width:auto;border:0;padding:0;margin:0;z-index:16}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"]>.article-block-visibility label{display:none}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-toolbar{padding:4px 120px 4px 0!important;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
-.lib-article-editor:not(.article-reorder-mode) .article-blocks .sm-rich-toolbar [data-rich-insert]{display:none}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks .sm-rich-insert-menu{display:block}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-editor{min-height:58px;padding:9px 2px}
 .lib-article-editor:not(.article-reorder-mode) .article-block[data-block-type="checklist"],.lib-article-editor:not(.article-reorder-mode) .article-block[data-block-type="calculator"]{padding:9px 12px!important}
 .lib-article-editor:not(.article-reorder-mode) .article-checklist-edit-row,.lib-article-editor:not(.article-reorder-mode) .article-calculator-edit-row{border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:4px 0}
@@ -1764,7 +1764,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=1006-security2"></script>
-<script src="../assets/js/rich-editor.js?v=1010-article-tools"></script>
+<script src="../assets/js/rich-editor.js?v=1013-inline-blocks"></script>
 <script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";
@@ -3728,7 +3728,7 @@ function initArticleRichEditors(ed,blocks){
  flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:kind=>insertArticleBlockAfter(ed,id,kind),onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:(kind,context)=>insertArticleBlockAtCursor(ed,id,kind,context),onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
@@ -3810,6 +3810,26 @@ function insertArticleBlockAfter(ed,sourceId,kind){
  source.list.splice(source.index+1,0,block);
  renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
  const target=ed.querySelector(`[data-block-id="${CSS.escape(String(block.id))}"]`);target?.scrollIntoView({behavior:"smooth",block:"nearest"});articleRichEditors.get(String(block.id))?.focus?.();
+ return true;
+}
+function insertArticleBlockAtCursor(ed,sourceId,kind,context={}){
+ const split=context?.split;if(!split)return insertArticleBlockAfter(ed,sourceId,kind);
+ const blocks=editorBlocks(ed),source=articleBlockLocation(blocks,sourceId);if(!source||source.block.type!=="text")return insertArticleBlockAfter(ed,sourceId,kind);
+ let inserted=null;
+ if(kind==="url"){
+   const value=prompt("取り込むURLを入力してください。\nYouTube・MP3は対応ブロック、それ以外は安全なリンクとして追加します。");
+   if(value===null)return false;inserted=articleBlockFromImportedUrl(value);if(!inserted)return alert("http:// または https:// で始まるURLを入力してください。"),false;
+ }else inserted=newArticleBlock(kind);
+ if(!inserted)return false;
+ const visibility=source.block.visibility||"private",beforeText=String(split.before?.text||"").trim(),afterText=String(split.after?.text||"").trim();inserted.visibility=visibility;
+ if(inserted.type==="toggle"&&inserted.children?.[0])inserted.children[0].visibility=visibility;
+ const replacement=[];
+ if(beforeText)replacement.push({...source.block,html:split.before.html,text:split.before.text});
+ replacement.push(inserted);
+ if(afterText)replacement.push(newArticleBlock("text",{html:split.after.html,text:split.after.text,visibility}));
+ source.list.splice(source.index,1,...replacement);
+ renderArticleEditorBlocks(ed,blocks);articleEditorChanged(ed);
+ const target=ed.querySelector(`[data-block-id="${CSS.escape(String(inserted.id))}"]`);target?.scrollIntoView({behavior:"smooth",block:"nearest"});
  return true;
 }
 function moveEditorBlock(ed,id,delta){
