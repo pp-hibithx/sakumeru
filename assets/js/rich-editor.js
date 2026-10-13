@@ -3,8 +3,8 @@
 
 const ALLOWED_TAGS=new Set("A B BLOCKQUOTE BR CODE DEL DETAILS DIV EM FIGCAPTION FIGURE H2 H3 HR I IMG LI MARK OL P S SECTION SMALL SPAN STRONG SUMMARY U UL".split(" "));
 const DROP_TAGS=new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","SELECT","TEXTAREA","META","LINK"]);
-const ALLOWED_ATTRS=new Set(["class","href","target","rel","src","alt","title","style","open","data-kind","data-block-id","data-x-hidden"]);
-const SAFE_CLASSES=/^(sm-rich-|sm-special|kp-special|kp-special-(?:head|title|body)|kind-chip|image-grid|cols-[1-4]|kp-marker)(?:\s|$)/;
+const ALLOWED_ATTRS=new Set(["class","href","target","rel","src","alt","title","style","open","data-kind","data-block-id","data-x-hidden","data-rich-role"]);
+const SAFE_CLASSES=/^(?:(?:sm-rich-[\w-]+|sm-special|kp-special|kp-special-(?:head|title|body)|kind-chip|image-grid|cols-[1-4]|kp-marker)(?:\s|$))+$/;
 
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>crypto.randomUUID?.()||`sm-rich-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -260,6 +260,12 @@ function decorateSpecialBlocks(editor){
   if(figure.querySelector(":scope > .sm-rich-image-remove"))return;
   const button=document.createElement("button");button.type="button";button.className="sm-rich-image-remove sm-rich-ui";button.contentEditable="false";button.textContent="削除";button.title="この画像を削除";figure.prepend(button);
  });
+ editor.querySelectorAll('[data-rich-role="check-toggle"]').forEach(item=>{item.contentEditable="false";if(!/^[☐☑]/.test(item.textContent||""))item.textContent=`☐ ${item.textContent||"確認すること"}`});
+ editor.querySelectorAll('[data-rich-role="calc-total"]').forEach(item=>item.contentEditable="false");
+ editor.querySelectorAll('.sm-rich-article-tool[data-kind="checklist"],.sm-rich-article-tool[data-kind="calculator"]').forEach(block=>{
+  if(block.querySelector(':scope > .sm-rich-tool-add'))return;
+  const button=document.createElement("button");button.type="button";button.className="sm-rich-tool-add sm-rich-ui";button.contentEditable="false";button.dataset.richToolAdd=block.dataset.kind;button.textContent=block.dataset.kind==="checklist"?"＋ 項目":"＋ 計算行";block.append(button);
+ });
 }
 function create(options={}){
  const mount=options.mount;if(!mount)throw new Error("RichEditor mount is required");
@@ -337,7 +343,7 @@ function create(options={}){
  const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("隠したい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
  toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
- editor.addEventListener("click",e=>{const imageButton=e.target.closest?.(".sm-rich-image-remove");if(imageButton){e.preventDefault();e.stopPropagation();const figure=imageButton.closest("figure.sm-rich-image");if(figure&&confirm("この画像を削除しますか？")){sortControlFor(figure)?.remove();figure.remove();range=null;notify();decorateSortableBlocks()}return}const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
+ editor.addEventListener("click",e=>{const add=e.target.closest?.("[data-rich-tool-add]");if(add){e.preventDefault();e.stopPropagation();const block=add.closest(".sm-rich-article-tool"),body=block?.querySelector(":scope > .kp-special-body");if(!body)return;if(add.dataset.richToolAdd==="checklist")body.insertAdjacentHTML("beforeend",'<div class="sm-rich-checklist-item"><span data-rich-role="check-toggle">☐</span><span class="sm-rich-check-text">確認すること</span></div>');else{const total=body.querySelector('[data-rich-role="calc-total"]');total?.insertAdjacentHTML("beforebegin",'<div class="sm-rich-calc-row"><span>項目</span><span data-rich-role="calc-value">0</span></div>')}decorateSpecialBlocks(editor);notify();return}const check=e.target.closest?.('[data-rich-role="check-toggle"]');if(check){e.preventDefault();e.stopPropagation();check.textContent=/^☑/.test(check.textContent||"")?(check.textContent||"").replace(/^☑/,"☐"):(check.textContent||"").replace(/^☐/,"☑");notify();return}const imageButton=e.target.closest?.(".sm-rich-image-remove");if(imageButton){e.preventDefault();e.stopPropagation();const figure=imageButton.closest("figure.sm-rich-image");if(figure&&confirm("この画像を削除しますか？")){sortControlFor(figure)?.remove();figure.remove();range=null;notify();decorateSortableBlocks()}return}const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
  let deleteHighlightSnapshot=null;
  editor.addEventListener("beforeinput",event=>{
   deleteHighlightSnapshot=String(event.inputType||"").startsWith("delete")
@@ -356,6 +362,7 @@ function create(options={}){
  });
  editor.addEventListener("input",event=>{
   if(String(event.inputType||"").startsWith("delete")&&deleteHighlightSnapshot){restoreHighlightsAfterDelete(editor,deleteHighlightSnapshot);deleteHighlightSnapshot=null}
+   const calculator=event.target.closest?.('.sm-rich-article-tool[data-kind="calculator"]');if(calculator){const total=[...calculator.querySelectorAll('[data-rich-role="calc-value"]')].reduce((sum,item)=>sum+(Number(String(item.textContent||"").replace(/,/g,""))||0),0),out=calculator.querySelector('[data-rich-role="calc-total"]');if(out)out.textContent=`合計 ${new Intl.NumberFormat("ja-JP",{maximumFractionDigits:4}).format(total)}`}
   saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)
  });
  editor.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const k=e.key.toLowerCase();if(k==="z"||k==="y"){e.preventDefault();toolbar.querySelector(k==="y"||e.shiftKey?"[data-rich-redo]":"[data-rich-undo]").click()}});

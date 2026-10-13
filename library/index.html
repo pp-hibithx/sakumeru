@@ -3786,6 +3786,23 @@ function insertArticleInlineImage(ed,sourceId){
  };
  input.click();
 }
+function insertArticleInlineTool(ed,sourceId,kind){
+ if(kind==="image")return insertArticleInlineImage(ed,sourceId);
+ const rich=articleRichEditors.get(String(sourceId));if(!rich)return false;
+ let html="";
+ if(kind==="text")html='<p><br></p>';
+ else if(kind==="url"){
+  const raw=prompt("本文へ挿入するURLを入力してください。");if(raw===null)return false;
+  let url="";try{const parsed=new URL(String(raw||"").trim());if(["http:","https:"].includes(parsed.protocol))url=parsed.href}catch{}if(!url)return alert("http:// または https:// で始まるURLを入力してください。"),false;
+  html=`<p><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a></p>`;
+ }else if(kind==="toggle")html='<details class="sm-special sm-rich-toggle" open><summary>トグル見出し</summary><div class="sm-rich-toggle-body"><p>ここに内容を入力</p></div></details><p><br></p>';
+ else if(kind==="conversation")html='<section class="sm-special sm-rich-article-tool" data-kind="conversation"><div class="kp-special-head"><span class="kind-chip">会話</span></div><div class="kp-special-title">会話ログ</div><div class="kp-special-body"><p><strong>発言者：</strong>発言内容</p><p><strong>発言者：</strong>発言内容</p></div></section><p><br></p>';
+ else if(kind==="mediaGroup")html='<section class="sm-special sm-rich-article-tool" data-kind="media"><div class="kp-special-head"><span class="kind-chip">メディア</span></div><div class="kp-special-title">メディア</div><div class="kp-special-body"><div class="sm-rich-media-space">画像は本文の＋から追加できます。動画・音声のURLもここへ貼れます。</div></div></section><p><br></p>';
+ else if(kind==="checklist")html='<section class="sm-special sm-rich-article-tool" data-kind="checklist"><div class="kp-special-head"><span class="kind-chip">チェック</span></div><div class="kp-special-title">チェックリスト</div><div class="kp-special-body"><div class="sm-rich-checklist-item"><span data-rich-role="check-toggle">☐</span><span class="sm-rich-check-text">確認すること</span></div></div></section><p><br></p>';
+ else if(kind==="calculator")html='<section class="sm-special sm-rich-article-tool" data-kind="calculator"><div class="kp-special-head"><span class="kind-chip">計算</span></div><div class="kp-special-title">簡易計算</div><div class="kp-special-body"><div class="sm-rich-calc-row"><span>項目</span><span data-rich-role="calc-value">0</span></div><div class="sm-rich-calc-row"><span>項目</span><span data-rich-role="calc-value">0</span></div><div class="sm-rich-calc-total" data-rich-role="calc-total">合計 0</div></div></section><p><br></p>';
+ if(!html)return false;
+ rich.insertHtml(html);articleEditorChanged(ed);return true;
+}
 function destroyArticleRichEditors(ed){
  [...ed.querySelectorAll('[data-rich-block-id]')].forEach(m=>{const id=String(m.dataset.richBlockId||"");articleRichEditors.get(id)?.destroy();articleRichEditors.delete(id)});
 }
@@ -3794,7 +3811,7 @@ function initArticleRichEditors(ed,blocks){
  flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:(kind,context)=>kind==="image"?insertArticleInlineImage(ed,id):insertArticleBlockAtCursor(ed,id,kind,context),onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:kind=>insertArticleInlineTool(ed,id,kind),onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
