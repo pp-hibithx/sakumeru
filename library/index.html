@@ -1491,6 +1491,11 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 [data-sheet-theme]:not([data-sheet-theme="standard"]) #libraryEditor :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea){
   color:var(--control-text);
 }
+/* 参加者候補は用紙テーマの文字色を継承させず、暗い入力欄として固定する。 */
+#libraryEditor .participant-picker-results{background:#2b2f34!important;color:#f3f3f0!important;border-color:#70757d!important}
+#libraryEditor button.participant-picker-item{background:#2b2f34!important;color:#f3f3f0!important;border-bottom-color:#666b72!important;opacity:1!important;text-shadow:none!important}
+#libraryEditor button.participant-picker-item:hover,#libraryEditor button.participant-picker-item.active{background:#41464d!important;color:#fff!important}
+#libraryEditor .participant-picker-empty{color:#c6c9ce!important}
 
 @media(max-width:760px){
   .library-page{gap:11px}.lib-panel{padding:12px}.lib-toolbar,.library-view-tabs,.library-play-tabs{padding:9px}
