@@ -419,18 +419,18 @@ html:is(.theme-light,[data-theme="light"]) #libraryEditor input[type="file"]::fi
 .participant-field-wrap{position:relative}
 .participant-picker-results{
   position:absolute;left:0;right:0;top:100%;z-index:40;
-  max-height:260px;overflow:auto;margin-top:4px;
-  border:1px solid var(--line);border-radius:9px;background:var(--panel);
+  max-height:184px;overflow:auto;margin-top:4px;
+  border:1px solid var(--sheet-border,var(--line));border-radius:9px;background:var(--control-bg,var(--panel));color:var(--control-text,var(--text));
   box-shadow:0 10px 28px rgba(0,0,0,.28);display:none;
 }
 .participant-picker-results.open{display:block}
 .participant-picker-item{
-  width:100%;text-align:left;padding:8px 10px;border:0;
-  border-bottom:1px solid var(--line);background:transparent;color:inherit;
+  width:100%;text-align:left;padding:8px 10px;border:0;font-size:.9rem;line-height:1.35;
+  border-bottom:1px solid color-mix(in srgb,var(--control-text,var(--text)) 18%,transparent);background:transparent;color:var(--control-text,var(--text));
 }
 .participant-picker-item:last-child{border-bottom:0}
-.participant-picker-item:hover,.participant-picker-item.active{background:rgba(255,255,255,.06)}
-.participant-picker-empty{padding:9px 10px;font-size:12px;color:var(--muted)}
+.participant-picker-item:hover,.participant-picker-item.active{background:color-mix(in srgb,var(--accent) 18%,var(--control-bg,var(--panel)))}
+.participant-picker-empty{padding:9px 10px;font-size:12px;color:color-mix(in srgb,var(--control-text,var(--text)) 68%,transparent)}
 .partPcHint{min-height:16px;margin-top:4px}
 @media(max-width:860px){
  .participant-row{grid-template-columns:1fr 1fr}
@@ -2381,14 +2381,14 @@ function addParticipantRow(v={},opts={}){
    <div class="participant-field-wrap"><label>PC</label><input class="partPcName" value="${esc(pc.pcName||"")}" placeholder="PC名を検索・入力" autocomplete="off"><div class="participant-picker-results partPcResults"></div></div>`;
    pcBox.appendChild(pr);
    const inp=pr.querySelector(".partPcName"),res=pr.querySelector(".partPcResults");
-   const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),items=playerPcCandidates().filter(pc=>!term||pc.name.normalize("NFKC").toLowerCase().includes(term));if(items.length){res.innerHTML=items.map(pc=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(pc.name)}" data-pc-id="${esc(pc.id)}">${esc(pc.name)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;pr.dataset.pcId=b.dataset.pcId||"";res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;pr.dataset.pcId="";res.classList.remove("open")})};
-   inp.addEventListener("focus",render);inp.addEventListener("input",()=>{pr.dataset.pcId="";render()});
+   const render=()=>{const raw=inp.value.trim(),term=raw.normalize("NFKC").toLowerCase(),items=playerPcCandidates().filter(pc=>!term||pc.name.normalize("NFKC").toLowerCase().includes(term)).slice(0,8);if(items.length){res.innerHTML=items.map(pc=>`<button type="button" class="participant-picker-item" data-pc-choice="${esc(pc.name)}" data-pc-id="${esc(pc.id)}">${esc(pc.name)}</button>`).join("")}else if(raw){res.innerHTML=`<button type="button" class="participant-picker-item" data-pc-new="${esc(raw)}">＋「${esc(raw)}」をこの参加者のPCとして使う</button><div class="participant-picker-empty">候補に無くても、そのまま登録できます。</div>`}else{res.innerHTML='<div class="participant-picker-empty">PC名を入力してください。過去に登録したPCがあれば候補に表示します。</div>'}res.classList.add("open");res.querySelectorAll("[data-pc-choice]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcChoice;pr.dataset.pcId=b.dataset.pcId||"";res.classList.remove("open")});res.querySelectorAll("[data-pc-new]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.pcNew;pr.dataset.pcId="";res.classList.remove("open")})};
+   inp.addEventListener("focus",render);inp.addEventListener("input",()=>{pr.dataset.pcId="";render()});inp.addEventListener("blur",()=>setTimeout(()=>res.classList.remove("open"),120));
  }
  const pcs0=Array.isArray(v.pcs)?v.pcs:((v.pcName||v.ho||v.pcId)?[{pcName:v.pcName||"",ho:v.ho||"",pcId:v.pcId||""}]:[]);
  (pcs0.length?pcs0:[{}]).forEach(addPc);
  row.querySelector(".participant-pc-add").onclick=()=>addPc({});
- function renderPl(){const raw=plInput.value.trim(),term=raw.normalize("NFKC").toLowerCase(),rows=currentPlayers().filter(p=>!term||[p.name,p.publicName,p.socialName].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term)).slice(0,40);if(rows.length){plResults.innerHTML=rows.map(p=>`<button type="button" class="participant-picker-item" data-pl-choice="${esc(p.name)}" data-pl-id="${esc(p.id||"")}">${esc(p.name)}</button>`).join("")}else if(raw){plResults.innerHTML=`<button type="button" class="participant-picker-item" data-pl-create="${esc(raw)}">＋「${esc(raw)}」を新しい参加者として使う</button><div class="participant-picker-empty">保存時にPLAYERSへ登録されます。</div>`}else{plResults.innerHTML='<div class="participant-picker-empty">名前を入力すると既存の参加者を検索できます。未登録ならそのまま新規入力できます。</div>'}plResults.classList.add("open");plResults.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plChoice;row.dataset.playerId=b.dataset.plId||"";plResults.classList.remove("open")});plResults.querySelectorAll("[data-pl-create]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plCreate;if(TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){TRPG39.ensurePlayer(plInput.value);players=TRPG39.loadPlayers()}plResults.classList.remove("open")})}
- plInput.addEventListener("focus",renderPl);plInput.addEventListener("input",()=>{row.dataset.playerId="";renderPl()});
+ function renderPl(){const raw=plInput.value.trim(),term=raw.normalize("NFKC").toLowerCase(),rows=currentPlayers().filter(p=>!term||[p.name,p.publicName,p.socialName].filter(Boolean).join(" ").normalize("NFKC").toLowerCase().includes(term)).slice(0,8);if(rows.length){plResults.innerHTML=rows.map(p=>`<button type="button" class="participant-picker-item" data-pl-choice="${esc(p.name)}" data-pl-id="${esc(p.id||"")}">${esc(p.name)}</button>`).join("")}else if(raw){plResults.innerHTML=`<button type="button" class="participant-picker-item" data-pl-create="${esc(raw)}">＋「${esc(raw)}」を新しい参加者として使う</button><div class="participant-picker-empty">保存時にPLAYERSへ登録されます。</div>`}else{plResults.innerHTML='<div class="participant-picker-empty">名前を入力すると既存の参加者を検索できます。未登録ならそのまま新規入力できます。</div>'}plResults.classList.add("open");plResults.querySelectorAll("[data-pl-choice]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plChoice;row.dataset.playerId=b.dataset.plId||"";plResults.classList.remove("open")});plResults.querySelectorAll("[data-pl-create]").forEach(b=>b.onclick=()=>{plInput.value=b.dataset.plCreate;if(TRPG39.playersEnabled?.()&&TRPG39.ensurePlayer){TRPG39.ensurePlayer(plInput.value);players=TRPG39.loadPlayers()}plResults.classList.remove("open")})}
+ plInput.addEventListener("focus",renderPl);plInput.addEventListener("input",()=>{row.dataset.playerId="";renderPl()});plInput.addEventListener("blur",()=>setTimeout(()=>plResults.classList.remove("open"),120));
  row.querySelector(".participant-remove").onclick=()=>row.remove();
  q("participantRows").appendChild(row);
 }
