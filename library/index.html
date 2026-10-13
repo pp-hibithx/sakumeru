@@ -1632,7 +1632,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
     </div>
   </div>
 
-  <div class="lib-form-section" data-trpg-only>
+  <div class="lib-form-section">
     <h3>自分</h3>
     <div class="lib-form-grid">
       <div><label>自分の役割</label><select id="role"><option>PL</option><option>KP</option><option>SKP</option><option>見学</option><option>その他</option></select></div>
@@ -1667,11 +1667,13 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
     <div class="small muted" id="xReportImageCount">0 / 4枚</div><div id="xReportImageList" class="xreport-image-list"></div>
     <div id="imagePreview" class="image-preview" hidden><img id="imagePreviewImg" alt="スクリーンショットのプレビュー"></div>
     <label>ひとこと</label><textarea id="comment" placeholder="楽しかった！ など、卓報告に添えるひとこと"></textarea>
-    <label>X卓報告URL</label>
-    <input id="xReportUrl" type="url" placeholder="https://x.com/.../status/...">
-    <label>X卓報告本文の控え <span class="small muted">（任意）</span></label>
-    <textarea id="xReportText" rows="4" placeholder="投稿した本文を残しておくと、投稿が消えても記録として残せます。"></textarea>
-    <div class="share-scope-note"><strong>共有ページに表示される内容</strong><br>シナリオ名・開催日・役割／HO／PL／PC・スクリーンショット（最大4枚）・ひとこと</div>
+    <div data-trpg-only>
+      <label>X卓報告URL</label>
+      <input id="xReportUrl" type="url" placeholder="https://x.com/.../status/...">
+      <label>X卓報告本文の控え <span class="small muted">（任意）</span></label>
+      <textarea id="xReportText" rows="4" placeholder="投稿した本文を残しておくと、投稿が消えても記録として残せます。"></textarea>
+      <div class="share-scope-note"><strong>共有ページに表示される内容</strong><br>シナリオ名・開催日・役割／HO／PL／PC・スクリーンショット（最大4枚）・ひとこと</div>
+    </div>
   </div>
 
   <div class="lib-form-section">
@@ -1860,6 +1862,7 @@ function updateRecordTypeUi(){
  q("recordTitleLabel").textContent=trpg?"シナリオ名":"遊んだもの・イベント名";
  q("recordBasicHeading").textContent=trpg?"卓の基本情報":"遊んだ記録の基本情報";
  q("recordImageLabel").textContent=trpg?"卓報告スクリーンショット":"スクリーンショット・写真";
+  q("comment").placeholder=trpg?"楽しかった！ など、卓報告に添えるひとこと":"楽しかった！ など、遊んだ記録に添えるひとこと";
  q("recordSharingHeading").textContent=trpg?"追加情報・共有設定":"日程記録の公開設定";
  q("recordArticleHeading").textContent=trpg?"卓記事":"タイトルの記事（各日程共通）";
  q("recordArticleGuide").textContent=trpg
