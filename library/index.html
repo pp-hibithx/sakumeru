@@ -1547,6 +1547,17 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .lib-article-editor:not(.article-reorder-mode) .article-toggle-block:hover>.article-toggle-summary .article-block-actions,
 .lib-article-editor:not(.article-reorder-mode) .article-toggle-block:focus-within>.article-toggle-summary .article-block-actions{opacity:1;pointer-events:auto}
 @media(max-width:620px){.lib-article-editor:not(.article-reorder-mode) .article-blocks{padding:8px!important}.lib-article-editor:not(.article-reorder-mode) .article-inline-image-preview img{max-height:55vh}}
+
+/* 本文は常時エディターとして認識できるよう、編集バーと空欄案内を隠さない。 */
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-toolbar{
+ display:flex!important;position:static!important
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-editor{
+ min-height:110px;border-radius:5px
+}
+.lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-editor>p:only-child:has(>br:only-child)::before{
+ content:"本文を入力。画像やトグルは上の＋から本文中へ追加できます。";color:var(--muted);pointer-events:none
+}
 </style>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head>
