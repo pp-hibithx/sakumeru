@@ -3772,6 +3772,20 @@ function clearArticleDirty(ed){const key=articleDraftKey(ed);articleDirtyEditors
 window.addEventListener("beforeunload",e=>{if(!articleDirtyEditors.size)return;e.preventDefault();e.returnValue=""});
 
 const articleRichEditors=new Map();
+function insertArticleInlineImage(ed,sourceId){
+ const input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp,image/gif";
+ input.onchange=async()=>{
+  const file=input.files?.[0];if(!file)return;
+  const rich=articleRichEditors.get(String(sourceId));if(!rich)return;
+  try{
+   setArticleSaveStatus(ed,"画像をアップロードしています…","saving");
+   const url=await uploadArticleImageFile(file),caption=String(file.name||"").replace(/\.[^.]+$/,"");
+   rich.insertHtml(`<figure class="sm-rich-image"><img src="${esc(url)}" alt="${esc(caption)}"><figcaption>${esc(caption)}</figcaption></figure><p><br></p>`);
+   articleEditorChanged(ed);setArticleSaveStatus(ed,"画像を本文へ追加しました。","saved");
+  }catch(error){console.error(error);setArticleSaveStatus(ed,"画像を追加できませんでした。","error");alert(error.message||error)}
+ };
+ input.click();
+}
 function destroyArticleRichEditors(ed){
  [...ed.querySelectorAll('[data-rich-block-id]')].forEach(m=>{const id=String(m.dataset.richBlockId||"");articleRichEditors.get(id)?.destroy();articleRichEditors.delete(id)});
 }
@@ -3780,7 +3794,7 @@ function initArticleRichEditors(ed,blocks){
  flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:(kind,context)=>insertArticleBlockAtCursor(ed,id,kind,context),onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:(kind,context)=>kind==="image"?insertArticleInlineImage(ed,id):insertArticleBlockAtCursor(ed,id,kind,context),onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){

@@ -254,6 +254,12 @@ function decorateSpecialBlocks(editor){
   const button=document.createElement("button");button.type="button";button.className="sm-rich-special-remove sm-rich-ui";button.contentEditable="false";button.textContent="削除";button.title="このブロックを削除";
   const head=block.matches("section")?block.querySelector(":scope > .kp-special-head"):null;(head||block).append(button);
  });
+ editor.querySelectorAll("figure.sm-rich-image").forEach(figure=>{
+  figure.contentEditable="false";
+  const caption=figure.querySelector(":scope > figcaption");if(caption)caption.contentEditable="true";
+  if(figure.querySelector(":scope > .sm-rich-image-remove"))return;
+  const button=document.createElement("button");button.type="button";button.className="sm-rich-image-remove sm-rich-ui";button.contentEditable="false";button.textContent="削除";button.title="この画像を削除";figure.prepend(button);
+ });
 }
 function create(options={}){
  const mount=options.mount;if(!mount)throw new Error("RichEditor mount is required");
@@ -331,7 +337,7 @@ function create(options={}){
  const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("隠したい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
  toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
- editor.addEventListener("click",e=>{const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
+ editor.addEventListener("click",e=>{const imageButton=e.target.closest?.(".sm-rich-image-remove");if(imageButton){e.preventDefault();e.stopPropagation();const figure=imageButton.closest("figure.sm-rich-image");if(figure&&confirm("この画像を削除しますか？")){sortControlFor(figure)?.remove();figure.remove();range=null;notify();decorateSortableBlocks()}return}const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
  let deleteHighlightSnapshot=null;
  editor.addEventListener("beforeinput",event=>{
   deleteHighlightSnapshot=String(event.inputType||"").startsWith("delete")
@@ -355,7 +361,7 @@ function create(options={}){
  editor.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const k=e.key.toLowerCase();if(k==="z"||k==="y"){e.preventDefault();toolbar.querySelector(k==="y"||e.shiftKey?"[data-rich-redo]":"[data-rich-undo]").click()}});
  if(options.enableBlockReorder){decorateSortableBlocks();sortObserver=new MutationObserver(mutations=>{if(sortDecorating)return;const structural=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&!n.classList?.contains("sm-rich-ui")));if(!structural)return;clearTimeout(sortTimer);sortTimer=setTimeout(()=>decorateSortableBlocks(),120)});sortObserver.observe(editor,{childList:true,subtree:true})}
  updateButtons();
- return {editor,getHtml:value,getText:()=>plainText(value()),setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
+ return {editor,getHtml:value,getText:()=>plainText(value()),insertHtml(html){restoreRange();document.execCommand("insertHTML",false,String(html||""));saveRange();notify();decorateSortableBlocks()},setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
 window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,bindShareHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,normalizePastedHtml,normalizePastedText,execCommand};
