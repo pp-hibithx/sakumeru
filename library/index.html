@@ -1558,6 +1558,19 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 .lib-article-editor:not(.article-reorder-mode) .article-blocks>.article-block[data-block-type="text"] .sm-rich-editor>p:only-child:has(>br:only-child)::before{
  content:"本文を入力。画像やトグルは上の＋から本文中へ追加できます。";color:var(--muted);pointer-events:none
 }
+/* Notion型: 編集したまま、左のハンドルで本文ブロックを直接並び替える。 */
+.lib-article-editor .articleRichMount .sm-rich-editor{position:relative;padding-left:34px!important}
+.lib-article-editor .articleRichMount .sm-rich-block-controls{
+ display:flex!important;position:relative;z-index:6;width:30px;height:0;min-height:0;margin:0;transform:translate(-32px,5px);opacity:0;pointer-events:none;overflow:visible
+}
+.lib-article-editor .articleRichMount .sm-rich-block-controls:has(+ *:hover),
+.lib-article-editor .articleRichMount .sm-rich-block-controls:hover,
+.lib-article-editor .articleRichMount .sm-rich-block-controls:focus-within{opacity:1;pointer-events:auto}
+.lib-article-editor .articleRichMount .sm-rich-block-controls [data-sm-block-up],
+.lib-article-editor .articleRichMount .sm-rich-block-controls [data-sm-block-down]{display:none!important}
+.lib-article-editor .articleRichMount .sm-rich-drag-handle{pointer-events:auto;background:transparent!important;border-color:transparent!important;color:var(--muted)!important}
+.lib-article-editor .articleRichMount .sm-rich-drag-handle:hover{border-color:var(--line)!important;color:var(--text)!important}
+@media(max-width:680px){.lib-article-editor .articleRichMount .sm-rich-editor{padding-left:38px!important}.lib-article-editor .articleRichMount .sm-rich-block-controls{opacity:.72;pointer-events:auto}}
 </style>
 <link rel="stylesheet" href="../assets/css/readability.css?v=0908-3">
 </head>
@@ -3703,9 +3716,8 @@ function articlePagesHtml(r,g=null){
      <div class="article-draft-notice" hidden><strong>保存されていない下書きがあります</strong><div class="small article-draft-time"></div><div class="article-draft-actions"><button type="button" data-article-draft-restore>復元</button><button type="button" class="danger" data-article-draft-discard>破棄</button></div></div>
      <div class="article-save-status" role="status" aria-live="assertive" hidden></div>
      <label>記事タイトル <span class="small muted">（シナリオ名・ゲーム名とは別）</span></label><input class="articleTitle" placeholder="例：セッション感想／攻略メモ／あとがき">
-      <div class="article-block-toolbar article-editor-modebar"><span class="article-view-switch" role="group" aria-label="記事の表示モード"><button type="button" data-article-view="edit" aria-pressed="true">編集</button><button type="button" data-article-view="preview" aria-pressed="false">プレビュー</button></span><button type="button" data-article-reorder-toggle="${esc(r.id)}" aria-pressed="false">並び替え</button><span class="article-reorder-status">並び替え中</span></div>
+      <div class="article-block-toolbar article-editor-modebar"><span class="article-view-switch" role="group" aria-label="記事の表示モード"><button type="button" data-article-view="edit" aria-pressed="true">編集</button><button type="button" data-article-view="preview" aria-pressed="false">プレビュー</button></span></div>
      <div class="article-blocks"></div>
-     <details class="article-add-menu"><summary>＋ ブロックを追加</summary><div class="article-add-options"><button type="button" data-article-add-kind="text" data-run-id="${esc(r.id)}">本文</button><button type="button" data-article-add-kind="toggle" data-run-id="${esc(r.id)}">トグル</button><button type="button" data-article-add-kind="image" data-run-id="${esc(r.id)}">画像</button><button type="button" data-article-add-kind="url" data-run-id="${esc(r.id)}">URL</button><button type="button" data-article-add-kind="conversation" data-run-id="${esc(r.id)}">会話</button><button type="button" data-article-add-kind="mediaGroup" data-run-id="${esc(r.id)}">メディア</button><button type="button" data-article-add-kind="checklist" data-run-id="${esc(r.id)}">チェック</button><button type="button" data-article-add-kind="calculator" data-run-id="${esc(r.id)}">計算</button></div></details>
      <div class="article-editor-preview" hidden aria-live="polite"></div>
      <details class="article-settings"><summary>共有・公開設定</summary><div class="lib-article-share-row">
        <div><label>共有設定</label><select class="articleShareEnabled"><option value="0">自分のみ</option><option value="1">リンク限定</option></select></div>
@@ -3818,7 +3830,7 @@ function renderArticleEditorBlocks(ed,blocks){
  const wrap=ed.querySelector('.article-blocks');if(!wrap)return;
  const hadTree=!!wrap.querySelector('.article-block'),openToggleIds=hadTree?new Set([...wrap.querySelectorAll('.article-toggle-block[open]')].map(x=>String(x.dataset.blockId||""))):new Set();
  destroyArticleRichEditors(ed);
- wrap.innerHTML=(blocks||[]).map((b,i)=>articleEditorBlockHtml(b,i,blocks.length)+articleInlineAddHtml(b.id)).join("")+`<div class="article-tree-dropzone" data-drop-parent="">トップレベルへ移動</div>`;
+ wrap.innerHTML=(blocks||[]).map((b,i)=>articleEditorBlockHtml(b,i,blocks.length)).join("")+`<div class="article-tree-dropzone" data-drop-parent="">トップレベルへ移動</div>`;
  if(hadTree)wrap.querySelectorAll('.article-toggle-block').forEach(toggle=>{toggle.open=openToggleIds.has(String(toggle.dataset.blockId||""))});
  bindArticleEditorBlockControls(ed);
  initArticleRichEditors(ed,blocks);
