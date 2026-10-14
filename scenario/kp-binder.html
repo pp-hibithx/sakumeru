@@ -22,8 +22,9 @@
 .pdf-viewer-text{white-space:pre-wrap;line-height:1.7;max-height:310px;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);user-select:text}
 .pdf-viewer-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
 .pdf-viewer-actions button[disabled]{opacity:.5;cursor:not-allowed}
+.pdf-pick-tools{display:grid;gap:7px;margin:9px 0}.pdf-pick-row{display:flex;gap:6px;align-items:end;flex-wrap:wrap}.pdf-pick-row label{display:grid;gap:3px;flex:1;min-width:150px;font-size:12px;font-weight:700}.pdf-pick-row select{width:100%}.pdf-import-dialog{width:min(900px,calc(100vw - 28px));max-height:86vh;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);padding:0}.pdf-import-dialog::backdrop{background:rgba(0,0,0,.65)}.pdf-import-head,.pdf-import-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)}.pdf-import-head h2{margin:0;font-size:19px}.pdf-import-head .spacer,.pdf-import-actions .spacer{flex:1}.pdf-import-actions{border-top:1px solid var(--line);border-bottom:0}.pdf-import-list{display:grid;gap:8px;padding:12px 14px;max-height:60vh;overflow:auto}.pdf-import-row{display:grid;grid-template-columns:auto minmax(160px,.55fr) minmax(260px,1.45fr);gap:9px;align-items:start;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}.pdf-import-row input[type="checkbox"]{width:auto;margin-top:11px}.pdf-import-row input[type="text"]{width:100%}.pdf-import-preview{white-space:pre-wrap;max-height:125px;overflow:auto;font-size:12px;line-height:1.55;color:var(--muted);padding:7px;border:1px solid var(--line);border-radius:7px}.pdf-layout-badge{font-size:11px;font-weight:700;color:var(--accent)}
 .editor{min-width:0}.scene-title{font-size:22px;font-weight:800;margin:0 0 8px}.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.stat{padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:var(--panel)}.manuscript{display:grid;gap:10px}.block{border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:11px}.block-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}.kind{font-size:12px;font-weight:800;padding:3px 7px;border:1px solid var(--line);border-radius:999px}.block-title{font-weight:800}.body{line-height:1.8;min-height:24px}.body img{max-width:100%}.block.reveal,.block.secret{border-left:4px solid var(--accent)}.block.memo{border-style:dashed}.shared{font-size:12px;font-weight:700}.legacy-images{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}.legacy-images img{width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}.addbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.addbar button{opacity:.75}.muted-note{font-size:12px;color:var(--muted)}
-@media(max-width:820px){.layout{grid-template-columns:1fr}.side{position:static}.pdf-list{max-height:none}}
+@media(max-width:820px){.layout{grid-template-columns:1fr}.side{position:static}.pdf-list{max-height:none}.pdf-import-row{grid-template-columns:auto 1fr}.pdf-import-preview{grid-column:2}}
 
 .edit-title{width:min(520px,100%);font:inherit;font-weight:800;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
 .edit-target{width:150px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
@@ -1069,7 +1070,7 @@ html[data-theme="light"] .kptest .scene-list button.active{background:#e4d09f!im
  <div class="layout">
   <aside class="side">
    <section class="box"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3>シーン</h3><button type="button" id="addScene">＋</button></div><div id="sceneList" class="scene-list"></div></section>
-   <section class="box"><h3>PDF</h3><div class="muted-note">PDFページは左で選択。選んだ原稿ページは本文の下で画像として確認できます。</div><div style="margin:8px 0"><button type="button" id="pickPdf">PDFを選択</button><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden></div><div id="pdfStatus" class="muted-note"></div><div id="pdfList" class="pdf-list"></div></section>
+   <section class="box"><h3>PDF取り込み</h3><div class="muted-note">文字をブラウザ内で抽出します。二段組は左段→右段の順に並べます。</div><div class="pdf-pick-tools"><div class="pdf-pick-row"><label>段組<select id="pdfLayoutMode"><option value="auto">自動判定</option><option value="single">一段組</option><option value="double">二段組</option></select></label><button type="button" id="pickPdf">PDFを選択</button><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden></div><button type="button" id="openPdfImport" disabled>読み込んだページをシーンに追加</button></div><div id="pdfStatus" class="muted-note"></div><div id="pdfList" class="pdf-list"></div></section>
   </aside>
   <section class="editor">
    <h2 id="sceneTitle" class="scene-title"></h2>
@@ -1149,6 +1150,7 @@ html[data-theme="light"] .kptest .scene-list button.active{background:#e4d09f!im
     <div id="kpLiveRecoveryStatus" class="muted-note" style="margin-top:8px"></div>
   </div>
 </details></div></main>
+<dialog id="pdfImportDialog" class="pdf-import-dialog"><div class="pdf-import-head"><h2>PDFからシーンを追加</h2><span id="pdfImportSummary" class="muted-note"></span><span class="spacer"></span><button type="button" class="secondary" id="closePdfImport">閉じる</button></div><div id="pdfImportList" class="pdf-import-list"></div><div class="pdf-import-actions"><button type="button" class="secondary" id="selectAllPdfPages">すべて選択</button><button type="button" class="secondary" id="clearAllPdfPages">選択解除</button><span class="spacer"></span><button type="button" id="importPdfScenes">選択したページを追加</button></div></dialog>
 <div data-site-footer></div>
 <script src="../assets/js/shared-data.js?v=1007-play-log"></script><script src="../assets/js/supabase-config.js"></script><script src="../assets/js/supabase-share.js?v=1006-security2"></script><script src="../assets/js/common-layout.js?v=1006-guide-contrast"></script><script src="../assets/js/kp-binder-storage.js?v=0923-phase1"></script>
 <script>
@@ -4824,10 +4826,38 @@ document.addEventListener("click",async e=>{
 },true);
 renderTestShareBar();renderShareParticipants();
 
+function pdfJoinLine(items){
+ return items.sort((a,z)=>a.x-z.x).map((item,i,all)=>{const s=item.text;if(!i)return s;const prev=all[i-1].text||"";return /[A-Za-z0-9)]$/.test(prev)&&/^[A-Za-z0-9(]/.test(s)?` ${s}`:s}).join("").trim();
+}
+function pdfLines(items){
+ const rows=[];
+ [...items].sort((a,z)=>z.y-a.y||a.x-z.x).forEach(item=>{let row=rows.find(x=>Math.abs(x.y-item.y)<=Math.max(3,Math.min(7,item.h*.45||4)));if(!row){row={y:item.y,items:[]};rows.push(row)}row.items.push(item)});
+ return rows.sort((a,z)=>z.y-a.y).map(row=>pdfJoinLine(row.items)).filter(Boolean);
+}
+function pdfLooksDouble(items,width){
+ const useful=items.filter(x=>x.text.length>0),nearLeft=useful.filter(x=>x.x<width*.23).length,nearRight=useful.filter(x=>x.x>width*.47&&x.x<width*.76).length;
+ return useful.length>=12&&nearLeft>=4&&nearRight>=4;
+}
+function extractPdfText(rawItems,width,requested){
+ const mode=requested==="auto"?(pdfLooksDouble(rawItems,width)?"double":"single"):requested;
+ if(mode!=="double")return {text:pdfLines(rawItems).join("\n"),layout:"single"};
+ const mid=width/2,spanning=[],left=[],right=[];
+ rawItems.forEach(item=>{const end=item.x+Math.max(0,item.w);if(item.x<width*.42&&end>width*.58)spanning.push(item);else if(item.x+Math.max(item.w,1)/2<mid)left.push(item);else right.push(item)});
+ if(!left.length||!right.length)return {text:pdfLines(rawItems).join("\n"),layout:"single"};
+ const columnYs=[...left,...right].map(x=>x.y),top=Math.max(...columnYs),bottom=Math.min(...columnYs);
+ const topWide=spanning.filter(x=>x.y>top-3),bottomWide=spanning.filter(x=>x.y<bottom+3),middleWide=spanning.filter(x=>!topWide.includes(x)&&!bottomWide.includes(x));
+ const parts=[pdfLines(topWide),pdfLines(left),pdfLines(right),pdfLines(middleWide),pdfLines(bottomWide)].filter(x=>x.length).map(x=>x.join("\n"));
+ return {text:parts.join("\n\n"),layout:"double"};
+}
+function applyPdfLayout(){
+ const requested=q("#pdfLayoutMode")?.value||"auto";
+ pdfPages.forEach(x=>{const out=extractPdfText(x.rawItems||[],x.width||1,requested);x.text=out.text.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();x.layout=out.layout;delete x.annotatedHtml});
+ renderPdf();if(activePdf>=0)renderPdfCurrent(false);q("#openPdfImport").disabled=!pdfPages.length;
+}
 async function readPdf(file){
  const st=q("#pdfStatus");
  st.textContent="PDFを読み込み中…";
- pdfPages=[];activePdf=-1;pdfDoc=null;q("#pdfList").innerHTML="";
+ pdfPages=[];activePdf=-1;pdfDoc=null;q("#pdfList").innerHTML="";q("#openPdfImport").disabled=true;
  try{
    const pdfjsLib=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs");
    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
@@ -4835,20 +4865,14 @@ async function readPdf(file){
    pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
    for(let n=1;n<=pdfDoc.numPages;n++){
      st.textContent=`文字を抽出中… ${n}/${pdfDoc.numPages}`;
-     const page=await pdfDoc.getPage(n),tc=await page.getTextContent();
-     let text="",lastY=null;
-     for(const item of tc.items||[]){
-       const y=item.transform?.[5];
-       if(lastY!==null&&y!==undefined&&Math.abs(y-lastY)>4)text+="\n";
-       else if(text&&!text.endsWith("\n"))text+=" ";
-       text+=item.str||"";lastY=y;
-     }
-     pdfPages.push({page:n,text:text.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim(),renderScale:1.35});
+     const page=await pdfDoc.getPage(n),tc=await page.getTextContent(),viewport=page.getViewport({scale:1});
+     const rawItems=(tc.items||[]).map(item=>({text:String(item.str||"").trim(),x:Number(item.transform?.[4]||0),y:Number(item.transform?.[5]||0),w:Number(item.width||0),h:Number(item.height||0)})).filter(item=>item.text);
+     pdfPages.push({page:n,rawItems,width:viewport.width,height:viewport.height,text:"",layout:"single",renderScale:1.35});
    }
-   st.textContent=`${pdfDoc.numPages}ページを読み込みました。`;
    activePdf=pdfPages.length?0:-1;
-   renderPdf();
-   renderPdfCurrent(false);
+   applyPdfLayout();
+   const doubles=pdfPages.filter(x=>x.layout==="double").length;
+   st.textContent=`${pdfDoc.numPages}ページを読み込みました。${q("#pdfLayoutMode").value==="auto"?` 二段組判定：${doubles}ページ。`:""}`;
  }catch(e){
    console.error(e);pdfDoc=null;
    st.textContent="PDFの読み込みに失敗しました。";
@@ -4856,7 +4880,7 @@ async function readPdf(file){
 }
 function renderPdf(){
  const list=q("#pdfList");
- list.innerHTML=pdfPages.map((x,i)=>`<button type="button" class="pdf-page-btn ${i===activePdf?"active":""}" data-pdf="${i}"><span>PDF p.${x.page}</span><span class="muted-note">${x.text.length.toLocaleString()}文字</span></button>`).join("");
+ list.innerHTML=pdfPages.map((x,i)=>`<button type="button" class="pdf-page-btn ${i===activePdf?"active":""}" data-pdf="${i}"><span>PDF p.${x.page}<br><span class="pdf-layout-badge">${x.layout==="double"?"二段組":"一段組"}</span></span><span class="muted-note">${x.text.length.toLocaleString()}文字</span></button>`).join("");
  list.querySelectorAll("[data-pdf]").forEach(el=>el.onclick=()=>{
    activePdf=+el.dataset.pdf;
    renderPdf();
@@ -4966,6 +4990,32 @@ function setPdfCheckCollapsed(collapsed){
 }
 togglePdfCheck?.addEventListener("click",()=>setPdfCheckCollapsed(!pdfCheckBody.hidden));
 
+function suggestedPdfSceneTitle(x){
+ const first=String(x.text||"").split(/\n/).map(s=>s.trim()).find(s=>s.length>=2&&!/^[-–—\d\s]+$/.test(s));
+ return first&&first.length<=42?`p.${x.page}｜${first}`:`PDF p.${x.page}`;
+}
+function pdfTextToArticle(text){
+ const lines=String(text||"").split(/\n/);return lines.map(line=>line.trim()?`<p>${esc(line.trim())}</p>`:'<p><br></p>').join("")||'<p><br></p>';
+}
+function renderPdfImportDialog(){
+ const list=q("#pdfImportList"),summary=q("#pdfImportSummary");
+ summary.textContent=`${pdfPages.length}ページ ／ 追加するページを選択`;
+ list.innerHTML=pdfPages.map((x,i)=>`<label class="pdf-import-row"><input type="checkbox" data-pdf-import-check="${i}" checked><span><input type="text" data-pdf-import-title="${i}" value="${esc(suggestedPdfSceneTitle(x))}" aria-label="PDF ${x.page}ページのシーン名"><span class="pdf-layout-badge">${x.layout==="double"?"二段組として抽出":"一段組として抽出"}</span></span><span class="pdf-import-preview">${esc(x.text.slice(0,1400)||"文字を抽出できませんでした")}</span></label>`).join("");
+}
+function setAllPdfImportChecks(checked){q("#pdfImportList").querySelectorAll("[data-pdf-import-check]").forEach(el=>el.checked=checked)}
+q("#openPdfImport").onclick=()=>{if(!pdfPages.length)return;renderPdfImportDialog();q("#pdfImportDialog").showModal()};
+q("#closePdfImport").onclick=()=>q("#pdfImportDialog").close();
+q("#selectAllPdfPages").onclick=()=>setAllPdfImportChecks(true);
+q("#clearAllPdfPages").onclick=()=>setAllPdfImportChecks(false);
+q("#importPdfScenes").onclick=()=>{
+ flushPendingEditor();
+ const selected=[...q("#pdfImportList").querySelectorAll("[data-pdf-import-check]:checked")];
+ if(!selected.length){alert("追加するページを選択してください。");return}
+ const created=selected.map(check=>{const i=Number(check.dataset.pdfImportCheck),x=pdfPages[i],title=q(`[data-pdf-import-title="${i}"]`)?.value.trim()||`PDF p.${x.page}`;return {id:uid(),title,blocks:[],images:[],__v11ArticleHtml:pdfTextToArticle(x.text),pdfSource:{page:x.page,layout:x.layout}}});
+ b.pages.push(...created);active=created[0].id;save();renderScenes();renderEditor();q("#pdfImportDialog").close();
+ q("#pdfStatus").textContent=`${created.length}ページをシーンとして追加しました。`;
+};
+q("#pdfLayoutMode").onchange=()=>{if(!pdfPages.length)return;applyPdfLayout();const doubles=pdfPages.filter(x=>x.layout==="double").length;q("#pdfStatus").textContent=`段組を読み直しました。二段組：${doubles}ページ。`};
 q("#pickPdf").onclick=()=>q("#pdfFile").click();
 q("#pdfFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)readPdf(f)};
 q("#addScene").onclick=addScene;
