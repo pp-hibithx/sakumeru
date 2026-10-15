@@ -3,7 +3,7 @@
 
 const ALLOWED_TAGS=new Set("A B BLOCKQUOTE BR CODE DEL DETAILS DIV EM FIGCAPTION FIGURE H2 H3 HR I IMG LI MARK OL P S SECTION SMALL SPAN STRONG SUMMARY U UL".split(" "));
 const DROP_TAGS=new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","SELECT","TEXTAREA","META","LINK"]);
-const ALLOWED_ATTRS=new Set(["class","href","target","rel","src","alt","title","style","open","data-kind","data-block-id","data-x-hidden","data-rich-role"]);
+const ALLOWED_ATTRS=new Set(["class","href","target","rel","src","alt","title","style","open","data-kind","data-block-id","data-x-hidden","data-rich-role","data-checkable-toggle","data-auto-toggle-depth","data-check-depth"]);
 const SAFE_CLASSES=/^(?:(?:sm-rich-[\w-]+|sm-special|kp-special|kp-special-(?:head|title|body)|kind-chip|image-grid|cols-[1-4]|kp-marker)(?:\s|$))+$/;
 
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -400,6 +400,13 @@ function create(options={}){
    :null;
  });
  editor.addEventListener("keyup",()=>{saveRange();updateFormatSelect()});editor.addEventListener("mouseup",()=>{saveRange();updateFormatSelect()});editor.addEventListener("focusin",updateFormatSelect);editor.addEventListener("blur",saveRange);
+ editor.addEventListener("copy",event=>{
+  const selection=getSelection();if(!selection?.rangeCount||selection.isCollapsed||!event.clipboardData)return;
+  const selectionRange=selection.getRangeAt(0),blocks=[...editor.querySelectorAll(".sm-special,figure.sm-rich-image")].filter(block=>{try{return selectionRange.intersectsNode(block)}catch{return false}});
+  if(!blocks.length)return;
+  const holder=document.createElement("div");blocks.forEach(block=>holder.append(block.cloneNode(true)));
+  const html=cleanupEditorHtml(holder),plain=plainText(html);event.preventDefault();event.clipboardData.setData("text/html",html);event.clipboardData.setData("text/plain",plain);
+ });
  editor.addEventListener("paste",event=>{
   const clipboard=event.clipboardData;if(!clipboard)return;
   const sourceHtml=clipboard.getData("text/html"),sourceText=clipboard.getData("text/plain");
@@ -414,10 +421,14 @@ function create(options={}){
  });
  editor.addEventListener("input",event=>{
   if(String(event.inputType||"").startsWith("delete")&&deleteHighlightSnapshot){restoreHighlightsAfterDelete(editor,deleteHighlightSnapshot);deleteHighlightSnapshot=null}
+  ensureEditableTail(editor);
   editor.querySelectorAll('.sm-rich-article-tool[data-kind="calculator"]').forEach(updateRichCalculator);
   saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)
  });
  editor.addEventListener("keydown",e=>{
+  if(e.key==="Backspace"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
+   const selection=getSelection();if(selection?.rangeCount&&selection.isCollapsed){const anchor=selection.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,div");if(line?.parentElement===editor&&!String(line.textContent||"").trim()){const before=document.createRange();before.selectNodeContents(line);try{before.setEnd(anchor,selection.anchorOffset)}catch{}const previous=(()=>{let node=line.previousElementSibling;while(node?.classList.contains("sm-rich-ui"))node=node.previousElementSibling;return node})();if(!before.toString()&&previous?.matches?.(".sm-special,figure,hr")){e.preventDefault();return}}}
+  }
   if(e.key==="Enter"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
    const selection=getSelection(),anchor=selection?.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,div,h1,h2,h3,h4,h5,h6,blockquote");
    if(line&&editor.contains(line)&&!line.closest('.sm-special')){
