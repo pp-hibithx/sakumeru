@@ -127,7 +127,16 @@ function convertTypedMarkers(root){
   box.innerHTML=richChecklistHtml([{...bullet,text:esc(bullet.text)}]);const block=box.firstElementChild,text=block.querySelector(".sm-rich-check-text");line.replaceWith(block);converted++;
   let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui")&&String(next.textContent||"").trim()){text.insertAdjacentHTML("beforeend",`<br>${esc(String(next.textContent||"").trim())}`);next.remove()}next=following}
  });
+ nestAutoToggles(root);
  return converted;
+}
+function nestAutoToggles(root){
+ const toggles=[...root.querySelectorAll('details.sm-rich-toggle[data-auto-toggle-depth]')],stack=[];
+ toggles.forEach(block=>{
+  const depth=Math.max(0,Math.min(12,Math.floor(Number(block.dataset.autoToggleDepth)||0)));
+  if(depth>0){const parent=stack[depth-1],body=parent?.querySelector(':scope > .sm-rich-toggle-body');if(body&&!parent.contains(block)){const controls=block.previousElementSibling?.classList.contains('sm-rich-block-controls')?block.previousElementSibling:null;controls?.remove();const tail=[...body.children].reverse().find(item=>item.matches('p')&&!String(item.textContent||'').trim());body.insertBefore(block,tail||null)}}
+  stack.length=depth;stack[depth]=block;
+ });
 }
 function normalizeExistingEditor(editor){
  [...editor.childNodes].forEach(n=>{if(n.nodeType===3&&n.textContent.trim()){const p=document.createElement("p");p.textContent=n.textContent;editor.replaceChild(p,n)}});
@@ -256,7 +265,7 @@ function checklistItemChecked(item){return /^☑/.test(item?.querySelector?.('[d
 function setChecklistItemChecked(item,checked){const toggle=item?.querySelector?.('[data-rich-role="check-toggle"]');if(toggle)toggle.textContent=checked?"☑":"☐"}
 function syncRichChecklistParents(block){const items=[...block.querySelectorAll(':scope > .kp-special-body > .sm-rich-checklist-item')];for(let i=items.length-1;i>=0;i--){const depth=checklistItemDepth(items[i]),leaves=[];for(let j=i+1;j<items.length&&checklistItemDepth(items[j])>depth;j++){const nextDepth=checklistItemDepth(items[j]);if(!items[j+1]||checklistItemDepth(items[j+1])<=nextDepth)leaves.push(items[j])}if(leaves.length)setChecklistItemChecked(items[i],leaves.every(checklistItemChecked))}}
 function toggleMarkerParts(value){const match=String(value||"").match(/^([＞>]+)\s*([\s\S]*)$/);return match?{depth:Math.max(0,match[1].length-1),title:match[2].trim()||"トグル見出し"}:null}
-function checkToggleMarkerParts(value){const source=String(value||""),forward=source.match(/^(・+)\s*[＞>]\s*([\s\S]*)$/),reverse=!forward&&source.match(/^[＞>]\s*(・+)\s*([\s\S]*)$/),match=forward||reverse;return match?{depth:Math.max(0,match[1].length-1),title:match[2].trim()||"トグル見出し",checkable:true}:null}
+function checkToggleMarkerParts(value){const source=String(value||""),forward=source.match(/^(・+)\s*([＞>]+)\s*([\s\S]*)$/),reverse=!forward&&source.match(/^([＞>]+)\s*(・+)\s*([\s\S]*)$/),match=forward||reverse;return match?{depth:Math.max(0,Math.max(match[1].length,match[2].length)-1),title:match[3].trim()||"トグル見出し",checkable:true}:null}
 function toggleNodesFromText(value,parser=toggleMarkerParts){const roots=[],stack=[];let previous=0,current=null;String(value||"").replace(/\r/g,"").split("\n").forEach(raw=>{const line=raw.trim(),marker=parser(line);if(marker){let depth=marker.depth;if(!roots.length)depth=0;else depth=Math.min(depth,previous+1);const node={...marker,depth,notes:[],children:[]};if(depth===0)roots.push(node);else (stack[depth-1]?.children||roots).push(node);stack.length=depth;stack[depth]=node;previous=depth;current=node;return}if(current&&line)current.notes.push(line)});return roots}
 function richToggleNodeHtml(node){const depth=Math.max(0,Math.min(12,Math.floor(Number(node?.depth)||0))),notes=(node?.notes||[]).map(line=>`<p>${esc(line)}</p>`).join(""),children=(node?.children||[]).map(richToggleNodeHtml).join(""),check=node?.checkable?'<span data-rich-role="check-toggle">☐</span> ':"";return `<details class="sm-special sm-rich-toggle" data-auto-toggle-depth="${depth}" ${node?.checkable?'data-checkable-toggle="true" ':""}open><summary>${check}<span>${esc(node?.title||"トグル見出し")}</span></summary><div class="sm-rich-toggle-body">${notes}${children}<p><br></p></div></details>`}
 function richToggleTreeHtml(nodes){return (nodes||[]).map(richToggleNodeHtml).join("")}
@@ -334,14 +343,22 @@ function create(options={}){
  const sortableContainers=()=>[editor,...editor.querySelectorAll("details.sm-rich-toggle > .sm-rich-toggle-body")];
  const sortableChildren=container=>[...container.children].filter(x=>!x.classList.contains("sm-rich-ui"));
  const sortControlFor=block=>block?.previousElementSibling?.classList.contains("sm-rich-block-controls")?block.previousElementSibling:null;
+ const compactSortableContainer=container=>{
+  if(!container)return;
+  const blocks=sortableChildren(container),empty=block=>block.matches("p")&&!String(block.textContent||"").trim()&&!block.querySelector("img,hr,details,section,figure");
+  const keep=empty(blocks.at(-1))?blocks.at(-1):null;
+  blocks.forEach(block=>{if(block!==keep&&empty(block)){sortControlFor(block)?.remove();block.remove()}});
+  const remaining=sortableChildren(container),last=remaining.at(-1);if(last?.matches(".sm-special,figure,hr")){const paragraph=document.createElement("p");paragraph.innerHTML="<br>";container.append(paragraph)}
+ };
  const clearSortMarks=()=>editor.querySelectorAll(".sm-drop-before,.sm-drop-after,.sm-rich-sort-dragging").forEach(x=>x.classList.remove("sm-drop-before","sm-drop-after","sm-rich-sort-dragging"));
  const moveSortableBlock=(block,target,before=true)=>{
   if(!block||!target||block===target||block.contains(target))return false;
-  const sourceControls=sortControlFor(block),targetControls=sortControlFor(target),parent=target.parentElement;
+  const sourceControls=sortControlFor(block),targetControls=sortControlFor(target),sourceParent=block.parentElement,parent=target.parentElement;
   if(!sourceControls||!targetControls||!parent)return false;
   const reference=before?targetControls:target.nextSibling;
   parent.insertBefore(sourceControls,reference);
   parent.insertBefore(block,reference);
+  compactSortableContainer(sourceParent);if(parent!==sourceParent)compactSortableContainer(parent);
   return true;
  };
  const moveSortableSibling=(block,delta)=>{
@@ -349,6 +366,7 @@ function create(options={}){
   const siblings=sortableChildren(parent),i=siblings.indexOf(block),j=i+delta;if(i<0||j<0||j>=siblings.length)return false;
   const order=siblings.slice();[order[i],order[j]]=[order[j],order[i]];
   order.forEach(item=>{const controls=sortControlFor(item);if(controls)parent.appendChild(controls);parent.appendChild(item)});
+  compactSortableContainer(parent);
   return true;
  };
  const decorateSortableBlocks=()=>{
@@ -411,7 +429,7 @@ function create(options={}){
   const clipboard=event.clipboardData;if(!clipboard)return;
   const sourceHtml=clipboard.getData("text/html"),sourceText=clipboard.getData("text/plain");
   if(!sourceHtml&&!sourceText)return;
-  const checkToggleNodes=toggleNodesFromText(sourceText,checkToggleMarkerParts);if(checkToggleNodes.length&&/^\s*(?:・+\s*[＞>]|[＞>]\s*・+)/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richToggleTreeHtml(checkToggleNodes)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
+  const checkToggleNodes=toggleNodesFromText(sourceText,checkToggleMarkerParts);if(checkToggleNodes.length&&/^\s*(?:・+\s*[＞>]+|[＞>]+\s*・+)/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richToggleTreeHtml(checkToggleNodes)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
   const toggleNodes=toggleNodesFromText(sourceText);if(toggleNodes.length&&/^\s*[＞>]/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richToggleTreeHtml(toggleNodes)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
   const checklistItems=checklistItemsFromText(sourceText);if(checklistItems.length&&/^\s*・/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richChecklistHtml(checklistItems)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
   const html=sourceHtml?normalizePastedHtml(sourceHtml):textToHtml(normalizePastedText(sourceText));
@@ -437,7 +455,7 @@ function create(options={}){
     if(toggle){
      e.preventDefault();const node={...toggle,notes:[],children:[]},box=document.createElement("div");box.innerHTML=richToggleNodeHtml(node);const block=box.firstElementChild;
      if(toggle.depth>0&&previous?.matches?.('details.sm-rich-toggle')){const candidates=[previous,...previous.querySelectorAll('details.sm-rich-toggle')].filter(item=>Math.max(0,Number(item.dataset.autoToggleDepth)||0)===toggle.depth-1),parent=candidates[candidates.length-1],body=parent?.querySelector(':scope > .sm-rich-toggle-body');if(body){const emptyParagraphs=[...body.children].filter(item=>item.matches('p')&&!String(item.textContent||"").trim()),tail=emptyParagraphs[emptyParagraphs.length-1];body.insertBefore(block,tail||null);sortControlFor(line)?.remove();line.replaceWith(paragraph)}else{line.replaceWith(block);block.after(paragraph)}}else{line.replaceWith(block);block.after(paragraph)}
-     decorateSpecialBlocks(editor);decorateSortableBlocks();const caret=document.createRange();caret.selectNodeContents(paragraph);caret.collapse(true);selection.removeAllRanges();selection.addRange(caret);range=caret.cloneRange();notify();return;
+     nestAutoToggles(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();const caret=document.createRange();caret.selectNodeContents(paragraph);caret.collapse(true);selection.removeAllRanges();selection.addRange(caret);range=caret.cloneRange();notify();return;
     }
     const bullet=checklistBulletParts(line.textContent||"");
     if(bullet){
