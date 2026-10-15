@@ -134,6 +134,11 @@ function normalizeExistingEditor(editor){
  if(!editor.children.length)editor.innerHTML="<p><br></p>";
  return editor;
 }
+function ensureEditableTail(editor){
+ const last=[...editor.children].filter(node=>!node.classList.contains("sm-rich-ui")).at(-1);
+ if(last?.matches(".sm-special,figure,hr")){const paragraph=document.createElement("p");paragraph.innerHTML="<br>";last.after(paragraph);return paragraph}
+ return null;
+}
 function normalizePastedHtml(html){
  const template=document.createElement("template");template.innerHTML=sanitizeHtml(html);
  const emptyBlock=node=>{
@@ -312,7 +317,7 @@ function create(options={}){
  const mount=options.mount;if(!mount)throw new Error("RichEditor mount is required");
  mount.classList.add("sm-rich-shell");mount.classList.toggle("sm-rich-reorder-mode",!!options.reorderMode);mount.innerHTML=toolbarHtml(options)+`<article class="sm-rich-editor blog-editor" contenteditable="true" role="textbox" aria-multiline="true"></article>`;
  const editor=mount.querySelector(".sm-rich-editor"),toolbar=mount.querySelector(".sm-rich-toolbar");
- editor.innerHTML=String(options.html||"").trim()||textToHtml(options.text||"");normalizeExistingEditor(editor);decorateSpecialBlocks(editor);
+ editor.innerHTML=String(options.html||"").trim()||textToHtml(options.text||"");normalizeExistingEditor(editor);ensureEditableTail(editor);decorateSpecialBlocks(editor);
  let range=null,history=[cleanupEditorHtml(editor)],index=0,timer=0,sortTimer=0,destroyed=false,sortObserver=null,sortDecorating=false,draggedSortBlock=null;
  const saveRange=()=>{const s=getSelection();if(s?.rangeCount&&editor.contains(s.getRangeAt(0).commonAncestorContainer))range=s.getRangeAt(0).cloneRange()};
  const restoreRange=()=>{editor.focus();const s=getSelection();s.removeAllRanges();if(range)s.addRange(range);else{const r=document.createRange();r.selectNodeContents(editor);r.collapse(false);s.addRange(r)}};
@@ -373,7 +378,7 @@ function create(options={}){
  };
  const exec=(cmd,arg=null)=>{restoreRange();document.execCommand(cmd,false,arg);saveRange();notify()};
  const applyBlockFormat=tag=>{restoreRange();document.execCommand("formatBlock",false,`<${["h2","h3","blockquote"].includes(tag)?tag:"p"}>`);saveRange();notify()};
- const commitMarkers=()=>{const changed=convertTypedMarkers(editor);if(changed){normalizeExistingEditor(editor);decorateSpecialBlocks(editor);range=null;decorateSortableBlocks();notify()}return changed};
+ const commitMarkers=()=>{const changed=convertTypedMarkers(editor),tail=ensureEditableTail(editor);if(changed||tail){normalizeExistingEditor(editor);decorateSpecialBlocks(editor);range=null;decorateSortableBlocks();notify()}return changed};
  toolbar.addEventListener("mousedown",saveRange);
  toolbar.querySelectorAll("[data-rich-cmd]").forEach(b=>b.onclick=()=>exec(b.dataset.richCmd));
  toolbar.querySelector("[data-rich-format]").onchange=e=>applyBlockFormat(e.target.value);
@@ -436,7 +441,7 @@ function create(options={}){
  });
  if(options.enableBlockReorder){decorateSortableBlocks();sortObserver=new MutationObserver(mutations=>{if(sortDecorating)return;const structural=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&!n.classList?.contains("sm-rich-ui")));if(!structural)return;clearTimeout(sortTimer);sortTimer=setTimeout(()=>decorateSortableBlocks(),120)});sortObserver.observe(editor,{childList:true,subtree:true})}
  updateButtons();
- return {editor,getHtml:value,getText:()=>plainText(value()),commitMarkers,insertHtml(html){restoreRange();document.execCommand("insertHTML",false,String(html||""));saveRange();notify();decorateSortableBlocks()},setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
+ return {editor,getHtml:value,getText:()=>plainText(value()),commitMarkers,insertHtml(html){restoreRange();document.execCommand("insertHTML",false,String(html||""));saveRange();notify();decorateSortableBlocks()},setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);ensureEditableTail(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
 window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,bindShareHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,normalizePastedHtml,normalizePastedText,execCommand};
