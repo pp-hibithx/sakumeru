@@ -114,18 +114,20 @@ function cleanupEditorHtml(editor,extraCleanup){
 }
 function convertTypedMarkers(root){
  const markerFor=value=>checkToggleMarkerParts(value)||toggleMarkerParts(value)||checklistBulletParts(value);
+ let converted=0;
  [...root.querySelectorAll("p,div")].forEach(line=>{
   if(!root.contains(line)||line.closest(".sm-special")||line.classList.contains("sm-rich-ui"))return;
   const raw=String(line.textContent||"").trim(),checkToggle=checkToggleMarkerParts(raw),toggle=checkToggle||toggleMarkerParts(raw),bullet=!toggle&&checklistBulletParts(raw);if(!toggle&&!bullet)return;
   const box=document.createElement("div");
   if(toggle){
-   box.innerHTML=richToggleNodeHtml({...toggle,notes:[],children:[]});const block=box.firstElementChild,body=block.querySelector(":scope > .sm-rich-toggle-body"),tail=body.querySelector(":scope > p:last-child");line.replaceWith(block);
+   box.innerHTML=richToggleNodeHtml({...toggle,notes:[],children:[]});const block=box.firstElementChild,body=block.querySelector(":scope > .sm-rich-toggle-body"),tail=body.querySelector(":scope > p:last-child");line.replaceWith(block);converted++;
    let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui"))body.insertBefore(next,tail);next=following}
    return;
   }
-  box.innerHTML=richChecklistHtml([{...bullet,text:esc(bullet.text)}]);const block=box.firstElementChild,text=block.querySelector(".sm-rich-check-text");line.replaceWith(block);
+  box.innerHTML=richChecklistHtml([{...bullet,text:esc(bullet.text)}]);const block=box.firstElementChild,text=block.querySelector(".sm-rich-check-text");line.replaceWith(block);converted++;
   let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui")&&String(next.textContent||"").trim()){text.insertAdjacentHTML("beforeend",`<br>${esc(String(next.textContent||"").trim())}`);next.remove()}next=following}
  });
+ return converted;
 }
 function normalizeExistingEditor(editor){
  [...editor.childNodes].forEach(n=>{if(n.nodeType===3&&n.textContent.trim()){const p=document.createElement("p");p.textContent=n.textContent;editor.replaceChild(p,n)}});
@@ -249,7 +251,7 @@ function checklistItemChecked(item){return /^☑/.test(item?.querySelector?.('[d
 function setChecklistItemChecked(item,checked){const toggle=item?.querySelector?.('[data-rich-role="check-toggle"]');if(toggle)toggle.textContent=checked?"☑":"☐"}
 function syncRichChecklistParents(block){const items=[...block.querySelectorAll(':scope > .kp-special-body > .sm-rich-checklist-item')];for(let i=items.length-1;i>=0;i--){const depth=checklistItemDepth(items[i]),leaves=[];for(let j=i+1;j<items.length&&checklistItemDepth(items[j])>depth;j++){const nextDepth=checklistItemDepth(items[j]);if(!items[j+1]||checklistItemDepth(items[j+1])<=nextDepth)leaves.push(items[j])}if(leaves.length)setChecklistItemChecked(items[i],leaves.every(checklistItemChecked))}}
 function toggleMarkerParts(value){const match=String(value||"").match(/^([＞>]+)\s*([\s\S]*)$/);return match?{depth:Math.max(0,match[1].length-1),title:match[2].trim()||"トグル見出し"}:null}
-function checkToggleMarkerParts(value){const match=String(value||"").match(/^(・+)\s*[＞>]\s*([\s\S]*)$/);return match?{depth:Math.max(0,match[1].length-1),title:match[2].trim()||"トグル見出し",checkable:true}:null}
+function checkToggleMarkerParts(value){const source=String(value||""),forward=source.match(/^(・+)\s*[＞>]\s*([\s\S]*)$/),reverse=!forward&&source.match(/^[＞>]\s*(・+)\s*([\s\S]*)$/),match=forward||reverse;return match?{depth:Math.max(0,match[1].length-1),title:match[2].trim()||"トグル見出し",checkable:true}:null}
 function toggleNodesFromText(value,parser=toggleMarkerParts){const roots=[],stack=[];let previous=0,current=null;String(value||"").replace(/\r/g,"").split("\n").forEach(raw=>{const line=raw.trim(),marker=parser(line);if(marker){let depth=marker.depth;if(!roots.length)depth=0;else depth=Math.min(depth,previous+1);const node={...marker,depth,notes:[],children:[]};if(depth===0)roots.push(node);else (stack[depth-1]?.children||roots).push(node);stack.length=depth;stack[depth]=node;previous=depth;current=node;return}if(current&&line)current.notes.push(line)});return roots}
 function richToggleNodeHtml(node){const depth=Math.max(0,Math.min(12,Math.floor(Number(node?.depth)||0))),notes=(node?.notes||[]).map(line=>`<p>${esc(line)}</p>`).join(""),children=(node?.children||[]).map(richToggleNodeHtml).join(""),check=node?.checkable?'<span data-rich-role="check-toggle">☐</span> ':"";return `<details class="sm-special sm-rich-toggle" data-auto-toggle-depth="${depth}" ${node?.checkable?'data-checkable-toggle="true" ':""}open><summary>${check}<span>${esc(node?.title||"トグル見出し")}</span></summary><div class="sm-rich-toggle-body">${notes}${children}<p><br></p></div></details>`}
 function richToggleTreeHtml(nodes){return (nodes||[]).map(richToggleNodeHtml).join("")}
@@ -371,6 +373,7 @@ function create(options={}){
  };
  const exec=(cmd,arg=null)=>{restoreRange();document.execCommand(cmd,false,arg);saveRange();notify()};
  const applyBlockFormat=tag=>{restoreRange();document.execCommand("formatBlock",false,`<${["h2","h3","blockquote"].includes(tag)?tag:"p"}>`);saveRange();notify()};
+ const commitMarkers=()=>{const changed=convertTypedMarkers(editor);if(changed){normalizeExistingEditor(editor);decorateSpecialBlocks(editor);range=null;decorateSortableBlocks();notify()}return changed};
  toolbar.addEventListener("mousedown",saveRange);
  toolbar.querySelectorAll("[data-rich-cmd]").forEach(b=>b.onclick=()=>exec(b.dataset.richCmd));
  toolbar.querySelector("[data-rich-format]").onchange=e=>applyBlockFormat(e.target.value);
@@ -396,7 +399,7 @@ function create(options={}){
   const clipboard=event.clipboardData;if(!clipboard)return;
   const sourceHtml=clipboard.getData("text/html"),sourceText=clipboard.getData("text/plain");
   if(!sourceHtml&&!sourceText)return;
-  const checkToggleNodes=toggleNodesFromText(sourceText,checkToggleMarkerParts);if(checkToggleNodes.length&&/^\s*・+\s*[＞>]/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richToggleTreeHtml(checkToggleNodes)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
+  const checkToggleNodes=toggleNodesFromText(sourceText,checkToggleMarkerParts);if(checkToggleNodes.length&&/^\s*(?:・+\s*[＞>]|[＞>]\s*・+)/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richToggleTreeHtml(checkToggleNodes)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
   const toggleNodes=toggleNodesFromText(sourceText);if(toggleNodes.length&&/^\s*[＞>]/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richToggleTreeHtml(toggleNodes)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
   const checklistItems=checklistItemsFromText(sourceText);if(checklistItems.length&&/^\s*・/.test(sourceText)){event.preventDefault();document.execCommand("insertHTML",false,richChecklistHtml(checklistItems)+"<p><br></p>");decorateSpecialBlocks(editor);saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),0);return}
   const html=sourceHtml?normalizePastedHtml(sourceHtml):textToHtml(normalizePastedText(sourceText));
@@ -433,7 +436,7 @@ function create(options={}){
  });
  if(options.enableBlockReorder){decorateSortableBlocks();sortObserver=new MutationObserver(mutations=>{if(sortDecorating)return;const structural=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&!n.classList?.contains("sm-rich-ui")));if(!structural)return;clearTimeout(sortTimer);sortTimer=setTimeout(()=>decorateSortableBlocks(),120)});sortObserver.observe(editor,{childList:true,subtree:true})}
  updateButtons();
- return {editor,getHtml:value,getText:()=>plainText(value()),insertHtml(html){restoreRange();document.execCommand("insertHTML",false,String(html||""));saveRange();notify();decorateSortableBlocks()},setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
+ return {editor,getHtml:value,getText:()=>plainText(value()),commitMarkers,insertHtml(html){restoreRange();document.execCommand("insertHTML",false,String(html||""));saveRange();notify();decorateSortableBlocks()},setHtml(html){editor.innerHTML=html||"<p><br></p>";normalizeExistingEditor(editor);decorateSpecialBlocks(editor);history=[value()];index=0;range=null;decorateSortableBlocks();updateButtons()},setReorderMode(active){mount.classList.toggle("sm-rich-reorder-mode",!!active);editor.contentEditable=active?"false":"true";clearSortMarks()},focus(){editor.focus()},destroy(){destroyed=true;sortObserver?.disconnect();clearTimeout(timer);clearTimeout(sortTimer);mount.innerHTML=""},get destroyed(){return destroyed}};
 }
 
 window.SAKUMERichEditor={create,textToHtml,plainText,plainTextForX,hasXHidden,shareHiddenHtml,bindShareHidden,sanitizeHtml,cleanupEditorHtml,normalizeExistingEditor,normalizePastedHtml,normalizePastedText,execCommand};

@@ -1853,7 +1853,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=1006-security2"></script>
-<script src="../assets/js/rich-editor.js?v=1015-calculator-refresh-fix"></script>
+<script src="../assets/js/rich-editor.js?v=1015-marker-commit-fix"></script>
 <script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";
@@ -3870,6 +3870,7 @@ function setArticleReorderMode(ed,active){
 function setArticleViewMode(ed,mode){
  const preview=mode==="preview",wrap=ed.querySelector('.article-blocks'),out=ed.querySelector('.article-editor-preview');
  if(!wrap||!out)return;
+ if(preview)articleRichEditors.forEach((instance,id)=>{if(ed.querySelector(`[data-rich-block-id="${CSS.escape(String(id))}"]`))instance.commitMarkers?.()});
  if(preview){setArticleReorderMode(ed,false);const warning=ed.querySelector('.articleSpoilerWarning')?.value!=="0"?`<aside class="article-preview-warning" role="note"><strong>🙈 伏せ字があります。</strong><span>「この部分は隠されています」をクリックすると表示されます。</span></aside>`:"";out.innerHTML=`${warning}<div class="article-preview-sheet">${articleBlockListHtml(editorBlocks(ed))||'<p class="muted">表示する本文はまだありません。</p>'}</div>`}
  wrap.hidden=preview;out.hidden=!preview;ed.classList.toggle('article-preview-mode',preview);
  ed.querySelectorAll('[data-article-view]').forEach(button=>{const active=button.dataset.articleView===mode;button.setAttribute('aria-pressed',active?'true':'false');button.classList.toggle('active',active)});
@@ -4446,7 +4447,9 @@ async function sha256Text(text){
 }
 async function saveArticlePage(runId){
  const ed=document.getElementById(`articleEditor-${runId}`);if(!ed)return;
- const title=ed.querySelector('.articleTitle').value.trim(),blocks=editorBlocks(ed);
+ const title=ed.querySelector('.articleTitle').value.trim();
+ articleRichEditors.forEach((instance,id)=>{if(ed.querySelector(`[data-rich-block-id="${CSS.escape(String(id))}"]`))instance.commitMarkers?.()});
+ const blocks=editorBlocks(ed);
  if(!title&&!blocks.length)return alert("ページタイトルか記事ブロックを入力してください。");
  const badYoutube=blocks.find(b=>b.type==="youtube"&&!youtubeVideoId(b.url));if(badYoutube)return alert("正しく読み込めないYouTube URLがあります。");
  const saveButton=ed.querySelector('[data-article-save]');if(saveButton)saveButton.disabled=true;setArticleSaveStatus(ed,"保存しています…","saving");
