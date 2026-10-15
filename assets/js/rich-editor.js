@@ -103,6 +103,7 @@ function sanitizeHtml(html){
 }
 function cleanupEditorHtml(editor,extraCleanup){
  const clone=editor.cloneNode(true);
+ convertTypedMarkers(clone);
  clone.removeAttribute("contenteditable");
  clone.querySelectorAll(".sm-rich-ui,.sm-outline-ui,.sm-drag-handle,.img-remove,.grid-help,.kp-special-move").forEach(x=>x.remove());
  clone.querySelectorAll(".sm-rich-selected,.sm-outline-collapsed,.sm-outline-heading,.sm-block,.sm-block-dragging,.sm-drop-before,.sm-drop-after,.sm-rich-sort-dragging,.kp-state-open,.kp-state-fail").forEach(x=>{
@@ -110,6 +111,21 @@ function cleanupEditorHtml(editor,extraCleanup){
  });
  extraCleanup?.(clone);
  return clone.innerHTML||"<p><br></p>";
+}
+function convertTypedMarkers(root){
+ const markerFor=value=>checkToggleMarkerParts(value)||toggleMarkerParts(value)||checklistBulletParts(value);
+ [...root.querySelectorAll("p,div")].forEach(line=>{
+  if(!line.isConnected||line.closest(".sm-special")||line.classList.contains("sm-rich-ui"))return;
+  const raw=String(line.textContent||"").trim(),checkToggle=checkToggleMarkerParts(raw),toggle=checkToggle||toggleMarkerParts(raw),bullet=!toggle&&checklistBulletParts(raw);if(!toggle&&!bullet)return;
+  const box=document.createElement("div");
+  if(toggle){
+   box.innerHTML=richToggleNodeHtml({...toggle,notes:[],children:[]});const block=box.firstElementChild,body=block.querySelector(":scope > .sm-rich-toggle-body"),tail=body.querySelector(":scope > p:last-child");line.replaceWith(block);
+   let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui"))body.insertBefore(next,tail);next=following}
+   return;
+  }
+  box.innerHTML=richChecklistHtml([{...bullet,text:esc(bullet.text)}]);const block=box.firstElementChild,text=block.querySelector(".sm-rich-check-text");line.replaceWith(block);
+  let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui")&&String(next.textContent||"").trim()){text.insertAdjacentHTML("beforeend",`<br>${esc(String(next.textContent||"").trim())}`);next.remove()}next=following}
+ });
 }
 function normalizeExistingEditor(editor){
  [...editor.childNodes].forEach(n=>{if(n.nodeType===3&&n.textContent.trim()){const p=document.createElement("p");p.textContent=n.textContent;editor.replaceChild(p,n)}});
