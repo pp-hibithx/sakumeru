@@ -277,6 +277,13 @@ function toggleXHidden(editor,range){
  });
  return applied>0;
 }
+function updateRichCalculator(block){
+ if(!block)return;
+ const total=[...block.querySelectorAll('[data-rich-role="calc-value"]')]
+  .reduce((sum,item)=>sum+(Number(String(item.textContent||"").replace(/,/g,""))||0),0);
+ const out=block.querySelector('[data-rich-role="calc-total"]');
+ if(out)out.textContent=`合計 ${new Intl.NumberFormat("ja-JP",{maximumFractionDigits:4}).format(total)}`;
+}
 function decorateSpecialBlocks(editor){
  editor.querySelectorAll(".sm-special").forEach(block=>{
   if(block.querySelector(":scope > .sm-rich-special-remove,:scope > .kp-special-head > .sm-rich-special-remove"))return;
@@ -291,6 +298,7 @@ function decorateSpecialBlocks(editor){
  });
  editor.querySelectorAll('[data-rich-role="check-toggle"]').forEach(item=>{item.contentEditable="false";if(!/^[☐☑]/.test(item.textContent||""))item.textContent="☐";const row=item.closest('.sm-rich-checklist-item');if(row){const depth=Math.max(0,Math.min(12,checklistItemDepth(row)));row.dataset.checkDepth=String(depth);row.style.setProperty('--check-depth',String(depth))}});
  editor.querySelectorAll('[data-rich-role="calc-total"]').forEach(item=>item.contentEditable="false");
+ editor.querySelectorAll('.sm-rich-article-tool[data-kind="calculator"]').forEach(updateRichCalculator);
  editor.querySelectorAll('.sm-rich-article-tool[data-kind="checklist"],.sm-rich-article-tool[data-kind="calculator"]').forEach(block=>{
   if(block.querySelector(':scope > .sm-rich-tool-add'))return;
   const button=document.createElement("button");button.type="button";button.className="sm-rich-tool-add sm-rich-ui";button.contentEditable="false";button.dataset.richToolAdd=block.dataset.kind;button.textContent=block.dataset.kind==="checklist"?"＋ 項目":"＋ 計算行";
@@ -398,7 +406,7 @@ function create(options={}){
  });
  editor.addEventListener("input",event=>{
   if(String(event.inputType||"").startsWith("delete")&&deleteHighlightSnapshot){restoreHighlightsAfterDelete(editor,deleteHighlightSnapshot);deleteHighlightSnapshot=null}
-   const calculator=event.target.closest?.('.sm-rich-article-tool[data-kind="calculator"]');if(calculator){const total=[...calculator.querySelectorAll('[data-rich-role="calc-value"]')].reduce((sum,item)=>sum+(Number(String(item.textContent||"").replace(/,/g,""))||0),0),out=calculator.querySelector('[data-rich-role="calc-total"]');if(out)out.textContent=`合計 ${new Intl.NumberFormat("ja-JP",{maximumFractionDigits:4}).format(total)}`}
+  editor.querySelectorAll('.sm-rich-article-tool[data-kind="calculator"]').forEach(updateRichCalculator);
   saveRange();clearTimeout(timer);timer=setTimeout(()=>notify(),250)
  });
  editor.addEventListener("keydown",e=>{
