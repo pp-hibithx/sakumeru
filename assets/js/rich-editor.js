@@ -115,7 +115,7 @@ function cleanupEditorHtml(editor,extraCleanup){
 function convertTypedMarkers(root){
  const markerFor=value=>checkToggleMarkerParts(value)||toggleMarkerParts(value)||checklistBulletParts(value);
  [...root.querySelectorAll("p,div")].forEach(line=>{
-  if(!line.isConnected||line.closest(".sm-special")||line.classList.contains("sm-rich-ui"))return;
+  if(!root.contains(line)||line.closest(".sm-special")||line.classList.contains("sm-rich-ui"))return;
   const raw=String(line.textContent||"").trim(),checkToggle=checkToggleMarkerParts(raw),toggle=checkToggle||toggleMarkerParts(raw),bullet=!toggle&&checklistBulletParts(raw);if(!toggle&&!bullet)return;
   const box=document.createElement("div");
   if(toggle){
