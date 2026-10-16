@@ -1853,7 +1853,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=1006-security2"></script>
-<script src="../assets/js/rich-editor.js?v=1016-nested-marker-and-align-fix"></script>
+<script src="../assets/js/rich-editor.js?v=1016-existing-nested-marker-fix2"></script>
 <script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";
@@ -3697,7 +3697,7 @@ function articleBlockListHtml(blocks){
    }
     if(b.type==="text"&&!articleTextHasContent(b))return "";
     if(b.type==="text"&&String(b.html||"").trim()&&window.SAKUMERichEditor){
-      return `<div class="lib-article-text sm-rich-render">${SAKUMERichEditor.sanitizeHtml(b.html)}</div>`;
+      return `<div class="lib-article-text sm-rich-render">${SAKUMERichEditor.normalizeRichHtml(b.html)}</div>`;
     }
     return `<div class="lib-article-text">${esc(b.text||"")}</div>`;
  }).join("");
@@ -3848,7 +3848,7 @@ function initArticleRichEditors(ed,blocks){
  const flat=[];(function walk(items){(items||[]).forEach(b=>{flat.push(b);if(b.type==="toggle")walk(b.children);if(b.type==="mediaGroup")walk(b.items)})})(blocks);
  flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
-  const html=String(b.html||"").trim()?SAKUMERichEditor.sanitizeHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
+  const html=String(b.html||"").trim()?SAKUMERichEditor.normalizeRichHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
    articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:[],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:kind=>insertArticleInlineTool(ed,id,kind),onChange:()=>articleEditorChanged(ed)}));
  });
 }
