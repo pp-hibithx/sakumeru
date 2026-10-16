@@ -112,7 +112,7 @@ function cleanupEditorHtml(editor,extraCleanup){
  extraCleanup?.(clone);
  return clone.innerHTML||"<p><br></p>";
 }
-function convertTypedMarkers(root){
+function convertTypedMarkers(root,round=0){
  const markerFor=value=>checkToggleMarkerParts(value)||toggleMarkerParts(value)||checklistBulletParts(value);
  let converted=0;
  [...root.querySelectorAll("p,div")].forEach(line=>{
@@ -136,6 +136,7 @@ function convertTypedMarkers(root){
   let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui")&&String(next.textContent||"").trim()){text.insertAdjacentHTML("beforeend",`<br>${esc(String(next.textContent||"").trim())}`);next.remove()}next=following}
  });
  nestAutoToggles(root);
+ if(converted&&round<12)converted+=convertTypedMarkers(root,round+1);
  return converted;
 }
 function normalizeRichHtml(html){
@@ -270,7 +271,7 @@ function specialHtml(kind){
 function markerText(value){return String(value||"").replace(/[\u200B-\u200D\u2060\uFEFF]/g,"").trim()}
 function markerCount(value,pattern){return [...String(value||"")].filter(ch=>pattern.test(ch)).length}
 function markerDepthInContext(marker,line){const parent=line?.closest?.("details.sm-rich-toggle"),base=parent?Math.max(0,Math.floor(Number(parent.dataset.autoToggleDepth)||0))+1:0;return {...marker,depth:Math.min(12,base+Math.max(0,Math.floor(Number(marker?.depth)||0)))}}
-function checklistBulletParts(value){const match=markerText(value).match(/^((?:[・･]\s*)+)\s*([\s\S]*)$/);return match?{depth:Math.max(0,markerCount(match[1],/[・･]/)-1),text:match[2].trim()}:null}
+function checklistBulletParts(value){const match=markerText(value).match(/^((?:[・･•·]\s*)+)\s*([\s\S]*)$/);return match?{depth:Math.max(0,markerCount(match[1],/[・･•·]/)-1),text:match[2].trim()}:null}
 function richChecklistItemHtml(item={}){const depth=Math.max(0,Math.min(12,Math.floor(Number(item.depth)||0))),text=String(item.text||"").trim()||"確認すること";return `<div class="sm-rich-checklist-item" data-check-depth="${depth}" style="--check-depth:${depth}"><span data-rich-role="check-toggle">☐</span><span class="sm-rich-check-text">${text}</span></div>`}
 function repairInlineChecklistItem(row){const text=row?.querySelector?.(":scope > .sm-rich-check-text");if(!text)return;[...row.childNodes].slice([...row.childNodes].indexOf(text)+1).forEach(node=>{if(node.nodeType===3&&!String(node.textContent||"").trim()){node.remove();return}text.append(document.createElement("br"));if(node.nodeType===3){text.append(node);return}while(node.firstChild)text.append(node.firstChild);node.remove()})}
 function richChecklistHtml(items){return `<section class="sm-special sm-rich-article-tool" data-kind="checklist"><div class="kp-special-head"><span class="kind-chip">チェック</span></div><div class="kp-special-title">チェックリスト</div><div class="kp-special-body">${items.map(richChecklistItemHtml).join("")}</div></section>`}
