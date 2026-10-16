@@ -125,14 +125,14 @@ function convertTypedMarkers(root){
  [...root.querySelectorAll("p,div")].forEach(line=>{
   const parent=line.parentElement,inToggleBody=!!line.closest(".sm-rich-toggle-body"),nestedBlocks=line.querySelector("p,div,details,section,figure");
   if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody)||nestedBlocks)return;
-  const raw=String(line.textContent||"").trim(),checkToggle=checkToggleMarkerParts(raw),toggle=checkToggle||toggleMarkerParts(raw),bullet=!toggle&&checklistBulletParts(raw);if(!toggle&&!bullet)return;
+  const raw=String(line.textContent||"").trim(),checkToggle=checkToggleMarkerParts(raw),parsedToggle=checkToggle||toggleMarkerParts(raw),toggle=parsedToggle?markerDepthInContext(parsedToggle,line):null,bullet=!toggle&&checklistBulletParts(raw);if(!toggle&&!bullet)return;
   const box=document.createElement("div");
   if(toggle){
    box.innerHTML=richToggleNodeHtml({...toggle,notes:[],children:[]});const block=box.firstElementChild,body=block.querySelector(":scope > .sm-rich-toggle-body"),tail=body.querySelector(":scope > p:last-child");line.replaceWith(block);converted++;
    let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui"))body.insertBefore(next,tail);next=following}
    return;
   }
-  box.innerHTML=richChecklistHtml([{...bullet,text:esc(bullet.text)}]);const block=box.firstElementChild,text=block.querySelector(".sm-rich-check-text");line.replaceWith(block);converted++;
+  box.innerHTML=inToggleBody?richChecklistItemHtml({...bullet,text:esc(bullet.text)}):richChecklistHtml([{...bullet,text:esc(bullet.text)}]);const block=box.firstElementChild,text=block.querySelector(".sm-rich-check-text");line.replaceWith(block);converted++;
   let next=block.nextElementSibling;while(next&&!markerFor(String(next.textContent||"").trim())&&!next.matches("h1,h2,h3,h4,h5,h6,.sm-special,hr")){const following=next.nextElementSibling;if(!next.classList.contains("sm-rich-ui")&&String(next.textContent||"").trim()){text.insertAdjacentHTML("beforeend",`<br>${esc(String(next.textContent||"").trim())}`);next.remove()}next=following}
  });
  nestAutoToggles(root);
@@ -269,6 +269,7 @@ function specialHtml(kind){
 }
 function markerText(value){return String(value||"").replace(/[\u200B-\u200D\u2060\uFEFF]/g,"").trim()}
 function markerCount(value,pattern){return [...String(value||"")].filter(ch=>pattern.test(ch)).length}
+function markerDepthInContext(marker,line){const parent=line?.closest?.("details.sm-rich-toggle"),base=parent?Math.max(0,Math.floor(Number(parent.dataset.autoToggleDepth)||0))+1:0;return {...marker,depth:Math.min(12,base+Math.max(0,Math.floor(Number(marker?.depth)||0)))}}
 function checklistBulletParts(value){const match=markerText(value).match(/^((?:[・･]\s*)+)\s*([\s\S]*)$/);return match?{depth:Math.max(0,markerCount(match[1],/[・･]/)-1),text:match[2].trim()}:null}
 function richChecklistItemHtml(item={}){const depth=Math.max(0,Math.min(12,Math.floor(Number(item.depth)||0))),text=String(item.text||"").trim()||"確認すること";return `<div class="sm-rich-checklist-item" data-check-depth="${depth}" style="--check-depth:${depth}"><span data-rich-role="check-toggle">☐</span><span class="sm-rich-check-text">${text}</span></div>`}
 function richChecklistHtml(items){return `<section class="sm-special sm-rich-article-tool" data-kind="checklist"><div class="kp-special-head"><span class="kind-chip">チェック</span></div><div class="kp-special-title">チェックリスト</div><div class="kp-special-body">${items.map(richChecklistItemHtml).join("")}</div></section>`}
@@ -464,7 +465,7 @@ function create(options={}){
    const selection=getSelection(),anchor=selection?.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,div,h1,h2,h3,h4,h5,h6,blockquote");
    if(line&&editor.contains(line)&&(!line.closest('.sm-special')||!!line.closest('details.sm-rich-toggle'))){
     const previous=(()=>{let node=line.previousElementSibling;while(node?.classList.contains('sm-rich-ui'))node=node.previousElementSibling;return node})(),paragraph=document.createElement("p");paragraph.innerHTML="<br>";
-    const toggle=checkToggleMarkerParts(line.textContent||"")||toggleMarkerParts(line.textContent||"");
+    const parsedToggle=checkToggleMarkerParts(line.textContent||"")||toggleMarkerParts(line.textContent||""),toggle=parsedToggle?markerDepthInContext(parsedToggle,line):null;
     if(toggle){
      e.preventDefault();const node={...toggle,notes:[],children:[]},box=document.createElement("div");box.innerHTML=richToggleNodeHtml(node);const block=box.firstElementChild;
      if(toggle.depth>0&&previous?.matches?.('details.sm-rich-toggle')){const candidates=[previous,...previous.querySelectorAll('details.sm-rich-toggle')].filter(item=>Math.max(0,Number(item.dataset.autoToggleDepth)||0)===toggle.depth-1),parent=candidates[candidates.length-1],body=parent?.querySelector(':scope > .sm-rich-toggle-body');if(body){const emptyParagraphs=[...body.children].filter(item=>item.matches('p')&&!String(item.textContent||"").trim()),tail=emptyParagraphs[emptyParagraphs.length-1];body.insertBefore(block,tail||null);sortControlFor(line)?.remove();line.replaceWith(paragraph)}else{line.replaceWith(block);block.after(paragraph)}}else{line.replaceWith(block);block.after(paragraph)}
@@ -473,7 +474,8 @@ function create(options={}){
     const bullet=checklistBulletParts(line.textContent||"");
     if(bullet){
      e.preventDefault();const item={...bullet,text:esc(bullet.text)};
-     if(previous?.matches?.('.sm-rich-article-tool[data-kind="checklist"]')){previous.querySelector(':scope > .kp-special-body')?.insertAdjacentHTML("beforeend",richChecklistItemHtml(item));sortControlFor(line)?.remove();line.replaceWith(paragraph);syncRichChecklistParents(previous)}else{const box=document.createElement("div");box.innerHTML=richChecklistHtml([item]);const block=box.firstElementChild;line.replaceWith(block);block.after(paragraph)}
+     const toggleBody=line.closest('.sm-rich-toggle-body');
+     if(toggleBody){const box=document.createElement("div");box.innerHTML=richChecklistItemHtml(item);const block=box.firstElementChild;line.replaceWith(block);block.after(paragraph)}else if(previous?.matches?.('.sm-rich-article-tool[data-kind="checklist"]')){previous.querySelector(':scope > .kp-special-body')?.insertAdjacentHTML("beforeend",richChecklistItemHtml(item));sortControlFor(line)?.remove();line.replaceWith(paragraph);syncRichChecklistParents(previous)}else{const box=document.createElement("div");box.innerHTML=richChecklistHtml([item]);const block=box.firstElementChild;line.replaceWith(block);block.after(paragraph)}
      decorateSpecialBlocks(editor);decorateSortableBlocks();const caret=document.createRange();caret.selectNodeContents(paragraph);caret.collapse(true);selection.removeAllRanges();selection.addRange(caret);range=caret.cloneRange();notify();return;
     }
     if(line.matches("h1,h2,h3,h4,h5,h6,blockquote"))setTimeout(()=>{document.execCommand("formatBlock",false,"<p>");saveRange();notify()},0);
