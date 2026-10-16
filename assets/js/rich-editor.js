@@ -117,6 +117,13 @@ function convertTypedMarkers(root){
  let converted=0;
  [...root.querySelectorAll("p,div")].forEach(line=>{
   const parent=line.parentElement,inToggleBody=parent?.classList.contains("sm-rich-toggle-body");
+  if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody)||!line.querySelector("br"))return;
+  const lines=htmlWithLineBreaks(line).replace(/\r/g,"").split("\n").map(text=>text.trim()).filter(Boolean);
+  if(lines.length<2||!lines.some(markerFor))return;
+  const fragment=document.createDocumentFragment();lines.forEach(text=>{const paragraph=document.createElement("p");paragraph.textContent=text;fragment.append(paragraph)});line.replaceWith(fragment);
+ });
+ [...root.querySelectorAll("p,div")].forEach(line=>{
+  const parent=line.parentElement,inToggleBody=parent?.classList.contains("sm-rich-toggle-body");
   if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody))return;
   const raw=String(line.textContent||"").trim(),checkToggle=checkToggleMarkerParts(raw),toggle=checkToggle||toggleMarkerParts(raw),bullet=!toggle&&checklistBulletParts(raw);if(!toggle&&!bullet)return;
   const box=document.createElement("div");
@@ -416,7 +423,7 @@ function create(options={}){
  const xHideButton=toolbar.querySelector("[data-rich-x-hide]");if(xHideButton)xHideButton.onclick=()=>{restoreRange();const s=getSelection(),selected=s?.rangeCount?s.getRangeAt(0):null;if(!selected||selected.collapsed){alert("隠したい文章を選択してください。");return}if(toggleXHidden(editor,selected)){range=null;notify()}};
  toolbar.querySelector("[data-rich-undo]").onclick=()=>{if(index<=0)return;index--;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
  toolbar.querySelector("[data-rich-redo]").onclick=()=>{if(index>=history.length-1)return;index++;editor.innerHTML=history[index];normalizeExistingEditor(editor);decorateSpecialBlocks(editor);decorateSortableBlocks();range=null;updateButtons();options.onChange?.({html:value(),text:plainText(value())})};
- editor.addEventListener("click",e=>{const check=e.target.closest?.('[data-rich-role="check-toggle"]');if(check){e.preventDefault();e.stopPropagation();const item=check.closest('.sm-rich-checklist-item'),block=check.closest('.sm-rich-article-tool[data-kind="checklist"]'),checked=!/^☑/.test(check.textContent||"");if(item&&block){const items=[...block.querySelectorAll(':scope > .kp-special-body > .sm-rich-checklist-item')],index=items.indexOf(item),depth=checklistItemDepth(item);setChecklistItemChecked(item,checked);for(let i=index+1;i<items.length&&checklistItemDepth(items[i])>depth;i++)setChecklistItemChecked(items[i],checked);syncRichChecklistParents(block)}else check.textContent=checked?"☑":"☐";notify();return}const toggleSummary=e.target.closest?.('details.sm-rich-toggle > summary');if(toggleSummary&&editor.contains(toggleSummary)){e.preventDefault();e.stopPropagation();return}const imageButton=e.target.closest?.(".sm-rich-image-remove");if(imageButton){e.preventDefault();e.stopPropagation();const figure=imageButton.closest("figure.sm-rich-image");if(figure&&confirm("この画像を削除しますか？")){sortControlFor(figure)?.remove();figure.remove();range=null;notify();decorateSortableBlocks()}return}const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
+ editor.addEventListener("click",e=>{const check=e.target.closest?.('[data-rich-role="check-toggle"]');if(check){e.preventDefault();e.stopPropagation();const item=check.closest('.sm-rich-checklist-item'),block=check.closest('.sm-rich-article-tool[data-kind="checklist"]'),checked=!/^☑/.test(check.textContent||"");if(item&&block){const items=[...block.querySelectorAll(':scope > .kp-special-body > .sm-rich-checklist-item')],index=items.indexOf(item),depth=checklistItemDepth(item);setChecklistItemChecked(item,checked);for(let i=index+1;i<items.length&&checklistItemDepth(items[i])>depth;i++)setChecklistItemChecked(items[i],checked);syncRichChecklistParents(block)}else check.textContent=checked?"☑":"☐";notify();return}const imageButton=e.target.closest?.(".sm-rich-image-remove");if(imageButton){e.preventDefault();e.stopPropagation();const figure=imageButton.closest("figure.sm-rich-image");if(figure&&confirm("この画像を削除しますか？")){sortControlFor(figure)?.remove();figure.remove();range=null;notify();decorateSortableBlocks()}return}const button=e.target.closest?.(".sm-rich-special-remove");if(!button)return;e.preventDefault();e.stopPropagation();const block=button.closest(".sm-special");if(block&&confirm("このブロックを削除しますか？")){sortControlFor(block)?.remove();block.remove();range=null;notify();decorateSortableBlocks()}});
  let deleteHighlightSnapshot=null;
  editor.addEventListener("beforeinput",event=>{
   deleteHighlightSnapshot=String(event.inputType||"").startsWith("delete")
@@ -455,11 +462,6 @@ function create(options={}){
   }
   if(e.key==="Enter"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
    const selection=getSelection(),anchor=selection?.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,div,h1,h2,h3,h4,h5,h6,blockquote");
-   const toggleSummary=element?.closest?.('details.sm-rich-toggle > summary');
-   if(toggleSummary&&editor.contains(toggleSummary)){
-    e.preventDefault();const body=toggleSummary.parentElement?.querySelector(':scope > .sm-rich-toggle-body'),paragraph=document.createElement("p");paragraph.innerHTML="<br>";body?.prepend(paragraph);toggleSummary.parentElement.open=true;
-    const caret=document.createRange();caret.selectNodeContents(paragraph);caret.collapse(true);selection.removeAllRanges();selection.addRange(caret);range=caret.cloneRange();notify();return;
-   }
    if(line&&editor.contains(line)&&(!line.closest('.sm-special')||!!line.closest('details.sm-rich-toggle'))){
     const previous=(()=>{let node=line.previousElementSibling;while(node?.classList.contains('sm-rich-ui'))node=node.previousElementSibling;return node})(),paragraph=document.createElement("p");paragraph.innerHTML="<br>";
     const toggle=checkToggleMarkerParts(line.textContent||"")||toggleMarkerParts(line.textContent||"");
