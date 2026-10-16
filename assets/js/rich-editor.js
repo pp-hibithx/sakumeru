@@ -116,15 +116,15 @@ function convertTypedMarkers(root){
  const markerFor=value=>checkToggleMarkerParts(value)||toggleMarkerParts(value)||checklistBulletParts(value);
  let converted=0;
  [...root.querySelectorAll("p,div")].forEach(line=>{
-  const parent=line.parentElement,inToggleBody=parent?.classList.contains("sm-rich-toggle-body");
-  if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody)||!line.querySelector("br"))return;
+  const parent=line.parentElement,inToggleBody=!!line.closest(".sm-rich-toggle-body"),nestedBlocks=line.querySelector("p,div,details,section,figure");
+  if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody)||nestedBlocks||!line.querySelector("br"))return;
   const lines=htmlWithLineBreaks(line).replace(/\r/g,"").split("\n").map(text=>text.trim()).filter(Boolean);
   if(lines.length<2||!lines.some(markerFor))return;
   const fragment=document.createDocumentFragment();lines.forEach(text=>{const paragraph=document.createElement("p");paragraph.textContent=text;fragment.append(paragraph)});line.replaceWith(fragment);
  });
  [...root.querySelectorAll("p,div")].forEach(line=>{
-  const parent=line.parentElement,inToggleBody=parent?.classList.contains("sm-rich-toggle-body");
-  if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody))return;
+  const parent=line.parentElement,inToggleBody=!!line.closest(".sm-rich-toggle-body"),nestedBlocks=line.querySelector("p,div,details,section,figure");
+  if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody)||nestedBlocks)return;
   const raw=String(line.textContent||"").trim(),checkToggle=checkToggleMarkerParts(raw),toggle=checkToggle||toggleMarkerParts(raw),bullet=!toggle&&checklistBulletParts(raw);if(!toggle&&!bullet)return;
   const box=document.createElement("div");
   if(toggle){
