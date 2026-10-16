@@ -281,8 +281,8 @@ html:is(.theme-light,[data-theme="light"]) #libraryEditor input[type="file"]::fi
 .lib-article-pages-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
 .lib-article-page-list{display:grid;gap:10px}
 .lib-article-page{border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.015);overflow:hidden}
-.lib-article-page summary{cursor:pointer;list-style:none;padding:11px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
-.lib-article-page summary::-webkit-details-marker{display:none}
+.lib-article-page>summary{cursor:pointer;list-style:none;padding:11px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.lib-article-page>summary::-webkit-details-marker{display:none}
 .lib-article-page-title{font-weight:700}
 .lib-article-page-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .lib-article-page-body{padding:0 12px 12px;line-height:1.8;white-space:pre-wrap}
@@ -1853,7 +1853,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=1006-security2"></script>
-<script src="../assets/js/rich-editor.js?v=1015-nested-inside-toggle-fix"></script>
+<script src="../assets/js/rich-editor.js?v=1016-nested-marker-and-align-fix"></script>
 <script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";

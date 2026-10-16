@@ -450,7 +450,7 @@ function create(options={}){
   }
   if(e.key==="Enter"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
    const selection=getSelection(),anchor=selection?.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,div,h1,h2,h3,h4,h5,h6,blockquote");
-   if(line&&editor.contains(line)&&!line.closest('.sm-special')){
+   if(line&&editor.contains(line)&&(!line.closest('.sm-special')||!!line.closest('details.sm-rich-toggle'))){
     const previous=(()=>{let node=line.previousElementSibling;while(node?.classList.contains('sm-rich-ui'))node=node.previousElementSibling;return node})(),paragraph=document.createElement("p");paragraph.innerHTML="<br>";
     const toggle=checkToggleMarkerParts(line.textContent||"")||toggleMarkerParts(line.textContent||"");
     if(toggle){
