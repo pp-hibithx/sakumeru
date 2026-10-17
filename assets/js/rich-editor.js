@@ -115,6 +115,11 @@ function cleanupEditorHtml(editor,extraCleanup){
 function convertTypedMarkers(root,round=0){
  const markerFor=value=>checkToggleMarkerParts(value)||toggleMarkerParts(value)||checklistBulletParts(value);
  let converted=0;
+ root.querySelectorAll(".sm-rich-toggle-body").forEach(body=>{
+  const isBlock=node=>node.nodeType===1&&node.matches("p,div,details,section,figure,h1,h2,h3,h4,h5,h6,ul,ol,blockquote,hr");
+  let group=[];const flush=()=>{if(!group.length)return;const box=document.createElement("div");group.forEach(node=>box.append(node.cloneNode(true)));const lines=htmlWithLineBreaks(box).replace(/\r/g,"").split("\n").map(text=>text.trim()).filter(Boolean);if(lines.some(markerFor)){const fragment=document.createDocumentFragment();lines.forEach(text=>{const paragraph=document.createElement("p");paragraph.textContent=text;fragment.append(paragraph)});group[0].before(fragment);group.forEach(node=>node.remove())}group=[]};
+  [...body.childNodes].forEach(node=>{if(isBlock(node)){flush();return}group.push(node)});flush();
+ });
  [...root.querySelectorAll("p,div")].forEach(line=>{
   const parent=line.parentElement,inToggleBody=!!line.closest(".sm-rich-toggle-body"),nestedBlocks=line.querySelector("p,div,details,section,figure");
   if(!root.contains(line)||line.classList.contains("sm-rich-ui")||(parent!==root&&!inToggleBody)||nestedBlocks||!line.querySelector("br"))return;
@@ -465,7 +470,9 @@ function create(options={}){
    const selection=getSelection();if(selection?.rangeCount&&selection.isCollapsed){const anchor=selection.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,div");if(line?.parentElement===editor&&!String(line.textContent||"").trim()){const before=document.createRange();before.selectNodeContents(line);try{before.setEnd(anchor,selection.anchorOffset)}catch{}const previous=(()=>{let node=line.previousElementSibling;while(node?.classList.contains("sm-rich-ui"))node=node.previousElementSibling;return node})();if(!before.toString()&&previous?.matches?.(".sm-special,figure,hr")){e.preventDefault();return}}}
   }
   if(e.key==="Enter"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
-   const selection=getSelection(),anchor=selection?.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,div,h1,h2,h3,h4,h5,h6,blockquote");
+   const selection=getSelection();let anchor=selection?.anchorNode,element=anchor?.nodeType===1?anchor:anchor?.parentElement,line=element?.closest?.("p,h1,h2,h3,h4,h5,h6,blockquote");
+   if(!line&&element?.closest?.('.sm-rich-toggle-body')){document.execCommand("formatBlock",false,"<p>");anchor=selection?.anchorNode;element=anchor?.nodeType===1?anchor:anchor?.parentElement;line=element?.closest?.("p,h1,h2,h3,h4,h5,h6,blockquote")}
+   line=line||element?.closest?.("div");
    if(line&&editor.contains(line)&&(!line.closest('.sm-special')||!!line.closest('details.sm-rich-toggle'))){
     const previous=(()=>{let node=line.previousElementSibling;while(node?.classList.contains('sm-rich-ui'))node=node.previousElementSibling;return node})(),paragraph=document.createElement("p");paragraph.innerHTML="<br>";
     const parsedToggle=checkToggleMarkerParts(line.textContent||"")||toggleMarkerParts(line.textContent||""),toggle=parsedToggle?markerDepthInContext(parsedToggle,line):null;
