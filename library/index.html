@@ -15,7 +15,7 @@
 (()=>{try{const k="trpg39_theme",v=localStorage.getItem(k)||"system",m=(v==="light"||v==="dark")?v:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"),r=document.documentElement;r.setAttribute("data-theme",m);r.setAttribute("data-theme-mode",v);r.classList.remove("theme-light","theme-dark");r.classList.add(m==="light"?"theme-light":"theme-dark");r.style.colorScheme=m;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="../assets/css/style-v0306.css">
-<link rel="stylesheet" href="../assets/css/rich-editor.css?v=1017-toggle-types16">
+<link rel="stylesheet" href="../assets/css/rich-editor.css?v=1017-inline-plus17">
 <link rel="stylesheet" href="../assets/css/image-lightbox.css?v=0905-1">
 <script defer src="../assets/js/theme-v0296.js"></script>
 <script defer src="../assets/js/image-lightbox.js?v=0905-1"></script>
@@ -1854,7 +1854,7 @@ label{font-weight:700;color:color-mix(in srgb,currentColor 90%,transparent)}
 <script src="../assets/js/supabase-sync.js?v=0914-sync-v2"></script>
 <script>TRPG39Sync.initAutoSync();</script>
 <script src="../assets/js/supabase-share.js?v=1006-security2"></script>
-<script src="../assets/js/rich-editor.js?v=1017-toggle-types16"></script>
+<script src="../assets/js/rich-editor.js?v=1017-inline-plus17"></script>
 <script src="../assets/js/conversation-logs.js?v=1"></script>
 <script>
 (()=>{"use strict";
@@ -3852,7 +3852,7 @@ function initArticleRichEditors(ed,blocks){
  flat.filter(b=>b.type==="text").forEach(b=>{
   const id=String(b.id||""),mount=[...ed.querySelectorAll('[data-rich-block-id]')].find(x=>String(x.dataset.richBlockId)===id);if(!mount||!window.SAKUMERichEditor)return;
   const html=String(b.html||"").trim()?SAKUMERichEditor.normalizeRichHtml(b.html):SAKUMERichEditor.textToHtml(b.text||"");
-   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:["headingtoggle","bodytoggle","checktoggle"],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:kind=>insertArticleInlineTool(ed,id,kind),onChange:()=>articleEditorChanged(ed)}));
+   articleRichEditors.set(id,SAKUMERichEditor.create({mount,html,enableXHide:true,enableBlockReorder:true,reorderMode:ed.classList.contains("article-reorder-mode"),specialKinds:["headingtoggle","bodytoggle","checktoggle"],insertTools:["text","toggle","image","url","conversation","mediaGroup","checklist","calculator"],onInsertBlock:(kind,context)=>insertArticleBlockAtCursor(ed,id,kind,context),onChange:()=>articleEditorChanged(ed)}));
  });
 }
 function renderArticleEditorBlocks(ed,blocks){
