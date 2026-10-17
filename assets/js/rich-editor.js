@@ -327,8 +327,9 @@ function decorateSpecialBlocks(editor){
   const head=block.matches("section")?block.querySelector(":scope > .kp-special-head"):null;(head||block).append(button);
  });
  editor.querySelectorAll("details.sm-rich-toggle").forEach(block=>{
-  if(block.querySelector(":scope > .sm-rich-toggle-body > .sm-rich-toggle-actions"))return;
   const body=block.querySelector(":scope > .sm-rich-toggle-body");if(!body)return;
+  if(block.hasAttribute("data-checkable-toggle")){const summary=block.querySelector(":scope > summary");let title=summary?.querySelector(':scope > span:not([data-rich-role="check-toggle"])');if(summary&&!title){title=document.createElement("span");summary.append(" ",title)}if(title&&!String(title.textContent||"").trim()){const fallen=[...body.children].find(item=>!item.classList.contains("sm-rich-ui")&&item.matches("p,div")&&String(item.textContent||"").trim());if(fallen){title.innerHTML=fallen.innerHTML;fallen.remove()}}}
+  if(block.querySelector(":scope > .sm-rich-toggle-body > .sm-rich-toggle-actions"))return;
   const actions=document.createElement("div");actions.className="sm-rich-toggle-actions sm-rich-ui";actions.contentEditable="false";actions.innerHTML='<button type="button" data-toggle-child>＋ 子</button><button type="button" data-toggle-sibling>＋ 同階層</button><button type="button" data-toggle-indent>→ 子にする</button><button type="button" data-toggle-outdent>← 外へ出す</button>';
   const makeToggle=depth=>{const box=document.createElement("div");box.innerHTML=richToggleNodeHtml({depth,title:"チェック付きトグル",checkable:true,notes:[],children:[]});return box.firstElementChild};
   actions.querySelector("[data-toggle-child]").onclick=e=>{e.preventDefault();e.stopPropagation();const child=makeToggle((Number(block.dataset.autoToggleDepth)||0)+1),tail=[...body.children].reverse().find(item=>item.matches("p")&&!String(item.textContent||"").trim());body.insertBefore(child,tail||null);syncRichToggleDepths(editor);decorateSpecialBlocks(editor);editor.dispatchEvent(new Event("input",{bubbles:true}));child.querySelector("summary span:last-child")?.focus()};
