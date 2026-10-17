@@ -144,8 +144,9 @@ textarea{width:100%;min-height:76px}input,select{width:100%}label{display:block;
 .lib-cover-help{font-size:12px;color:var(--muted);margin:8px 0}.lib-cover-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.lib-cover-actions button{width:auto}
 .lib-run-detail-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:12px 0}
 .lib-run-detail-title{font-size:1.05rem;font-weight:700}
-.lib-run-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin:12px 0}
+.lib-run-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin:8px 0 0}
 .lib-run-gallery img{display:block;width:100%;height:auto;object-fit:contain;border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
+.lib-content-section{margin-top:14px}.lib-content-section>.lib-session-group-body{padding:10px 14px 14px}.lib-content-section.lib-article-pages{border-top:0;padding-top:0}.lib-content-section .lib-article-pages-head{margin-bottom:10px}
 
 .lib-list.library-grid{
   display:grid;
@@ -3730,8 +3731,9 @@ function articleEditorBlockHtml(b,index,total){
 function articlePagesHtml(r,g=null){
  const pages=articlePagesForRun(r.id).slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
  const trpg=!g||recordTypeOf(g)==="trpg",heading=trpg?"卓記事":"記録記事";
- return `<section class="lib-article-pages">
-   <div class="lib-article-pages-head"><div><strong>${heading}</strong><div class="small muted">1ページの中に文章・画像・YouTube・BGM・チェックリスト・簡易計算などを好きな順で追加できます。</div></div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ${heading}を追加</button></div></div>
+ return `<details class="lib-session-group lib-content-section lib-article-pages">
+   <summary><strong>${heading}</strong><span class="badge">${pages.length}件</span><span class="lib-session-group-arrow">▼</span></summary>
+   <div class="lib-session-group-body"><div class="lib-article-pages-head"><div class="small muted">1ページの中に文章・画像・YouTube・BGM・チェックリスト・簡易計算などを好きな順で追加できます。</div><div class="row" style="gap:6px"><button type="button" data-article-close-all="${esc(r.id)}">全て閉じる</button><button type="button" data-article-new="${esc(r.id)}">＋ ${heading}を追加</button></div></div>
    <div class="lib-article-page-list">${pages.length?pages.map((p,i)=>`<details class="lib-article-page" data-article-page-id="${esc(p.id)}">
      <summary><div><div class="lib-article-page-title">${esc(p.title||`ページ ${i+1}`)} <span class="lib-article-share-badge">${esc(articleShareLabel(p))}</span></div><div class="lib-article-page-meta">${esc(p.updatedAt||p.createdAt||"")}</div></div><span>▼</span></summary>
      ${articleBlocksHtml(p)}
@@ -3752,9 +3754,10 @@ function articlePagesHtml(r,g=null){
      </div>
      <div class="lib-article-share-note">通常共有では画像の「SNSカードに使う」を1枚選べます。未選択なら金色のタイトルOGP。パスワード付き共有では内容を伏せ、SAKU+MERU公式OGPを自動使用します。</div></details>
      <div class="album-actions"><button type="button" data-article-save="${esc(r.id)}">保存</button><button type="button" data-article-cancel="${esc(r.id)}">キャンセル</button></div>
-   </div>
- </section>`;
+   </div></div>
+ </details>`;
 }
+function runGalleryHtml(images){return images.length?`<details class="lib-session-group lib-content-section lib-gallery-section"><summary><strong>スクリーンショット</strong><span class="badge">${images.length}枚</span><span class="lib-session-group-arrow">▼</span></summary><div class="lib-session-group-body"><div class="lib-run-gallery">${images.map((u,i)=>`<img src="${esc(googleDriveImageUrl(u))}" alt="スクリーンショット ${i+1}" loading="lazy" data-sm-image-expand>`).join("")}</div></div></details>`:""}
 function editorBlocksIn(container){
  const rows=[...container.children].filter(x=>x.classList?.contains('article-block'));
  return rows.map(row=>{
@@ -4916,7 +4919,7 @@ function runDetailHtml(g,r){
  <div class="lib-parent-actions"><button type="button" data-add-run="${esc(r.id)}" data-run-label="${esc(r.label)}" data-run-scenario="${esc(g.scenarioId)}">＋ この陣に日程</button><button type="button" data-run-roster-edit="${esc(r.id)}">この陣の参加者・HO・PCを一括設定</button><button type="button" data-archive-run="${esc(r.id)}" data-archived="${r.items.every(x=>x.archived)?"1":"0"}">${r.items.every(x=>x.archived)?"アーカイブから戻す":"アーカイブ"}</button></div>
  <div id="runRosterBulk-${esc(r.id)}" class="run-roster-bulk" hidden></div>`:`<div class="lib-run-detail-head"><div class="lib-run-detail-title">遊んだ記録 ${r.items.length}件${range?` <span class="small muted">${esc(range)}</span>`:""}</div></div>`}
  ${xReportsRunHtml(r)}
- ${images.length?`<div class="lib-run-gallery">${images.map((u,i)=>`<img src="${esc(googleDriveImageUrl(u))}" alt="スクリーンショット ${i+1}" loading="lazy" data-sm-image-expand>`).join("")}</div>`:""}
+ ${runGalleryHtml(images)}
  ${conversationLogsSectionHtml(r.id)}
  ${articlePagesHtml(r,g)}
  <div class="lib-session-groups">
