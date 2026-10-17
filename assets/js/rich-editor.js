@@ -342,7 +342,7 @@ function decorateSpecialBlocks(editor){
   if(figure.querySelector(":scope > .sm-rich-image-remove"))return;
   const button=document.createElement("button");button.type="button";button.className="sm-rich-image-remove sm-rich-ui";button.contentEditable="false";button.textContent="削除";button.title="この画像を削除";figure.prepend(button);
  });
- editor.querySelectorAll('[data-rich-role="check-toggle"]').forEach(item=>{item.contentEditable="false";if(!/^[☐☑]/.test(item.textContent||""))item.textContent="☐";const row=item.closest('.sm-rich-checklist-item');if(row){repairInlineChecklistItem(row);const depth=Math.max(0,Math.min(12,checklistItemDepth(row)));row.dataset.checkDepth=String(depth);row.style.setProperty('--check-depth',String(depth))}});
+ editor.querySelectorAll('[data-rich-role="check-toggle"]').forEach(item=>{const row=item.closest('.sm-rich-checklist-item'),toggle=item.closest('details.sm-rich-toggle[data-checkable-toggle]'),toggleCheck=toggle?.querySelector(':scope > summary > [data-rich-role="check-toggle"]');if(!row&&toggleCheck!==item){item.remove();return}item.contentEditable="false";if(!/^[☐☑]/.test(item.textContent||""))item.textContent="☐";if(row){repairInlineChecklistItem(row);const depth=Math.max(0,Math.min(12,checklistItemDepth(row)));row.dataset.checkDepth=String(depth);row.style.setProperty('--check-depth',String(depth))}});
  editor.querySelectorAll('[data-rich-role="calc-total"]').forEach(item=>item.contentEditable="false");
  editor.querySelectorAll('.sm-rich-article-tool[data-kind="calculator"]').forEach(updateRichCalculator);
  editor.querySelectorAll('.sm-rich-article-tool[data-kind="checklist"],.sm-rich-article-tool[data-kind="calculator"]').forEach(block=>{
@@ -461,7 +461,7 @@ function create(options={}){
   const selection=getSelection();if(!selection?.rangeCount||selection.isCollapsed||!event.clipboardData)return;
   const selectionRange=selection.getRangeAt(0),blocks=[...editor.querySelectorAll(".sm-special,figure.sm-rich-image")].filter(block=>{try{return selectionRange.intersectsNode(block)}catch{return false}});
   if(!blocks.length)return;
-  const holder=document.createElement("div");blocks.forEach(block=>holder.append(block.cloneNode(true)));
+  const holder=document.createElement("div");holder.append(selectionRange.cloneContents());
   const html=cleanupEditorHtml(holder),plain=plainText(html);event.preventDefault();event.clipboardData.setData("text/html",html);event.clipboardData.setData("text/plain",plain);
  });
  editor.addEventListener("paste",event=>{
