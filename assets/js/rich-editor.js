@@ -146,7 +146,8 @@ function nestAutoToggles(root){
  const toggles=[...root.querySelectorAll('details.sm-rich-toggle[data-auto-toggle-depth]')],stack=[];
  toggles.forEach(block=>{
   const depth=Math.max(0,Math.min(12,Math.floor(Number(block.dataset.autoToggleDepth)||0)));
-  if(depth>0){const parent=stack[depth-1],body=parent?.querySelector(':scope > .sm-rich-toggle-body');if(body&&!parent.contains(block)){const controls=block.previousElementSibling?.classList.contains('sm-rich-block-controls')?block.previousElementSibling:null;controls?.remove();const tail=[...body.children].reverse().find(item=>item.matches('p')&&!String(item.textContent||'').trim());body.insertBefore(block,tail||null)}}
+  const existingParent=block.parentElement?.closest?.('details.sm-rich-toggle');
+  if(depth>0&&!existingParent){const parent=stack[depth-1],body=parent?.querySelector(':scope > .sm-rich-toggle-body');if(body&&!parent.contains(block)){const controls=block.previousElementSibling?.classList.contains('sm-rich-block-controls')?block.previousElementSibling:null;controls?.remove();const tail=[...body.children].reverse().find(item=>item.matches('p')&&!String(item.textContent||'').trim());body.insertBefore(block,tail||null)}}
   stack.length=depth;stack[depth]=block;
  });
 }
